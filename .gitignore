@@ -1,0 +1,7 @@
+/build
+/lib
+/bin
+/assets
+/.cache
+/.vscode
+/thirdparty
