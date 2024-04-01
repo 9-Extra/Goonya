@@ -3,5 +3,5 @@
 #include <string>
 
 namespace Goonya {
-std::wstring utf8_to_utf16(const std::string& utf8);
+std::wstring utf8_to_wchar(const std::string& utf8);
 } // namespace Goonya

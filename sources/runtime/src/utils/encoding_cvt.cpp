@@ -5,7 +5,7 @@
 
 namespace Goonya {
 
-std::wstring utf8_to_utf16(const std::string& utf8) {
+std::wstring utf8_to_wchar(const std::string& utf8) {
     const DWORD kFlags = MB_ERR_INVALID_CHARS;
     std::wstring utf16;
     if (utf8.empty()) return utf16;
