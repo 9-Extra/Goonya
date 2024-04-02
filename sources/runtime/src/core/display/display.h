@@ -13,6 +13,7 @@ namespace Display{
     void set_title(const std::string& title);
     void poll_events();
     std::tuple<uint32_t, uint32_t> get_size();
+    void swap();
 }
 
 }

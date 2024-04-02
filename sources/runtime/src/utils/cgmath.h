@@ -115,6 +115,15 @@ struct Vector3f {
     }
 };
 
+struct Vector4f {
+    union {
+        struct {
+            float x, y, z, w;
+        };
+        float v[4];
+    };
+};
+
 struct Matrix {
     float m[4][4];
 

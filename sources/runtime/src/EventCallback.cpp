@@ -25,6 +25,27 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 
         if (raw->header.dwType == RIM_TYPEMOUSE) {
             RAWMOUSE &mouse = raw->data.mouse;
+            USHORT button_state = mouse.usButtonFlags;
+            switch (button_state){
+                case RI_MOUSE_LEFT_BUTTON_DOWN:
+                    Input::Detail::mouse_key_state[Input::MOUSEKEY::LEFT] = true;
+                    break;
+                case RI_MOUSE_LEFT_BUTTON_UP:
+                    Input::Detail::mouse_key_state[Input::MOUSEKEY::LEFT] = false;
+                    break;
+                case RI_MOUSE_RIGHT_BUTTON_DOWN:
+                    Input::Detail::mouse_key_state[Input::MOUSEKEY::RIGHT] = true;
+                    break;
+                case RI_MOUSE_RIGHT_BUTTON_UP:
+                    Input::Detail::mouse_key_state[Input::MOUSEKEY::RIGHT] = false;
+                    break;
+                case RI_MOUSE_MIDDLE_BUTTON_DOWN:
+                    Input::Detail::mouse_key_state[Input::MOUSEKEY::MIDDLE] = true;
+                    break;
+                case RI_MOUSE_MIDDLE_BUTTON_UP:
+                    Input::Detail::mouse_key_state[Input::MOUSEKEY::MIDDLE] = false;
+                    break;
+            }
             Input::Detail::on_mouse_move(mouse.lLastX, mouse.lLastY);
         }
         delete[] raw;

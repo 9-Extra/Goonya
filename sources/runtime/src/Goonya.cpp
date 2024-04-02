@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <format>
 #include <runtime/Goonya.h>
+#include <Windows.h>
 
 #include "core/display/display.h"
 #include "core/graphics/graphics.h"
@@ -10,6 +11,7 @@
 #include "core/timer/timer.h"
 #include "runtime/log/Log.h"
 #include "EventCallback.h"
+#include "core/world/World.h"
 
 namespace Goonya {
 
@@ -23,11 +25,13 @@ void init_engine(){
     Display::initalize(1080, 720);
     Graphics::initialize();
 
+    load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
+
     should_exit = false;
 }
 
 uint32_t calculate_fps(float delta_time) {
-    const float ratio = 0.1f; // 平滑比例
+    const float ratio = 0.05f; // 平滑比例
     static float avarage_frame_time = std::nanf("");
 
     if (std::isnormal(avarage_frame_time)) {
@@ -41,11 +45,12 @@ uint32_t calculate_fps(float delta_time) {
 
 void logic_tick(){
     auto [x, y] = Input::get_mouse_pos();
-    LOG_DEBUG("鼠标位置: {}, {}", x, y);
+    //LOG_DEBUG("鼠标位置: {}, {}", x, y);
+    world.tick();
 }
 
 void render_frame(){
-
+    Graphics::swap();
 }
 
 void main_loop(){
@@ -57,7 +62,6 @@ void main_loop(){
         render_frame();
 
         Input::Detail::tick_update_clear();
-        Graphics::swap();
 
         uint32_t fps = calculate_fps(Timer::delta());
         Display::set_title(std::format("Goonya - FPS: {}", fps));

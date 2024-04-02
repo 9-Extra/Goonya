@@ -1,0 +1,122 @@
+#include "World.h"
+
+#include <json/json.h>
+#include "../graphics/components/CpntMeshRender.h"
+#include "../graphics/components/CpntPointLight.h"
+#include "../graphics/components/CpntCamera.h"
+
+#include <fstream>
+
+World world; // global world instance
+
+void World::tick() {
+    tick_count++;
+
+    // 调用所有的系统
+    for (const auto &[name, sys] : systems) {
+        if (sys->enable) {
+            sys->tick();
+        }
+    }
+    // 递归更新所有物体
+    this->root->tick(0);
+
+    //上传天空盒
+    //renderer.set_skybox();
+}
+
+
+// 从json加载一个Vector3f
+Vector3f load_vec3(const Json::Value &json) {
+    assert(json.isArray());
+    return {json[0].asFloat(), json[1].asFloat(), json[2].asFloat()};
+}
+// 从json加载transform，对不完整或不存在的取默认值
+Transform load_transform(const Json::Value &json) {
+    Transform trans{
+        {0.0f, 0.0f, 0.0f},
+        {0.0f, 0.0f, 0.0f},
+        {1.0f, 1.0f, 1.0f},
+    };
+    if (json.isMember("transform")) {
+        const Json::Value &t = json["transform"];
+        if (t.isMember("position")) {
+            trans.position = load_vec3(t["position"]);
+        }
+        if (t.isMember("rotation")) {
+            trans.rotation = load_vec3(t["rotation"]);
+        }
+        if (t.isMember("scale")) {
+            trans.scale = load_vec3(t["scale"]);
+        }
+    }
+
+    return trans;
+}
+
+// 从json加载组件
+void load_conponents_from_json(GObject *obj, const Json::Value &json) {
+    for (const auto& cpnt_name :json.getMemberNames()) {
+        const Json::Value cpnt_desc = json[cpnt_name];
+        if (cpnt_name == "mesh_render") {
+            std::unique_ptr<CpntMeshRender> cpnt_ptr = std::make_unique<CpntMeshRender>();
+            CpntMeshRender* cpnt = cpnt_ptr.get();
+            obj->add_component(std::move(cpnt_ptr));   
+            if (cpnt_desc.isMember("parts")){
+                for(const Json::Value &p : cpnt_desc["parts"]) {
+                    cpnt->add_part(GameObjectPart{p["mesh"].asString(), p["material"].asString(), GL_TRIANGLES, load_transform(p)});
+                }
+            }
+        } else if (cpnt_name == "point_light") {
+            Vector3f color = load_vec3(cpnt_desc["color"]);
+            float radius = cpnt_desc["factor"].asFloat();
+            obj->add_component(std::make_unique<CpntPointLight>(color, radius));      
+        } else if (cpnt_name == "camera") {
+            bool is_main = cpnt_desc.isMember("is_main") && cpnt_desc["is_main"].asBool();
+            float near_z = cpnt_desc["near_z"].asFloat();
+            float far_z = cpnt_desc["far_z"].asFloat();
+            float fov = cpnt_desc["fov"].asFloat();
+            obj->add_component(std::make_unique<CpntCamera>(near_z, far_z, fov));  
+            if (is_main){
+                obj->get_component<CpntCamera>()->set_main_camera();
+            }
+        } else {
+            std::cout << "unknown component: " << cpnt_name << std::endl;
+        }
+    }
+}
+
+// 从json递归加载节点
+void load_node_from_json(const Json::Value &node, GObject *root) {
+    for (const Json::Value &object_desc: node) {
+        const std::string &name = object_desc.isMember("name") ? object_desc["name"].asString() : "";
+        auto gobject = std::make_shared<GObject>(load_transform(object_desc), name);
+        if (object_desc.isMember("components")) {
+            load_conponents_from_json(gobject.get(), object_desc["components"]);
+        }
+    
+        root->attach_child(gobject);
+        if (object_desc.isMember("children")) {
+            load_node_from_json(object_desc["children"], root->get_children().back().get());
+        }
+    }
+}
+
+// 从json文件加载场景
+void load_scene_from_json(const std::string &path) {
+    Json::Value json;
+    Json::Reader reader;
+    std::ifstream file(path);
+    reader.parse(file, json, false);
+    // 加载天空盒
+    if (!json.isMember("skybox")) {
+        std::cerr << "Skybox is required for a scene" << std::endl;
+        exit(-1);
+    }
+
+    renderer.set_skybox(json["skybox"]["specular_texture"].asString());
+    // 加载物体
+    if (json.isMember("root")) {
+        load_node_from_json(json["root"], world.get_root().get());
+    }
+}

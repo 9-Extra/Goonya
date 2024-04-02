@@ -1,19 +1,18 @@
 {
   "dependencies": [
-    "directx-headers",
+    {
+      "name": "imgui",
+      "features": [
+        "opengl3-binding",
+        "win32-binding"
+      ]
+    },
     "jsoncpp",
     "protobuf",
     {
       "name": "spdlog",
       "features": [
         "wchar"
-      ]
-    },
-    {
-      "name": "imgui",
-      "features": [
-        "dx12-binding",
-        "win32-binding"
       ]
     }
   ]

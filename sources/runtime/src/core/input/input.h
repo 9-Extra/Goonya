@@ -18,5 +18,17 @@ bool is_key_up(KeyCode key);
 std::tuple<int32_t, int32_t> get_mouse_move();
 std::tuple<int32_t, int32_t> get_mouse_pos();
 
+enum MOUSEKEY{
+    LEFT,
+    RIGHT,
+    MIDDLE,
+
+    MOUSE_KEY_MAX
+};
+
+bool get_mouse_state(MOUSEKEY key);
+bool is_mouse_down(MOUSEKEY key);
+bool is_mouse_up(MOUSEKEY key);
+
 } // namespace Input
 } // namespace Goonya

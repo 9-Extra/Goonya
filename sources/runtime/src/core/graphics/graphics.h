@@ -1,19 +1,24 @@
 #pragma once
 
-#include "graphics_device.h"
+#include "renderer/Renderer.h"
+#include "renderer/RenderResource.h"
+#include "core/display/display.h"
+
 namespace Goonya {
 namespace Graphics {
 
-inline void initialize(){
-    Detail::devices.init();
-}
+void initialize();
 
 inline void drop(){
-    Detail::devices.drop();
+    //world.clear();
+    renderer.clear();
+    resources.clear();
+    std::cout << "Exit!\n";
 }
 
 inline void swap(){
-    Graphics::Detail::devices.p_swap_chain->Present(1, 0);
+    renderer.render();
+    Display::swap();
 }
 
 }
