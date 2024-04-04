@@ -5,6 +5,8 @@
 #include "renderer/RenderAspect.h"
 
 // 硬编码的一些数据
+namespace Goonya{
+namespace Graphics{
 namespace Assets {
 
 const std::vector<Vector3f> skybox_cube_vertices = {{-1.0, -1.0, -1.0}, {1.0, -1.0, -1.0}, {1.0, 1.0, -1.0},
@@ -23,3 +25,5 @@ const std::vector<Vertex> plane_vertices = {
 
 const std::vector<uint16_t> plane_indices = {3, 2, 0, 2, 1, 0};
 } // namespace Assets
+}
+}

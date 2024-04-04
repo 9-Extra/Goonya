@@ -3,6 +3,9 @@
 #include "../renderer/Renderer.h"
 #include "core/world/GObject.h"
 
+
+namespace Goonya {
+namespace Graphics {
 // 光源组件
 class CpntPointLight: public Component{
 public:
@@ -16,4 +19,5 @@ public:
         renderer.pointlights.emplace_back() = {get_owner()->transform.position, color, radius};   
     }
 };
-
+}
+}

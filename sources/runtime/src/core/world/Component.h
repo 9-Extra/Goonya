@@ -2,6 +2,8 @@
 
 #include <assert.h>
 
+
+namespace Goonya {
 class GObject;
 // 组件基类，组件挂在GObject上，在每个tick时会被调用，不同的组件通过重载tick实现其功能
 class Component{
@@ -22,3 +24,4 @@ protected:
 private:    
     GObject* owner; // Weak reference
 };
+}

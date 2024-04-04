@@ -7,6 +7,8 @@
 
 #include <fstream>
 
+
+namespace Goonya {
 World world; // global world instance
 
 void World::tick() {
@@ -59,26 +61,25 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
     for (const auto& cpnt_name :json.getMemberNames()) {
         const Json::Value cpnt_desc = json[cpnt_name];
         if (cpnt_name == "mesh_render") {
-            std::unique_ptr<CpntMeshRender> cpnt_ptr = std::make_unique<CpntMeshRender>();
-            CpntMeshRender* cpnt = cpnt_ptr.get();
-            obj->add_component(std::move(cpnt_ptr));   
+            std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
             if (cpnt_desc.isMember("parts")){
                 for(const Json::Value &p : cpnt_desc["parts"]) {
-                    cpnt->add_part(GameObjectPart{p["mesh"].asString(), p["material"].asString(), GL_TRIANGLES, load_transform(p)});
+                    cpnt_ptr->add_part(Graphics::RenderItem{p["mesh"].asString(), p["material"].asString(), GL_TRIANGLES, load_transform(p)});
                 }
             }
+            obj->add_component(std::move(cpnt_ptr));   
         } else if (cpnt_name == "point_light") {
             Vector3f color = load_vec3(cpnt_desc["color"]);
             float radius = cpnt_desc["factor"].asFloat();
-            obj->add_component(std::make_unique<CpntPointLight>(color, radius));      
+            obj->add_component(std::make_unique<Graphics::CpntPointLight>(color, radius));      
         } else if (cpnt_name == "camera") {
             bool is_main = cpnt_desc.isMember("is_main") && cpnt_desc["is_main"].asBool();
             float near_z = cpnt_desc["near_z"].asFloat();
             float far_z = cpnt_desc["far_z"].asFloat();
             float fov = cpnt_desc["fov"].asFloat();
-            obj->add_component(std::make_unique<CpntCamera>(near_z, far_z, fov));  
+            obj->add_component(std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov));  
             if (is_main){
-                obj->get_component<CpntCamera>()->set_main_camera();
+                obj->get_component<Graphics::CpntCamera>()->set_main_camera();
             }
         } else {
             std::cout << "unknown component: " << cpnt_name << std::endl;
@@ -114,9 +115,10 @@ void load_scene_from_json(const std::string &path) {
         exit(-1);
     }
 
-    renderer.set_skybox(json["skybox"]["specular_texture"].asString());
+    Graphics::renderer.set_skybox(json["skybox"]["specular_texture"].asString());
     // 加载物体
     if (json.isMember("root")) {
         load_node_from_json(json["root"], world.get_root().get());
     }
+}
 }

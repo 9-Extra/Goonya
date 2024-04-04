@@ -17,7 +17,7 @@ std::filesystem::path get_exe_path(){
     return std::filesystem::path(szPath).remove_filename();
 }
 
-class MoveSystem : public ISystem {
+class MoveSystem : public Goonya::ISystem {
 private:
 public:
     using ISystem::ISystem;
@@ -88,7 +88,7 @@ public:
         }
 
         if (Goonya::Input::is_key_down('0')) {
-            camera->transform = Transform{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1, 1, 1}};
+            camera->transform = Goonya::Transform{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1, 1, 1}};
             camera->is_relat_dirty = true;
         }
 
@@ -103,13 +103,13 @@ public:
     }
 
     void on_attach() override {
-        cube = world.get_root()->get_child_by_name("方块");
+        cube = Goonya::world.get_root()->get_child_by_name("方块");
         assert(cube);
-        lights = world.get_root()->get_child_by_name("lights");
+        lights = Goonya::world.get_root()->get_child_by_name("lights");
         assert(lights);
-        light1 = world.get_root()->get_child_by_name("lights")->get_child_by_name("light1");
+        light1 = Goonya::world.get_root()->get_child_by_name("lights")->get_child_by_name("light1");
         assert(light1);
-        camera = world.get_root()->get_child_by_name("相机");
+        camera = Goonya::world.get_root()->get_child_by_name("相机");
         assert(camera);
     }
 
@@ -120,15 +120,15 @@ public:
         cube->transform.rotation.x += Goonya::Timer::delta() * 0.001f;
         cube->transform.rotation.y += Goonya::Timer::delta() * 0.003f;
         cube->is_relat_dirty = true;
-        light1->transform.position.x = 20.0f * sinf(world.get_tick_count() * 0.01f);
+        light1->transform.position.x = 20.0f * sinf(Goonya::world.get_tick_count() * 0.01f);
         light1->is_relat_dirty = true;
     }
 
 private:
-    std::shared_ptr<GObject> cube;
-    std::shared_ptr<GObject> lights;
-    std::shared_ptr<GObject> light1;
-    std::shared_ptr<GObject> camera;
+    std::shared_ptr<Goonya::GObject> cube;
+    std::shared_ptr<Goonya::GObject> lights;
+    std::shared_ptr<Goonya::GObject> light1;
+    std::shared_ptr<Goonya::GObject> camera;
 };
 
 int main() {
@@ -145,7 +145,7 @@ int main() {
             LOG_ERROR(e.what());
         }
 
-        world.register_system(new MoveSystem("move"));
+        Goonya::world.register_system(new MoveSystem("move"));
 
         Goonya::main_loop();
 

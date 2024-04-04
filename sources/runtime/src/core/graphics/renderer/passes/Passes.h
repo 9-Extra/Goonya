@@ -3,6 +3,9 @@
 #include "../../utils.h"
 #include "../RenderItem.h"
 
+
+namespace Goonya {
+namespace Graphics {
 // Pass 基类
 class Pass{
 public:
@@ -14,7 +17,7 @@ public:
 
 class LambertianPass : public Pass {
 public:
-    void accept(GameObjectPart* part){
+    void accept(RenderItem* part){
         parts.push_back(part);
     }
 
@@ -45,7 +48,7 @@ private:
         Matrix normal_matrix;
     };
 
-    std::vector<GameObjectPart*> parts; // 记录要渲染的对象
+    std::vector<RenderItem*> parts; // 记录要渲染的对象
     WritableUniformBuffer<PerFrameData> per_frame_uniform;   // 用于一般渲染每帧变化的数据
     WritableUniformBuffer<PerObjectData> per_object_uniform; // 用于一般渲染每个物体不同的数据
 };
@@ -106,3 +109,6 @@ private:
         assert(glCheckNamedFramebufferStatus(framebuffer_pickup, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
     }
 };
+
+}
+}

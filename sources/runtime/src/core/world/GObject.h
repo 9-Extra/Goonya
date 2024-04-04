@@ -8,6 +8,8 @@
 #include "utils/cgmath.h"
 #include "Component.h"
 
+
+namespace Goonya {
 struct Transform {
     Vector3f position;
     Vector3f rotation;
@@ -165,3 +167,4 @@ private:
 
     void tick(uint32_t dirty_flags);
 };
+}

@@ -2,6 +2,8 @@
 
 #include "core/world/GObject.h"
 
+namespace Goonya {
+namespace Graphics {
 // 雾组件
 class CpntFog: public Component{
 public:
@@ -15,4 +17,5 @@ public:
         
     }
 };
-
+}
+}

@@ -2,13 +2,22 @@
 #include "core/input/input_inner_interface.h"
 #include "runtime/log/Log.h"
 
+#include <imgui_impl_win32.h>
 #include <Windows.h>
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 namespace Goonya {
 
 bool should_exit = false;
 
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam)){
+        return 0;
+    }
+
     switch (Msg) {
     case WM_INPUT: {
         UINT dwSize;

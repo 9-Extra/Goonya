@@ -8,6 +8,9 @@
 
 #include "RenderAspect.h"
 
+namespace Goonya {
+namespace Graphics {
+
 struct Mesh {
     unsigned int VAO_id;
     uint32_t indices_count;
@@ -127,3 +130,6 @@ public:
 };
 
 extern RenderReousce resources;
+
+}
+}

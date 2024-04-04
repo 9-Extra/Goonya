@@ -1,8 +1,9 @@
 #pragma once
 
 #include "utils/cgmath.h"
-// 平移旋转缩放
 
+namespace Goonya {
+namespace Graphics {
 struct Camera {
 public:
     Camera() {
@@ -58,3 +59,6 @@ struct DirectionalLight {
 struct SkyBox {
     unsigned int color_texture_id;
 };
+
+}
+}

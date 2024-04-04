@@ -3,6 +3,9 @@
 #include "../renderer/Renderer.h"
 #include "core/world/GObject.h"
 
+
+namespace Goonya {
+namespace Graphics {
 // 相机组件，可以设置为主相机，使相机跟随其owner object移动
 class CpntCamera: public Component{
 public:
@@ -32,4 +35,5 @@ public:
         }
     }
 };
-
+}
+}

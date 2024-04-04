@@ -9,8 +9,10 @@
 #include "utils/cgmath.h"
 #include <json/json.h>
 #include "../utils.h"
+#include "utils/read_file.h"
 
-std::string read_whole_file(const std::string &path);
+namespace Goonya {
+namespace Graphics {
 
 RenderReousce resources; // Global
 
@@ -410,4 +412,7 @@ void Material::bind() const {
         glActiveTexture(GL_TEXTURE0 + s.binding_id);
         glBindTexture(GL_TEXTURE_2D, s.texture_id);
     }
+}
+
+}
 }

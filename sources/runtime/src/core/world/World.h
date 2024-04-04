@@ -5,6 +5,8 @@
 #include "GObject.h"
 #include "../timer/timer.h"
 
+
+namespace Goonya {
 class ISystem {
 public:
     bool enable;
@@ -77,3 +79,4 @@ private:
 extern World world;
 
 void load_scene_from_json(const std::string &path);
+}

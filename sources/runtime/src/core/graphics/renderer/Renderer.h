@@ -6,6 +6,8 @@
 #include "RenderAspect.h"
 #include "../utils.h"
 
+namespace Goonya {
+namespace Graphics {
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
@@ -34,7 +36,7 @@ public:
         pickup_pass = std::make_unique<PickupPass>();
     }
 
-    void accept(GameObjectPart *part) { lambertian_pass->accept(part); }
+    void accept(RenderItem *part) { lambertian_pass->accept(part); }
 
     void set_skybox(const std::string &color_cubemap_key) {
         skybox.color_texture_id = resources.cubemaps.get(resources.cubemaps.find(color_cubemap_key)).texture_id;
@@ -73,3 +75,5 @@ private:
 };
 
 extern Renderer renderer;
+}
+}

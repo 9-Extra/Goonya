@@ -2,7 +2,6 @@
 
 #include "renderer/Renderer.h"
 #include "renderer/RenderResource.h"
-#include "core/display/display.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -16,9 +15,8 @@ inline void drop(){
     std::cout << "Exit!\n";
 }
 
-inline void swap(){
+inline void render(){
     renderer.render();
-    Display::swap();
 }
 
 }

@@ -3,7 +3,9 @@
 #include <format>
 #include <runtime/Goonya.h>
 #include <Windows.h>
+#include <imgui.h>
 
+#include "core/imgui/imgui_module.h"
 #include "core/display/display.h"
 #include "core/graphics/graphics.h"
 #include "core/input/input.h"
@@ -25,6 +27,8 @@ void init_engine(){
     Display::initalize(1080, 720);
     Graphics::initialize();
 
+    ImguiMng::init();
+
     load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
 
     should_exit = false;
@@ -44,25 +48,36 @@ uint32_t calculate_fps(float delta_time) {
 }
 
 void logic_tick(){
-    auto [x, y] = Input::get_mouse_pos();
+    ImGui::ShowDemoWindow();
+
+    //auto [x, y] = Input::get_mouse_pos();
     //LOG_DEBUG("鼠标位置: {}, {}", x, y);
     world.tick();
 }
 
 void render_frame(){
-    Graphics::swap();
+    
+    Graphics::render();
+    
+    ImGui::EndFrame();
+    ImGui::Render();
+    ImguiMng::render();
 }
 
 void main_loop(){
     while (!should_exit){
+        ImguiMng::new_frame();
+        ImGui::NewFrame();
+
         Display::poll_events();
         Timer::tick_update();
-
+        
         logic_tick();
         render_frame();
+        
+        Display::swap();
 
         Input::Detail::tick_update_clear();
-
         uint32_t fps = calculate_fps(Timer::delta());
         Display::set_title(std::format("Goonya - FPS: {}", fps));
     }
@@ -70,6 +85,8 @@ void main_loop(){
 
 void drop_engine(){
     LOG_WARN("退出");
+
+    ImguiMng::drop();
 
     Graphics::drop();
     Display::drop();

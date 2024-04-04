@@ -2,6 +2,10 @@
 
 #include "../Renderer.h"
 
+
+namespace Goonya {
+namespace Graphics {
+
 //一般物体渲染
 void LambertianPass::run() {
     // 初始化渲染配置
@@ -49,7 +53,7 @@ void LambertianPass::run() {
     per_frame_uniform.unmap();
 
     // 遍历所有part，绘制每一个part
-    for (const GameObjectPart *p : parts) {
+    for (const RenderItem *p : parts) {
         // 填充per_object uniform buffer
         auto data = per_object_uniform.map();
         data->model_matrix = p->base_transform.transpose();      // 变换矩阵
@@ -114,3 +118,6 @@ void PickupPass::run() {
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 } 
+
+}
+}

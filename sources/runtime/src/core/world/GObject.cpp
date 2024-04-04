@@ -1,5 +1,7 @@
 #include "GObject.h"
 
+
+namespace Goonya {
 void GObject::tick(uint32_t dirty_flags) {
     if (!enabled)
         return; // 跳过不启用的物体
@@ -25,4 +27,5 @@ void GObject::tick(uint32_t dirty_flags) {
     for (auto &child : get_children()) {
         child->tick(dirty_flags); // 更新子节点
     }
+}
 }
