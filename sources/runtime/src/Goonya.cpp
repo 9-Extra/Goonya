@@ -1,40 +1,25 @@
+#include <Windows.h>
 #include <cmath>
 #include <cstdint>
 #include <format>
-#include <runtime/Goonya.h>
-#include <Windows.h>
 #include <imgui.h>
+#include <runtime/Goonya.h>
 
-#include "core/imgui/imgui_module.h"
+
 #include "core/display/display.h"
+#include "core/event/event.h"
 #include "core/graphics/graphics.h"
+#include "core/imgui/imgui_module.h"
 #include "core/input/input.h"
-#include "core/input/input_inner_interface.h"
 #include "core/timer/timer.h"
-#include "runtime/log/Log.h"
-#include "EventCallback.h"
 #include "core/world/World.h"
+#include "runtime/log/Log.h"
+#include "core/events.h"
+
 
 namespace Goonya {
 
-void init_engine(){
-    logger.inititalize();
-
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
-
-    Input::reset_state();
-    Timer::initialize();
-    Display::initalize(1080, 720);
-    Graphics::initialize();
-
-    ImguiMng::init();
-
-    load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
-
-    should_exit = false;
-}
-
-uint32_t calculate_fps(float delta_time) {
+static uint32_t calculate_fps(float delta_time) {
     const float ratio = 0.05f; // 平滑比例
     static float avarage_frame_time = std::nanf("");
 
@@ -47,43 +32,73 @@ uint32_t calculate_fps(float delta_time) {
     return (unsigned int)(1000.0f / avarage_frame_time);
 }
 
-void logic_tick(){
+void init_engine() {
+    logger.inititalize();
+
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+
+    Event::initalize();
+    Input::initalize();
+    Timer::initialize();
+    Display::initalize(1080, 720);
+    Graphics::initialize();
+
+    ImguiMng::init();
+
+    Event::subscribe_event<Events::PostTick, void>(0, nullptr, [](void*, Events::PostTick& e){
+        uint32_t fps = calculate_fps(Timer::delta());
+        Display::set_title(std::format("Goonya - FPS: {}", fps));
+        return false;
+    });
+
+    load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
+}
+
+
+void logic_tick() {
     ImGui::ShowDemoWindow();
 
-    //auto [x, y] = Input::get_mouse_pos();
-    //LOG_DEBUG("鼠标位置: {}, {}", x, y);
+    // auto [x, y] = Input::get_mouse_pos();
+    // LOG_DEBUG("鼠标位置: {}, {}", x, y);
     world.tick();
 }
 
-void render_frame(){
-    
+void render_frame() {
+
     Graphics::render();
-    
+
     ImGui::EndFrame();
     ImGui::Render();
     ImguiMng::render();
 }
 
-void main_loop(){
-    while (!should_exit){
+void main_loop() {
+    bool should_continue = true;
+    Event::ListenerID id = Event::subscribe_event<Display::Events::SysWindowClose, bool>(
+        10, &should_continue, [](bool *should_continue, Display::Events::SysWindowClose& e) {
+                            *should_continue = false;
+                            return true;
+                        });
+
+    while (should_continue) {
         ImguiMng::new_frame();
         ImGui::NewFrame();
 
         Display::poll_events();
         Timer::tick_update();
-        
+
         logic_tick();
         render_frame();
-        
+
         Display::swap();
 
-        Input::Detail::tick_update_clear();
-        uint32_t fps = calculate_fps(Timer::delta());
-        Display::set_title(std::format("Goonya - FPS: {}", fps));
+        Event::dispatch_event(Events::PostTick{Timer::delta()});
     }
+
+    Event::remove_listener<Display::Events::SysWindowClose>(id);
 }
 
-void drop_engine(){
+void drop_engine() {
     LOG_WARN("退出");
 
     ImguiMng::drop();

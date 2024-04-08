@@ -5,7 +5,7 @@ add_library(${TARGET_NAME} STATIC)
 file(GLOB_RECURSE sources CONFIGURE_DEPENDS src/*.cpp src/*.h)
 target_sources(${TARGET_NAME} PRIVATE ${sources})
 
-target_include_directories(${TARGET_NAME} PUBLIC include PUBLIC src)
+target_include_directories(${TARGET_NAME} PUBLIC include src)
 
 target_compile_definitions(${TARGET_NAME} PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 

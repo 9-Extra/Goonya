@@ -10,12 +10,124 @@
 #include <string>
 #include <wingdi.h>
 
+#include <imgui_impl_win32.h>
+
+#include "core/event/event.h"
+#include "runtime/log/Log.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace Goonya {
-
-LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam);
-
 namespace Display {
 
+LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
+
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam)) {
+        return 0;
+    }
+
+    switch (Msg) {
+    case WM_INPUT: {
+        UINT dwSize;
+        GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
+        RAWINPUT *raw = (RAWINPUT *)new BYTE[dwSize];
+        if (raw == NULL) {
+            return 0;
+        }
+
+        if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, raw, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize) {
+            LOG_ERROR("GetRawInputData doesn't return correct size !");
+            return 0;
+        }
+
+        if (raw->header.dwType == RIM_TYPEMOUSE) {
+            RAWMOUSE &mouse = raw->data.mouse;
+            USHORT button_state = mouse.usButtonFlags;
+            Events::SysMouseClick click_event;
+            bool is_clicked = true;
+            switch (button_state) {
+            case RI_MOUSE_LEFT_BUTTON_DOWN:
+                click_event.key = Input::MOUSEKEY::LEFT;
+                click_event.up_down = true;
+                break;
+            case RI_MOUSE_LEFT_BUTTON_UP:
+                click_event.key = Input::MOUSEKEY::LEFT;
+                click_event.up_down = false;
+                break;
+            case RI_MOUSE_RIGHT_BUTTON_DOWN:
+                click_event.key = Input::MOUSEKEY::RIGHT;
+                click_event.up_down = true;
+                break;
+            case RI_MOUSE_RIGHT_BUTTON_UP:
+                click_event.key = Input::MOUSEKEY::RIGHT;
+                click_event.up_down = false;
+                break;
+            case RI_MOUSE_MIDDLE_BUTTON_DOWN:
+                click_event.key = Input::MOUSEKEY::MIDDLE;
+                click_event.up_down = true;
+                break;
+            case RI_MOUSE_MIDDLE_BUTTON_UP:
+                click_event.key = Input::MOUSEKEY::MIDDLE;
+                click_event.up_down = false;
+                break;
+            default:
+                is_clicked = false;
+            }
+            if (is_clicked) {
+                Event::dispatch_event(click_event);
+            }
+            Event::dispatch_event(Events::SysRawMouseMove{mouse.lLastX, mouse.lLastY});
+        }
+        delete[] raw;
+        return 0;
+    }
+    case WM_KEYUP:
+    case WM_KEYDOWN: {
+        WORD vkCode = LOWORD(wParam); // virtual-key code
+        WORD keyFlags = HIWORD(lParam);
+        if (Msg == WM_KEYDOWN) {
+            bool is_repeat = (keyFlags & KF_REPEAT) != 0;
+            if (is_repeat) {
+                return 0;
+            }
+            Event::dispatch_event(Events::SysKeyEvent{vkCode, true});
+        } else {
+            Event::dispatch_event(Events::SysKeyEvent{vkCode, false});
+        }
+        return 0;
+    }
+    case WM_ACTIVATE: {
+        if (wParam == WA_INACTIVE) {
+            Event::dispatch_event(Events::SysWindowDeActive{});
+            // Input::reset_state();
+        }
+        return 0;
+    }
+    case WM_CHAR:
+        return 0;
+    case WM_CLOSE:
+        LOG_DEBUG("收到关闭消息", Msg);
+        Event::dispatch_event(Events::SysWindowClose{});
+        return 0;
+    case WM_MOUSEMOVE: {
+        int32_t xPos = lParam & 0xffff;
+        int32_t yPos = lParam >> 16 & 0xffff;
+        Event::dispatch_event(Events::SysMousePos{xPos, yPos});
+        // Input::Detail::on_mouse_set(xPos, yPos);
+        return 0;
+    }
+    case WM_DESTROY:
+        LOG_DEBUG("窗口销毁", Msg);
+        break;
+    case WM_SETCURSOR:
+    case WM_NCHITTEST:
+        break;
+    default: {
+        // LOG_DEBUG("收到消息: 0x{:04x}", Msg);
+    }
+    }
+    return DefWindowProcW(hWnd, Msg, wParam, lParam);
+}
 HWND hwnd = NULL; // 窗口句柄
 
 void create_opengl_context() {
@@ -50,18 +162,20 @@ void create_opengl_context() {
                                  0};
 
     int pixel_format = ChoosePixelFormat(hdc, &pfd);
-    if (!SetPixelFormat(hdc, pixel_format, &pfd)){
+    if (!SetPixelFormat(hdc, pixel_format, &pfd)) {
         throw Goonya::RuntimeError("设置颜色格式失败");
     }
 
     HGLRC hrc = wglCreateContext(hdc);
 
-    if (hrc == NULL){
+    if (hrc == NULL) {
         throw Goonya::RuntimeError("创建Opengl上下文失败");
     }
 
     wglMakeCurrent(hdc, hrc);
 }
+
+void init_for_imgui() { ImGui_ImplWin32_InitForOpenGL(Display::hwnd); }
 
 void drop_opengl_context() {
     HGLRC hrc = wglGetCurrentContext();
@@ -69,10 +183,10 @@ void drop_opengl_context() {
     wglDeleteContext(hrc);
 }
 
-void swap() { 
-    if (!wglSwapLayerBuffers(GetDC(hwnd), WGL_SWAP_MAIN_PLANE)){
+void swap() {
+    if (!wglSwapLayerBuffers(GetDC(hwnd), WGL_SWAP_MAIN_PLANE)) {
         throw Goonya::RuntimeError("交换前后缓冲失败");
-    } 
+    }
 }
 
 void create_window(uint32_t width, uint32_t height) {

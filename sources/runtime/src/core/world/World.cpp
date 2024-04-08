@@ -106,9 +106,11 @@ void load_node_from_json(const Json::Value &node, GObject *root) {
 // 从json文件加载场景
 void load_scene_from_json(const std::string &path) {
     Json::Value json;
-    Json::Reader reader;
-    std::ifstream file(path);
-    reader.parse(file, json, false);
+    {
+        Json::Reader reader;
+        std::ifstream file(path);
+        reader.parse(file, json, false);
+    }
     // 加载天空盒
     if (!json.isMember("skybox")) {
         std::cerr << "Skybox is required for a scene" << std::endl;
