@@ -12,7 +12,7 @@
 
 #include <imgui_impl_win32.h>
 
-#include "core/event/event.h"
+#include "core/eventbus/eventbus.h"
 #include "runtime/log/Log.h"
 
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -74,9 +74,9 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
                 is_clicked = false;
             }
             if (is_clicked) {
-                Event::dispatch_event(click_event);
+                EventBus::dispatch_event(click_event);
             }
-            Event::dispatch_event(Events::SysRawMouseMove{mouse.lLastX, mouse.lLastY});
+            EventBus::dispatch_event<true>(Events::SysRawMouseMove{mouse.lLastX, mouse.lLastY});
         }
         delete[] raw;
         return 0;
@@ -90,16 +90,15 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
             if (is_repeat) {
                 return 0;
             }
-            Event::dispatch_event(Events::SysKeyEvent{vkCode, true});
+            EventBus::dispatch_event<true>(Events::SysKeyEvent{vkCode, true});
         } else {
-            Event::dispatch_event(Events::SysKeyEvent{vkCode, false});
+            EventBus::dispatch_event<true>(Events::SysKeyEvent{vkCode, false});
         }
         return 0;
     }
     case WM_ACTIVATE: {
         if (wParam == WA_INACTIVE) {
-            Event::dispatch_event(Events::SysWindowDeActive{});
-            // Input::reset_state();
+            EventBus::dispatch_event<true>(Events::SysWindowDeActive{});
         }
         return 0;
     }
@@ -107,13 +106,12 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
         return 0;
     case WM_CLOSE:
         LOG_DEBUG("收到关闭消息", Msg);
-        Event::dispatch_event(Events::SysWindowClose{});
+        EventBus::dispatch_event<true>(Events::SysWindowClose{});
         return 0;
     case WM_MOUSEMOVE: {
         int32_t xPos = lParam & 0xffff;
         int32_t yPos = lParam >> 16 & 0xffff;
-        Event::dispatch_event(Events::SysMousePos{xPos, yPos});
-        // Input::Detail::on_mouse_set(xPos, yPos);
+        EventBus::dispatch_event<true>(Events::SysMousePos{xPos, yPos});
         return 0;
     }
     case WM_DESTROY:

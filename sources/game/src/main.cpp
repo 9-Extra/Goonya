@@ -10,7 +10,7 @@
 #include <core/timer/timer.h>
 #include <filesystem>
 #include <Windows.h>
-#include <core/event/event.h>
+#include <core/eventbus/eventbus.h>
 
 #include "logic.h"
 

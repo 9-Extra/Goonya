@@ -5,17 +5,15 @@
 #include <imgui.h>
 #include <runtime/Goonya.h>
 
-
 #include "core/display/display.h"
-#include "core/event/event.h"
+#include <core/eventbus/eventbus.h>
+#include "core/events.h"
 #include "core/graphics/graphics.h"
 #include "core/imgui/imgui_module.h"
 #include "core/input/input.h"
 #include "core/timer/timer.h"
 #include "core/world/World.h"
 #include "runtime/log/Log.h"
-#include "core/events.h"
-
 
 namespace Goonya {
 
@@ -37,7 +35,7 @@ void init_engine() {
 
     SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
 
-    Event::initalize();
+    EventBus::initalize();
     Input::initalize();
     Timer::initialize();
     Display::initalize(1080, 720);
@@ -45,15 +43,20 @@ void init_engine() {
 
     ImguiMng::init();
 
-    Event::subscribe_event<Events::PostTick, void>(0, nullptr, [](void*, Events::PostTick& e){
+    EventBus::subscribe_event<Events::PostTick, void>(0, nullptr, [](void *, Events::PostTick &e) {
         uint32_t fps = calculate_fps(Timer::delta());
         Display::set_title(std::format("Goonya - FPS: {}", fps));
         return false;
     });
 
+    EventBus::subscribe_event<Display::Events::SysWindowClose, void>(0, nullptr,
+        [](void *, Display::Events::SysWindowClose &e) {
+            EventBus::dispatch_event(Events::EngineStop{});
+            return false;
+    });
+
     load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
 }
-
 
 void logic_tick() {
     ImGui::ShowDemoWindow();
@@ -74,11 +77,11 @@ void render_frame() {
 
 void main_loop() {
     bool should_continue = true;
-    Event::ListenerID id = Event::subscribe_event<Display::Events::SysWindowClose, bool>(
-        10, &should_continue, [](bool *should_continue, Display::Events::SysWindowClose& e) {
-                            *should_continue = false;
-                            return true;
-                        });
+    EventBus::ListenerID id = EventBus::subscribe_event<Events::EngineStop, bool>(
+        10, &should_continue, [](bool *should_continue, Events::EngineStop &e) {
+            *should_continue = false;
+            return true;
+        });
 
     while (should_continue) {
         ImguiMng::new_frame();
@@ -92,10 +95,10 @@ void main_loop() {
 
         Display::swap();
 
-        Event::dispatch_event(Events::PostTick{Timer::delta()});
+        EventBus::dispatch_event(Events::PostTick{Timer::delta()});
     }
 
-    Event::remove_listener<Display::Events::SysWindowClose>(id);
+    EventBus::remove_listener<Display::Events::SysWindowClose>(id);
 }
 
 void drop_engine() {

@@ -1,6 +1,8 @@
 #pragma once
 #include <core/world/World.h>
 #include <core/input/input.h>
+#include <core/eventbus/eventbus.h>
+#include <core/events.h>
 #include <Windows.h>
 
 class MoveSystem : public Goonya::ISystem {
@@ -37,7 +39,7 @@ public:
         const float move_speed = 0.02f * delta;
 
         if (Goonya::Input::is_key_down(VK_ESCAPE)) {
-            PostQuitMessage(0);
+            Goonya::EventBus::dispatch_event(Goonya::Events::EngineStop{});
         }
         if (Goonya::Input::get_key_state('W')) {
             Vector3f ori = camera->transform.get_orientation();

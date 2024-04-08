@@ -7,5 +7,7 @@ struct PostTick{
     float delta;
 };
 
+struct EngineStop{};
+
 }
 }
