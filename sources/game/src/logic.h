@@ -3,7 +3,7 @@
 #include <core/input/input.h>
 #include <core/eventbus/eventbus.h>
 #include <core/events.h>
-#include <Windows.h>
+#include <core/timer/timer.h>
 
 class MoveSystem : public Goonya::ISystem {
 public:
@@ -38,7 +38,7 @@ public:
         // wasd移动
         const float move_speed = 0.02f * delta;
 
-        if (Goonya::Input::is_key_down(VK_ESCAPE)) {
+        if (Goonya::Input::is_key_down(Goonya::Input::KeyCode::ESCAPE)) {
             Goonya::EventBus::dispatch_event(Goonya::Events::EngineStop{});
         }
         if (Goonya::Input::get_key_state('W')) {
@@ -65,11 +65,11 @@ public:
             camera->transform.position += ori.normalize() * -move_speed;
             camera->is_relat_dirty = true;
         }
-        if (Goonya::Input::get_key_state(VK_SPACE)) {
+        if (Goonya::Input::get_key_state(Goonya::Input::KeyCode::SPACE)) {
             camera->transform.position.y += move_speed;
             camera->is_relat_dirty = true;
         }
-        if (Goonya::Input::get_key_state(VK_SHIFT)) {
+        if (Goonya::Input::get_key_state(Goonya::Input::KeyCode::LSHIFT)) {
             camera->transform.position.y -= move_speed;
             camera->is_relat_dirty = true;
         }

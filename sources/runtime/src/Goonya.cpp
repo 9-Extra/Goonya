@@ -1,19 +1,19 @@
-#include <Windows.h>
 #include <cmath>
 #include <cstdint>
 #include <format>
 #include <imgui.h>
 #include <runtime/Goonya.h>
 
-#include "core/display/display.h"
-#include <core/eventbus/eventbus.h>
+#include "platform/display/display.h"
+#include "core/eventbus/eventbus.h"
 #include "core/events.h"
-#include "core/graphics/graphics.h"
+#include "function/graphics/graphics.h"
 #include "core/imgui/imgui_module.h"
 #include "core/input/input.h"
 #include "core/timer/timer.h"
 #include "core/world/World.h"
 #include "runtime/log/Log.h"
+#include "function/scene/scene.h"
 
 namespace Goonya {
 
@@ -32,8 +32,6 @@ static uint32_t calculate_fps(float delta_time) {
 
 void init_engine() {
     logger.inititalize();
-
-    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
 
     EventBus::initalize();
     Input::initalize();
@@ -55,7 +53,9 @@ void init_engine() {
             return false;
     });
 
-    load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
+    Scene::Scene scene = Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了  
+    world.get_root().swap(scene.root);
+    
 }
 
 void logic_tick() {
@@ -95,7 +95,7 @@ void main_loop() {
 
         Display::swap();
 
-        EventBus::dispatch_event(Events::PostTick{Timer::delta()});
+        EventBus::dispatch_event(Events::PostTick{});
     }
 
     EventBus::remove_listener<Display::Events::SysWindowClose>(id);

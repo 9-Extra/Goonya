@@ -3,7 +3,7 @@
 #include <imgui_impl_win32.h>
 #include <imgui_impl_opengl3.h>
 #include <imgui.h>
-#include "core/display/display.h"
+#include "platform/display/display.h"
 
 namespace Goonya{
 

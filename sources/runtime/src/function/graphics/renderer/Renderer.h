@@ -4,7 +4,7 @@
 #include "passes/Passes.h"
 #include "RenderItem.h"
 #include "RenderAspect.h"
-#include "../utils.h"
+#include "../opengl_utils.h"
 
 namespace Goonya {
 namespace Graphics {

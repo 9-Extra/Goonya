@@ -1,7 +1,7 @@
 #include "input.h"
 #include <cstdint>
 #include <core/eventbus/eventbus.h>
-#include "core/display/display.h"
+#include "platform/display/display.h"
 #include "core/events.h"
 
 namespace Goonya {
@@ -25,7 +25,7 @@ void initalize(){
     using namespace Detail;
     reset_state();
     EventBus::subscribe_event<Display::Events::SysKeyEvent, void>(0, nullptr, [](void*, Display::Events::SysKeyEvent& e){
-        keys_state[e.key] = e.up_down;
+        keys_state[(uint32_t)e.key] = e.up_down;
         return false;
     });
     EventBus::subscribe_event<Display::Events::SysMousePos, void>(0, nullptr, [](void*, Display::Events::SysMousePos& e){
@@ -34,7 +34,7 @@ void initalize(){
         return false;
     });
     EventBus::subscribe_event<Display::Events::SysMouseClick, void>(0, nullptr, [](void*, Display::Events::SysMouseClick& e){
-        mouse_key_state[e.key] = e.up_down;
+        mouse_key_state[(uint32_t)e.key] = e.up_down;
         return false;
     });
     EventBus::subscribe_event<Display::Events::SysRawMouseMove, void>(0, nullptr, [](void*, Display::Events::SysRawMouseMove& e){
@@ -74,11 +74,11 @@ void reset_state() {
     Detail::mouse_pos_y = 0;
 }
 
-bool get_key_state(KeyCode key) { return Detail::keys_state[key]; }
+bool get_key_state(KeyCode key) { return Detail::keys_state[(uint32_t)key]; }
 
-bool is_key_down(KeyCode key) { return !Detail::keys_state_last_tick[key] && Detail::keys_state[key]; }
+bool is_key_down(KeyCode key) { return !Detail::keys_state_last_tick[(uint32_t)key] && Detail::keys_state[(uint32_t)key]; }
 
-bool is_key_up(KeyCode key) { return Detail::keys_state_last_tick[key] && !Detail::keys_state[key]; }
+bool is_key_up(KeyCode key) { return Detail::keys_state_last_tick[(uint32_t)key] && !Detail::keys_state[(uint32_t)key]; }
 
 std::tuple<int32_t, int32_t> get_mouse_move() { return std::make_tuple(Detail::mouse_delta_x, Detail::mouse_delta_y); }
 

@@ -3,7 +3,6 @@
 #include <unordered_map>
 
 #include "GObject.h"
-#include "../timer/timer.h"
 
 
 namespace Goonya {
@@ -35,7 +34,7 @@ public:
     }
 
     uint64_t get_tick_count() { return tick_count; }
-    std::shared_ptr<GObject> get_root() { return root; }
+    std::shared_ptr<GObject>& get_root() { return root; }
     void clear_objects() {
         root = std::make_shared<GObject>(Transform{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}, "root");
     }
@@ -77,6 +76,4 @@ private:
 };
 
 extern World world;
-
-void load_scene_from_json(const std::string &path);
 }

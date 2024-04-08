@@ -3,10 +3,7 @@
 namespace Goonya {
 namespace Events {
 
-struct PostTick{
-    float delta;
-};
-
+struct PostTick{};
 struct EngineStop{};
 
 }

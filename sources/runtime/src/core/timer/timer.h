@@ -1,6 +1,5 @@
 #pragma once
 #include <chrono>
-#include <sys/stat.h>
 
 namespace Goonya {
 

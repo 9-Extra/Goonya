@@ -1,5 +1,5 @@
 #include "graphics.h"
-#include "utils.h"
+#include "opengl_utils.h"
 #include "HardcodeAssets.h"
 
 namespace Goonya {

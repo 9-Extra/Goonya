@@ -1,7 +1,7 @@
 #include "display.h"
 #include "runtime/GoonyaException.h"
 
-#include "utils/encoding_cvt.h"
+#include "platform/encoding_cvt.h"
 #include <Windows.h>
 #include <cassert>
 #include <cstdint>
@@ -19,6 +19,56 @@ extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg
 
 namespace Goonya {
 namespace Display {
+
+static Input::KeyCode virtual_keycode2goonya_keycode(WORD vkcode, WORD scanCode) {
+    if (vkcode >= 'A' && vkcode <= 'Z') {
+        return (Input::KeyCode)vkcode;
+    }
+
+    Input::KeyCode k = Input::KeyCode::UNKNOWN;
+
+    switch (vkcode) {
+        case VK_SHIFT:   // converts to VK_LSHIFT or VK_RSHIFT
+        case VK_CONTROL: // converts to VK_LCONTROL or VK_RCONTROL
+        case VK_MENU:    // converts to VK_LMENU or VK_RMENU
+            vkcode = LOWORD(MapVirtualKeyW(scanCode, MAPVK_VSC_TO_VK_EX));
+    }
+
+    switch (vkcode) {
+    case VK_LSHIFT:
+        k = Input::KeyCode::LSHIFT;
+        break;
+    case VK_RSHIFT:
+        k = Input::KeyCode::RSHIFT;
+        break;
+    case VK_LCONTROL:
+        k = Input::KeyCode::LCTRL;
+        break;
+    case VK_RCONTROL:
+        k = Input::KeyCode::RCTRL;
+        break;
+    case VK_LMENU:
+        k = Input::KeyCode::LALT;
+        break;
+    case VK_RMENU:
+        k = Input::KeyCode::RALT;
+        break;
+    case VK_ESCAPE:
+        k = Input::KeyCode::ESCAPE;
+        break;
+    case VK_SPACE:
+        k = Input::KeyCode::SPACE;
+        break;
+    case VK_RETURN:
+        k = Input::KeyCode::ENTER;
+        break;
+    case VK_TAB:
+        k = Input::KeyCode::TAB;
+        break;
+    }
+
+    return k;
+}
 
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 
@@ -83,7 +133,10 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
     }
     case WM_KEYUP:
     case WM_KEYDOWN: {
-        WORD vkCode = LOWORD(wParam); // virtual-key code
+        WORD scanCode = LOBYTE(HIWORD(lParam)); 
+        Input::KeyCode vkCode = virtual_keycode2goonya_keycode(LOWORD(wParam), scanCode); // virtual-key code
+        if (vkCode == Input::KeyCode::UNKNOWN) return 0;
+
         WORD keyFlags = HIWORD(lParam);
         if (Msg == WM_KEYDOWN) {
             bool is_repeat = (keyFlags & KF_REPEAT) != 0;
@@ -229,6 +282,7 @@ void register_raw_input() {
 }
 
 void initalize(uint32_t width, uint32_t height) {
+    SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     create_window(width, height);
     create_opengl_context();
     register_raw_input();

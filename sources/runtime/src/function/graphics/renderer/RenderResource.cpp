@@ -8,8 +8,8 @@
 
 #include "utils/cgmath.h"
 #include <json/json.h>
-#include "../utils.h"
-#include "utils/read_file.h"
+#include "../opengl_utils.h"
+#include "platform/read_file.h"
 
 namespace Goonya {
 namespace Graphics {

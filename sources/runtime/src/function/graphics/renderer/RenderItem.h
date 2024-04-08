@@ -4,7 +4,7 @@
 
 #include <cstdint>
 #include "utils/cgmath.h"
-#include "../../world/GObject.h"
+#include "core/world/GObject.h"
 #include "RenderResource.h"
 
 
