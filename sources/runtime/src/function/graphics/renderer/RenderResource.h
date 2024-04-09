@@ -7,6 +7,7 @@
 #include <functional>
 
 #include "RenderAspect.h"
+#include "../shaderlib/shaderlib.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -40,7 +41,7 @@ struct MaterialDesc {
         std::string texture_key;
     };
 
-    std::string shader_name;
+    ShaderDesc shader_desc;
     std::vector<UniformDataDesc> uniforms;
     std::vector<SampleData> samplers;
 };
@@ -107,7 +108,7 @@ public:
 
     ResourceContainer<Mesh> meshes;
     ResourceContainer<Material> materials;
-    ResourceContainer<Shader> shaders;
+    ShaderLib shader_lib;
     ResourceContainer<Texture> textures;
     ResourceContainer<CubeMap> cubemaps;
 

@@ -56,7 +56,7 @@ private:
 class SkyBoxPass : public Pass{
 public:
     SkyBoxPass(){
-        shader_program_id = resources.shaders.get(resources.shaders.find("skybox")).program_id;
+        shader_program_id = resources.shader_lib.query_shader({"skybox", {}}).gl_id;
         mesh_id = resources.meshes.find("skybox_cube");
     }
 

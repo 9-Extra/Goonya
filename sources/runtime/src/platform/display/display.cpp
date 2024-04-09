@@ -70,6 +70,9 @@ static Input::KeyCode virtual_keycode2goonya_keycode(WORD vkcode, WORD scanCode)
     return k;
 }
 
+HWND hwnd = NULL; // 窗口句柄
+std::tuple<uint32_t, uint32_t> current_size;
+
 LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 
     if (ImGui_ImplWin32_WndProcHandler(hWnd, Msg, wParam, lParam)) {
@@ -167,19 +170,44 @@ LRESULT CALLBACK WindowProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
         EventBus::dispatch_event<true>(Events::SysMousePos{xPos, yPos});
         return 0;
     }
+    case WM_WINDOWPOSCHANGED: {
+        WINDOWPOS *pos = (WINDOWPOS *)lParam;
+        if ((pos->flags & SWP_NOSIZE) != SWP_NOSIZE){
+            RECT rect;
+            GetClientRect(hwnd, &rect);
+            current_size = {rect.right - rect.left, rect.bottom - rect.top};
+            EventBus::dispatch_event<true>(Events::SysDisplayResize{current_size});
+            //LOG_DEBUG("窗口改变大小");
+        }
+        return 0;
+    }
+    case WM_SYSCOMMAND:{
+        if ((wParam & 0xFFF0) == SC_MOVE){
+            // 在结束移动时重置键盘状态（认为失去焦点）
+            EventBus::dispatch_event<true>(Events::SysWindowDeActive{});
+        }
+        break;
+    }
     case WM_DESTROY:
         LOG_DEBUG("窗口销毁", Msg);
         break;
     case WM_SETCURSOR:
     case WM_NCHITTEST:
+    case WM_GETICON:
+    case WM_SETTEXT:
+    case WM_NCMOUSEMOVE:
+    case WM_GETMINMAXINFO:
+    case WM_MOVING:
+    case WM_WINDOWPOSCHANGING:
+    case WM_CAPTURECHANGED:
+    case 0x00AE: // unknown, but ignore
         break;
     default: {
-        // LOG_DEBUG("收到消息: 0x{:04x}", Msg);
+        //LOG_DEBUG("收到消息: 0x{:04x}", Msg);
     }
     }
     return DefWindowProcW(hWnd, Msg, wParam, lParam);
 }
-HWND hwnd = NULL; // 窗口句柄
 
 void create_opengl_context() {
 
@@ -244,7 +272,7 @@ void create_window(uint32_t width, uint32_t height) {
     HINSTANCE hInstance = GetModuleHandleW(NULL);
 
     const wchar_t window_class_name[] = L"GoonyaWindow";
-    const DWORD WINDOW_STYLE = WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX;
+    const DWORD WINDOW_STYLE = WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_SIZEBOX;
     const WNDCLASSEXW window_class = {.cbSize = sizeof(WNDCLASSEXW),
                                       .style = CS_OWNDC,
                                       .lpfnWndProc = WindowProc,
@@ -267,6 +295,12 @@ void create_window(uint32_t width, uint32_t height) {
 
     if (hwnd == NULL) {
         throw RuntimeError(std::format("创建窗口失败: {}", GetLastError()));
+    }
+
+    {
+        RECT rect;
+        GetClientRect(hwnd, &rect);
+        current_size = {rect.right - rect.left, rect.bottom - rect.top};
     }
 }
 
@@ -300,9 +334,7 @@ void drop() {
 void set_title(const std::string &title) { SetWindowTextW(hwnd, utf8_to_wchar(title).c_str()); }
 
 std::tuple<uint32_t, uint32_t> get_size() {
-    RECT rect;
-    GetClientRect(hwnd, &rect);
-    return {rect.right - rect.left, rect.bottom - rect.top};
+    return current_size;
 }
 void poll_events() {
     MSG msg;

@@ -27,6 +27,9 @@ struct SysKeyEvent{
     Input::KeyCode key;
     bool up_down;
 };
+struct SysDisplayResize{
+    std::tuple<uint32_t, uint32_t> size;
+};
 }
 
     void initalize(uint32_t width, uint32_t height);

@@ -1,5 +1,4 @@
 #include <exception>
-#include <fstream>
 #include <iostream>
 #include <json/json.h>
 #include <json/value.h>
@@ -11,6 +10,7 @@
 #include <filesystem>
 #include <Windows.h>
 #include <core/eventbus/eventbus.h>
+#include <function/scene/scene.h>
 
 #include "logic.h"
 
@@ -23,6 +23,9 @@ std::filesystem::path get_exe_path(){
 int main() {
     try {
         Goonya::init_engine();
+
+        Goonya::Scene::Scene scene = Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了  
+        Goonya::world.get_root().swap(scene.root);
 
         Goonya::world.register_system(new MoveSystem("move"));
 

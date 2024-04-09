@@ -21,6 +21,15 @@ bool mouse_key_state[MOUSEKEY::MOUSE_KEY_MAX];
 
 } // namespace Detail
 
+void tick_update(){
+    using namespace Detail;
+    for (size_t i = 0; i < MAX_KEYCODE; i++) {
+        keys_state_last_tick[i] = keys_state[i];
+    }
+    mouse_delta_x = 0;
+    mouse_delta_y = 0;
+}
+
 void initalize(){
     using namespace Detail;
     reset_state();
@@ -43,16 +52,13 @@ void initalize(){
         return false;
     });
     EventBus::subscribe_event<Display::Events::SysWindowDeActive, void>(0, nullptr, [](void*, Display::Events::SysWindowDeActive& e){
-        reset_state();
+        tick_update();  // 失去焦点时抬起所有按键
+        //LOG_TRACE("窗口失去焦点");
         return false;
     });
 
     EventBus::subscribe_event<Events::PostTick, void>(100, nullptr, [](void*, Events::PostTick& e){
-        for (size_t i = 0; i < MAX_KEYCODE; i++) {
-            keys_state_last_tick[i] = keys_state[i];
-        }
-        mouse_delta_x = 0;
-        mouse_delta_y = 0;
+        tick_update();
         return false;
     });
 }

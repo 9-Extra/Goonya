@@ -1,6 +1,7 @@
 #include "graphics.h"
 #include "opengl_utils.h"
 #include "HardcodeAssets.h"
+#include "platform/display/display.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -35,14 +36,14 @@ void init_resource() {
         // 平滑着色材质
         Vector3f color_while{1.0f, 1.0f, 1.0f};
         resources.add_material("wood_flat",
-                               MaterialDesc{"flat", {{2, sizeof(Vector3f), &color_while}}, {{3, "wood_diffusion"}}});
+                               MaterialDesc{{"flat", {}}, {{2, sizeof(Vector3f), &color_while}}, {{3, "wood_diffusion"}}});
     }
 
     {
         // 单一颜色材质
         MaterialDesc green_material_desc;
         Vector3f color_green{0.0f, 1.0f, 0.0f};
-        green_material_desc.shader_name = "single_color";
+        green_material_desc.shader_desc = {"single_color", {}};
         green_material_desc.uniforms.emplace_back(
             MaterialDesc::UniformDataDesc{2, sizeof(Vector3f), color_green.data()});
         resources.add_material("default", green_material_desc);
@@ -94,7 +95,8 @@ void initialize(){
     init_resource();
     //renderer.set_viewport(0, 0, w, h);
     renderer.init();
-    renderer.set_viewport(0, 0, 1080, 720); // 初始化时也需要设置一下视口
+    auto [w, h] = Display::get_size();
+    renderer.set_viewport(0, 0, w, h); // 初始化时也需要设置一下视口
 }
 
 }

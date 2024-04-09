@@ -8,12 +8,11 @@
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "function/graphics/graphics.h"
-#include "core/imgui/imgui_module.h"
+#include "platform/imgui/imgui_module.h"
 #include "core/input/input.h"
 #include "core/timer/timer.h"
 #include "core/world/World.h"
 #include "runtime/log/Log.h"
-#include "function/scene/scene.h"
 
 namespace Goonya {
 
@@ -52,9 +51,6 @@ void init_engine() {
             EventBus::dispatch_event(Events::EngineStop{});
             return false;
     });
-
-    Scene::Scene scene = Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了  
-    world.get_root().swap(scene.root);
     
 }
 

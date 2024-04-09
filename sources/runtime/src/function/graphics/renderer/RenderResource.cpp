@@ -16,53 +16,6 @@ namespace Graphics {
 
 RenderReousce resources; // Global
 
-unsigned int complie_shader(const char *const src, unsigned int shader_type) {
-    unsigned int id = glCreateShader(shader_type);
-
-    glShaderSource(id, 1, &src, NULL);
-    glCompileShader(id);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(id, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-        exit(-1);
-    }
-
-    return id;
-}
-unsigned int complie_shader_program(const std::string &vs_path, const std::string &ps_path) {
-    std::string vs_src = read_whole_file(vs_path);
-    std::string ps_src = read_whole_file(ps_path);
-
-    unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
-    unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
-
-    unsigned int shaderProgram;
-    shaderProgram = glCreateProgram();
-
-    glAttachShader(shaderProgram, vs);
-    glAttachShader(shaderProgram, ps);
-    glLinkProgram(shaderProgram);
-
-    int success;
-    char infoLog[512];
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << infoLog << std::endl;
-        exit(-1);
-    }
-
-    glDeleteShader(vs);
-    glDeleteShader(ps);
-
-    return shaderProgram;
-}
 FIBITMAP *freeimage_load_and_convert_image(const std::string &image_path, bool is_color=true) {
     FIBITMAP *pImage_ori = FreeImage_Load(FreeImage_GetFileType(image_path.c_str(), 0), image_path.c_str());
     if (pImage_ori == nullptr) {
@@ -193,7 +146,7 @@ void RenderReousce::load_gltf(const std::string &base_key, const std::string &pa
             }
             float uniform_data[2] = {metallicFactor, roughnessFactor};
 
-            MaterialDesc desc = {"pbr",
+            MaterialDesc desc = {{"pbr", {}},
                                  {{2, sizeof(float) * 2, &uniform_data}},
                                  {{0, basecolor_texture}, {1, normal_texture}, {2, metallic_roughness_texture}}};
 
@@ -250,7 +203,7 @@ void RenderReousce::load_json(const std::string &path) {
 void RenderReousce::clear() {
     meshes.clear();
     materials.clear();
-    shaders.clear();
+    shader_lib.drop();
     cubemaps.clear();
     textures.clear();
     for (auto &de : deconstructors) {
@@ -260,11 +213,7 @@ void RenderReousce::clear() {
 }
 void RenderReousce::add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path) {
     std::cout << "Load shader: " << key << std::endl;
-    unsigned int program_id = complie_shader_program(vs_path, ps_path);
-
-    shaders.add(key, Shader{program_id});
-
-    deconstructors.emplace_back([program_id]() { glDeleteProgram(program_id); });
+    shader_lib.add_uber_shader(key, {vs_path, ps_path});
 }
 void RenderReousce::add_cubemap(const std::string &key, const std::string &image_px, const std::string &image_nx,
                                 const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
@@ -340,7 +289,7 @@ void RenderReousce::add_texture(const std::string &key, const std::string &image
 void RenderReousce::add_material(const std::string &key, const MaterialDesc &desc) {
     std::cout << "Load material: " << key << std::endl;
     Material mat;
-    mat.shaderprogram_id = shaders.get(shaders.find(desc.shader_name)).program_id;
+    mat.shaderprogram_id = shader_lib.query_shader(desc.shader_desc).gl_id;
     for (const auto &u : desc.uniforms) {
         unsigned int buffer_id;
         glGenBuffers(1, &buffer_id);

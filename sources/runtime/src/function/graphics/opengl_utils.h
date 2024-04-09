@@ -3,14 +3,14 @@
 #include <glad/glad.h>
 
 #include <string>
-#include <iostream>
 #include <cassert>
+
+#include "runtime/log/Log.h"
 
 inline void _check_error(const std::string &file, size_t line) {
     GLenum error;
     while ((error = glGetError()) != GL_NO_ERROR) {
-        std::cerr << "GL error 0x" << error << ": " << (error) << std::endl;
-        std::cerr << "At: " << file << ':' << line << std::endl;
+        LOG_ERROR("GL error 0x{}: At: {}:{}", error, file, line);
     }
 }
 
