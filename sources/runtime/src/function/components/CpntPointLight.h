@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../renderer/Renderer.h"
+#include "function/graphics/renderer/Renderer.h"
 #include "core/world/GObject.h"
 
 

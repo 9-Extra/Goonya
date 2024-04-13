@@ -2,9 +2,9 @@
 
 #include <fstream>
 #include <json/json.h>
-#include "function/graphics/components/CpntMeshRender.h"
-#include "function/graphics/components/CpntPointLight.h"
-#include "function/graphics/components/CpntCamera.h"
+#include "function/components/CpntMeshRender.h"
+#include "function/components/CpntPointLight.h"
+#include "function/components/CpntCamera.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {

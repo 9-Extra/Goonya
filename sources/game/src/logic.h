@@ -1,13 +1,12 @@
 #pragma once
-#include <core/world/World.h>
+#include <core/world/GObject.h>
 #include <core/input/input.h>
 #include <core/eventbus/eventbus.h>
 #include <core/events.h>
 #include <core/timer/timer.h>
 
-class MoveSystem : public Goonya::ISystem {
+class MoveSystem : public Goonya::Component {
 public:
-    using ISystem::ISystem;
     void handle_mouse() {
         // 使用鼠标中键旋转视角
         //  左上角为(0,0)，右下角为(w,h)
@@ -89,25 +88,25 @@ public:
         // }
     }
 
-    void on_attach() override {
-        cube = Goonya::world.get_root()->get_child_by_name("方块");
+    virtual void attach() override {
+        cube = get_owner()->get_child_by_name("方块");
         assert(cube);
-        lights = Goonya::world.get_root()->get_child_by_name("lights");
+        lights = get_owner()->get_child_by_name("lights");
         assert(lights);
-        light1 = Goonya::world.get_root()->get_child_by_name("lights")->get_child_by_name("light1");
+        light1 = get_owner()->get_child_by_name("lights")->get_child_by_name("light1");
         assert(light1);
-        camera = Goonya::world.get_root()->get_child_by_name("相机");
+        camera = get_owner()->get_child_by_name("相机");
         assert(camera);
     }
 
-    void tick() override {
+    virtual void tick() override {
         handle_keyboard(Goonya::Timer::delta());
         handle_mouse();
 
         cube->transform.rotation.x += Goonya::Timer::delta() * 0.001f;
         cube->transform.rotation.y += Goonya::Timer::delta() * 0.003f;
         cube->is_relat_dirty = true;
-        light1->transform.position.x = 20.0f * sinf(Goonya::world.get_tick_count() * 0.01f);
+        light1->transform.position.x = 20.0f * sinf(Goonya::Timer::total() * 0.005f);
         light1->is_relat_dirty = true;
     }
 

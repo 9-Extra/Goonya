@@ -1,27 +1,9 @@
 #pragma once
 
-#include <unordered_map>
-
 #include "GObject.h"
 
 
 namespace Goonya {
-class ISystem {
-public:
-    bool enable;
-
-    ISystem(const std::string &name, bool enable = true) : enable(enable), name(name) {}
-    const std::string &get_name() const { return name; }
-
-    virtual void on_attach(){};
-    virtual void tick() = 0;
-
-    virtual ~ISystem() = default;
-
-private:
-    const std::string name;
-};
-
 class World {
 public:
     World() {
@@ -30,7 +12,6 @@ public:
 
     void clear() {
         root = nullptr;
-        systems.clear();
     }
 
     uint64_t get_tick_count() { return tick_count; }
@@ -38,16 +19,6 @@ public:
     void clear_objects() {
         root = std::make_shared<GObject>(Transform{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}, "root");
     }
-
-    void register_system(ISystem *system) {
-        assert(system != nullptr && systems.find(system->get_name()) == systems.end());
-        systems.emplace(system->get_name(), system);
-        system->on_attach();
-    }
-
-    ISystem *get_system(const std::string &name) { return systems.at(name).get(); }
-
-    void remove_system(const std::string &name) { systems.erase(name); }
 
     void tick();
     // 获取屏幕上的一点对应的射线方向
@@ -70,7 +41,6 @@ public:
 
 private:
     std::shared_ptr<GObject> root;
-    std::unordered_map<std::string, std::unique_ptr<ISystem>> systems;
 
     uint64_t tick_count = 0;
 };

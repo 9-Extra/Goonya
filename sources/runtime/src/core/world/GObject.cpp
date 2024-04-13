@@ -20,6 +20,7 @@ void GObject::tick(uint32_t dirty_flags) {
         is_relat_dirty = false;
     }
     // 更新组件
+    // todo：如果在更新组件时组件增删了components怎么办
     for (auto &c : get_components()) {
         c->tick();
     }
