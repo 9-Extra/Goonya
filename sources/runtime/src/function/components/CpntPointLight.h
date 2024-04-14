@@ -16,7 +16,7 @@ public:
 
     virtual void tick() override {
         assert(get_owner() != nullptr);
-        renderer.pointlights.emplace_back() = {get_owner()->transform.position, color, radius};   
+        renderer.pointlights.emplace_back() = {get_owner()->get_transform().position, color, radius};   
     }
 };
 }

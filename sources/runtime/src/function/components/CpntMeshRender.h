@@ -13,12 +13,11 @@ public:
         assert(get_owner() != nullptr);
         GObject &owner = *get_owner();
         // 更新每一个part
-        if (owner.render_need_update) {
+        if (owner.get_dirty_flag().is_transform_dirty()){
             for (RenderItem &p : parts) {
-                p.base_transform = owner.relate_model_matrix * p.model_matrix;
-                p.base_normal_matrix = owner.relate_normal_matrix * p.normal_matrix;
+                p.root_transform = owner.get_root_transform_matrix() * p.model_matrix;
+                p.root_normal_matrix = owner.get_root_transform_matrix() * p.normal_matrix;
             }
-            owner.render_need_update = false;
         }
         // 提交每一个part
         for (RenderItem &p : parts) {
@@ -29,8 +28,8 @@ public:
     void add_part(const RenderItem &part) {
         RenderItem &p = parts.emplace_back(part);
         if (GObject* owner = get_owner();owner != nullptr){    
-            p.base_transform = owner->relate_model_matrix * p.model_matrix;
-            p.base_normal_matrix = owner->transform.normal_matrix() * p.normal_matrix;
+            p.root_transform = owner->get_root_transform_matrix() * p.model_matrix;
+            p.root_normal_matrix = owner->get_root_normal_matrix() * p.normal_matrix;
         }
     }
 private:

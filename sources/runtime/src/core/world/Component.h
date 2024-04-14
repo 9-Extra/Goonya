@@ -20,7 +20,7 @@ protected:
     }
     virtual void detach(){
         assert(owner != nullptr);
-        // owner = nullptr 由GObject在on_detach后执行
+        // owner = nullptr 由GObject在detach后执行
     }
     virtual void tick() = 0;
 private:    
