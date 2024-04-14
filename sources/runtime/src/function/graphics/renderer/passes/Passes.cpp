@@ -9,8 +9,6 @@ namespace Graphics {
 //一般物体渲染
 void LambertianPass::run() {
     // 初始化渲染配置
-    glEnable(GL_CULL_FACE);  // 启用面剔除
-    glEnable(GL_DEPTH_TEST); // 启用深度测试
     glDrawBuffer(GL_BACK);   // 渲染到后缓冲区
     Renderer::Viewport &v = renderer.main_viewport;
     glViewport(v.x, v.y, v.width, v.height);
@@ -62,7 +60,7 @@ void LambertianPass::run() {
 
         // 查找并绑定材质
         const Material &material = resources.materials.get(p->material_id);
-        material.bind();
+        resources.bind_material(material);
 
         const Mesh &mesh = resources.meshes.get(p->mesh_id); // 网格数据
 
@@ -74,8 +72,6 @@ void LambertianPass::run() {
 
 // 渲染天空盒
 void SkyBoxPass::run() {
-    glEnable(GL_CULL_FACE);  // 启用面剔除
-    glEnable(GL_DEPTH_TEST); // 启用深度测试
     glDrawBuffer(GL_BACK);   // 渲染到后缓冲区
 
     // 用于天空盒的投影矩阵
@@ -90,8 +86,8 @@ void SkyBoxPass::run() {
     data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
     skybox_uniform.unmap();
 
-    // 绑定天空盒专用着色器
-    glUseProgram(shader_program_id);
+    // 绑定渲染天空盒对应的pso 
+    resources.pso_cache.bind_pipeline_object(pso);
     // 绑定uniform buffer
     skybox_uniform.bind(0);
     // 绑定天空盒纹理

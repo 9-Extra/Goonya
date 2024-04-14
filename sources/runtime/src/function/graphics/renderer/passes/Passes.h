@@ -56,7 +56,9 @@ private:
 class SkyBoxPass : public Pass{
 public:
     SkyBoxPass(){
-        shader_program_id = resources.shader_lib.query_shader({"skybox", {}}).gl_id;
+        PSODesc desc= {{"skybox", {}}};
+        desc.depth_func = GL_LEQUAL;
+        pso = resources.pso_cache.query_pso(desc);
         mesh_id = resources.meshes.find("skybox_cube");
     }
 
@@ -70,7 +72,7 @@ private:
     //每帧更新
     WritableUniformBuffer<SkyBoxData> skybox_uniform;
     //初始化时设定
-    unsigned int shader_program_id;
+    PipelineStateObject pso;
     uint32_t mesh_id;
 };
 

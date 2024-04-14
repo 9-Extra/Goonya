@@ -21,9 +21,6 @@ void setup_opengl() {
     // }
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
-    glCullFace(GL_BACK);
-    glFrontFace(GL_CCW);    // 逆时针的面为正面
-    glDepthFunc(GL_LEQUAL); // 在z = 1.0时，深度测试结果为true
 
     checkError();
 }
@@ -36,14 +33,14 @@ void init_resource() {
         // 平滑着色材质
         Vector3f color_while{1.0f, 1.0f, 1.0f};
         resources.add_material("wood_flat",
-                               MaterialDesc{{"flat", {}}, {{2, sizeof(Vector3f), &color_while}}, {{3, "wood_diffusion"}}});
+                               MaterialDesc{{{"flat", {}}}, {{2, sizeof(Vector3f), &color_while}}, {{3, "wood_diffusion"}}});
     }
 
     {
         // 单一颜色材质
         MaterialDesc green_material_desc;
         Vector3f color_green{0.0f, 1.0f, 0.0f};
-        green_material_desc.shader_desc = {"single_color", {}};
+        green_material_desc.pso_desc = {{"single_color", {}}};
         green_material_desc.uniforms.emplace_back(
             MaterialDesc::UniformDataDesc{2, sizeof(Vector3f), color_green.data()});
         resources.add_material("default", green_material_desc);
@@ -54,7 +51,7 @@ void init_resource() {
 
     // 添加天空盒的mesh，因为格式不一样所以单独处理
     {
-        unsigned int vao_id, ibo_id, vbo_id;
+        GLuint vao_id, ibo_id, vbo_id;
         glGenVertexArrays(1, &vao_id);
         glGenBuffers(1, &ibo_id);
         glGenBuffers(1, &vbo_id);

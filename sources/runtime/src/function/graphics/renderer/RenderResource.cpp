@@ -59,13 +59,8 @@ void RenderReousce::load_gltf(const std::string &base_key, const std::string &pa
         for (const Json::Value &buffer : json["buffers"]) {
             std::string bin_path = root + buffer["uri"].asString();
             Buffer &b = buffers.emplace_back(buffer["byteLength"].asUInt());
-            FILE *read;
-            if (fopen_s(&read, bin_path.c_str(), "rb") != 0) {
-                std::cerr << "Falied to read file: " << bin_path << std::endl;
-                exit(-1);
-            }
-            fread((char *)b.ptr, 1, b.len, read);
-            fclose(read);
+            std::fstream file(bin_path, std::ios_base::in | std::ios_base::binary);
+            file.read(b.ptr, b.len);
         }
     }
     auto get_buffer = [&](uint32_t accessor_id) -> const Json::Value & {
@@ -146,7 +141,7 @@ void RenderReousce::load_gltf(const std::string &base_key, const std::string &pa
             }
             float uniform_data[2] = {metallicFactor, roughnessFactor};
 
-            MaterialDesc desc = {{"pbr", {}},
+            MaterialDesc desc = {{{"pbr", {}}},
                                  {{2, sizeof(float) * 2, &uniform_data}},
                                  {{0, basecolor_texture}, {1, normal_texture}, {2, metallic_roughness_texture}}};
 
@@ -203,9 +198,9 @@ void RenderReousce::load_json(const std::string &path) {
 void RenderReousce::clear() {
     meshes.clear();
     materials.clear();
-    shader_lib.drop();
     cubemaps.clear();
     textures.clear();
+    pso_cache.drop();
     for (auto &de : deconstructors) {
         de();
     }
@@ -213,7 +208,7 @@ void RenderReousce::clear() {
 }
 void RenderReousce::add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path) {
     std::cout << "Load shader: " << key << std::endl;
-    shader_lib.add_uber_shader(key, {vs_path, ps_path});
+    pso_cache.shader_lib.add_uber_shader(key, {vs_path, ps_path});
 }
 void RenderReousce::add_cubemap(const std::string &key, const std::string &image_px, const std::string &image_nx,
                                 const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
@@ -286,10 +281,12 @@ void RenderReousce::add_texture(const std::string &key, const std::string &image
 
     deconstructors.emplace_back([texture_id]() { glDeleteTextures(1, &texture_id); });
 }
+
 void RenderReousce::add_material(const std::string &key, const MaterialDesc &desc) {
     std::cout << "Load material: " << key << std::endl;
     Material mat;
-    mat.shaderprogram_id = shader_lib.query_shader(desc.shader_desc).gl_id;
+    mat.pipeline_state = pso_cache.query_pso(desc.pso_desc);
+
     for (const auto &u : desc.uniforms) {
         unsigned int buffer_id;
         glGenBuffers(1, &buffer_id);
@@ -349,15 +346,16 @@ void RenderReousce::add_mesh(const std::string &key, const Vertex *vertices, siz
         checkError();
     });
 }
-void Material::bind() const {
-    glUseProgram(shaderprogram_id); // 绑定此材质关联的着色器
+
+void RenderReousce::bind_material(const Material& mat) const{
+    pso_cache.bind_pipeline_object(mat.pipeline_state); // 绑定此材质关联的着色器
 
     // 绑定材质的uniform buffer
-    for (const UniformData &u : uniforms) {
+    for (const Material::UniformData &u : mat.uniforms) {
         glBindBufferBase(GL_UNIFORM_BUFFER, u.binding_id, u.buffer_id);
     }
     // 绑定所有纹理
-    for (const SampleData &s : samplers) {
+    for (const Material::SampleData &s : mat.samplers) {
         glActiveTexture(GL_TEXTURE0 + s.binding_id);
         glBindTexture(GL_TEXTURE_2D, s.texture_id);
     }

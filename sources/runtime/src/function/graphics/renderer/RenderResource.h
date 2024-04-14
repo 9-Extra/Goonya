@@ -8,12 +8,13 @@
 
 #include "RenderAspect.h"
 #include "../shaderlib/shaderlib.h"
+#include "../shaderlib/pso_cache.h"
 
 namespace Goonya {
 namespace Graphics {
 
 struct Mesh {
-    unsigned int VAO_id;
+    GLuint VAO_id;
     uint32_t indices_count;
 };
 
@@ -22,11 +23,11 @@ struct TextureDesc {
 };
 
 struct Texture {
-    unsigned int texture_id;
+    GLuint texture_id;
 };
 
 struct CubeMap {
-    unsigned int texture_id;
+    GLuint texture_id;
 };
 
 struct MaterialDesc {
@@ -41,26 +42,25 @@ struct MaterialDesc {
         std::string texture_key;
     };
 
-    ShaderDesc shader_desc;
+    PSODesc pso_desc;
     std::vector<UniformDataDesc> uniforms;
     std::vector<SampleData> samplers;
 };
 
+
 struct Material {
     struct UniformData {
-        uint32_t binding_id;
-        uint32_t buffer_id;
+        GLuint binding_id;
+        GLuint buffer_id;
     };
     struct SampleData {
-        uint32_t binding_id;
-        unsigned int texture_id;
+        GLuint binding_id;
+        GLuint texture_id;
     };
 
-    unsigned int shaderprogram_id; // 对应的shader的id
+    PipelineStateObject pipeline_state;
     std::vector<UniformData> uniforms;
     std::vector<SampleData> samplers;
-
-    void bind() const;
 };
 
 struct Shader {
@@ -86,10 +86,10 @@ public:
             if (auto it = look_up.find(key); it != look_up.end()) {
                 std::cout << "Add duplicated key: " << key << std::endl;
                 uint32_t id = it->second;
-                container[id] = std::move(item);
+                container[id] = std::forward<T>(item);
             } else {
                 uint32_t id = (uint32_t)container.size();
-                container.emplace_back(std::move(item));
+                container.emplace_back(std::forward<T>(item));
                 look_up[key] = id;
             }
         }
@@ -108,9 +108,9 @@ public:
 
     ResourceContainer<Mesh> meshes;
     ResourceContainer<Material> materials;
-    ShaderLib shader_lib;
     ResourceContainer<Texture> textures;
     ResourceContainer<CubeMap> cubemaps;
+    PSOCache pso_cache;
 
     std::vector<std::function<void()>> deconstructors;
 
@@ -119,8 +119,9 @@ public:
     void add_mesh(const std::string &key, const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices) {
         add_mesh(key, vertices.data(), vertices.size(), indices.data(), indices.size());
     }
+    void add_pipeline_state(const std::string& key, const PSODesc& desc);
     void add_material(const std::string &key, const MaterialDesc &desc);
-    void add_texture(const std::string &key, const std::string &image_path, bool is_normal = false);
+    void add_texture(const std::string &key, const std::string &image_path, bool is_color = false);
     void add_cubemap(const std::string &key, const std::string &image_px, const std::string &image_nx,
                      const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
                      const std::string &image_nz);
@@ -128,6 +129,8 @@ public:
     void load_gltf(const std::string &base_key, const std::string &path);
     void load_json(const std::string &path);
     void clear();
+
+    void bind_material(const Material& mat) const;
 };
 
 extern RenderReousce resources;
