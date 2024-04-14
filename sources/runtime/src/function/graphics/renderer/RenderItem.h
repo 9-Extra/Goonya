@@ -25,8 +25,8 @@ struct RenderItem {
           topology(topology), model_matrix(transform.transform_matrix()), normal_matrix(transform.normal_matrix()) {}
     
     //在遍历节点树时计算和填写
-    Matrix base_transform;
-    Matrix base_normal_matrix;
+    Matrix root_transform;
+    Matrix root_normal_matrix;
 };
 
 }

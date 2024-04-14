@@ -56,8 +56,8 @@ void LambertianPass::run() {
     for (const RenderItem *p : parts) {
         // 填充per_object uniform buffer
         auto data = per_object_uniform.map();
-        data->model_matrix = p->base_transform.transpose();      // 变换矩阵
-        data->normal_matrix = p->base_normal_matrix.transpose(); // 法线变换矩阵
+        data->model_matrix = p->root_transform.transpose();      // 变换矩阵
+        data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
         per_object_uniform.unmap();
 
         // 查找并绑定材质
