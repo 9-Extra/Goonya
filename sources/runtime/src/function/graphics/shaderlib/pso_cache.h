@@ -61,7 +61,7 @@ public:
         shader_lib.drop();
     }
 
-    void bind_pipeline_object(const PipelineStateObject &pso) const;
+    void bind_pipeline_object(const PipelineStateObject &pso) const noexcept;
 
 private:
     PipelineStateContainer load_pso(const PSODesc &desc) {

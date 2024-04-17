@@ -56,9 +56,11 @@ struct DirectionalLight {
     Vector3f flux;
 };
 
-struct SkyBox {
-    unsigned int color_texture_id;
+struct Skybox {
+    uint32_t material_id;
+    bool ignore_range;
+    BoundingBox bbox;
 };
 
-}
-}
+} // namespace Graphics
+} // namespace Goonya

@@ -5,6 +5,7 @@
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntCamera.h"
+#include "function/components/CpntSkybox.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -37,6 +38,10 @@ Transform load_transform(const Json::Value &json) {
     return trans;
 }
 
+BoundingBox load_bbox(const Json::Value &json){
+    return BoundingBox{load_vec3(json["min"]), load_vec3(json["max"])};
+}
+
 // 从json加载组件
 void load_conponents_from_json(GObject *obj, const Json::Value &json) {
     for (const auto& cpnt_name :json.getMemberNames()) {
@@ -62,8 +67,18 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             if (is_main){
                 obj->get_component<Graphics::CpntCamera>()->set_main_camera();
             }
+        } else if (cpnt_name == "sky_box") {
+            uint32_t material_id = Graphics::resources.materials.find(cpnt_desc["material"].asString());
+            bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
+            BoundingBox bbox;
+            if (cpnt_desc.isMember("bbox")){
+                bbox = load_bbox(cpnt_desc["bbox"]);
+            } else if (!ignore_range) {
+                throw RuntimeError("带范围的天空盒必须指定包围盒");
+            }
+            obj->add_component(std::make_unique<Graphics::CpntSkybox>(material_id, ignore_range, bbox));
         } else {
-            std::cout << "unknown component: " << cpnt_name << std::endl;
+            throw RuntimeError(std::format("未知组件：{}", cpnt_name));
         }
     }
 }
@@ -93,12 +108,6 @@ Scene load_scene_from_json(const std::string &path) {
         std::ifstream file(path);
         reader.parse(file, json, false);
     }
-    // 加载天空盒
-    if (!json.isMember("skybox")) {
-        throw Goonya::RuntimeError("Skybox is required for a scene");
-    }
-
-    Graphics::renderer.set_skybox(json["skybox"]["specular_texture"].asString());
     // 加载物体
     if (json.isMember("root")) {
         load_node_from_json(json["root"], scene.root.get());

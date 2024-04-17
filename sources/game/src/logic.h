@@ -8,7 +8,7 @@
 class MoveSystem : public Goonya::Component {
 public:
     void handle_mouse() {
-       
+        using namespace Goonya;
         if (Goonya::Input::is_mouse_down(Goonya::Input::LEFT)) {
             lights->enable();
         }
@@ -29,6 +29,7 @@ public:
 
     void handle_keyboard(float delta) {
         // wasd移动
+        using namespace Goonya;
         const float move_speed = 0.02f * delta;
 
         if (Goonya::Input::is_key_down(Goonya::Input::KeyCode::ESCAPE)) {

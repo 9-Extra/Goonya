@@ -28,7 +28,7 @@ public:
     float fog_min_distance = 5.0f; // 雾开始的距离
     float fog_density = 0.001f;    // 雾强度
 
-    SkyBox skybox; // 天空盒
+    std::vector<Skybox> current_skyboxs; // 天空盒
 
     void init() {
         lambertian_pass = std::make_unique<LambertianPass>();
@@ -37,10 +37,6 @@ public:
     }
 
     void accept(RenderItem *part) { lambertian_pass->accept(part); }
-
-    void set_skybox(const std::string &color_cubemap_key) {
-        skybox.color_texture_id = resources.cubemaps.get(resources.cubemaps.find(color_cubemap_key)).texture_id;
-    }
 
     void render() {
         if (!is_camera_updated) {
@@ -62,6 +58,8 @@ public:
     void set_viewport(GLint x, GLint y, GLsizei width, GLsizei height) { main_viewport = {x, y, width, height}; }
 
     void clear() {
+        current_skyboxs.clear();
+
         lambertian_pass.reset();
         skybox_pass.reset();
         pickup_pass.reset();

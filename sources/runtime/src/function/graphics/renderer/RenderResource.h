@@ -34,12 +34,13 @@ struct MaterialDesc {
     struct UniformDataDesc {
         const uint32_t binding_id;
         const uint32_t size;
-        const void *data;
+        const void *data = nullptr;
     };
 
     struct SampleData {
         uint32_t binding_id;
         std::string texture_key;
+        std::string texture_type = "rgb";
     };
 
     PSODesc pso_desc;
@@ -56,6 +57,7 @@ struct Material {
     struct SampleData {
         GLuint binding_id;
         GLuint texture_id;
+        GLenum texture_type;
     };
 
     PipelineStateObject pipeline_state;
@@ -70,12 +72,13 @@ struct Shader {
 // 资源管理器，设计糟糕，待改进
 class RenderReousce final {
 public:
+    const static uint32_t INVALIED_ID = std::numeric_limits<uint32_t>::max(); 
     template <class T> class ResourceContainer {
     public:
         uint32_t find(const std::string &key) const {
 #ifndef NDEBUG
             if (look_up.find(key) == look_up.end()) {
-                std::cerr << "Unknown key: " << key << std::endl;
+                std::cerr << std::format("Unknown {}: {}\n", typeid(T).name(), key);
                 exit(-1);
             }
 #endif

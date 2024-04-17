@@ -10,33 +10,6 @@
 
 
 namespace Goonya {
-struct Transform {
-    Vector3f position;
-    Vector3f rotation;
-    Vector3f scale;
-
-    static Transform from_matrix(const Matrix& matrix){
-        Transform transform;
-        transform.position = Vector3f(matrix.m[0][3], matrix.m[1][3], matrix.m[2][3]);
-        //transform.rotation = rotation_matrix_to_eulerangles(matrix);
-        transform.scale = Vector3f(1, 1, 1);
-        return transform;
-    }
-
-    // 获取目视方向
-    Vector3f get_orientation() const {
-        float pitch = rotation[1];
-        float yaw = rotation[2];
-        return {sinf(yaw) * cosf(pitch), sinf(pitch), -cosf(pitch) * cosf(yaw)};
-    }
-
-    Matrix transform_matrix() const {
-        return Matrix::translate(position) * Matrix::rotate(rotation) * Matrix::scale(scale);
-    }
-    Matrix normal_matrix() const {
-        return Matrix::rotate(rotation) * Matrix::scale({1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z});
-    }
-};
 
 // 一个物体，单独的物体没有功能，也不可见，需要挂上组件来实现具体的功能
 class GObject final : public std::enable_shared_from_this<GObject> {

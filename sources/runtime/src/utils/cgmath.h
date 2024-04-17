@@ -4,6 +4,8 @@
 #include <cmath>
 #include <iostream>
 
+namespace Goonya {
+
 static float Q_rsqrt(float number) {
     long i;
     float x2, y;
@@ -290,3 +292,62 @@ struct Quaternion {
         return Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)};
     }
 };
+
+struct Transform {
+    Vector3f position;
+    Vector3f rotation;
+    Vector3f scale;
+
+    static Transform from_matrix(const Matrix& matrix){
+        Transform transform;
+        transform.position = Vector3f(matrix.m[0][3], matrix.m[1][3], matrix.m[2][3]);
+        //transform.rotation = rotation_matrix_to_eulerangles(matrix);
+        transform.scale = Vector3f(1, 1, 1);
+        return transform;
+    }
+
+    // 获取目视方向
+    Vector3f get_orientation() const {
+        float pitch = rotation[1];
+        float yaw = rotation[2];
+        return {sinf(yaw) * cosf(pitch), sinf(pitch), -cosf(pitch) * cosf(yaw)};
+    }
+
+    Matrix transform_matrix() const {
+        return Matrix::translate(position) * Matrix::rotate(rotation) * Matrix::scale(scale);
+    }
+    Matrix normal_matrix() const {
+        return Matrix::rotate(rotation) * Matrix::scale({1.0f / scale.x, 1.0f / scale.y, 1.0f / scale.z});
+    }
+};
+
+inline Vector3f position_from_matrix(const Matrix& matrix){
+    return  Vector3f(matrix.m[0][3], matrix.m[1][3], matrix.m[2][3]);
+}
+
+struct BoundingBox {
+    Vector3f min;
+    Vector3f max;
+
+    BoundingBox() noexcept {}
+    BoundingBox(Vector3f min, Vector3f max) noexcept : min(min), max(max) {
+        assert(min.x <= max.x && min.y <= max.y && min.z <= max.z);
+    }
+
+    BoundingBox offset(Vector3f pos) const noexcept { return BoundingBox{min + pos, max + pos}; }
+
+    bool contains(Vector3f pos) const noexcept {
+        return pos.x >= min.x && pos.y >= min.y && pos.z >= min.z && pos.x <= max.x && pos.y <= max.y && pos.z <= max.z;
+    }
+
+    float volume() const noexcept {
+        Vector3f vec = max - min;
+        return vec.x * vec.y * vec.z;
+    }
+
+    Vector3f center() const noexcept{
+        return (min + max) * 0.5;   
+    }
+};
+
+}

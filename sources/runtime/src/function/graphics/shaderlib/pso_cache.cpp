@@ -3,7 +3,7 @@
 namespace Goonya {
 namespace Graphics {
 
-void PSOCache::bind_pipeline_object(const PipelineStateObject& pso) const{
+void PSOCache::bind_pipeline_object(const PipelineStateObject& pso) const noexcept{
     const PipelineStateContainer& container = containers[pso.id];
     if (container.enable_cilp){
         glEnable(GL_CULL_FACE);

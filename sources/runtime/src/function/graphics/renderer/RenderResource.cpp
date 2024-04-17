@@ -10,6 +10,7 @@
 #include <json/json.h>
 #include "../opengl_utils.h"
 #include "platform/read_file.h"
+#include "runtime/GoonyaException.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -194,6 +195,47 @@ void RenderReousce::load_json(const std::string &path) {
             load_gltf(key, base_dir + json["gltf"][key]["path"].asString());
         }
     }
+
+    // materials
+    for (const auto &key : json["materials"].getMemberNames()) {
+        const Json::Value& material_desc =  json["materials"][key];
+
+        const Json::Value& shader_desc_json = material_desc["pso"]["shader"];
+        std::unordered_map<std::string, std::string> definations;
+        for (const auto &key : shader_desc_json["definations"].getMemberNames()) {
+            definations.emplace(key, shader_desc_json["definations"][key].asString());
+        }
+        ShaderDesc shader_desc{shader_desc_json["uber"].asString(), std::move(definations)};
+
+        PSODesc pso_desc = {std::move(shader_desc)};
+        const Json::Value& pso_config = material_desc["pso"]["config"];
+        if (pso_config.isMember("depth_func")){
+            if (pso_config["depth_func"].asString() == "less_or_equal"){
+                pso_desc.depth_func = GL_LEQUAL;
+            } else {
+                
+            }
+        }
+
+        std::vector<MaterialDesc::UniformDataDesc> uniforms;
+        for (const Json::Value& uniform_json: material_desc["constants"]) {
+            uniforms.emplace_back(uniform_json["slot"].asUInt(), uniform_json["size"].asUInt());
+        }
+
+        std::vector<MaterialDesc::SampleData> samplers;
+        for (const Json::Value& sampler_json: material_desc["samplers"]) {
+            samplers.emplace_back(sampler_json["slot"].asUInt(), sampler_json["name"].asString(), sampler_json["type"].asString());
+        }
+
+        MaterialDesc desc = {
+            .pso_desc = std::move(pso_desc),
+            .uniforms = std::move(uniforms),
+            .samplers = std::move(samplers),
+        };
+
+        add_material(key, std::move(desc));
+    }
+    
 }
 void RenderReousce::clear() {
     meshes.clear();
@@ -299,8 +341,19 @@ void RenderReousce::add_material(const std::string &key, const MaterialDesc &des
         deconstructors.emplace_back([buffer_id]() { glDeleteBuffers(1, &buffer_id); });
     }
     for (const auto &s : desc.samplers) {
+        GLuint texture_id;
+        GLenum texture_type;
+        if (s.texture_type == "rgb"){
+            texture_id = textures.get(textures.find(s.texture_key)).texture_id;
+            texture_type = GL_TEXTURE_2D;
+        } else if (s.texture_type == "cubemap"){
+            texture_id = cubemaps.get(cubemaps.find(s.texture_key)).texture_id;
+            texture_type = GL_TEXTURE_CUBE_MAP;
+        } else {
+            throw Goonya::RuntimeError(std::format("无效的纹理类型：{}", s.texture_type));
+        }
         mat.samplers.emplace_back(
-            Material::SampleData{s.binding_id, textures.get(textures.find(s.texture_key)).texture_id});
+            Material::SampleData{s.binding_id, texture_id, texture_type});
     }
 
     materials.add(key, std::move(mat));
@@ -357,8 +410,9 @@ void RenderReousce::bind_material(const Material& mat) const{
     // 绑定所有纹理
     for (const Material::SampleData &s : mat.samplers) {
         glActiveTexture(GL_TEXTURE0 + s.binding_id);
-        glBindTexture(GL_TEXTURE_2D, s.texture_id);
+        glBindTexture(s.texture_type, s.texture_id);
     }
+    checkError();
 }
 
 }

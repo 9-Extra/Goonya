@@ -7,18 +7,10 @@
 #include <core/world/World.h>
 #include <core/input/input.h>
 #include <core/timer/timer.h>
-#include <filesystem>
-#include <Windows.h>
 #include <core/eventbus/eventbus.h>
 #include <function/scene/scene.h>
 
 #include "logic.h"
-
-std::filesystem::path get_exe_path(){
-    wchar_t szPath[512] = {0};
-    GetModuleFileNameW(NULL, szPath, sizeof(szPath) - 1);
-    return std::filesystem::path(szPath).remove_filename();
-}
 
 int main() {
     try {

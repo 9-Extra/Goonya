@@ -52,6 +52,8 @@ void LambertianPass::run() {
 
     // 遍历所有part，绘制每一个part
     for (const RenderItem *p : parts) {
+        const Material &material = resources.materials.get(p->material_id);
+        resources.bind_material(material);
         // 填充per_object uniform buffer
         auto data = per_object_uniform.map();
         data->model_matrix = p->root_transform.transpose();      // 变换矩阵
@@ -59,8 +61,6 @@ void LambertianPass::run() {
         per_object_uniform.unmap();
 
         // 查找并绑定材质
-        const Material &material = resources.materials.get(p->material_id);
-        resources.bind_material(material);
 
         const Mesh &mesh = resources.meshes.get(p->mesh_id); // 网格数据
 
@@ -72,28 +72,43 @@ void LambertianPass::run() {
 
 // 渲染天空盒
 void SkyBoxPass::run() {
+    const Camera &camera = renderer.main_camera;
+    Vector3f camera_pos = camera.position;
+
+    // 寻找包含且最小，接近中心的天空盒
+    uint32_t skybox_mat_id = RenderReousce::INVALIED_ID;
+    float min_distance = std::numeric_limits<float>::infinity();
+    for(const Skybox& s: renderer.current_skyboxs){
+        if (!s.ignore_range && !s.bbox.contains(camera_pos)){
+            continue;
+        }
+        float d = s.ignore_range ? std::numeric_limits<float>::max() : (s.bbox.center() - camera_pos).square();
+        if (d < min_distance){
+            skybox_mat_id = s.material_id;
+            min_distance = d;
+        }
+    }
+
+    if (skybox_mat_id == RenderReousce::INVALIED_ID){
+        return; //没有合适的天空盒，跳过
+    }
+    
     glDrawBuffer(GL_BACK);   // 渲染到后缓冲区
 
     // 用于天空盒的投影矩阵
     const float aspect = float(renderer.main_viewport.width) / float(renderer.main_viewport.height);
-    const Camera &camera = renderer.main_camera;
     const Matrix skybox_view_perspective_matrix =
         compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
         Matrix::rotate(camera.rotation).transpose();
 
+    // 绑定天空盒材质
     // 填充天空盒需要的参数（透视投影矩阵）
     auto data = skybox_uniform.map();
     data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
     skybox_uniform.unmap();
-
-    // 绑定渲染天空盒对应的pso 
-    resources.pso_cache.bind_pipeline_object(pso);
-    // 绑定uniform buffer
     skybox_uniform.bind(0);
-    // 绑定天空盒纹理
-    glActiveTexture(GL_TEXTURE0 + SKYBOX_TEXTURE_BINDIGN);
-    assert(renderer.skybox.color_texture_id != 0); // 天空纹理必须存在
-    glBindTexture(GL_TEXTURE_CUBE_MAP, renderer.skybox.color_texture_id);
+
+    resources.bind_material(resources.materials.get(skybox_mat_id));
     // 获取天空盒的网格（向内的Cube）
     const Mesh &mesh = resources.meshes.get(mesh_id);
 

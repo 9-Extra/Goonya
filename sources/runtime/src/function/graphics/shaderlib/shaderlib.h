@@ -39,6 +39,7 @@ struct ShaderDesc{
     ShaderDesc(const std::string& uber_name, std::unordered_map<std::string, std::string>&& definations) noexcept
     : uber_name(uber_name), definations(definations)
     {
+        assert(!uber_name.empty());
         hash_cache = hash();
     }
 
