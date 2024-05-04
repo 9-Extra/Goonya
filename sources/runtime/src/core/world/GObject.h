@@ -58,6 +58,7 @@ public:
     void enable() noexcept{
         if (is_disable()){
             dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY); // 重新计算变换矩阵
+            disabled = false;
         }
     }
 
