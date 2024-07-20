@@ -2,12 +2,9 @@
 
 #include <glad/glad.h>
 
-#include <string>
-#include <cassert>
-
 #include "runtime/log/Log.h"
 
-inline void _check_error(const std::string &file, size_t line) {
+inline void _check_error(const char* file, size_t line) {
     GLenum error;
     while ((error = glGetError()) != GL_NO_ERROR) {
         LOG_ERROR("GL error 0x{}: At: {}:{}", error, file, line);
@@ -19,35 +16,3 @@ inline void _check_error(const std::string &file, size_t line) {
 #else
 #define checkError() _check_error(__FILE__, __LINE__)
 #endif // !NDEBUG
-
-// 一个可写的uniform buffer对象的封装
-template <class T> struct WritableUniformBuffer {
-    // 在初始化opengl后才能初始化
-    WritableUniformBuffer() {
-        assert(id == 0);
-        glGenBuffers(1, &id);
-        glBindBuffer(GL_UNIFORM_BUFFER, id);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(T), nullptr, GL_DYNAMIC_DRAW);
-    }
-
-    T *map() {
-        void *ptr = glMapNamedBuffer(id, GL_WRITE_ONLY);
-        assert(ptr != nullptr);
-        return (T *)ptr;
-    }
-    void unmap() {
-        bool ret = glUnmapNamedBuffer(id);
-        assert(ret);
-    }
-
-    void bind(unsigned int binding_point){
-        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, id);
-    }
-
-    ~WritableUniformBuffer(){
-        glDeleteBuffers(1, &id);
-    }
-
-private:
-    unsigned int id = 0;
-};

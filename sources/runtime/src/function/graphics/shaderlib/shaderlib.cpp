@@ -84,5 +84,53 @@ ShaderResource ShaderLib::load_shader(const ShaderDesc& desc){
     return resource;
 }
 
+std::vector<std::tuple<std::string, ConstantBufferInfo>> ShaderIntrospector::get_constant_buffer_info() const noexcept {
+    GLint uniform_block_num;
+    glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
+    const GLenum uniform_block_properties[] = {GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
+    const size_t property_count = std::extent_v<decltype(uniform_block_properties)>;
+
+    std::vector<std::tuple<std::string, ConstantBufferInfo>> result;
+    result.reserve(uniform_block_num);
+
+    for (int i = 0; i < uniform_block_num; ++i) {
+        GLint values[property_count];
+        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, uniform_block_properties,
+                               property_count, NULL, values);
+        checkError();
+        auto [name_len, size, var_num] = values;
+
+        std::string name;
+        name.resize(name_len);
+        glGetProgramResourceName(id, GL_UNIFORM_BLOCK, i, name.size(), NULL, name.data());
+
+        std::vector<GLint> unifrom_ids(var_num);
+        const GLenum var_property[] = {GL_ACTIVE_VARIABLES};
+        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, 1, var_property, var_num, NULL, unifrom_ids.data());
+
+        std::unordered_map<std::string, ConstantBufferInfo::FieldInfo> fields;
+        for (int i = 0; i < var_num; ++i) {
+            const GLenum uniform_properties[] = {GL_NAME_LENGTH, GL_TYPE, GL_OFFSET};
+            const size_t property_count = std::extent_v<decltype(uniform_properties)>;
+            GLint values[property_count];
+            glGetProgramResourceiv(id, GL_UNIFORM, unifrom_ids[i], property_count, uniform_properties,
+                                   property_count, NULL, values);
+            auto [name_len, type, offset] = values;
+
+            std::string name;
+            name.resize(name_len + 1);
+            glGetProgramResourceName(id, GL_UNIFORM, unifrom_ids[i], name.size(), NULL, name.data());
+            fields.emplace(std::move(name), ConstantBufferInfo::FieldInfo{(Meta::FieldType)type, (size_t)offset});
+        }
+
+        ConstantBufferInfo info{.name = std::move(name), .total_size = (size_t)size, .fields = std::move(fields)};
+
+        result.emplace_back(std::move(name), std::move(info));
+    }
+
+    checkError();
+
+    return result;
 }
+} // namespace Graphics
 }

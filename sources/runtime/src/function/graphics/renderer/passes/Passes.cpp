@@ -2,14 +2,13 @@
 
 #include "../Renderer.h"
 
-
 namespace Goonya {
 namespace Graphics {
 
-//一般物体渲染
+// 一般物体渲染
 void LambertianPass::run() {
     // 初始化渲染配置
-    glDrawBuffer(GL_BACK);   // 渲染到后缓冲区
+    glDrawBuffer(GL_BACK); // 渲染到后缓冲区
     Renderer::Viewport &v = renderer.main_viewport;
     glViewport(v.x, v.y, v.width, v.height);
     // 清除旧画面
@@ -22,43 +21,45 @@ void LambertianPass::run() {
     // 计算透视投影矩阵
     const float aspect = float(v.width) / float(v.height);
     const Camera &camera = renderer.main_camera;
-    const Matrix view_perspective_matrix =
-        compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
-        Matrix::rotate(camera.rotation).transpose() * Matrix::translate(-camera.position);
+    const Matrix view_perspective_matrix = compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
+                                           Matrix::rotate(camera.rotation).transpose() *
+                                           Matrix::translate(-camera.position);
 
-    // 填充per_frame uniform数据
-    auto data = per_frame_uniform.map();
-    // 透视投影矩阵
-    data->view_perspective_matrix = view_perspective_matrix.transpose();
-    // 相机位置
-    data->camera_position = camera.position;
-    // 雾参数
-    assert(renderer.fog_density >= 0.0f);
-    data->fog_density = renderer.fog_density;
-    data->fog_min_distance = renderer.fog_min_distance;
-    // 灯光参数
-    data->ambient_light = renderer.ambient_light;
-    if (renderer.pointlights.size() > POINTLIGNT_MAX) {
-        std::cout << "超出最大点光源数量" << std::endl;
+    {
+        // 填充per_frame uniform数据
+        auto data = per_frame_uniform.map();
+        // 透视投影矩阵
+        data->view_perspective_matrix = view_perspective_matrix.transpose();
+        // 相机位置
+        data->camera_position = camera.position;
+        // 雾参数
+        assert(renderer.fog_density >= 0.0f);
+        data->fog_density = renderer.fog_density;
+        data->fog_min_distance = renderer.fog_min_distance;
+        // 灯光参数
+        data->ambient_light = renderer.ambient_light;
+        if (renderer.pointlights.size() > POINTLIGNT_MAX) {
+            std::cout << "超出最大点光源数量" << std::endl;
+        }
+        uint32_t count = (uint32_t)std::min<size_t>(renderer.pointlights.size(), POINTLIGNT_MAX);
+        for (uint32_t i = 0; i < count; ++i) {
+            data->pointlight_list[i].position = renderer.pointlights[i].position;
+            data->pointlight_list[i].intensity = renderer.pointlights[i].color * renderer.pointlights[i].factor;
+        }
+        data->pointlight_num = count;
+        // 填充结束
     }
-    uint32_t count = (uint32_t)std::min<size_t>(renderer.pointlights.size(), POINTLIGNT_MAX);
-    for (uint32_t i = 0; i < count; ++i) {
-        data->pointlight_list[i].position = renderer.pointlights[i].position;
-        data->pointlight_list[i].intensity = renderer.pointlights[i].color * renderer.pointlights[i].factor;
-    }
-    data->pointlight_num = count;
-    // 填充结束
-    per_frame_uniform.unmap();
 
     // 遍历所有part，绘制每一个part
     for (const RenderItem *p : parts) {
         const Material &material = resources.materials.get(p->material_id);
         resources.bind_material(material);
-        // 填充per_object uniform buffer
-        auto data = per_object_uniform.map();
-        data->model_matrix = p->root_transform.transpose();      // 变换矩阵
-        data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
-        per_object_uniform.unmap();
+        {
+            // 填充per_object uniform buffer
+            auto data = per_object_uniform.map();
+            data->model_matrix = p->root_transform.transpose();      // 变换矩阵
+            data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
+        }
 
         // 查找并绑定材质
 
@@ -78,22 +79,22 @@ void SkyBoxPass::run() {
     // 寻找包含且最小，接近中心的天空盒
     uint32_t skybox_mat_id = RenderReousce::INVALIED_ID;
     float min_distance = std::numeric_limits<float>::infinity();
-    for(const Skybox& s: renderer.current_skyboxs){
-        if (!s.ignore_range && !s.bbox.contains(camera_pos)){
+    for (const Skybox &s : renderer.current_skyboxs) {
+        if (!s.ignore_range && !s.bbox.contains(camera_pos)) {
             continue;
         }
         float d = s.ignore_range ? std::numeric_limits<float>::max() : (s.bbox.center() - camera_pos).square();
-        if (d < min_distance){
+        if (d < min_distance) {
             skybox_mat_id = s.material_id;
             min_distance = d;
         }
     }
 
-    if (skybox_mat_id == RenderReousce::INVALIED_ID){
-        return; //没有合适的天空盒，跳过
+    if (skybox_mat_id == RenderReousce::INVALIED_ID) {
+        return; // 没有合适的天空盒，跳过
     }
-    
-    glDrawBuffer(GL_BACK);   // 渲染到后缓冲区
+
+    glDrawBuffer(GL_BACK); // 渲染到后缓冲区
 
     // 用于天空盒的投影矩阵
     const float aspect = float(renderer.main_viewport.width) / float(renderer.main_viewport.height);
@@ -102,13 +103,13 @@ void SkyBoxPass::run() {
         Matrix::rotate(camera.rotation).transpose();
 
     // 绑定天空盒材质
-    // 填充天空盒需要的参数（透视投影矩阵）
-    auto data = skybox_uniform.map();
-    data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
-    skybox_uniform.unmap();
-    skybox_uniform.bind(0);
-
     resources.bind_material(resources.materials.get(skybox_mat_id));
+    {
+        // 填充天空盒需要的参数（透视投影矩阵）
+        auto data = skybox_uniform.map();
+        data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
+    }
+    skybox_uniform.bind(0);
     // 获取天空盒的网格（向内的Cube）
     const Mesh &mesh = resources.meshes.get(mesh_id);
 
@@ -125,10 +126,10 @@ void PickupPass::run() {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    //todo
+    // todo
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-} 
+}
 
-}
-}
+} // namespace Graphics
+} // namespace Goonya

@@ -249,13 +249,13 @@ void RenderReousce::clear() {
     deconstructors.clear();
 }
 void RenderReousce::add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path) {
-    std::cout << "Load shader: " << key << std::endl;
+    LOG_TRACE("Load shader: {}", key);
     pso_cache.shader_lib.add_uber_shader(key, {vs_path, ps_path});
 }
 void RenderReousce::add_cubemap(const std::string &key, const std::string &image_px, const std::string &image_nx,
                                 const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
                                 const std::string &image_nz) {
-    std::cout << "Load skybox: " << key << std::endl;
+    LOG_TRACE("Load skybox: {}", key);
 
     // GL_TEXTURE_CUBE_MAP_POSITIVE_X
     // GL_TEXTURE_CUBE_MAP_NEGATIVE_X
@@ -296,7 +296,7 @@ void RenderReousce::add_cubemap(const std::string &key, const std::string &image
     deconstructors.emplace_back([texture_id] { glDeleteTextures(1, &texture_id); });
 }
 void RenderReousce::add_texture(const std::string &key, const std::string &image_path, bool is_color) {
-    std::cout << "Load texture: " << key << std::endl;
+    LOG_TRACE("Load texture: {}", key);
 
     FIBITMAP *pImage = freeimage_load_and_convert_image(image_path, is_color);
 
@@ -325,7 +325,7 @@ void RenderReousce::add_texture(const std::string &key, const std::string &image
 }
 
 void RenderReousce::add_material(const std::string &key, const MaterialDesc &desc) {
-    std::cout << "Load material: " << key << std::endl;
+    LOG_TRACE("Load material: {}", key);
     Material mat;
     mat.pipeline_state = pso_cache.query_pso(desc.pso_desc);
 
@@ -360,7 +360,7 @@ void RenderReousce::add_material(const std::string &key, const MaterialDesc &des
 }
 void RenderReousce::add_mesh(const std::string &key, const Vertex *vertices, size_t vertex_count,
                              const uint16_t *const indices, size_t indices_count) {
-    std::cout << "Load mesh: " << key << std::endl;
+    LOG_TRACE("Load mesh: {}", key);
     unsigned int vao_id, ibo_id, vbo_id;
     glGenVertexArrays(1, &vao_id);
     glGenBuffers(1, &ibo_id);

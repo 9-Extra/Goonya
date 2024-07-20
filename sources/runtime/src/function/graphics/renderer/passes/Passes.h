@@ -49,8 +49,8 @@ private:
     };
 
     std::vector<RenderItem*> parts; // 记录要渲染的对象
-    WritableUniformBuffer<PerFrameData> per_frame_uniform;   // 用于一般渲染每帧变化的数据
-    WritableUniformBuffer<PerObjectData> per_object_uniform; // 用于一般渲染每个物体不同的数据
+    FixedUniformBuffer<PerFrameData> per_frame_uniform;   // 用于一般渲染每帧变化的数据
+    FixedUniformBuffer<PerObjectData> per_object_uniform; // 用于一般渲染每个物体不同的数据
 };
 
 class SkyBoxPass : public Pass{
@@ -67,7 +67,7 @@ private:
     };
 
     //每帧更新
-    WritableUniformBuffer<SkyBoxData> skybox_uniform;
+    FixedUniformBuffer<SkyBoxData> skybox_uniform;
     //初始化时设定
     uint32_t mesh_id;
 };
