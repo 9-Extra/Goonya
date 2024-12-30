@@ -1,6 +1,17 @@
-/build
-/lib
-/bin
-/assets
-/.cache
-/.vscode
+# Xmake cache
+.xmake/
+build/
+
+
+# MacOS Cache
+.DS_Store
+
+# vscode
+.vscode
+
+.cache/
+bin/
+
+
+
+

@@ -1,27 +1,27 @@
 #include "input.h"
-#include <cstdint>
-#include <core/eventbus/eventbus.h>
-#include "platform/display/display.h"
 #include "core/events.h"
+#include "platform/display/display.h"
+#include <core/eventbus/eventbus.h>
+#include <cstdint>
 
 namespace Goonya {
 namespace Input {
 
 namespace Detail {
 
-bool keys_state_last_tick[MAX_KEYCODE];
-bool keys_state[MAX_KEYCODE];
+KeyState keys_state_last_tick[MAX_KEYCODE];
+KeyState keys_state[MAX_KEYCODE];
 int32_t mouse_delta_x;
 int32_t mouse_delta_y;
 int32_t mouse_pos_x;
 int32_t mouse_pos_y;
 
-bool mouse_key_state_last_tick[MOUSEKEY::MOUSE_KEY_MAX];
-bool mouse_key_state[MOUSEKEY::MOUSE_KEY_MAX];
+KeyState mouse_key_state_last_tick[MouseKey::MOUSE_KEY_MAX];
+KeyState mouse_key_state[MouseKey::MOUSE_KEY_MAX];
 
 } // namespace Detail
 
-void tick_update(){
+void tick_update() {
     using namespace Detail;
     for (size_t i = 0; i < MAX_KEYCODE; i++) {
         keys_state_last_tick[i] = keys_state[i];
@@ -30,34 +30,38 @@ void tick_update(){
     mouse_delta_y = 0;
 }
 
-void initalize(){
+void initalize() {
     using namespace Detail;
     reset_state();
-    EventBus::subscribe_event<Display::Events::SysKeyEvent, void>(0, nullptr, [](void*, Display::Events::SysKeyEvent& e){
-        keys_state[(uint32_t)e.key] = e.up_down;
-        return false;
-    });
-    EventBus::subscribe_event<Display::Events::SysMousePos, void>(0, nullptr, [](void*, Display::Events::SysMousePos& e){
-        mouse_pos_x = e.x;
-        mouse_pos_y = e.y;
-        return false;
-    });
-    EventBus::subscribe_event<Display::Events::SysMouseClick, void>(0, nullptr, [](void*, Display::Events::SysMouseClick& e){
-        mouse_key_state[(uint32_t)e.key] = e.up_down;
-        return false;
-    });
-    EventBus::subscribe_event<Display::Events::SysRawMouseMove, void>(0, nullptr, [](void*, Display::Events::SysRawMouseMove& e){
-        mouse_delta_x += e.x;
-        mouse_delta_y += e.y;
-        return false;
-    });
-    EventBus::subscribe_event<Display::Events::SysWindowDeActive, void>(0, nullptr, [](void*, Display::Events::SysWindowDeActive& e){
-        tick_update();  // 失去焦点时抬起所有按键
-        //LOG_TRACE("窗口失去焦点");
-        return false;
-    });
+    EventBus::subscribe_event<Display::Events::SysKeyEvent, void>(
+        0, nullptr,
+        [](void *, Display::Events::SysKeyEvent &e) {
+            keys_state[(uint32_t)e.key] = e.state;
+            return false;
+        });
+    EventBus::subscribe_event<Display::Events::SysMousePos, void>(
+        0, nullptr,
+        [](void *, Display::Events::SysMousePos &e) {
+            mouse_delta_x = e.x - mouse_pos_x;
+            mouse_delta_y = e.y - mouse_pos_y;
+            mouse_pos_x = e.x;
+            mouse_pos_y = e.y;
+            return false;
+        });
+    EventBus::subscribe_event<Display::Events::SysMouseClick, void>(
+        0, nullptr,
+        [](void *, Display::Events::SysMouseClick &e) {
+            mouse_key_state[(uint32_t)e.key] = e.state;
+            return false;
+        });
+    EventBus::subscribe_event<Display::Events::SysWindowDeActive, void>(
+        0, nullptr, [](void *, Display::Events::SysWindowDeActive &e) {
+            tick_update(); // 失去焦点时抬起所有按键
+            // LOG_TRACE("窗口失去焦点");
+            return false;
+        });
 
-    EventBus::subscribe_event<Events::PostTick, void>(100, nullptr, [](void*, Events::PostTick& e){
+    EventBus::subscribe_event<Events::PostTick, void>(100, nullptr, [](void *, Events::PostTick &e) {
         tick_update();
         return false;
     });
@@ -65,13 +69,13 @@ void initalize(){
 
 void reset_state() {
     for (size_t i = 0; i < MAX_KEYCODE; i++) {
-        Detail::keys_state[i] = false;
-        Detail::keys_state_last_tick[i] = false;
+        Detail::keys_state[i] = KeyState::UP;
+        Detail::keys_state_last_tick[i] = KeyState::UP;
     }
 
-    for (size_t i = 0; i < MOUSEKEY::MOUSE_KEY_MAX; i++) {
-        Detail::mouse_key_state[i] = false;
-        Detail::mouse_key_state_last_tick[i] = false;
+    for (size_t i = 0; i < MouseKey::MOUSE_KEY_MAX; i++) {
+        Detail::mouse_key_state[i] = KeyState::UP;
+        Detail::mouse_key_state_last_tick[i] = KeyState::UP;
     }
 
     Detail::mouse_delta_x = 0;
@@ -80,26 +84,28 @@ void reset_state() {
     Detail::mouse_pos_y = 0;
 }
 
-bool get_key_state(KeyCode key) { return Detail::keys_state[(uint32_t)key]; }
+KeyState get_key_state(KeyCode key) { return Detail::keys_state[(uint32_t)key]; }
 
-bool is_key_down(KeyCode key) { return !Detail::keys_state_last_tick[(uint32_t)key] && Detail::keys_state[(uint32_t)key]; }
+bool is_key_click(KeyCode key) {
+    return Detail::keys_state_last_tick[(uint32_t)key] == KeyState::UP &&
+           Detail::keys_state[(uint32_t)key] == KeyState::DOWN;
+}
 
-bool is_key_up(KeyCode key) { return Detail::keys_state_last_tick[(uint32_t)key] && !Detail::keys_state[(uint32_t)key]; }
+bool is_key_release(KeyCode key) {
+    return Detail::keys_state_last_tick[(uint32_t)key] == KeyState::DOWN &&
+           Detail::keys_state[(uint32_t)key] == KeyState::UP;
+}
 
 std::tuple<int32_t, int32_t> get_mouse_move() { return std::make_tuple(Detail::mouse_delta_x, Detail::mouse_delta_y); }
 
-std::tuple<int32_t, int32_t> get_mouse_pos() {
-    return std::make_tuple(Detail::mouse_pos_x, Detail::mouse_pos_y);
-}
+std::tuple<int32_t, int32_t> get_mouse_pos() { return std::make_tuple(Detail::mouse_pos_x, Detail::mouse_pos_y); }
 
-bool get_mouse_state(MOUSEKEY key){
-    return Detail::mouse_key_state[key];
+KeyState get_mouse_state(MouseKey key) { return Detail::mouse_key_state[key]; }
+bool is_mouse_click(MouseKey key) {
+    return Detail::mouse_key_state[key] == KeyState::UP && Detail::mouse_key_state_last_tick[key] == KeyState::DOWN;
 }
-bool is_mouse_down(MOUSEKEY key){
-    return Detail::mouse_key_state[key] && !Detail::mouse_key_state_last_tick[key];
-}
-bool is_mouse_up(MOUSEKEY key){
-    return !Detail::mouse_key_state[key] && Detail::mouse_key_state_last_tick[key];
+bool is_mouse_release(MouseKey key) {
+    return Detail::mouse_key_state[key] == KeyState::DOWN && Detail::mouse_key_state_last_tick[key] == KeyState::UP;
 }
 
 } // namespace Input

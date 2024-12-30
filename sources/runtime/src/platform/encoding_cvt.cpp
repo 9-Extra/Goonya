@@ -1,24 +1,26 @@
 #include "encoding_cvt.h"
 
-#include <Windows.h>
+#include <locale>
+#include <codecvt>
+
 #include <runtime/GoonyaException.h>
+
 
 namespace Goonya {
 
-std::wstring utf8_to_wchar(const std::string& utf8) {
-    const DWORD kFlags = MB_ERR_INVALID_CHARS;
-    std::wstring utf16;
-    if (utf8.empty()) return utf16;
+template<class Facet>
+struct deletable_facet : Facet
+{
+    template<class... Args>
+    deletable_facet(Args&&... args) : Facet(std::forward<Args>(args)...) {}
+    ~deletable_facet() {}
+};
 
-    int utf16_size = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.c_str(), utf8.length(), NULL, 0);
-    
-    if (utf16_size == 0)
-    {
-        throw RuntimeError("字符串转换失败");
-    }
-    
-    utf16.resize(utf16_size);
-    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, utf8.c_str(), -1, &utf16[0], utf16_size);
+std::wstring utf8_to_wchar(const std::string& utf8) {
+    std::wstring_convert<deletable_facet<std::codecvt<wchar_t, char, std::mbstate_t>>, wchar_t> conv16;
+
+    std::wstring utf16 = conv16.from_bytes(utf8);
+   
     return utf16;
 }
 }

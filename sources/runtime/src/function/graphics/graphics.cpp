@@ -1,7 +1,9 @@
 #include "graphics.h"
+#include "core/eventbus/eventbus.h"
 #include "opengl_utils.h"
 #include "HardcodeAssets.h"
 #include "platform/display/display.h"
+#include "runtime/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -90,10 +92,16 @@ void initialize(){
     setup_opengl();
 
     init_resource();
-    //renderer.set_viewport(0, 0, w, h);
     renderer.init();
     auto [w, h] = Display::get_size();
+    LOG_INFO("初始Framebuffer大小{}x{}", w, h);
     renderer.set_viewport(0, 0, w, h); // 初始化时也需要设置一下视口
+
+    EventBus::subscribe_event<Display::Events::SysDisplayResize, void>(0, nullptr, [](void *, Display::Events::SysDisplayResize& e){
+        auto [w, h] = e.size;
+        renderer.set_viewport(0, 0, w, h);
+        return false;
+    });
 }
 
 }

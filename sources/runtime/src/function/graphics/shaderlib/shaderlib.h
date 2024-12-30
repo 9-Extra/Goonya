@@ -37,7 +37,7 @@ namespace Goonya {
 namespace Graphics {
 
 struct ShaderDesc {
-    ShaderDesc() noexcept : uber_name(), definations(), hash_cache(){};
+    ShaderDesc() noexcept : hash_cache(), uber_name(), definations(){};
 
     ShaderDesc(const std::string &uber_name, std::unordered_map<std::string, std::string> &&definations) noexcept
         : uber_name(uber_name), definations(definations) {
@@ -46,9 +46,9 @@ struct ShaderDesc {
     }
 
     ShaderDesc(const ShaderDesc &desc) noexcept
-        : uber_name(desc.uber_name), definations(desc.definations), hash_cache(desc.hash_cache) {}
+        : hash_cache(desc.hash_cache), uber_name(desc.uber_name), definations(desc.definations) {}
     ShaderDesc(ShaderDesc &&desc) noexcept
-        : uber_name(std::move(desc.uber_name)), definations(std::move(desc.definations)), hash_cache(desc.hash_cache) {}
+        : hash_cache(desc.hash_cache), uber_name(std::move(desc.uber_name)), definations(std::move(desc.definations)) {}
 
     ShaderDesc &operator=(const ShaderDesc &desc) noexcept = default;
 
@@ -155,13 +155,13 @@ public:
     
     template<class T>
     T& operator[](const std::string& name) noexcept{
-        assert(info.fields.at(name).type == ctype2fieldtype<T>());
+        //assert(info.fields.at(name).type == ctype2fieldtype<T>());
         return *(T*)get_ptr(name);
     }
 
     template<class T>
     const T& operator[](const std::string& name) const noexcept{
-        assert(info.fields.at(name).type == ctype2fieldtype<T>());
+        //assert(info.fields.at(name).type == ctype2fieldtype<T>());
         return *(T*)get_ptr(name);
     }
 

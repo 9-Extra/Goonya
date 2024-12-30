@@ -2,6 +2,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "utils/cgmath.h"
 
 namespace Goonya {
@@ -30,30 +31,30 @@ _GOONYA_DEFINE_FIELDTYPE2CTYPE(vec3f, Vector3f)
 _GOONYA_DEFINE_FIELDTYPE2CTYPE(vec4f, Vector4f)
 _GOONYA_DEFINE_FIELDTYPE2CTYPE(mat4f, Matrix)
 
-template<class T>
-constexpr FieldType ctype2fieldtype(){
-    if constexpr (std::is_same_v<T, int32_t>){
-        return FieldType::i32;
-    } else if constexpr (std::is_same_v<T, int64_t>){
-        return FieldType::i64;
-    } else if constexpr (std::is_same_v<T, uint32_t>){
-        return FieldType::u32;
-    } else if constexpr (std::is_same_v<T, uint64_t>){
-        return FieldType::u64;
-    } else if constexpr (std::is_same_v<T, float>){
-        return FieldType::f32;
-    } else if constexpr (std::is_same_v<T, double>){
-        return FieldType::f64;
-    } else if constexpr (std::is_same_v<T, Vector3f>){
-        return FieldType::vec3f;
-    } else if constexpr (std::is_same_v<T, Vector4f>){
-        return FieldType::vec4f;
-    } else if constexpr (std::is_same_v<T, Matrix>){
-        return FieldType::mat4f;
-    } 
+// template<class T>
+// constexpr FieldType ctype2fieldtype(){
+//     if constexpr (std::is_same_v<T, int32_t>){
+//         return FieldType::i32;
+//     } else if constexpr (std::is_same_v<T, int64_t>){
+//         return FieldType::i64;
+//     } else if constexpr (std::is_same_v<T, uint32_t>){
+//         return FieldType::u32;
+//     } else if constexpr (std::is_same_v<T, uint64_t>){
+//         return FieldType::u64;
+//     } else if constexpr (std::is_same_v<T, float>){
+//         return FieldType::f32;
+//     } else if constexpr (std::is_same_v<T, double>){
+//         return FieldType::f64;
+//     } else if constexpr (std::is_same_v<T, Vector3f>){
+//         return FieldType::vec3f;
+//     } else if constexpr (std::is_same_v<T, Vector4f>){
+//         return FieldType::vec4f;
+//     } else if constexpr (std::is_same_v<T, Matrix>){
+//         return FieldType::mat4f;
+//     } 
 
-    return FieldType::nul;
-}
+//     return FieldType::nul;
+// }
 
 inline size_t sizeof_field_type(FieldType type) noexcept {
     switch (type) {
@@ -102,13 +103,13 @@ public:
     
     template<class T>
     T& operator[](const std::string& name) noexcept{
-        assert(fields.at(name).type == ctype2fieldtype<T>());
+        //assert(fields.at(name).type == ctype2fieldtype<T>());
         return *(T*)get_ptr(name);
     }
 
     template<class T>
     const T& operator[](const std::string& name) const noexcept{
-        assert(fields.at(name).type == ctype2fieldtype<T>());
+        //assert(fields.at(name).type == ctype2fieldtype<T>());
         return *(T*)get_ptr(name);
     }
 

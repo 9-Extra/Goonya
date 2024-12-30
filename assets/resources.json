@@ -1,0 +1,88 @@
+{
+    "shader": {
+        "single_color": {
+            "vs_path": "shaders/single_color/vs.vert",
+            "ps_path": "shaders/single_color/ps.frag"
+        },
+        "flat": {
+            "vs_path": "shaders/flat/vs.vert",
+            "ps_path": "shaders/flat/ps.frag"
+        },
+        "pbr": {
+            "vs_path": "shaders/pbr/vs.vert",
+            "ps_path": "shaders/pbr/ps.frag"
+        },
+        "skybox": {
+            "vs_path": "shaders/skybox/vs.vert",
+            "ps_path": "shaders/skybox/ps.frag"
+        },
+        "pick": {
+            "vs_path": "shaders/pick/vs.vert",
+            "ps_path": "shaders/pick/ps.frag"
+        }
+    },
+    "texture": {
+        "default_normal": {
+            "image": "textures/normal.jpg"
+        },
+        "white": {
+            "is_color": true,
+            "image": "textures/white.jpg"
+        },
+        "wood_diffusion": {
+            "is_color": true,
+            "image": "materials/wood_flat/basecolor.jpg"
+        },
+        "ground_color": {
+            "is_color": true,
+            "image": "materials/ground/ground512.bmp"
+        }
+    },
+    "cubemap": {
+        "skybox_valley_color": {
+            "px": "skybox/valley/px.png",
+            "nx": "skybox/valley/nx.png",
+            "py": "skybox/valley/py.png",
+            "ny": "skybox/valley/ny.png",
+            "pz": "skybox/valley/pz.png",
+            "nz": "skybox/valley/nz.png"
+        }
+    },
+    "materials": {
+        "skybox_valley": {
+            "pso": {
+                "shader": {
+                    "uber": "skybox",
+                    "definations": {}
+                },
+                "config": {
+                    "depth_func": "less_or_equal"
+                }
+            },
+            "samplers": [
+                {
+                    "slot": 5,
+                    "name": "skybox_valley_color",
+                    "type": "cubemap"
+                }
+            ]
+        }
+    },
+    "gltf": {
+        "wood_floor": {
+            "path": "materials/wood_floor_deck/wood_floor_deck_1k.gltf"
+        },
+        "teapot": {
+            "path": "model/teapot/teapot.gltf"
+        },
+        "gold": {
+            "path": "materials/gold/gold.gltf"
+        },
+        "stone": {
+            "path": "materials/stone/stone.gltf"
+        },
+        "crafting_table": {
+            "path": "materials/crafting_table/crafting_table.gltf"
+        }
+    }
+}

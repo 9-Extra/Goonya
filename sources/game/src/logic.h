@@ -1,4 +1,6 @@
 #pragma once
+#include "runtime/log/Log.h"
+#include "utils/cgmath.h"
 #include <core/world/GObject.h>
 #include <core/input/input.h>
 #include <core/eventbus/eventbus.h>
@@ -9,16 +11,16 @@ class MoveSystem : public Goonya::Component {
 public:
     void handle_mouse() {
         using namespace Goonya;
-        if (Goonya::Input::is_mouse_down(Goonya::Input::LEFT)) {
+        if (Goonya::Input::is_mouse_click(Goonya::Input::LEFT)) {
             lights->enable();
         }
-        if (Goonya::Input::is_mouse_down(Goonya::Input::RIGHT)) {
+        if (Goonya::Input::is_mouse_click(Goonya::Input::RIGHT)) {
             lights->disable();
         }
 
         // 使用鼠标中键旋转视角
         //  左上角为(0,0)，右下角为(w,h)
-        if (Goonya::Input::get_mouse_state(Goonya::Input::MIDDLE)) {
+        if (Goonya::Input::get_mouse_state(Goonya::Input::MIDDLE) == Input::KeyState::DOWN) {
             auto [dx, dy] = Goonya::Input::get_mouse_move();
             // 鼠标向右拖拽，相机沿y轴顺时针旋转。鼠标向下拖拽时，相机沿x轴逆时针旋转
             const float rotate_speed = 0.003f;
@@ -32,40 +34,42 @@ public:
         using namespace Goonya;
         const float move_speed = 0.02f * delta;
 
-        if (Goonya::Input::is_key_down(Goonya::Input::KeyCode::ESCAPE)) {
+        if (Goonya::Input::is_key_click(Goonya::Input::KeyCode::ESCAPE)) {
             Goonya::EventBus::dispatch_event(Goonya::Events::EngineStop{});
         }
         const Goonya::Transform& trans = camera->get_transform();
-        if (Goonya::Input::get_key_state('W')) {
+        if (Goonya::Input::get_key_state('W') == Input::KeyState::DOWN) {
             Vector3f ori = trans.get_orientation();
             ori.y = 0.0;
             camera->translate(ori.normalize() * move_speed);
         }
-        if (Goonya::Input::get_key_state('S')) {
+        if (Goonya::Input::get_key_state('S') == Input::KeyState::DOWN) {
             Vector3f ori = trans.get_orientation();
             ori.y = 0.0;
             camera->translate(ori.normalize() * -move_speed);
         }
-        if (Goonya::Input::get_key_state('A')) {
+        if (Goonya::Input::get_key_state('A') == Input::KeyState::DOWN) {
             Vector3f ori = trans.get_orientation();
             ori = {ori.z, 0.0, -ori.x};
             camera->translate(ori.normalize() * move_speed);
         }
-        if (Goonya::Input::get_key_state('D')) {
+        if (Goonya::Input::get_key_state('D') == Input::KeyState::DOWN) {
             Vector3f ori = trans.get_orientation();
             ori = {ori.z, 0.0, -ori.x};
             camera->translate(ori.normalize() * -move_speed);
         }
-        if (Goonya::Input::get_key_state(Goonya::Input::KeyCode::SPACE)) {
+        if (Goonya::Input::get_key_state(Goonya::Input::KeyCode::SPACE) == Input::KeyState::DOWN) {
             camera->translate({0.0f, move_speed, 0.0f});
         }
-        if (Goonya::Input::get_key_state(Goonya::Input::KeyCode::LSHIFT)) {
+        if (Goonya::Input::get_key_state(Goonya::Input::KeyCode::LSHIFT) == Input::KeyState::DOWN) {
             camera->translate({0.0f, -move_speed, 0.0f});
         }
 
-        if (Goonya::Input::is_key_down('0')) {
+        if (Goonya::Input::is_key_click('0')) {
             camera->set_transform(Goonya::Transform{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1, 1, 1}});
         }
+        //Vector3f pos = camera->get_transform().position;
+        //LOG_DEBUG("x = {}, y = {}, z = {}", pos.x, pos.y, pos.z);
 
         // if (Goonya::Input::is_key_down(VK_UP)) {
         //     renderer.fog_density += 0.00001f * delta;

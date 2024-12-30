@@ -1,7 +1,7 @@
 #include "RenderResource.h"
 
 #include <glad/glad.h>
-#include <freeimage/FreeImage.h>
+#include <FreeImage.h>
 
 #include <array>
 #include <fstream>
@@ -155,6 +155,9 @@ void RenderReousce::load_json(const std::string &path) {
     {
         Json::Reader reader;
         std::ifstream file(path);
+        if (!file){
+            throw RuntimeError(std::format("资源文件{}未找到", path));
+        }
         reader.parse(file, json, false);
     }
 

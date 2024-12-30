@@ -1,11 +1,21 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <tuple>
 
 namespace Goonya {
 namespace Input {
+
+enum class KeyState: uint8_t {
+    UP,
+    DOWN
+};
+
+inline KeyState revert(KeyState state){
+    return state == KeyState::UP ? KeyState::DOWN : KeyState::UP;
+}
 
 enum class KeyCode: uint32_t{
     LSHIFT,
@@ -27,24 +37,24 @@ const size_t MAX_KEYCODE = 256;
 
 void initalize();
 void reset_state();
-bool get_key_state(KeyCode key);
-inline bool get_key_state(char key){
+KeyState get_key_state(KeyCode key);
+inline KeyState get_key_state(char key){
     return get_key_state((KeyCode)key);
 }
 
-bool is_key_down(KeyCode key);
-inline bool is_key_down(char key){
-    return is_key_down((KeyCode)key);
+bool is_key_click(KeyCode key);
+inline bool is_key_click(char key){
+    return is_key_click((KeyCode)key);
 }
-bool is_key_up(KeyCode key);
-inline bool is_key_up(char key){
-    return is_key_up((KeyCode)key);
+bool is_key_release(KeyCode key);
+inline bool is_key_release(char key){
+    return is_key_release((KeyCode)key);
 }
 
 std::tuple<int32_t, int32_t> get_mouse_move();
 std::tuple<int32_t, int32_t> get_mouse_pos();
 
-enum MOUSEKEY {
+enum MouseKey {
     LEFT,
     RIGHT,
     MIDDLE,
@@ -52,9 +62,9 @@ enum MOUSEKEY {
     MOUSE_KEY_MAX
 };
 
-bool get_mouse_state(MOUSEKEY key);
-bool is_mouse_down(MOUSEKEY key);
-bool is_mouse_up(MOUSEKEY key);
+KeyState get_mouse_state(MouseKey key);
+bool is_mouse_click(MouseKey key);
+bool is_mouse_release(MouseKey key);
 
 } // namespace Input
 } // namespace Goonya
