@@ -56,14 +56,16 @@
                     "definations": {}
                 },
                 "config": {
-                    "depth_func": "less_or_equal"
+                    "depth_func": "less_equal"
                 }
             },
             "samplers": [
                 {
                     "slot": 5,
                     "name": "skybox_valley_color",
-                    "type": "cubemap"
+                    "type": "cubemap",
+                    "warp_mode": "clamp",
+                    "filter_mode": "trilinear"
                 }
             ]
         }

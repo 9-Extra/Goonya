@@ -1,6 +1,6 @@
 #pragma once
 
-#include <utils/cgmath.h>
+#include "core/cgmath.h"
 
 namespace Goonya {
 namespace Graphics {

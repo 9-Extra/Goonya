@@ -4,7 +4,7 @@
 #include "passes/Passes.h"
 #include "RenderItem.h"
 #include "RenderAspect.h"
-#include "../opengl_utils.h"
+#include "function/graphics/opengl_utils.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -30,11 +30,7 @@ public:
 
     std::vector<Skybox> current_skyboxs; // 天空盒
 
-    void init() {
-        lambertian_pass = std::make_unique<LambertianPass>();
-        skybox_pass = std::make_unique<SkyBoxPass>();
-        pickup_pass = std::make_unique<PickupPass>();
-    }
+    void init();
 
     void accept(RenderItem *part) { lambertian_pass->accept(part); }
 

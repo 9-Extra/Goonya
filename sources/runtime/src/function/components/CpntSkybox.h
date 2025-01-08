@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/world/GObject.h"
-#include "function/graphics/renderer/Renderer.h"
+#include "function/renderer/Renderer.h"
 
 
 namespace Goonya {

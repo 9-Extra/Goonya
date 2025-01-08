@@ -5,7 +5,7 @@
 #include <vector>
 #include <algorithm>
 
-#include "utils/cgmath.h"
+#include "core/cgmath.h"
 #include "Component.h"
 
 

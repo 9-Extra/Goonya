@@ -7,8 +7,8 @@
 #include <functional>
 
 #include "RenderAspect.h"
-#include "../shaderlib/shaderlib.h"
-#include "../shaderlib/pso_cache.h"
+#include "function/graphics/shaderlib/shaderlib.h"
+#include "function/graphics/shaderlib/pso_cache.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -18,34 +18,12 @@ struct Mesh {
     uint32_t indices_count;
 };
 
-struct TextureDesc {
-    std::string path;
-};
-
 struct Texture {
     GLuint texture_id;
 };
 
 struct CubeMap {
     GLuint texture_id;
-};
-
-struct MaterialDesc {
-    struct UniformDataDesc {
-        const uint32_t binding_id;
-        const uint32_t size;
-        const void *data = nullptr;
-    };
-
-    struct SampleData {
-        uint32_t binding_id;
-        std::string texture_key;
-        std::string texture_type = "rgb";
-    };
-
-    PSODesc pso_desc;
-    std::vector<UniformDataDesc> uniforms;
-    std::vector<SampleData> samplers;
 };
 
 
@@ -58,6 +36,9 @@ struct Material {
         GLuint binding_id;
         GLuint texture_id;
         GLenum texture_type;
+        GLenum min_filter;
+        GLenum mag_filter;
+        GLenum warp_mode;
     };
 
     PipelineStateObject pipeline_state;
@@ -122,15 +103,13 @@ public:
     void add_mesh(const std::string &key, const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices) {
         add_mesh(key, vertices.data(), vertices.size(), indices.data(), indices.size());
     }
-    void add_pipeline_state(const std::string& key, const PSODesc& desc);
-    void add_material(const std::string &key, const MaterialDesc &desc);
+    void add_pipeline_state(const std::string& key, const Resource::PSODesc& desc);
+    void add_material(const std::string &key, const Resource::MaterialDesc &desc);
     void add_texture(const std::string &key, const std::string &image_path, bool is_color = false);
     void add_cubemap(const std::string &key, const std::string &image_px, const std::string &image_nx,
                      const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
                      const std::string &image_nz);
     void add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path);
-    void load_gltf(const std::string &base_key, const std::string &path);
-    void load_json(const std::string &path);
     void clear();
 
     void bind_material(const Material& mat) const;

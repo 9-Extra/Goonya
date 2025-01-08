@@ -3,8 +3,7 @@
 #include <glad/glad.h>
 
 #include <cstdint>
-#include "utils/cgmath.h"
-#include "core/world/GObject.h"
+#include "core/cgmath.h"
 #include "RenderResource.h"
 
 

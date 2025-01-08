@@ -1,6 +1,6 @@
 #pragma once
 #include "runtime/log/Log.h"
-#include "utils/cgmath.h"
+#include <core/cgmath.h>
 #include <core/world/GObject.h>
 #include <core/input/input.h>
 #include <core/eventbus/eventbus.h>

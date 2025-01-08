@@ -69,7 +69,7 @@ std::string mix_shader_definations(const std::string& src, const std::unordered_
     return ss.str();
 }
 
-ShaderResource ShaderLib::load_shader(const ShaderDesc& desc){
+ShaderResource ShaderLib::load_shader(const Resource::ShaderDesc& desc){
     const UberShaderSource& u_src = uber_shader_sources.at(desc.get_uber_name());
 
     std::string mixed_vs = mix_shader_definations(u_src.vs_src, desc.get_definations());

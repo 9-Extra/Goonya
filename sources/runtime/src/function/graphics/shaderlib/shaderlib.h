@@ -9,6 +9,7 @@
 #include "function/graphics/opengl_utils.h"
 #include "platform/read_file.h"
 #include "core/metatype/metatype.h"
+#include "resource/resources.h"
 
 // namespace Goonya{
 // namespace Graphics {
@@ -32,55 +33,6 @@
 //         return hasher(def.def_name) ^ (hasher(def.def_val) << 1);
 //     }
 // };
-
-namespace Goonya {
-namespace Graphics {
-
-struct ShaderDesc {
-    ShaderDesc() noexcept : hash_cache(), uber_name(), definations(){};
-
-    ShaderDesc(const std::string &uber_name, std::unordered_map<std::string, std::string> &&definations) noexcept
-        : uber_name(uber_name), definations(definations) {
-        assert(!uber_name.empty());
-        hash_cache = hash();
-    }
-
-    ShaderDesc(const ShaderDesc &desc) noexcept
-        : hash_cache(desc.hash_cache), uber_name(desc.uber_name), definations(desc.definations) {}
-    ShaderDesc(ShaderDesc &&desc) noexcept
-        : hash_cache(desc.hash_cache), uber_name(std::move(desc.uber_name)), definations(std::move(desc.definations)) {}
-
-    ShaderDesc &operator=(const ShaderDesc &desc) noexcept = default;
-
-    const std::string &get_uber_name() const noexcept { return uber_name; }
-    const std::unordered_map<std::string, std::string> &get_definations() const noexcept { return definations; }
-
-    bool operator==(const ShaderDesc &b) const noexcept {
-        return hash_cache == b.hash_cache && uber_name == b.uber_name && definations == b.definations;
-    }
-
-private:
-    friend struct std::hash<Goonya::Graphics::ShaderDesc>;
-    size_t hash_cache;
-    std::string uber_name;
-    std::unordered_map<std::string, std::string> definations;
-
-    size_t hash() const noexcept {
-        size_t result = std::hash<std::string>{}(uber_name);
-        for (const auto &[k, v] : definations) {
-            result ^= std::hash<std::string>{}(k) ^ std::hash<std::string>{}(v);
-        }
-        return result;
-    }
-};
-
-} // namespace Graphics
-} // namespace Goonya
-
-template <>
-struct std::hash<Goonya::Graphics::ShaderDesc> {
-    size_t operator()(const Goonya::Graphics::ShaderDesc &desc) const noexcept { return desc.hash_cache; }
-};
 
 namespace Goonya {
 namespace Graphics {
@@ -235,7 +187,7 @@ public:
         uber_shader_sources.emplace(name,
                                     UberShaderSource{read_whole_file(desc.vs_path), read_whole_file(desc.ps_path)});
     }
-    ShaderResource query_shader(const ShaderDesc &desc) {
+    ShaderResource query_shader(const Resource::ShaderDesc &desc) {
         assert(!desc.get_uber_name().empty());
         auto iter = shader_cache.find(desc);
         if (iter != shader_cache.end()) {
@@ -262,9 +214,9 @@ private:
         std::string ps_src;
     };
     std::unordered_map<std::string, UberShaderSource> uber_shader_sources;
-    std::unordered_map<ShaderDesc, ShaderResource> shader_cache;
+    std::unordered_map<Resource::ShaderDesc, ShaderResource> shader_cache;
 
-    ShaderResource load_shader(const ShaderDesc &desc);
+    ShaderResource load_shader(const Resource::ShaderDesc &desc);
 };
 
 

@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "renderer/RenderAspect.h"
+#include "RenderAspect.h"
 
 // 硬编码的一些数据
 namespace Goonya{

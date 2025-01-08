@@ -4,6 +4,7 @@
 #include <imgui.h>
 #include <runtime/Goonya.h>
 
+#include "function/renderer/Renderer.h"
 #include "platform/display/display.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
@@ -37,6 +38,7 @@ void init_engine() {
     Timer::initialize();
     Display::initalize(1080, 720);
     Graphics::initialize();
+    Graphics::renderer.init();
 
     ImguiMng::init();
 
@@ -64,7 +66,7 @@ void logic_tick() {
 
 void render_frame() {
 
-    Graphics::render();
+    Graphics::renderer.render();
 
     ImGui::EndFrame();
     ImGui::Render();

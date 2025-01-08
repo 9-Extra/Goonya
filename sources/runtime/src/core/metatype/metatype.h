@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "utils/cgmath.h"
+#include "core/cgmath.h"
 
 namespace Goonya {
 namespace Meta {

@@ -53,6 +53,7 @@ void LambertianPass::run() {
 
     // 遍历所有part，绘制每一个part
     for (const RenderItem *p : parts) {
+        // 查找并绑定材质
         const Material &material = resources.materials.get(p->material_id);
         resources.bind_material(material);
         {
@@ -61,8 +62,6 @@ void LambertianPass::run() {
             data->model_matrix = p->root_transform.transpose();      // 变换矩阵
             data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
         }
-
-        // 查找并绑定材质
 
         const Mesh &mesh = resources.meshes.get(p->mesh_id); // 网格数据
 
