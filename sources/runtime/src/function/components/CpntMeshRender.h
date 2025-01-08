@@ -13,7 +13,7 @@ public:
         assert(get_owner() != nullptr);
         GObject &owner = *get_owner();
         // 更新每一个part
-        if (owner.get_dirty_flag().is_transform_dirty()){
+        if (owner.get_dirty_flag()[GObject::DirtyFlag::TRANSFORM_DIRTY]){
             for (RenderItem &p : parts) {
                 p.root_transform = owner.get_root_transform_matrix() * p.model_matrix;
                 p.root_normal_matrix = owner.get_root_transform_matrix() * p.normal_matrix;

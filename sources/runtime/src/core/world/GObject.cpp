@@ -8,7 +8,7 @@ void GObject::tick(DirtyFlag parent_flag) {
 
     dirty_flag.append(parent_flag);
 
-    if (dirty_flag.is_transform_dirty()) {
+    if (dirty_flag[DirtyFlag::TRANSFORM_DIRTY]) {
         if (has_parent()) {
             // 子节点的transform为父节点的transform叠加上自身的transform
             root_model_matrix = get_parent().lock()->root_model_matrix * transform.transform_matrix();

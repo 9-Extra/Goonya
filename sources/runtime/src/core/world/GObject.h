@@ -32,8 +32,12 @@ public:
         const static FlagType DEFAULT = 0;
         const static FlagType TRANSFORM_DIRTY = 1 << 0;
 
-        bool is_transform_dirty() const noexcept{
-            return (value & TRANSFORM_DIRTY) == TRANSFORM_DIRTY;
+        bool operator[](FlagType ft) const noexcept{
+            return (value & ft) == ft;
+        }
+
+        bool operator[](DirtyFlag ft) const noexcept{
+            return (value & ft.value) == ft.value;
         }
 
         void append(DirtyFlag f) noexcept{
@@ -206,7 +210,7 @@ private:
     Transform transform;  // 相对父节点的变换
 
     Matrix root_model_matrix;  // 相对根节点的变换
-    Matrix root_normal_matrix;
+    Matrix root_normal_matrix; // 相对根节点的法线变换
 
     std::vector<std::unique_ptr<Component>> components;
     std::weak_ptr<GObject> parent;
