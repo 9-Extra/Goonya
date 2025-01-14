@@ -11,7 +11,7 @@ class CpntSkybox : public Component {
 public:
     CpntSkybox(uint32_t skybox_mat_id, bool ingore_range = true, const BoundingBox &bbox = BoundingBox())
         : skybox_mat_id(skybox_mat_id),ignore_range(ingore_range), bbox(bbox) {}
-    virtual void tick() override {
+    virtual void on_tick() override {
         assert(get_owner() != nullptr);
         Vector3f pos = position_from_matrix(get_owner()->get_root_transform_matrix());
         if (ignore_range){

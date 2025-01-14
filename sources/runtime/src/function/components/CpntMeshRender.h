@@ -9,7 +9,7 @@ namespace Graphics {
 // 渲染mesh的组件，可以渲染出物体
 class CpntMeshRender: public Component{
 public:
-    virtual void tick() override {
+    virtual void on_tick() override {
         assert(get_owner() != nullptr);
         GObject &owner = *get_owner();
         // 更新每一个part

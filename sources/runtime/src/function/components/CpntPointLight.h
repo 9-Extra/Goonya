@@ -14,7 +14,7 @@ public:
     Vector3f color;
     float radius;
 
-    virtual void tick() override {
+    virtual void on_tick() override {
         assert(get_owner() != nullptr);
         renderer.pointlights.emplace_back() = {get_owner()->get_transform().position, color, radius};   
     }

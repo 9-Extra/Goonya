@@ -22,7 +22,7 @@ void GObject::tick(DirtyFlag parent_flag) {
     // 更新组件
     // todo：如果在更新组件时组件增删了components怎么办
     for (auto &c : get_components()) {
-        c->tick();
+        c->on_tick();
     }
 
     for (auto &child : get_children()) {

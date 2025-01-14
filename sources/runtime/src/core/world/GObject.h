@@ -72,7 +72,7 @@ public:
 
     void add_component(std::unique_ptr<Component>&& component) {
         component->set_owner(this);
-        component->attach();
+        component->on_attach();
         components.push_back(std::move(component));
     }
 
@@ -94,7 +94,7 @@ public:
     bool remove_component(const std::type_info& t_info) {
         for (auto it = components.begin(); it!= components.end(); ++it) {
             auto& c = **it;// 比较其内容而非智能指针
-            c.detach();
+            c.on_detach();
             c.set_owner(nullptr);
             if (typeid(c) == t_info) {
                 components.erase(it);

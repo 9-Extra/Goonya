@@ -81,7 +81,7 @@ public:
         // }
     }
 
-    virtual void attach() override {
+    virtual void on_attach() override {
         cube = get_owner()->get_child_by_name("方块");
         assert(cube);
         lights = get_owner()->get_child_by_name("lights");
@@ -92,7 +92,7 @@ public:
         assert(camera);
     }
 
-    virtual void tick() override {
+    virtual void on_tick() override {
         handle_keyboard(Goonya::Timer::delta());
         handle_mouse();
 

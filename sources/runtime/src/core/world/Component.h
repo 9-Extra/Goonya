@@ -14,15 +14,15 @@ public:
     virtual ~Component() = default;
 protected:
     friend class GObject;
-    virtual void attach(){
+    virtual void on_attach(){
         // 设置owner由GObject执行
         assert(owner != nullptr);// 一个Component只能有一个owner
     }
-    virtual void detach(){
+    virtual void on_detach(){
         assert(owner != nullptr);
         // owner = nullptr 由GObject在detach后执行
     }
-    virtual void tick() = 0;
+    virtual void on_tick() = 0;
 private:    
     GObject* owner; // Weak reference
     friend class GObject;

@@ -19,7 +19,7 @@ public:
         renderer.active_camera = &owner;
     }
 
-    virtual void tick() override {
+    virtual void on_tick() override {
         assert(get_owner() != nullptr);
         GObject& owner = *get_owner();
         if (renderer.active_camera == &owner){
