@@ -14,8 +14,8 @@ struct RenderItem {
     uint32_t mesh_id;
     uint32_t material_id;
     uint32_t topology;
-    Matrix model_matrix;
-    Matrix normal_matrix;
+    Matrix4 model_matrix;
+    Matrix4 normal_matrix;
 
     RenderItem(const std::string &mesh_name, const std::string &material_name,
                    const uint32_t topology = GL_TRIANGLES,
@@ -24,8 +24,8 @@ struct RenderItem {
           topology(topology), model_matrix(transform.transform_matrix()), normal_matrix(transform.normal_matrix()) {}
     
     //在遍历节点树时计算和填写
-    Matrix root_transform;
-    Matrix root_normal_matrix;
+    Matrix4 root_transform;
+    Matrix4 root_normal_matrix;
 };
 
 }

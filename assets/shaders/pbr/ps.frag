@@ -121,10 +121,11 @@ vec3 BRDF(vec3  L,
 
 vec3 caculate_normal(){
     const vec3 normal = normalize(vs_out.normal);
-    const vec3 tangent = normalize(vs_out.tangent);
-    //在加载时进行了判断所有不需要考虑gamma矫正的问题
-    vec3 texture_value = (texture(normal_texture, vs_out.tex_coords).xyz - 0.5) * 2;
-    return tangent * texture_value.x + cross(normal, tangent) * texture_value.y + normal * texture_value.z;
+    // 施密特正交化
+    const vec3 tangent = normalize(vs_out.tangent - normal * dot(normal, vs_out.tangent));
+    const mat3 tbn = mat3(tangent, cross(normal, tangent), normal);
+    vec3 texture_value = texture(normal_texture, vs_out.tex_coords).xyz * 2 - 1;
+    return tbn * texture_value;
 }
 
 void main()

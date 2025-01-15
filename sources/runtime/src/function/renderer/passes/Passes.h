@@ -34,7 +34,7 @@ private:
         alignas(16) Vector3f intensity;
     };
     struct PerFrameData final {
-        Matrix view_perspective_matrix;
+        Matrix4 view_perspective_matrix;
         alignas(16) Vector3f ambient_light;
         alignas(16) Vector3f camera_position;
         alignas(4) float fog_min_distance;
@@ -44,8 +44,8 @@ private:
     };
 
     struct PerObjectData final{
-        Matrix model_matrix;
-        Matrix normal_matrix;
+        Matrix4 model_matrix;
+        Matrix4 normal_matrix;
     };
 
     std::vector<RenderItem*> parts; // 记录要渲染的对象
@@ -63,7 +63,7 @@ public:
 private:
     const static unsigned int SKYBOX_TEXTURE_BINDIGN = 5;
     struct SkyBoxData final {
-        Matrix skybox_view_perspective_matrix;
+        Matrix4 skybox_view_perspective_matrix;
     };
 
     //每帧更新

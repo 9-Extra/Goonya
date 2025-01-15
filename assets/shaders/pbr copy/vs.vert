@@ -40,8 +40,8 @@ void main()
 {
     vec4 world_position = model_matrix * vec4(position.xyz, 1.0f);
     vs_out.world_position = world_position.xyz / world_position.w;
-    vs_out.normal = (normal_matrix * vec4(normal, 0.0f)).xyz;
-    vs_out.tangent = (normal_matrix * vec4(tangent, 0.0f)).xyz;
+    vs_out.normal = normalize((normal_matrix * vec4(normal, 0.0f)).xyz);
+    vs_out.tangent = (model_matrix * vec4(tangent, 0.0f)).xyz;
     vs_out.tex_coords = uv;
 
     gl_Position = view_perspective_matrix * world_position;

@@ -145,10 +145,10 @@ public:
         return dirty_flag;
     }
 
-    const Matrix& get_root_transform_matrix() const noexcept{
+    const Matrix4& get_root_transform_matrix() const noexcept{
         return root_model_matrix;
     }
-    const Matrix& get_root_normal_matrix() const noexcept{
+    const Matrix4& get_root_normal_matrix() const noexcept{
         return root_normal_matrix;
     }
 
@@ -209,8 +209,8 @@ private:
 
     Transform transform;  // 相对父节点的变换
 
-    Matrix root_model_matrix;  // 相对根节点的变换
-    Matrix root_normal_matrix; // 相对根节点的法线变换
+    Matrix4 root_model_matrix;  // 相对根节点的变换
+    Matrix4 root_normal_matrix; // 相对根节点的法线变换
 
     std::vector<std::unique_ptr<Component>> components;
     std::weak_ptr<GObject> parent;

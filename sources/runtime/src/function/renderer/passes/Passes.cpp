@@ -22,9 +22,9 @@ void LambertianPass::run() {
     // 计算透视投影矩阵
     const float aspect = float(v.width) / float(v.height);
     const Camera &camera = renderer.main_camera;
-    const Matrix view_perspective_matrix = compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
-                                           Matrix::rotate(camera.rotation).transpose() *
-                                           Matrix::translate(-camera.position);
+    const Matrix4 view_perspective_matrix = compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
+                                           Matrix4::rotate(camera.rotation).transpose() *
+                                           Matrix4::translate(-camera.position);
 
     {
         // 填充per_frame uniform数据
@@ -98,9 +98,9 @@ void SkyBoxPass::run() {
 
     // 用于天空盒的投影矩阵
     const float aspect = float(renderer.main_viewport.width) / float(renderer.main_viewport.height);
-    const Matrix skybox_view_perspective_matrix =
+    const Matrix4 skybox_view_perspective_matrix =
         compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
-        Matrix::rotate(camera.rotation).transpose();
+        Matrix4::rotate(camera.rotation).transpose();
 
     // 绑定天空盒材质
     resources.bind_material(resources.materials.get(skybox_mat_id));
