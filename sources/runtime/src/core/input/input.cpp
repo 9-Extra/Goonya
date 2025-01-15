@@ -2,6 +2,7 @@
 #include "core/events.h"
 #include "platform/display/display.h"
 #include <core/eventbus/eventbus.h>
+#include <cstddef>
 #include <cstdint>
 
 namespace Goonya {
@@ -25,6 +26,9 @@ void tick_update() {
     using namespace Detail;
     for (size_t i = 0; i < MAX_KEYCODE; i++) {
         keys_state_last_tick[i] = keys_state[i];
+    }
+    for (size_t i = 0;i < MOUSE_KEY_MAX;i++) {
+        mouse_key_state_last_tick[i] = mouse_key_state[i];
     }
     mouse_delta_x = 0;
     mouse_delta_y = 0;
