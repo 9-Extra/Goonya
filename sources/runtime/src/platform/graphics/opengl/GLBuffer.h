@@ -1,0 +1,103 @@
+#pragma once
+
+#include "../Buffer.h"
+#include "core/metatype/metatype.h"
+#include "runtime/GoonyaException.h"
+#include <cassert>
+#include <cstdint>
+#include <glad/glad.h>
+#include <span>
+
+namespace Goonya {
+namespace Graphics {
+
+static GLuint GLBufferType(BufferType type) {
+    switch (type) {
+    case STATIC:
+        return GL_STATIC_DRAW;
+    case DYNAMIC:
+        return GL_DYNAMIC_DRAW;
+    case READBACK:
+        return GL_STATIC_READ;
+    }
+
+    throw RuntimeError("Invaild BufferType");
+    return 0;
+}
+
+template <class T>
+class GLBufferImpl : public T {
+// 为了防止反复写Buffer的基础实现所以写进了模板里，避免菱形继承（也可以使用组合的方式）
+public:
+    GLBufferImpl(uint32_t size, BufferType type) : size(size), type(type) {
+        glCreateBuffers(1, &id);
+        glNamedBufferData(id, size, nullptr, GLBufferType(type));
+    };
+    template<typename D>
+    GLBufferImpl(std::span<const D> data, BufferType type) : size(data.size_bytes()), type(type) {
+        glCreateBuffers(1, &id);
+        glNamedBufferData(id, size, (void*)data.data(), GLBufferType(type));
+    };
+
+    GLuint get_id() const noexcept { return id; }
+
+    virtual uint32_t get_size() const noexcept override { return size; }
+    virtual BufferType get_type() const noexcept override { return type; }
+    // access
+    virtual void write(const std::span<uint8_t> data, uint32_t offset = 0) noexcept override {
+        assert(data.size_bytes() + offset <= get_size());
+        glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
+    };
+    virtual void *map() const noexcept override {
+        void *ptr = glMapNamedBuffer(id, GL_WRITE_ONLY);
+        assert(ptr);
+        return ptr;
+    };
+    virtual void unmap() const noexcept override { glUnmapNamedBuffer(id); };
+
+
+    virtual ~GLBufferImpl() { glDeleteBuffers(1, &id); }
+
+protected:
+    GLuint id;
+private:
+    uint32_t size;
+    BufferType type;
+};
+
+class GLBuffer : public GLBufferImpl<Buffer> {
+public:
+    using GLBufferImpl<Buffer>::GLBufferImpl;
+};
+
+class GLIndexBuffer : public GLBufferImpl<IndexBuffer> {
+public:
+    GLIndexBuffer(std::span<const uint16_t> indices)
+        : GLBufferImpl<IndexBuffer>(indices, BufferType::STATIC), index_count(indices.size()) {}
+    virtual void bind_indices() const noexcept { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); };
+    virtual uint32_t get_index_count() const noexcept{
+        return index_count;
+    };
+private:
+    uint32_t index_count;
+};
+
+class GLUniformBuffer : public GLBufferImpl<UniformBuffer> {
+public:
+    using GLBufferImpl<UniformBuffer>::GLBufferImpl;
+    virtual void bind_uniform(uint32_t binding) const noexcept override { glad_glBindBufferBase(GL_UNIFORM_BUFFER, binding, id); }
+};
+
+class GLVertexBuffer : public GLBufferImpl<VertexBuffer> {
+public:
+    template<typename D>
+    GLVertexBuffer(VertexLayout layout, std::span<const D> data): GLBufferImpl<VertexBuffer>(data, BufferType::STATIC)
+    {
+        vertex_layout = std::move(layout);
+        assert(vertex_layout.size == 0 || data.size_bytes() % vertex_layout.size == 0);
+    }
+    virtual void bind_vertices() const override;
+};
+
+} // namespace Graphics
+} // namespace Goonya

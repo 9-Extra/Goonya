@@ -4,84 +4,15 @@
 #include <glad/glad.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
-
-#include "function/graphics/opengl_utils.h"
 #include "platform/read_file.h"
 #include "core/metatype/metatype.h"
 #include "resource/resources.h"
-
-// namespace Goonya{
-// namespace Graphics {
-
-// struct ShaderDefine{
-//     // #define def_name def_val;
-//     std::string def_name;
-//     std::string def_val;
-
-//     bool operator==(const ShaderDefine& b) const noexcept{
-//         return def_name == b.def_name && def_val == b.def_val;
-//     }
-// };
-// }
-// }
-
-// template <>
-// struct std::hash<Goonya::Graphics::ShaderDefine>{
-//     size_t operator()(const Goonya::Graphics::ShaderDefine& def) const noexcept{
-//         static auto hasher = std::hash<std::string>();
-//         return hasher(def.def_name) ^ (hasher(def.def_val) << 1);
-//     }
-// };
+#include "platform/graphics/graphics.h"
 
 namespace Goonya {
 namespace Graphics {
-
-// 一个可写的uniform buffer对象的封装
-template <class T> class FixedUniformBufferWriter{
-public:
-    FixedUniformBufferWriter(GLuint id) noexcept: id(id){
-        ptr = (T*)glMapNamedBuffer(id, GL_WRITE_ONLY);
-        assert(ptr != nullptr);
-    }
-    FixedUniformBufferWriter(FixedUniformBufferWriter& other) = delete;
-
-    T* operator->() noexcept{
-        return ptr;
-    }
-
-    ~FixedUniformBufferWriter() noexcept{
-        bool ret = glUnmapNamedBuffer(id);
-        assert(ret);
-    }
-private:
-    GLuint id;
-    T* ptr;
-};
-
-template <class T> struct FixedUniformBuffer {
-    // 在初始化opengl后才能初始化
-    FixedUniformBuffer() noexcept{
-        glGenBuffers(1, &id);
-        glBindBuffer(GL_UNIFORM_BUFFER, id);
-        glBufferData(GL_UNIFORM_BUFFER, sizeof(T), nullptr, GL_DYNAMIC_DRAW);
-    }
-
-    FixedUniformBufferWriter<T> map() noexcept{
-        return FixedUniformBufferWriter<T>(id);
-    }
-
-    void bind(unsigned int binding_point) const noexcept{
-        glBindBufferBase(GL_UNIFORM_BUFFER, binding_point, id);
-    }
-
-    ~FixedUniformBuffer() noexcept{
-        glDeleteBuffers(1, &id);
-    }
-
-private:
-    unsigned int id;
-};
 
 struct ConstantBufferInfo{
     struct FieldInfo{
@@ -171,17 +102,21 @@ private:
     GLuint id;
 };
 
-struct UberShaderDesc {
-    std::string vs_path;
-    std::string ps_path;
-};
-
 struct ShaderResource {
     GLuint gl_id;
+    // std::vector<std::tuple<std::string, Meta::FieldType>> vertex_input;
 };
 
 class ShaderLib {
 public:
+    ~ShaderLib() {
+        for (const auto &[k, v] : shader_cache) {
+            glDeleteProgram(v.gl_id);
+        }
+        shader_cache.clear();
+        uber_shader_sources.clear();
+    }
+    
     void add_uber_shader(const std::string &name, const UberShaderDesc &desc) {
         assert(!uber_shader_sources.contains(name));
         uber_shader_sources.emplace(name,
@@ -200,13 +135,6 @@ public:
         return r;
     }
 
-    void drop() {
-        for (const auto &[k, v] : shader_cache) {
-            glDeleteProgram(v.gl_id);
-        }
-        shader_cache.clear();
-        uber_shader_sources.clear();
-    }
 
 private:
     struct UberShaderSource {

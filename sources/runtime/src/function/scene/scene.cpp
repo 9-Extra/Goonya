@@ -2,10 +2,12 @@
 
 #include <fstream>
 #include <json/json.h>
+#include "core/intrusive_ptr.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntSkybox.h"
+#include "platform/graphics/GraphicsResource.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -68,7 +70,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
                 obj->get_component<Graphics::CpntCamera>()->set_main_camera();
             }
         } else if (cpnt_name == "sky_box") {
-            uint32_t material_id = Graphics::resources.materials.find(cpnt_desc["material"].asString());
+            intrusive_ptr<Graphics::Material> material = Graphics::resources.materials.at(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
             if (cpnt_desc.isMember("bbox")){
@@ -76,7 +78,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             } else if (!ignore_range) {
                 throw RuntimeError("带范围的天空盒必须指定包围盒");
             }
-            obj->add_component(std::make_unique<Graphics::CpntSkybox>(material_id, ignore_range, bbox));
+            obj->add_component(std::make_unique<Graphics::CpntSkybox>(material, ignore_range, bbox));
         } else {
             throw RuntimeError(std::format("未知组件：{}", cpnt_name));
         }

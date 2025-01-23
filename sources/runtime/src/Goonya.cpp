@@ -4,11 +4,12 @@
 #include <imgui.h>
 #include <runtime/Goonya.h>
 
+#include "function/renderer/RenderResource.h"
 #include "function/renderer/Renderer.h"
 #include "platform/display/display.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
-#include "function/graphics/graphics.h"
+#include "platform/graphics/graphics.h"
 #include "platform/imgui/imgui_module.h"
 #include "core/input/input.h"
 #include "core/timer/timer.h"
@@ -37,7 +38,7 @@ void init_engine() {
     Input::initalize();
     Timer::initialize();
     Display::initalize(1080, 720);
-    Graphics::initialize();
+    Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
     Graphics::renderer.init();
 
     ImguiMng::init();
@@ -102,6 +103,9 @@ void main_loop() {
 void drop_engine() {
     LOG_WARN("退出");
 
+    world.clear();
+    Graphics::renderer.clear();
+    Graphics::resources.clear(); // 在设备drop之前清理资源
     ImguiMng::drop();
 
     Graphics::drop();

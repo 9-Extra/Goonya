@@ -4,11 +4,13 @@
 #include <json/json.h>
 
 #include "GraphicsResourceBuilder.h"
-#include "function/renderer/RenderResource.h"
 #include "core/cgmath.h"
+#include "function/renderer/RenderResource.h"
+#include "platform/graphics/GraphicsResource.h"
+
 
 namespace Goonya {
-namespace Resource{
+namespace Resource {
 
 void load_json(const std::string &path) {
     Json::Value json;
@@ -31,7 +33,8 @@ void load_json(const std::string &path) {
     if (json.isMember("shader")) {
         for (const auto &key : json["shader"].getMemberNames()) {
             const Json::Value &shader_desc = json["shader"][key];
-            Graphics::resources.add_shader(key, base_dir + shader_desc["vs_path"].asString(), base_dir + shader_desc["ps_path"].asString());
+            Graphics::resources.add_shader(key, base_dir + shader_desc["vs_path"].asString(),
+                                           base_dir + shader_desc["ps_path"].asString());
         }
     }
 
@@ -46,9 +49,10 @@ void load_json(const std::string &path) {
     if (json.isMember("cubemap")) {
         for (const auto &key : json["cubemap"].getMemberNames()) {
             const Json::Value &cubemap_desc = json["cubemap"][key];
-            Graphics::resources.add_cubemap(key, base_dir + cubemap_desc["px"].asString(), base_dir + cubemap_desc["nx"].asString(),
-                        base_dir + cubemap_desc["py"].asString(), base_dir + cubemap_desc["ny"].asString(),
-                        base_dir + cubemap_desc["pz"].asString(), base_dir + cubemap_desc["nz"].asString());
+            Graphics::resources.add_cubemap(
+                key, base_dir + cubemap_desc["px"].asString(), base_dir + cubemap_desc["nx"].asString(),
+                base_dir + cubemap_desc["py"].asString(), base_dir + cubemap_desc["ny"].asString(),
+                base_dir + cubemap_desc["pz"].asString(), base_dir + cubemap_desc["nz"].asString());
         }
     }
 
@@ -94,7 +98,6 @@ void load_json(const std::string &path) {
         Graphics::resources.add_material(key, mat_builder.build());
     }
 }
-
 
 void load_gltf(const std::string &base_key, const std::string &path) {
     std::string root = path;
@@ -167,7 +170,15 @@ void load_gltf(const std::string &base_key, const std::string &path) {
                 vertices[i] = {pos[i], normal[i], tang, uv[i]};
             }
 
-            Graphics::resources.add_mesh(key, vertices.data(), vertices.size(), indices_ptr, indices_count);
+            const static Graphics::VertexLayout vertex_layout{
+                {{0, "position", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
+                 {1, "normal", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
+                 {2, "tangent", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
+                 {3, "uv", Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
+                sizeof(Graphics::Vertex)};
+
+            Graphics::resources.add_mesh(key, vertex_layout, std::span(vertices),
+                                         std::span(indices_ptr, indices_count));
         }
     }
     // 加载纹理（在加载材质时加载需要的纹理）
@@ -220,5 +231,5 @@ void load_gltf(const std::string &base_key, const std::string &path) {
     }
 }
 
-}
-}
+} // namespace Resource
+} // namespace Goonya

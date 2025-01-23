@@ -9,6 +9,28 @@
 namespace Goonya {
 namespace Resource {
 
+/*
+资源键：指向特定资源的一组参数，很多时候它是一个名称。
+资源元数据：包括资源键和加载它需要的元数据，比较小，引擎启动后加载所有的资源元数据并永久驻留在内存中。加载资源时，通过元数据加载资源表示。
+资源表示：
+资源可能以各种形式保存在硬盘上，比如json，比如打包在一起的资源包，甚至可能在运行中生成。加载资源时，先将其加载为统一的资源表示，以方便不同的API进行加载。
++ 包含完整的资源内容，以及其依赖的子资源键（API加载时先检查是不是已经加载了，这是增加引用就行了不需要重新加载）
++ 与API无关（保存在内存中）
++ 可动态创建，可序列化
++ 在加载到设备后即可释放
+
+资源引用：
+对已经加载到设备的资源的引用，可以高效复制，一个加载到设备的资源中包含了其对其他的资源的引用，通过引用计数法管理。
++ 设备保存所有已加载资源的资源键及其弱引用，资源引用计数归0时删除记录
++ 可以通过引用反向查找资源键
++ 加载动态创建的资源时如果没有指定资源键，则为其临时创建资源键
+
+加载/使用资源的方法：
+1. 资源放进assets文件夹里，元数据写入json中，使用资源键加载
+2. 动态创建资源表示，添加依赖的子资源键（包括从资源引用获取），然后调用API加载，注意保持资源引用
+3. 动态创建资源键并加载，毕竟资源键可以是参数
+
+*/
 struct TextureDesc {
     std::string path;
 };
@@ -71,7 +93,7 @@ struct MaterialDesc {
         const void *data = nullptr;
     };
 
-    struct SampleData {
+    struct SamplerData {
         uint32_t binding_id;
         std::string texture_key;
         std::string texture_type;
@@ -81,7 +103,7 @@ struct MaterialDesc {
 
     PSODesc pso_desc;
     std::vector<UniformDataDesc> uniforms;
-    std::vector<SampleData> samplers;
+    std::vector<SamplerData> samplers;
 };
 
 } // namespace Resource

@@ -1,13 +1,14 @@
 #pragma once
 
-#include "function/graphics/opengl_utils.h"
 #include "../RenderItem.h"
-
+#include "core/intrusive_ptr.h"
+#include "platform/graphics/Buffer.h"
+#include "platform/graphics/graphics.h"
 
 namespace Goonya {
 namespace Graphics {
 // Pass 基类
-class Pass{
+class Pass {
 public:
     virtual void run() = 0;
     friend class Renderer;
@@ -17,13 +18,13 @@ public:
 
 class LambertianPass : public Pass {
 public:
-    void accept(RenderItem* part){
-        parts.push_back(part);
-    }
+    LambertianPass()
+        : per_frame_uniform(graphics_api->create_uniform_buffer(sizeof(PerFrameData), BufferType::DYNAMIC)),
+          per_object_uniform(graphics_api->create_uniform_buffer(sizeof(PerObjectData), BufferType::DYNAMIC)) {}
 
-    void reset() {
-        parts.clear();
-    }
+    void accept(RenderItem *part) { parts.push_back(part); }
+
+    void reset() { parts.clear(); }
 
     virtual void run() override;
 
@@ -43,38 +44,35 @@ private:
         PointLightData pointlight_list[POINTLIGNT_MAX];
     };
 
-    struct PerObjectData final{
+    struct PerObjectData final {
         Matrix4 model_matrix;
         Matrix4 normal_matrix;
     };
 
-    std::vector<RenderItem*> parts; // 记录要渲染的对象
-    FixedUniformBuffer<PerFrameData> per_frame_uniform;   // 用于一般渲染每帧变化的数据
-    FixedUniformBuffer<PerObjectData> per_object_uniform; // 用于一般渲染每个物体不同的数据
+    std::vector<RenderItem *> parts;          // 记录要渲染的对象
+    intrusive_ptr<UniformBuffer> per_frame_uniform;  // 用于一般渲染每帧变化的数据
+    intrusive_ptr<UniformBuffer> per_object_uniform; // 用于一般渲染每个物体不同的数据
 };
 
-class SkyBoxPass : public Pass{
+class SkyBoxPass : public Pass {
 public:
-    SkyBoxPass(){
-        mesh_id = resources.meshes.find("skybox_cube");
-    }
+    SkyBoxPass(): skybox_uniform(graphics_api->create_uniform_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)), mesh(resources.meshes.at("skybox_cube")) {}
 
     virtual void run() override;
+
 private:
     const static unsigned int SKYBOX_TEXTURE_BINDIGN = 5;
     struct SkyBoxData final {
         Matrix4 skybox_view_perspective_matrix;
     };
 
-    //每帧更新
-    FixedUniformBuffer<SkyBoxData> skybox_uniform;
-    //初始化时设定
-    uint32_t mesh_id;
+    intrusive_ptr<UniformBuffer> skybox_uniform;
+    intrusive_ptr<Mesh> mesh;
 };
 
 class PickupPass : public Pass {
 public:
-    PickupPass(){
+    PickupPass() {
         // 初始化pickup用的framebuffer
         glGenRenderbuffers(1, &framebuffer_pickup_rbo);
         glBindRenderbuffer(GL_RENDERBUFFER, framebuffer_pickup_rbo);
@@ -92,10 +90,11 @@ public:
 
     virtual void run() override;
 
-    ~PickupPass(){
+    ~PickupPass() {
         glDeleteRenderbuffers(1, &framebuffer_pickup_rbo);
         glDeleteFramebuffers(1, &framebuffer_pickup);
     }
+
 private:
     unsigned int framebuffer_pickup;
     unsigned int framebuffer_pickup_rbo;
@@ -108,5 +107,5 @@ private:
     }
 };
 
-}
-}
+} // namespace Graphics
+} // namespace Goonya

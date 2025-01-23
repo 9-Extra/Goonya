@@ -1,121 +1,73 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
-#include <iostream>
-#include <vector>
 #include <unordered_map>
-#include <functional>
+#include <vector>
 
-#include "RenderAspect.h"
-#include "function/graphics/shaderlib/shaderlib.h"
-#include "function/graphics/shaderlib/pso_cache.h"
+#include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/graphics.h"
+#include "runtime/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {
 
-struct Mesh {
-    GLuint VAO_id;
-    uint32_t indices_count;
-};
-
-struct Texture {
-    GLuint texture_id;
-};
-
-struct CubeMap {
-    GLuint texture_id;
-};
-
-
-struct Material {
-    struct UniformData {
-        GLuint binding_id;
-        GLuint buffer_id;
-    };
-    struct SampleData {
-        GLuint binding_id;
-        GLuint texture_id;
-        GLenum texture_type;
-        GLenum min_filter;
-        GLenum mag_filter;
-        GLenum warp_mode;
-    };
-
-    PipelineStateObject pipeline_state;
-    std::vector<UniformData> uniforms;
-    std::vector<SampleData> samplers;
-};
-
-struct Shader {
-    unsigned int program_id;
-};
-
 // 资源管理器，设计糟糕，待改进
 class RenderReousce final {
 public:
-    const static uint32_t INVALIED_ID = std::numeric_limits<uint32_t>::max(); 
-    template <class T> class ResourceContainer {
-    public:
-        uint32_t find(const std::string &key) const {
-#ifndef NDEBUG
-            if (look_up.find(key) == look_up.end()) {
-                std::cerr << std::format("Unknown {}: {}\n", typeid(T).name(), key);
-                exit(-1);
-            }
-#endif
-            return look_up.at(key);
-        }
-
-        void add(const std::string &key, T &&item) {
-            if (auto it = look_up.find(key); it != look_up.end()) {
-                std::cout << "Add duplicated key: " << key << std::endl;
-                uint32_t id = it->second;
-                container[id] = std::forward<T>(item);
-            } else {
-                uint32_t id = (uint32_t)container.size();
-                container.emplace_back(std::forward<T>(item));
-                look_up[key] = id;
-            }
-        }
-
-        const T &get(uint32_t id) const { return container[id]; }
-
-        void clear() {
-            look_up.clear();
-            container.clear();
-        }
-
-    private:
-        std::unordered_map<std::string, uint32_t> look_up;
-        std::vector<T> container;
-    };
+    template <class T>
+    using ResourceContainer = std::unordered_map<std::string, intrusive_ptr<T>>;
 
     ResourceContainer<Mesh> meshes;
     ResourceContainer<Material> materials;
     ResourceContainer<Texture> textures;
-    ResourceContainer<CubeMap> cubemaps;
-    PSOCache pso_cache;
 
-    std::vector<std::function<void()>> deconstructors;
-
-    void add_mesh(const std::string &key, const Vertex *vertices, size_t vertex_count, const uint16_t *const indices,
-                  size_t indices_count);
-    void add_mesh(const std::string &key, const std::vector<Vertex> &vertices, const std::vector<uint16_t> &indices) {
-        add_mesh(key, vertices.data(), vertices.size(), indices.data(), indices.size());
+    void clear(){
+        meshes.clear();
+        materials.clear();
+        textures.clear();
     }
-    void add_pipeline_state(const std::string& key, const Resource::PSODesc& desc);
-    void add_material(const std::string &key, const Resource::MaterialDesc &desc);
-    void add_texture(const std::string &key, const std::string &image_path, bool is_color = false);
+
+    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
+        LOG_INFO("Loading Mesh: {}", key);
+        
+        meshes.emplace(key, graphics_api->load_mesh(vertex_layout, raw_vertices, indices));
+    };
+    template<typename D> requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
+    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<const D> vertices, std::span<const uint16_t> indices){
+        add_mesh(key, vertex_layout, std::span((uint8_t* const)vertices.data(), vertices.size_bytes()), indices);
+    }
+
+    template<typename D> requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
+    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<D> vertices, std::span<const uint16_t> indices){
+        add_mesh(key, vertex_layout, std::span((uint8_t* const)vertices.data(), vertices.size_bytes()), indices);
+    }
+
+    void add_material(const std::string &key, const Resource::MaterialDesc &desc) {
+        LOG_INFO("Loading Material: {}", key);
+        std::vector<intrusive_ptr<Texture>> tx;
+        for(const auto& s: desc.samplers){
+            tx.emplace_back(textures.at(s.texture_key));
+        }
+        materials.emplace(key, graphics_api->load_material(desc, tx));
+    }
+    void add_texture(const std::string &key, const std::string &image_path, bool is_color = false) {
+        LOG_INFO("Loading Texture: {}", key);
+        textures.emplace(key, graphics_api->load_texture2D(image_path, is_color));
+    }
     void add_cubemap(const std::string &key, const std::string &image_px, const std::string &image_nx,
                      const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
-                     const std::string &image_nz);
-    void add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path);
-    void clear();
-
-    void bind_material(const Material& mat) const;
+                     const std::string &image_nz) {
+        LOG_INFO("Loading CubeMap: {}", key);
+        textures.emplace(key, graphics_api->load_cubemap(image_px, image_nx, image_py, image_ny, image_pz, image_nz));
+    };
+    void add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path) {
+        LOG_INFO("Loading Shader: {}", key);
+        graphics_api->load_uber_shader(key, UberShaderDesc{vs_path, ps_path});
+    }
 };
 
 extern RenderReousce resources;
 
-}
-}
+} // namespace Graphics
+} // namespace Goonya

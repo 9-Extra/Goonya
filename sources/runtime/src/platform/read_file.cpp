@@ -5,7 +5,7 @@
 #include <fstream>
 
 namespace Goonya {
-// Mingw的ifstream不知道为什么导致了崩溃，手动实现文件读取
+
 std::string read_whole_file(const std::filesystem::path& path) {
     std::ifstream f(path, std::ios::in | std::ios::binary);
     if (!f){

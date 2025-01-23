@@ -1,6 +1,8 @@
 #pragma once
 
 #include "core/cgmath.h"
+#include "core/intrusive_ptr.h"
+#include "platform/graphics/GraphicsResource.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -38,13 +40,6 @@ public:
     }
 };
 
-struct Vertex {
-    Vector3f position;
-    Vector3f normal;
-    Vector3f tangent;
-    Vector2f uv;
-};
-
 struct PointLight {
     Vector3f position;
     Vector3f color;
@@ -57,7 +52,7 @@ struct DirectionalLight {
 };
 
 struct Skybox {
-    uint32_t material_id;
+    intrusive_ptr<Material> material;
     bool ignore_range;
     BoundingBox bbox;
 };

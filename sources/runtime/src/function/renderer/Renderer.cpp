@@ -2,6 +2,8 @@
 
 #include "HardcodeAssets.h"
 #include "core/eventbus/eventbus.h"
+#include "core/metatype/metatype.h"
+#include "function/renderer/RenderResource.h"
 #include "platform/display/display.h"
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/ResourceJsonLoader.h"
@@ -35,44 +37,29 @@ void init_resource() {
 
         resources.add_material("default", green_material_desc);
     }
-    // 部分硬编码的mesh
-    resources.add_mesh("default", {}, {});
-    resources.add_mesh("plane", Assets::plane_vertices, Assets::plane_indices);
-
-    // 添加天空盒的mesh，因为格式不一样所以单独处理
     {
-        GLuint vao_id, ibo_id, vbo_id;
-        glGenVertexArrays(1, &vao_id);
-        glGenBuffers(1, &ibo_id);
-        glGenBuffers(1, &vbo_id);
+        // 部分硬编码的mesh
+        resources.add_mesh("default",Graphics::VertexLayout{{}, 0}, {}, {});
 
-        glBindVertexArray(vao_id);
+        const Graphics::VertexLayout vertex_layout{
+                {{0, "position", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
+                 {1, "normal", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
+                 {2, "tangent", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
+                 {3, "uv", Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
+                sizeof(Graphics::Vertex)};
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_id);
-        glBufferData(GL_ARRAY_BUFFER, Assets::skybox_cube_vertices.size() * sizeof(Vector3f),
-                     Assets::skybox_cube_vertices.data(), GL_STATIC_DRAW);
+        resources.add_mesh("plane", vertex_layout,
+                        std::span(Assets::plane_vertices),
+                        Assets::plane_indices);
+    }
 
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo_id);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, Assets::skybox_cube_indices.size() * sizeof(uint16_t),
-                     Assets::skybox_cube_indices.data(), GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vector3f), (void *)0);
-        glEnableVertexAttribArray(0);
-
-        checkError();
-
-        glBindVertexArray(0);
-
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-        resources.meshes.add("skybox_cube", Mesh{vao_id, (uint32_t)Assets::skybox_cube_indices.size()});
-        // 注册销毁用回调函数在程序结束时调用
-        resources.deconstructors.emplace_back([vao_id, vbo_id, ibo_id]() {
-            glDeleteVertexArrays(1, &vao_id);
-            glDeleteBuffers(1, &vbo_id);
-            glDeleteBuffers(1, &ibo_id);
-            checkError();
-        });
+    {
+        // 添加天空盒的mesh，因为格式不一样所以单独处理
+        const Graphics::VertexLayout vertex_layout{
+            {{0, "position", Meta::FieldType::vec3f, 0}},
+            sizeof(Vector3f)
+        };
+        resources.add_mesh("skybox_cube", vertex_layout, std::span(Assets::skybox_cube_vertices), std::span(Assets::skybox_cube_indices));
     }
 }
 void Renderer::init() {
@@ -94,4 +81,4 @@ void Renderer::init() {
     pickup_pass = std::make_unique<PickupPass>();
 }
 } // namespace Graphics
-}
+} // namespace Goonya

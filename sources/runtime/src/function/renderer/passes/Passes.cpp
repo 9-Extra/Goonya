@@ -1,7 +1,9 @@
 #include "Passes.h"
 
 #include "../Renderer.h"
-#include "function/graphics/opengl_utils.h"
+#include "core/intrusive_ptr.h"
+#include "platform/graphics/Buffer.h"
+#include "platform/graphics/GraphicsResource.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -14,21 +16,21 @@ void LambertianPass::run() {
     glViewport(v.x, v.y, v.width, v.height);
     // 清除旧画面
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    checkError();
     // 绑定per_frame和per_object uniform buffer
-    per_frame_uniform.bind(0);
-    per_object_uniform.bind(1);
-
+    per_frame_uniform->bind_uniform(0);
+    per_object_uniform->bind_uniform(1);
+    checkError();
     // 计算透视投影矩阵
     const float aspect = float(v.width) / float(v.height);
     const Camera &camera = renderer.main_camera;
     const Matrix4 view_perspective_matrix = compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
                                            Matrix4::rotate(camera.rotation).transpose() *
                                            Matrix4::translate(-camera.position);
-
+    checkError();
     {
         // 填充per_frame uniform数据
-        auto data = per_frame_uniform.map();
+        StructBufferWriter<PerFrameData> data(per_frame_uniform);
         // 透视投影矩阵
         data->view_perspective_matrix = view_perspective_matrix.transpose();
         // 相机位置
@@ -50,23 +52,22 @@ void LambertianPass::run() {
         data->pointlight_num = count;
         // 填充结束
     }
-
+    checkError();
     // 遍历所有part，绘制每一个part
     for (const RenderItem *p : parts) {
         // 查找并绑定材质
-        const Material &material = resources.materials.get(p->material_id);
-        resources.bind_material(material);
+        checkError();
+        p->material->bind();
+        checkError();
         {
             // 填充per_object uniform buffer
-            auto data = per_object_uniform.map();
+            StructBufferWriter<PerObjectData> data(per_object_uniform);
             data->model_matrix = p->root_transform.transpose();      // 变换矩阵
             data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
         }
+        p->mesh->bind();
 
-        const Mesh &mesh = resources.meshes.get(p->mesh_id); // 网格数据
-
-        glBindVertexArray(mesh.VAO_id);                                        // 绑定网格
-        glDrawElements(p->topology, mesh.indices_count, GL_UNSIGNED_SHORT, 0); // 绘制
+        glDrawElements(p->topology, p->mesh->get_indices_count(), GL_UNSIGNED_SHORT, 0); // 绘制
         checkError();
     }
 }
@@ -77,7 +78,7 @@ void SkyBoxPass::run() {
     Vector3f camera_pos = camera.position;
 
     // 寻找包含且最小，接近中心的天空盒
-    uint32_t skybox_mat_id = RenderReousce::INVALIED_ID;
+    Material* skybox_material = nullptr;
     float min_distance = std::numeric_limits<float>::infinity();
     for (const Skybox &s : renderer.current_skyboxs) {
         if (!s.ignore_range && !s.bbox.contains(camera_pos)) {
@@ -85,12 +86,12 @@ void SkyBoxPass::run() {
         }
         float d = s.ignore_range ? std::numeric_limits<float>::max() : (s.bbox.center() - camera_pos).square();
         if (d < min_distance) {
-            skybox_mat_id = s.material_id;
+            skybox_material = s.material.get();
             min_distance = d;
         }
     }
 
-    if (skybox_mat_id == RenderReousce::INVALIED_ID) {
+    if (skybox_material == nullptr) {
         return; // 没有合适的天空盒，跳过
     }
 
@@ -103,18 +104,16 @@ void SkyBoxPass::run() {
         Matrix4::rotate(camera.rotation).transpose();
 
     // 绑定天空盒材质
-    resources.bind_material(resources.materials.get(skybox_mat_id));
+    skybox_material->bind();
     {
         // 填充天空盒需要的参数（透视投影矩阵）
-        auto data = skybox_uniform.map();
+        StructBufferWriter<SkyBoxData> data(skybox_uniform);
         data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
     }
-    skybox_uniform.bind(0);
+    skybox_uniform->bind_uniform(0);
     // 获取天空盒的网格（向内的Cube）
-    const Mesh &mesh = resources.meshes.get(mesh_id);
-
-    glBindVertexArray(mesh.VAO_id);                                         // 绑定网格
-    glDrawElements(GL_TRIANGLES, mesh.indices_count, GL_UNSIGNED_SHORT, 0); // 绘制
+    mesh->bind();
+    glDrawElements(GL_TRIANGLES, mesh->get_indices_count(), GL_UNSIGNED_SHORT, 0); // 绘制
     checkError();
 }
 

@@ -29,8 +29,7 @@ GLuint complie_shader_program(const std::string &vs_src, const std::string &ps_s
     unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
     unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
 
-    GLuint shaderProgram;
-    shaderProgram = glCreateProgram();
+    GLuint shaderProgram = glCreateProgram();
 
     glAttachShader(shaderProgram, vs);
     glAttachShader(shaderProgram, ps);
@@ -60,7 +59,7 @@ std::string mix_shader_definations(const std::string& src, const std::unordered_
     ss << "//------Combined Definations---------: \n";
 
     for(const auto& [k, v] : definations){
-        ss << std::format("#define {} {}\n", k, v);
+        ss << std::format("#ifdef {0}\n#undef {0}\n#endif\n#define {0} {1}\n", k, v);
     }
 
     ss << "//------Combined Defination End------: \n";

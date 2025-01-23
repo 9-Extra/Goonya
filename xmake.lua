@@ -9,7 +9,7 @@ add_requires("freeimage")
 add_requires("spdlog")
 add_requires("jsoncpp")
 
-if is_mode("debug", "profile") then
+if is_mode("debug") then
     add_defines("DEBUG")
 else 
     add_defines("NDEBUG")
