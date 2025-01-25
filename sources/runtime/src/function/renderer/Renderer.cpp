@@ -78,7 +78,6 @@ void Renderer::init() {
 
     lambertian_pass = std::make_unique<LambertianPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();
-    pickup_pass = std::make_unique<PickupPass>();
 }
 } // namespace Graphics
 } // namespace Goonya

@@ -11,10 +11,10 @@ namespace Graphics {
 class Renderer final {
 public:
     struct Viewport {
-        GLint x;
-        GLint y;
-        GLsizei width;
-        GLsizei height;
+        int32_t x;
+        int32_t y;
+        int32_t width;
+        int32_t height;
     } main_viewport; // 主视口
 
     Camera main_camera;             // 主像机
@@ -50,21 +50,19 @@ public:
         is_camera_updated = false;
     }
 
-    void set_viewport(GLint x, GLint y, GLsizei width, GLsizei height) { main_viewport = {x, y, width, height}; }
+    void set_viewport(int32_t  x, int32_t  y, int32_t  width, int32_t  height) { main_viewport = {x, y, width, height}; }
 
     void clear() {
         current_skyboxs.clear();
 
         lambertian_pass.reset();
         skybox_pass.reset();
-        pickup_pass.reset();
     }
 
 private:
     // passes
     std::unique_ptr<LambertianPass> lambertian_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
-    std::unique_ptr<PickupPass> pickup_pass;
 };
 
 extern Renderer renderer;

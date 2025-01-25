@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../Buffer.h"
-#include "core/metatype/metatype.h"
 #include "runtime/GoonyaException.h"
 #include <cassert>
 #include <cstdint>

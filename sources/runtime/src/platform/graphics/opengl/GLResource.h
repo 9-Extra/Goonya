@@ -27,12 +27,13 @@ public:
     }
 private:
     GLuint vao_id;
+    GLenum topology;
     intrusive_ptr<GLVertexBuffer> vertex_buffers;
     intrusive_ptr<GLIndexBuffer> index_buffer;
 
     friend class OpenGLGraphicsAPI;
-    GLMesh(GLuint vao_id, intrusive_ptr<GLVertexBuffer> vertex_buffers, intrusive_ptr<GLIndexBuffer> index_buffer)
-    : vao_id(vao_id), vertex_buffers(vertex_buffers), index_buffer(index_buffer)
+    GLMesh(GLuint vao_id, GLenum topology, intrusive_ptr<GLVertexBuffer> vertex_buffers, intrusive_ptr<GLIndexBuffer> index_buffer)
+    : vao_id(vao_id), topology(topology), vertex_buffers(vertex_buffers), index_buffer(index_buffer)
     {}
 };
 

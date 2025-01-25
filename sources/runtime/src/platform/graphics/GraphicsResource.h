@@ -20,6 +20,12 @@ struct UberShaderDesc {
     std::string ps_path;
 };
 
+enum class Topology{
+    POINT,
+    LINE,
+    TRIANGLE
+};
+
 class Mesh: public intrusive_ptr_base<Mesh>{
 public:
     virtual void bind() = 0;    

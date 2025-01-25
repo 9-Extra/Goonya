@@ -1,5 +1,6 @@
 #include "OpenGLAPI.h"
 #include <FreeImage.h>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
@@ -8,6 +9,7 @@
 #include "GLBuffer.h"
 #include "GLResource.h"
 #include "GLTexture.h"
+#include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/GraphicsResource.h"
@@ -124,7 +126,16 @@ intrusive_ptr<Material> OpenGLGraphicsAPI::load_material(const Resource::Materia
     return mat;
 }
 
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
+static GLenum Topology2OpenGL(Topology t){
+    switch (t) {
+        case Topology::POINT: return GL_POINTS;
+        case Topology::LINE: return GL_LINES;
+        case Topology::TRIANGLE: return GL_TRIANGLES;
+    }
+    return GL_INVALID_VALUE;
+}
+
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
 
@@ -140,7 +151,7 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const VertexLayout& vertex_layo
         checkError();
     }
 
-    return intrusive_ptr<GLMesh>{new GLMesh{vao_id, vertex_buffer, index_buffer}};
+    return intrusive_ptr<GLMesh>{new GLMesh{vao_id, Topology2OpenGL(topology), vertex_buffer, index_buffer}};
 }
 // virtual void load_material(const std::string &key, const Resource::MaterialDesc &desc);
 intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const std::string &image_path, bool is_color) {
@@ -220,5 +231,49 @@ intrusive_ptr<UniformBuffer> OpenGLGraphicsAPI::create_uniform_buffer(uint32_t s
     return intrusive_ptr<GLUniformBuffer>(size, type);
 }
 
+intrusive_ptr<RenderTarget> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
+    return intrusive_ptr<GLRenderTarget>(size);
+}
+
+// ---------------------drawcall---------------------------
+void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::optional<float> depth,
+                                            std::optional<int> stencil) noexcept {
+    if (color) {
+        Color c = *color;
+        glClearColor(c.r, c.g, c.b, c.a);
+    }
+    if (depth) {
+        glClearDepthf(*depth);
+    }
+    if (stencil) {
+        glClearStencil(*stencil);
+    }
+};
+void OpenGLGraphicsAPI::clear(bool color, bool depth, bool stencil) const noexcept {
+    GLbitfield bit = 0;
+    bit |= color ? GL_COLOR_BUFFER_BIT : 0;
+    bit |= depth ? GL_DEPTH_BUFFER_BIT : 0;
+    bit |= stencil ? GL_STENCIL_BUFFER_BIT : 0;
+    glClear(bit);
+}
+
+void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
+    GLMesh* gl_mesh = dynamic_cast<GLMesh*>(mesh.get());
+    assert(gl_mesh);
+
+    gl_mesh->bind();
+
+    glDrawElements(gl_mesh->topology, gl_mesh->get_indices_count(), GL_UNSIGNED_SHORT, 0); // 绘制
+    check_error(__FILE__, __LINE__);
+}
+
+// -----------------------bind-------------------------------
+void OpenGLGraphicsAPI::bind_rendertarget_screen() noexcept{
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // 绑定默认帧缓冲
+    glDrawBuffer(GL_BACK); // 渲染到后缓冲区
+}
+void OpenGLGraphicsAPI::set_viewport(int32_t x, int32_t y, int32_t w, int32_t h) noexcept{
+    glViewport(x, y, w, h);
+}
 } // namespace Graphics
 } // namespace Goonya

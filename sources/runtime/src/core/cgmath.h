@@ -59,11 +59,11 @@ struct Vector2f {
 };
 
 struct Color {
-    float r, g, b;
+    float r, g, b, a = 1.0f;
 
     inline const float *data() const { return (float *)this; }
 
-    inline bool operator==(const Color &ps) { return r == ps.r && g == ps.g && b == ps.b; }
+    inline bool operator==(const Color &ps) { return r == ps.r && g == ps.g && b == ps.b && a == ps.a;}
 
     inline bool operator!=(const Color &ps) { return !(*this == ps); }
 };

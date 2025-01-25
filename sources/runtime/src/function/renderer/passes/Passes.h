@@ -70,42 +70,5 @@ private:
     intrusive_ptr<Mesh> mesh;
 };
 
-class PickupPass : public Pass {
-public:
-    PickupPass() {
-        // 初始化pickup用的framebuffer
-        glGenRenderbuffers(1, &framebuffer_pickup_rbo);
-        glBindRenderbuffer(GL_RENDERBUFFER, framebuffer_pickup_rbo);
-        glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-        // 完整的初始化推迟到使用的时候
-        checkError();
-
-        glGenFramebuffers(1, &framebuffer_pickup);
-        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_pickup);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, framebuffer_pickup_rbo);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        checkError();
-    }
-
-    virtual void run() override;
-
-    ~PickupPass() {
-        glDeleteRenderbuffers(1, &framebuffer_pickup_rbo);
-        glDeleteFramebuffers(1, &framebuffer_pickup);
-    }
-
-private:
-    unsigned int framebuffer_pickup;
-    unsigned int framebuffer_pickup_rbo;
-
-    // 设置framebuffer大小，显然要和视口一样大
-    void set_framebuffer_size(unsigned int width, unsigned int height) {
-        glNamedRenderbufferStorage(framebuffer_pickup_rbo, GL_R32UI, width, height);
-        checkError();
-        assert(glCheckNamedFramebufferStatus(framebuffer_pickup, GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
-    }
-};
-
 } // namespace Graphics
 } // namespace Goonya

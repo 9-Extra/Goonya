@@ -52,7 +52,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
             if (cpnt_desc.isMember("parts")){
                 for(const Json::Value &p : cpnt_desc["parts"]) {
-                    cpnt_ptr->add_part(Graphics::RenderItem{p["mesh"].asString(), p["material"].asString(), GL_TRIANGLES, load_transform(p)});
+                    cpnt_ptr->add_part(Graphics::RenderItem{p["mesh"].asString(), p["material"].asString(), load_transform(p)});
                 }
             }
             obj->add_component(std::move(cpnt_ptr));   

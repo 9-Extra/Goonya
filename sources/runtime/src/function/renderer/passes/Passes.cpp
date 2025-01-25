@@ -2,8 +2,10 @@
 
 #include "../Renderer.h"
 #include "core/intrusive_ptr.h"
+#include "function/renderer/RenderItem.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/graphics.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -11,11 +13,12 @@ namespace Graphics {
 // 一般物体渲染
 void LambertianPass::run() {
     // 初始化渲染配置
-    glDrawBuffer(GL_BACK); // 渲染到后缓冲区
+    graphics_api->bind_rendertarget_screen();
     Renderer::Viewport &v = renderer.main_viewport;
-    glViewport(v.x, v.y, v.width, v.height);
+    graphics_api->set_viewport(v.x, v.y, v.width, v.height);
     // 清除旧画面
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f});
+    graphics_api->clear();
     checkError();
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
@@ -56,19 +59,14 @@ void LambertianPass::run() {
     // 遍历所有part，绘制每一个part
     for (const RenderItem *p : parts) {
         // 查找并绑定材质
-        checkError();
         p->material->bind();
-        checkError();
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);
             data->model_matrix = p->root_transform.transpose();      // 变换矩阵
             data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
         }
-        p->mesh->bind();
-
-        glDrawElements(p->topology, p->mesh->get_indices_count(), GL_UNSIGNED_SHORT, 0); // 绘制
-        checkError();
+        graphics_api->draw(p->mesh);
     }
 }
 
@@ -95,7 +93,7 @@ void SkyBoxPass::run() {
         return; // 没有合适的天空盒，跳过
     }
 
-    glDrawBuffer(GL_BACK); // 渲染到后缓冲区
+    graphics_api->bind_rendertarget_screen();
 
     // 用于天空盒的投影矩阵
     const float aspect = float(renderer.main_viewport.width) / float(renderer.main_viewport.height);
@@ -111,23 +109,7 @@ void SkyBoxPass::run() {
         data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
     }
     skybox_uniform->bind_uniform(0);
-    // 获取天空盒的网格（向内的Cube）
-    mesh->bind();
-    glDrawElements(GL_TRIANGLES, mesh->get_indices_count(), GL_UNSIGNED_SHORT, 0); // 绘制
-    checkError();
-}
-
-// 拾取
-void PickupPass::run() {
-    set_framebuffer_size(renderer.main_viewport.width, renderer.main_viewport.height);
-    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer_pickup);
-    glViewport(0, 0, renderer.main_viewport.width, renderer.main_viewport.height);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    // todo
-
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    graphics_api->draw(mesh);
 }
 
 } // namespace Graphics

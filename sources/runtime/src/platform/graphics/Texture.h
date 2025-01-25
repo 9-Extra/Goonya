@@ -8,7 +8,7 @@
 namespace Goonya {
 namespace Graphics {
 
-
+// ============纹理================
 class Texture: public intrusive_ptr_base<Texture>{
 public:
     virtual ~Texture() = default;
@@ -21,9 +21,6 @@ public:
 };
 
 class TextureCube: public Texture{};
-
-
-
 
 }
 }

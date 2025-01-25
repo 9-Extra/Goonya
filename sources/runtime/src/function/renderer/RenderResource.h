@@ -28,19 +28,18 @@ public:
         textures.clear();
     }
 
-    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
+    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices, Topology topology = Topology::TRIANGLE) {
         LOG_INFO("Loading Mesh: {}", key);
-        
-        meshes.emplace(key, graphics_api->load_mesh(vertex_layout, raw_vertices, indices));
+        meshes.emplace(key, graphics_api->load_mesh(topology, vertex_layout, raw_vertices, indices));
     };
     template<typename D> requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<const D> vertices, std::span<const uint16_t> indices){
-        add_mesh(key, vertex_layout, std::span((uint8_t* const)vertices.data(), vertices.size_bytes()), indices);
+    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<const D> vertices, std::span<const uint16_t> indices, Topology topology = Topology::TRIANGLE){
+        add_mesh(key, vertex_layout, std::span((uint8_t* const)vertices.data(), vertices.size_bytes()), indices, topology);
     }
 
     template<typename D> requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<D> vertices, std::span<const uint16_t> indices){
-        add_mesh(key, vertex_layout, std::span((uint8_t* const)vertices.data(), vertices.size_bytes()), indices);
+    void add_mesh(const std::string &key, const VertexLayout& vertex_layout, std::span<D> vertices, std::span<const uint16_t> indices, Topology topology = Topology::TRIANGLE){
+        add_mesh(key, vertex_layout, std::span((uint8_t* const)vertices.data(), vertices.size_bytes()), indices, topology);
     }
 
     void add_material(const std::string &key, const Resource::MaterialDesc &desc) {

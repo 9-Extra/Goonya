@@ -15,6 +15,9 @@ public:
     void bind(uint32_t binding) const noexcept{
         glBindTextureUnit(binding, texture_id);
     }
+    GLuint get_id() const noexcept{
+        return texture_id;
+    }
 protected:
     friend class OpenGLGraphicsAPI;
     friend class GLMaterial;
