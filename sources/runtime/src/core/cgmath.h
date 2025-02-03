@@ -373,7 +373,7 @@ struct Transform {
         return {sinf(yaw) * cosf(pitch), sinf(pitch), -cosf(pitch) * cosf(yaw)};
     }
 
-    Matrix4 transform_matrix() const {
+    Matrix4 model_matrix() const {
         return Matrix4::translate(position) * Matrix4::rotate(rotation) * Matrix4::scale(scale);
     }
     Matrix4 normal_matrix() const {

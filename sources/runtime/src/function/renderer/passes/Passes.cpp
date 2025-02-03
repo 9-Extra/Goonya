@@ -63,8 +63,8 @@ void LambertianPass::run() {
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);
-            data->model_matrix = p->root_transform.transpose();      // 变换矩阵
-            data->normal_matrix = p->root_normal_matrix.transpose(); // 法线变换矩阵
+            data->model_matrix = p->world_model_matrix.transpose();      // 变换矩阵
+            data->normal_matrix = p->world_normal_matrix.transpose(); // 法线变换矩阵
         }
         graphics_api->draw(p->mesh);
     }

@@ -16,10 +16,12 @@ int main() {
     try {
         Goonya::init_engine();
 
-        Goonya::Scene::Scene scene = Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了  
-        Goonya::world.get_root().swap(scene.root);
+        {
+            Goonya::Scene::Scene scene = Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了  
+            Goonya::world.root = scene.root;
+        }
 
-        Goonya::world.get_root()->add_component(std::make_unique<MoveSystem>());
+        Goonya::world.root->add_component(std::make_unique<MoveSystem>());
 
         Goonya::main_loop();
 

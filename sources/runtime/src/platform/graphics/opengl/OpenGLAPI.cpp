@@ -1,5 +1,6 @@
 #include "OpenGLAPI.h"
 #include <FreeImage.h>
+#include <GLFW/glfw3.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -38,7 +39,7 @@ static FIBITMAP *freeimage_load_and_convert_image(const std::string &image_path,
 }
 
 OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
-    GLenum err = gladLoadGL();
+    GLenum err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
     if (err != GL_TRUE) {
         LOG_ERROR("gladLoadGL Error: {}", err);
     }

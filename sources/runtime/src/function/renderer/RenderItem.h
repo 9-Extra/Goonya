@@ -18,11 +18,11 @@ struct RenderItem {
     RenderItem(const std::string &mesh_name, const std::string &material_name,
                const Transform &transform = {{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}})
         : mesh(resources.meshes.at(mesh_name)), material(resources.materials.at(material_name)),
-          model_matrix(transform.transform_matrix()), normal_matrix(transform.normal_matrix()) {}
+          model_matrix(transform.model_matrix()), normal_matrix(transform.normal_matrix()) {}
 
     // 在遍历节点树时计算和填写
-    Matrix4 root_transform;
-    Matrix4 root_normal_matrix;
+    Matrix4 world_model_matrix;
+    Matrix4 world_normal_matrix;
 };
 
 } // namespace Graphics

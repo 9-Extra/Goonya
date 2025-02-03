@@ -103,7 +103,7 @@ void main_loop() {
 void drop_engine() {
     LOG_WARN("退出");
 
-    world.clear();
+    world.reset();
     Graphics::renderer.clear();
     Graphics::resources.clear(); // 在设备drop之前清理资源
     ImguiMng::drop();

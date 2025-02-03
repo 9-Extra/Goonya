@@ -145,11 +145,11 @@ public:
         return dirty_flag;
     }
 
-    const Matrix4& get_root_transform_matrix() const noexcept{
-        return root_model_matrix;
+    const Matrix4& get_world_model_matrix() const noexcept{
+        return world_model_matrix;
     }
-    const Matrix4& get_root_normal_matrix() const noexcept{
-        return root_normal_matrix;
+    const Matrix4& get_world_normal_matrix() const noexcept{
+        return world_normal_matrix;
     }
 
     const std::vector<std::shared_ptr<GObject>> &get_children() const noexcept{ return children; }
@@ -209,8 +209,8 @@ private:
 
     Transform transform;  // 相对父节点的变换
 
-    Matrix4 root_model_matrix;  // 相对根节点的变换
-    Matrix4 root_normal_matrix; // 相对根节点的法线变换
+    Matrix4 world_model_matrix;  // 世界根节点的变换
+    Matrix4 world_normal_matrix; // 世界根节点的法线变换
 
     std::vector<std::unique_ptr<Component>> components;
     std::weak_ptr<GObject> parent;

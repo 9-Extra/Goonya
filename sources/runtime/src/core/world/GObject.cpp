@@ -11,12 +11,12 @@ void GObject::tick(DirtyFlag parent_flag) {
     if (dirty_flag[DirtyFlag::TRANSFORM_DIRTY]) {
         if (has_parent()) {
             // 子节点的transform为父节点的transform叠加上自身的transform
-            root_model_matrix = get_parent().lock()->root_model_matrix * transform.transform_matrix();
-            root_normal_matrix = get_parent().lock()->root_normal_matrix * transform.normal_matrix();
+            world_model_matrix = get_parent().lock()->world_model_matrix * transform.model_matrix();
+            world_normal_matrix = get_parent().lock()->world_normal_matrix * transform.normal_matrix();
         } else {
             // 对于根节点特殊处理
-            root_model_matrix = transform.transform_matrix();
-            root_normal_matrix = transform.normal_matrix();
+            world_model_matrix = transform.model_matrix();
+            world_normal_matrix = transform.normal_matrix();
         }
     }
     // 更新组件
