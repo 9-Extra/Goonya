@@ -7,6 +7,7 @@
 #include "platform/display/display.h"
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/ResourceJsonLoader.h"
+#include "resource/resources.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -39,27 +40,24 @@ void init_resource() {
     }
     {
         // 部分硬编码的mesh
-        resources.add_mesh("default",Graphics::VertexLayout{{}, 0}, {}, {});
+        resources.add_mesh("default", Resource::VertexLayout{{}, 0}, {}, {});
 
-        const Graphics::VertexLayout vertex_layout{
-                {{0, "position", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
-                 {1, "normal", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
-                 {2, "tangent", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
-                 {3, "uv", Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
-                sizeof(Graphics::Vertex)};
+        const Resource::VertexLayout vertex_layout{
+            {{Resource::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
+             {Resource::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
+             {Resource::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
+             {Resource::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
+            sizeof(Graphics::Vertex)};
 
-        resources.add_mesh("plane", vertex_layout,
-                        std::span(Assets::plane_vertices),
-                        Assets::plane_indices);
+        resources.add_mesh("plane", vertex_layout, std::span(Assets::plane_vertices), Assets::plane_indices);
     }
 
     {
         // 添加天空盒的mesh，因为格式不一样所以单独处理
-        const Graphics::VertexLayout vertex_layout{
-            {{0, "position", Meta::FieldType::vec3f, 0}},
-            sizeof(Vector3f)
-        };
-        resources.add_mesh("skybox_cube", vertex_layout, std::span(Assets::skybox_cube_vertices), std::span(Assets::skybox_cube_indices));
+        const Resource::VertexLayout vertex_layout{{{Resource::VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}},
+                                                   sizeof(Vector3f)};
+        resources.add_mesh("skybox_cube", vertex_layout, std::span(Assets::skybox_cube_vertices),
+                           std::span(Assets::skybox_cube_indices));
     }
 }
 void Renderer::init() {

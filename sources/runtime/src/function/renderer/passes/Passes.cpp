@@ -58,8 +58,7 @@ void LambertianPass::run() {
     checkError();
     // 遍历所有part，绘制每一个part
     for (const RenderItem *p : parts) {
-        // 查找并绑定材质
-        p->material->bind();
+        p->material->bind(); // 绑定材质
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);

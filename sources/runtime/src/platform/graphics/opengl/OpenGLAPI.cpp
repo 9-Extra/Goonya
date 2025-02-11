@@ -15,6 +15,7 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/GraphicsResource.h"
 #include "platform/graphics/graphics.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "runtime/GoonyaException.h"
 #include "runtime/log/Log.h"
 
@@ -127,7 +128,7 @@ intrusive_ptr<Material> OpenGLGraphicsAPI::load_material(const Resource::Materia
     return mat;
 }
 
-static GLenum Topology2OpenGL(Topology t){
+static GLenum Topology2OpenGL(Topology t) noexcept{
     switch (t) {
         case Topology::POINT: return GL_POINTS;
         case Topology::LINE: return GL_LINES;
@@ -136,23 +137,14 @@ static GLenum Topology2OpenGL(Topology t){
     return GL_INVALID_VALUE;
 }
 
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resource::VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
 
-    intrusive_ptr<GLVertexBuffer> vertex_buffer{vertex_layout, raw_vertices};
+    intrusive_ptr<GLVertexBuffer> vertex_buffer{raw_vertices};
     intrusive_ptr<GLIndexBuffer> index_buffer{indices};
-    
-    {
-        // 绑定
-        glBindVertexArray(vao_id);
-        vertex_buffer->bind_vertices();
-        index_buffer->bind_indices();
-        glBindVertexArray(0);
-        checkError();
-    }
 
-    return intrusive_ptr<GLMesh>{new GLMesh{vao_id, Topology2OpenGL(topology), vertex_buffer, index_buffer}};
+    return intrusive_ptr<GLMesh>{new GLMesh{Topology2OpenGL(topology), vertex_layout, vertex_buffer, index_buffer}};
 }
 // virtual void load_material(const std::string &key, const Resource::MaterialDesc &desc);
 intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const std::string &image_path, bool is_color) {

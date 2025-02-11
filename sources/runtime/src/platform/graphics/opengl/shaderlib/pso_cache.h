@@ -22,14 +22,15 @@ public:
             return r.first->second;
         }
     };
-
-    void bind_pipeline_object(const PipelineStateObject &pso) const noexcept;
-
+    
 private:
+    friend class GLPipelineStateObject;
     ShaderLib shader_lib;
     std::unordered_map<Resource::PSODesc, intrusive_ptr<GLPipelineStateObject>> pso_cache;
     
-    intrusive_ptr<GLPipelineStateObject> load_pso(const Resource::PSODesc &desc);
+    intrusive_ptr<GLPipelineStateObject> load_pso(const Resource::PSODesc &desc){
+        return intrusive_ptr<GLPipelineStateObject>{desc};
+    }
 };
 
 } // namespace Graphics

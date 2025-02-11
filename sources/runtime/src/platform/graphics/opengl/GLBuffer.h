@@ -73,7 +73,6 @@ class GLIndexBuffer : public GLBufferImpl<IndexBuffer> {
 public:
     GLIndexBuffer(std::span<const uint16_t> indices)
         : GLBufferImpl<IndexBuffer>(indices, BufferType::STATIC), index_count(indices.size()) {}
-    virtual void bind_indices() const noexcept { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); };
     virtual uint32_t get_index_count() const noexcept{
         return index_count;
     };
@@ -84,18 +83,14 @@ private:
 class GLUniformBuffer : public GLBufferImpl<UniformBuffer> {
 public:
     using GLBufferImpl<UniformBuffer>::GLBufferImpl;
-    virtual void bind_uniform(uint32_t binding) const noexcept override { glad_glBindBufferBase(GL_UNIFORM_BUFFER, binding, id); }
+    virtual void bind_uniform(uint32_t binding) const noexcept override { glBindBufferBase(GL_UNIFORM_BUFFER, binding, id); }
 };
 
 class GLVertexBuffer : public GLBufferImpl<VertexBuffer> {
 public:
     template<typename D>
-    GLVertexBuffer(VertexLayout layout, std::span<const D> data): GLBufferImpl<VertexBuffer>(data, BufferType::STATIC)
-    {
-        vertex_layout = std::move(layout);
-        assert(vertex_layout.size == 0 || data.size_bytes() % vertex_layout.size == 0);
-    }
-    virtual void bind_vertices() const override;
+    GLVertexBuffer(std::span<const D> data): GLBufferImpl<VertexBuffer>(data, BufferType::STATIC)
+    {}
 };
 
 } // namespace Graphics

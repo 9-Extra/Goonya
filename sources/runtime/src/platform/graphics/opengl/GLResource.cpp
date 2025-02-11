@@ -1,10 +1,53 @@
 #include "GLResource.h"
 
 #include "GLTexture.h"
+#include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLBuffer.h"
+#include "platform/graphics/opengl/OpenGLAPI.h"
 
 namespace Goonya {
 namespace Graphics {
+
+GLPipelineStateObject::GLPipelineStateObject(const Resource::PSODesc &desc) {
+    enable_cilp = desc.enable_cilp;
+    if (desc.cull_face_mode == "front") {
+        cull_face_mode = GL_FRONT;
+    } else if (desc.cull_face_mode == "back") {
+        cull_face_mode = GL_BACK;
+    } else if (desc.cull_face_mode == "front_back") {
+        cull_face_mode = GL_FRONT_AND_BACK;
+    } else {
+        throw RuntimeError(std::format("不支持的面裁剪模式：\"{}\"", desc.cull_face_mode));
+    }
+
+    if (desc.front_face_clockwise == "clockwise") {
+        front_face_clockwise = GL_CW;
+    } else if (desc.front_face_clockwise == "counterclockwise") {
+        front_face_clockwise = GL_CCW;
+    } else {
+        throw RuntimeError(std::format("不支持的模式：\"{}\"", desc.front_face_clockwise));
+    }
+
+    enable_depth_test = desc.enable_depth_test;
+
+    if (desc.depth_func == "never") {
+        depth_func = GL_NEVER;
+    } else if (desc.depth_func == "less") {
+        depth_func = GL_LESS;
+    } else if (desc.depth_func == "less_equal") {
+        depth_func = GL_LEQUAL;
+    } else if (desc.depth_func == "greater") {
+        depth_func = GL_GREATER;
+    } else if (desc.depth_func == "greater_equal") {
+        depth_func = GL_GEQUAL;
+    } else if (desc.depth_func == "always") {
+        depth_func = GL_ALWAYS;
+    } else {
+        throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", desc.depth_func));
+    }
+
+    shader = ((OpenGLGraphicsAPI*)graphics_api.get())->pso_cache.shader_lib.query_shader(desc.shader_desc);
+}
 
 void GLPipelineStateObject::bind() const {
     if (this->enable_cilp) {
@@ -21,6 +64,7 @@ void GLPipelineStateObject::bind() const {
     }
     glDepthFunc(this->depth_func);
     glUseProgram(this->shader.gl_id); // 绑定着色器
+    checkError();
 };
 
 void GLMaterial::bind() const {
@@ -32,7 +76,7 @@ void GLMaterial::bind() const {
     }
     // 绑定所有纹理
     for (const GLMaterial::SampleData &s : samplers) {
-        GLuint texture_id = dynamic_cast<GLTextureBase*>(s.texture.get())->texture_id; // 类型一定是这个
+        GLuint texture_id = dynamic_cast<GLTextureBase *>(s.texture.get())->texture_id; // 类型一定是这个
         glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, s.min_filter);
         glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, s.mag_filter);
         glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, s.warp_mode);
@@ -45,4 +89,4 @@ void GLMaterial::bind() const {
     checkError();
 }
 } // namespace Graphics
-}
+} // namespace Goonya

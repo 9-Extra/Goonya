@@ -6,21 +6,6 @@
 
 namespace Goonya {
 
-static float Q_rsqrt(float number) {
-    const float threehalfs = 1.5F;
-
-    float x2 = number * 0.5F;
-    float y = number;
-    int32_t i = *(int32_t *)&y; // evil floating point bit level hacking
-    i = 0x5f3759df - (i >> 1);  // what the fuck?
-    y = *(float *)&i;
-    y = y * (threehalfs - (x2 * y * y)); // 1st iteration
-    // y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be
-    // removed
-
-    return y;
-}
-
 inline float to_radian(float angle) { return angle / 180.0f * 3.1415926535f; }
 
 struct Vector2f {
@@ -44,7 +29,7 @@ struct Vector2f {
     float length() { return sqrtf(squared()); }
 
     Vector2f normalized() {
-        float s = Q_rsqrt(squared());
+        float s = 1.0f / std::sqrt(squared());
         return Vector2f(x * s, y * s);
     }
 
@@ -103,7 +88,7 @@ struct Vector3f {
     inline float square() const { return this->dot(*this); }
 
     inline Vector3f normalize() {
-        float inv_sqrt = Q_rsqrt(this->square());
+        float inv_sqrt = 1.0f / std::sqrt(this->square());
         return *this * inv_sqrt;
     }
 

@@ -170,11 +170,11 @@ void load_gltf(const std::string &base_key, const std::string &path) {
                 vertices[i] = {pos[i], normal[i], tang, uv[i]};
             }
 
-            const static Graphics::VertexLayout vertex_layout{
-                {{0, "position", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
-                 {1, "normal", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
-                 {2, "tangent", Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
-                 {3, "uv", Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
+            const static Resource::VertexLayout vertex_layout{
+                {{VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
+                 {VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
+                 {VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
+                 {VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
                 sizeof(Graphics::Vertex)};
 
             Graphics::resources.add_mesh(key, vertex_layout, std::span(vertices),

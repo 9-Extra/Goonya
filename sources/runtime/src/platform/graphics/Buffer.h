@@ -1,11 +1,10 @@
 #pragma once
 
 #include "core/intrusive_ptr.h"
-#include "core/metatype/metatype.h"
-#include <cstddef>
 #include <cstdint>
 #include <span>
-#include <vector>
+
+#include "resource/resources.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -31,8 +30,6 @@ protected:
 };
 
 class IndexBuffer: public Buffer{
-public:
-    virtual void bind_indices() const noexcept = 0;
     virtual uint32_t get_index_count() const noexcept = 0;
 };
 
@@ -41,19 +38,7 @@ public:
     virtual void bind_uniform(uint32_t binding) const noexcept = 0;    
 };
 
-struct VertexLayout{
-    std::vector<std::tuple<uint32_t, std::string, Meta::FieldType, size_t>> attributes;
-    size_t size;
-};  
-
 class VertexBuffer: public Buffer{
-public:
-    virtual void bind_vertices() const = 0;
-    const VertexLayout get_vertex_layout() const noexcept{
-        return vertex_layout;
-    }
-protected:
-    VertexLayout vertex_layout;
 };
 
 // 使用c++定义的结构体内存布局进行写入

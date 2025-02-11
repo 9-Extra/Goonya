@@ -1,6 +1,10 @@
 #pragma once
 
+#include "core/metatype/metatype.h"
+#include "core/hash_helper.h"
+
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -73,6 +77,39 @@ private:
     }
 };
 
+
+/*
+定义着色器编写规范：每一个Location绑定的数据都是指定的。可少不可多，名字可以改，类型不能变
+    layout (location = 0) in vec3 position;
+    layout (location = 1) in vec3 normal;
+    layout (location = 2) in vec3 tangent;
+    layout (location = 3) in vec2 uv;
+
+如果着色器需要的数据Mesh中没有，UB。
+*/
+
+enum class VertexAttribute: uint32_t{
+    POSITION = 0, // 指定location
+    NORMAL = 1,
+    TANGENT = 2,
+    UV = 3,
+};
+
+struct VertexLayout{
+    // 用途，类型，偏移量
+    std::vector<std::tuple<VertexAttribute, Meta::FieldType, size_t>> attributes;
+    size_t size; // 单个顶点大小
+
+    bool operator==(const VertexLayout &b) const noexcept = default;
+    size_t hash() const noexcept{
+        size_t seed = size;
+        for(const auto& t : attributes){
+            hash_combine(seed, hash_tuple(t));
+        }
+        return seed;
+    }
+};  
+ 
 struct PSODesc {
     ShaderDesc shader_desc;
 
@@ -117,9 +154,11 @@ struct std::hash<Goonya::Resource::ShaderDesc> {
 template <>
 struct std::hash<Goonya::Resource::PSODesc> {
     size_t operator()(const Goonya::Resource::PSODesc &desc) const noexcept {
-        return std::hash<decltype(desc.shader_desc)>{}(desc.shader_desc) &
-               std::hash<decltype(desc.cull_face_mode)>{}(desc.cull_face_mode) &
-               std::hash<decltype(desc.front_face_clockwise)>{}(desc.front_face_clockwise) &
-               std::hash<decltype(desc.depth_func)>{}(desc.depth_func) & desc.enable_depth_test << 3 & desc.enable_cilp;
+        size_t seed = 0;
+        Goonya::hash_combine(seed, desc.shader_desc);
+        Goonya::hash_combine(seed, desc.cull_face_mode);
+        Goonya::hash_combine(seed, desc.front_face_clockwise);
+        Goonya::hash_combine(seed, desc.depth_func);
+        return seed ^ desc.enable_depth_test << 3 ^ desc.enable_cilp;
     }
 };

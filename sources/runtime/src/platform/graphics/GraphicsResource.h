@@ -2,7 +2,6 @@
 
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
-#include <cstdint>
 #include <string>
 
 namespace Goonya {
@@ -18,21 +17,6 @@ struct Vertex {
 struct UberShaderDesc {
     std::string vs_path;
     std::string ps_path;
-};
-
-enum class Topology{
-    POINT,
-    LINE,
-    TRIANGLE
-};
-
-class Mesh: public intrusive_ptr_base<Mesh>{
-public:
-    virtual void bind() = 0;    
-
-    virtual uint32_t get_indices_count() = 0;
-    
-    virtual ~Mesh() = default;
 };
 
 class Shader: public intrusive_ptr_base<Shader>{

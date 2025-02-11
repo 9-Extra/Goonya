@@ -2,7 +2,6 @@
 
 #include "../GraphicsResource.h"
 #include "core/intrusive_ptr.h"
-#include "platform/graphics/graphics.h"
 #include "GLBuffer.h"
 #include "platform/graphics/opengl/shaderlib/shaderlib.h"
 
@@ -10,32 +9,6 @@
 
 namespace Goonya {
 namespace Graphics {
-
-class GLMesh : public Mesh {
-public:
-    virtual void bind() override{
-        glBindVertexArray(vao_id);     
-    }   
-
-    virtual uint32_t get_indices_count() override{
-        return index_buffer->get_index_count();
-    }
-
-    ~GLMesh() {
-        glDeleteVertexArrays(1, &vao_id);
-        checkError();
-    }
-private:
-    GLuint vao_id;
-    GLenum topology;
-    intrusive_ptr<GLVertexBuffer> vertex_buffers;
-    intrusive_ptr<GLIndexBuffer> index_buffer;
-
-    friend class OpenGLGraphicsAPI;
-    GLMesh(GLuint vao_id, GLenum topology, intrusive_ptr<GLVertexBuffer> vertex_buffers, intrusive_ptr<GLIndexBuffer> index_buffer)
-    : vao_id(vao_id), topology(topology), vertex_buffers(vertex_buffers), index_buffer(index_buffer)
-    {}
-};
 
 class GLShader: public Shader {
 public:
@@ -49,13 +22,15 @@ private:
 
 class GLPipelineStateObject: public PipelineStateObject{
 public:
-    ~GLPipelineStateObject() override{};
+    GLPipelineStateObject(const Resource::PSODesc &desc);
+    ~GLPipelineStateObject() override{
+        glDeleteVertexArrays(1, &vao_id);
+    };
     virtual void bind() const override;
 
 private:
     friend class PSOCache;
-    GLPipelineStateObject() {}
-    
+
     bool enable_cilp;            // glEnable(GL_CULL_FACE)
     GLenum cull_face_mode;       // glCullFace
     GLenum front_face_clockwise; // glFrontFace
@@ -64,7 +39,7 @@ private:
     GLenum depth_func;
 
     ShaderResource shader;
-    
+    GLuint vao_id; // 使用vao记录顶点内存布局，但是不绑定buffer
 };
 
 
