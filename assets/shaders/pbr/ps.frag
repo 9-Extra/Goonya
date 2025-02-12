@@ -51,8 +51,10 @@ struct PixelArribute{
     vec3 F0;
 }; 
 
+// RTR4 9.41 P340，GGX分布
 float D_GGX(float dotNH, float roughness)
 {
+    // 为了让粗糙度更线性，暴露给用户的roughness是GGX公式中alpha的开方
     float alpha  = roughness * roughness;
     float alpha2 = alpha * alpha;
     float denom  = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
@@ -66,23 +68,27 @@ float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
     float k  = (r * r) / 8.0;
     float GL = dotNL / (dotNL * (1.0 - k) + k);
     float GV = dotNV / (dotNV * (1.0 - k) + k);
+    // float alpha = roughness * roughness;
+    // float GL = 2 * dotNL / (dotNL * (2 - alpha) + alpha);
+    // float GV = 2 * dotNV / (dotNV * (2 - alpha) + alpha); 
     return GL * GV;
 }
 
 // Fresnel function ----------------------------------------------------
+// 使用基础反射率F0和入射角近似计算反射率F
 float Pow5(float x)
 {
     return (x * x * x * x * x);
 }
-
+// 这是一种拟合方式
 vec3 F_Schlick(float cosTheta, vec3 F0) 
 { 
     return F0 + (1.0 - F0) * Pow5(1.0 - cosTheta); 
-    }
-
+}
+// 这是另外一种
 vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
 {
-    return F0 + (max(vec3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), F0) - F0) * Pow5(1.0 - cosTheta);
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * Pow5(1.0 - cosTheta);
 }
 
 // Specular and diffuse BRDF composition --------------------------------------------
@@ -98,20 +104,17 @@ vec3 BRDF(vec3  L,
     float dotLH = clamp(dot(L, H), 0.0, 1.0);
     float dotNH = clamp(dot(N, H), 0.0, 1.0);
 
-    // Light color fixed
-    // vec3 lightColor = vec3(1.0);
-
     vec3 color = vec3(0.0);
 
     float rroughness = max(0.05, pixel_attribute.roughness);
-    // D = Normal distribution (Distribution of the microfacets)
+    // D 微表面法线分布
     float D = D_GGX(dotNH, rroughness);
     // G = Geometric shadowing term (Microfacets shadowing)
     float G = G_SchlicksmithGGX(dotNL, dotNV, rroughness);
     // F = Fresnel factor (Reflectance depending on angle of incidence)
     vec3 F = F_Schlick(dotNV, pixel_attribute.F0);
 
-    vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001);
+    vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001); // 高光BRDF
     vec3 kD   = (vec3(1.0) - F) * (1.0 - pixel_attribute.metallic);
 
     color += (kD * pixel_attribute.albedo / PI + (1.0 - kD) * spec);
@@ -130,8 +133,8 @@ vec3 caculate_normal(){
 
 void main()
 {
-    const float dielectric_specular = 0.04;//菲涅尔系数
-    
+    const float dielectric_specular = 0.04;//一般电解质的基础反射率
+
     const vec3 N = caculate_normal();//法线
     const vec3 metallic_roughness = texture(metallic_roughness_texture, vs_out.tex_coords).xyz;
 
@@ -140,6 +143,8 @@ void main()
     pixel_attribute.normal = N;
     pixel_attribute.roughness = metallic_roughness.y * roughness_factor;//粗糙度
     pixel_attribute.metallic = metallic_roughness.x * metallic_factor;//金属度
+    // 对于金属，其反射率就是albedo。对于一般电介质，其反射率取一般值0.04。不考虑半导体。
+    // 反射率F用于计算Fresnel反射
     pixel_attribute.F0 = mix(vec3(dielectric_specular), pixel_attribute.albedo, pixel_attribute.metallic);
 
     vec3 result_color = ambient_light * pixel_attribute.albedo;

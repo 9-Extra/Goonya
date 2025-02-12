@@ -35,8 +35,34 @@ namespace Resource {
 3. 动态创建资源键并加载，毕竟资源键可以是参数
 
 */
-struct TextureDesc {
+
+enum class TextureWarpMode{
+    REPEAT,
+    ClAMP,
+    MIRROR
+};
+
+enum class TextureSampleMode{
+    POINT,
+    BILINEAR,
+    TRILINEAR
+};
+
+
+struct Texture2DDesc {
     std::string path;
+    bool is_srgb = false; // 是否需要转换到线性空间
+    bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
+    TextureSampleMode filter_mode = TextureSampleMode::TRILINEAR;
+    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
+};
+
+struct TextureCubeMapDesc {
+    std::array<std::string, 6> path; // px, nx, py, ny, pz, nz
+    bool is_srgb = false; // 是否需要转换到线性空间
+    bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
+    TextureSampleMode filter_mode = TextureSampleMode::TRILINEAR;
+    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
 };
 
 struct ShaderDesc {
@@ -133,9 +159,6 @@ struct MaterialDesc {
     struct SamplerData {
         uint32_t binding_id;
         std::string texture_key;
-        std::string texture_type;
-        std::string warp_mode;
-        std::string filter_mode;
     };
 
     PSODesc pso_desc;

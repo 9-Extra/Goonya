@@ -1,7 +1,9 @@
 #include "OpenGLAPI.h"
 #include <FreeImage.h>
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
@@ -16,13 +18,14 @@
 #include "platform/graphics/GraphicsResource.h"
 #include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLMesh.h"
+#include "resource/resources.h"
 #include "runtime/GoonyaException.h"
 #include "runtime/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {
 
-static FIBITMAP *freeimage_load_and_convert_image(const std::string &image_path, bool is_color = true) {
+static FIBITMAP *freeimage_load_and_convert_image(const std::string &image_path, bool is_color) {
     FIBITMAP *pImage_ori = FreeImage_Load(FreeImage_GetFileType(image_path.c_str(), 0), image_path.c_str());
     if (pImage_ori == nullptr) {
         std::cerr << "Failed to load image: " << image_path << std::endl;
@@ -86,43 +89,8 @@ intrusive_ptr<Material> OpenGLGraphicsAPI::load_material(const Resource::Materia
     }
 
     for (const auto &[s, t] : std::views::zip(desc.samplers, textures)) {
-        GLenum texture_type;
-        GLenum warp_mode;
-        GLenum min_filter, mag_filter;
-        // 纹理类型
-        if (s.texture_type == "rgb") {
-            texture_type = GL_TEXTURE_2D;
-        } else if (s.texture_type == "cubemap") {
-            texture_type = GL_TEXTURE_CUBE_MAP;
-        } else {
-            throw Goonya::RuntimeError(std::format("无效的纹理类型：{}", s.texture_type));
-        }
-        // 重复模式
-        if (s.warp_mode == "repeat") {
-            warp_mode = GL_REPEAT;
-        } else if (s.warp_mode == "clamp") {
-            warp_mode = GL_CLAMP_TO_EDGE;
-        } else if (s.warp_mode == "mirror") {
-            warp_mode = GL_MIRRORED_REPEAT;
-        } else {
-            throw Goonya::RuntimeError(std::format("无效的warp_mode：{}", s.warp_mode));
-        }
-        // 缩放（采样）模式
-        if (s.filter_mode == "point") {
-            min_filter = GL_NEAREST;
-            mag_filter = GL_NEAREST;
-        } else if (s.filter_mode == "bilinear") {
-            min_filter = GL_LINEAR;
-            mag_filter = GL_LINEAR;
-        } else if (s.filter_mode == "trilinear") {
-            min_filter = GL_LINEAR_MIPMAP_LINEAR;
-            mag_filter = GL_LINEAR;
-        } else {
-            throw Goonya::RuntimeError(std::format("无效的filter_mode：{}", s.filter_mode));
-        }
-
         mat->samplers.emplace_back(
-            GLMaterial::SampleData{s.binding_id, t, texture_type, min_filter, mag_filter, warp_mode});
+            GLMaterial::SampleData{s.binding_id, t});
     }
 
     return mat;
@@ -147,70 +115,92 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resour
     return intrusive_ptr<GLMesh>{new GLMesh{Topology2OpenGL(topology), vertex_layout, vertex_buffer, index_buffer}};
 }
 // virtual void load_material(const std::string &key, const Resource::MaterialDesc &desc);
-intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const std::string &image_path, bool is_color) {
-
-    FIBITMAP *pImage = freeimage_load_and_convert_image(image_path, is_color);
+intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const Resource::Texture2DDesc& desc) const {
+    using Resource::TextureSampleMode;
+    using Resource::TextureWarpMode;
+    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
+    
+    GLuint texture_id;
+    glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
+    
+    // 缩放（采样）模式
+    GLenum min_filter, mag_filter;
+    if (desc.filter_mode == TextureSampleMode::POINT) {
+        min_filter = GL_NEAREST;
+        mag_filter = GL_NEAREST;
+    } else if (desc.filter_mode == TextureSampleMode::BILINEAR) {
+        min_filter = GL_LINEAR;
+        mag_filter = GL_LINEAR;
+    } else if (desc.filter_mode == TextureSampleMode::TRILINEAR) {
+        min_filter = GL_LINEAR_MIPMAP_LINEAR;
+        mag_filter = GL_LINEAR;
+    } else {
+        throw Goonya::RuntimeError(std::format("无效的filter_mode：{}", (size_t)desc.filter_mode));
+    }
+    // 重复模式
+    GLenum warp_mode;
+    if (desc.warp_mode == Resource::TextureWarpMode::REPEAT) {
+        warp_mode = GL_REPEAT;
+    } else if (desc.warp_mode == Resource::TextureWarpMode::ClAMP) {
+        warp_mode = GL_CLAMP_TO_EDGE;
+    } else if (desc.warp_mode == Resource::TextureWarpMode::MIRROR) {
+        warp_mode = GL_MIRRORED_REPEAT;
+    } else {
+        throw Goonya::RuntimeError(std::format("无效的warp_mode：{}", (size_t)desc.warp_mode));
+    }
 
-    unsigned int texture_id;
-    glGenTextures(1, &texture_id);
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-
-    // Parameter 现在由材质决定
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, nWidth, nHeight, 0, GL_BGR, GL_UNSIGNED_BYTE,
-                 (void *)FreeImage_GetBits(pImage));
+    glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, min_filter);
+    glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, mag_filter);
+    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, warp_mode);
+    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, warp_mode);
+    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, warp_mode);
+    
+    GLsizei max_level = (GLsizei)std::log2(std::max(nWidth, nHeight)) + 1; 
+    glTextureStorage2D(texture_id, max_level, GL_RGB32F, nWidth, nHeight);
+    glTextureSubImage2D(texture_id, 0, 0, 0, nWidth, nHeight, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));
     glGenerateTextureMipmap(texture_id);
 
     checkError();
 
     FreeImage_Unload(pImage);
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-
     return intrusive_ptr<GLTexture2D>(new GLTexture2D{texture_id, nWidth, nHeight});
 }
-intrusive_ptr<TextureCube> OpenGLGraphicsAPI::load_cubemap(const std::string &image_px, const std::string &image_nx,
-                                                           const std::string &image_py, const std::string &image_ny,
-                                                           const std::string &image_pz, const std::string &image_nz) {
-
-    // GL_TEXTURE_CUBE_MAP_POSITIVE_X
-    // GL_TEXTURE_CUBE_MAP_NEGATIVE_X
-    // GL_TEXTURE_CUBE_MAP_POSITIVE_Y
-    // GL_TEXTURE_CUBE_MAP_NEGATIVE_Y
-    // GL_TEXTURE_CUBE_MAP_POSITIVE_Z
-    // GL_TEXTURE_CUBE_MAP_NEGATIVE_Z
-    std::array<const std::string *, 6> textures_faces{
-        &image_px, &image_nx, &image_py, &image_ny, &image_pz, &image_nz,
-    };
-
+intrusive_ptr<TextureCube> OpenGLGraphicsAPI::load_cubemap(const Resource::TextureCubeMapDesc& desc) const {
     GLuint texture_id;
     glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &texture_id);
 
-    // glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    // glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    // glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    
+    // 使用第一张图像的宽高信息分配纹理空间
+    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
+    
+    unsigned int nWidth = FreeImage_GetWidth(pImage);
+    unsigned int nHeight = FreeImage_GetHeight(pImage);
+    GLsizei max_level = (GLsizei)std::log2(std::max(nWidth, nHeight)) + 1; 
+    glTextureStorage2D(texture_id, max_level, GL_RGB32F, nWidth, nHeight);
+    // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
+    glTextureSubImage3D(texture_id, 0, 0, 0, 0, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
+    FreeImage_Unload(pImage);
 
-    glBindTexture(GL_TEXTURE_CUBE_MAP, texture_id);
-    for (unsigned int i = 0; i < textures_faces.size(); i++) {
-        FIBITMAP *pImage = freeimage_load_and_convert_image(*textures_faces[i]);
-
-        unsigned int nWidth = FreeImage_GetWidth(pImage);
-        unsigned int nHeight = FreeImage_GetHeight(pImage);
-        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, nWidth, nHeight, 0, GL_BGR, GL_UNSIGNED_BYTE,
-                     (void *)FreeImage_GetBits(pImage));
-
+    // 加载其余方向上的图像
+    for (unsigned int i = 1; i < desc.path.size(); i++) {
+        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_srgb);    
+        if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)){
+            throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i]));
+        }
+        glTextureSubImage3D(texture_id, 0, 0, 0, i, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
         FreeImage_Unload(pImage);
     }
     glGenerateTextureMipmap(texture_id);
 
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     checkError();
     
     return intrusive_ptr<GLTextureCube>(new GLTextureCube{texture_id});

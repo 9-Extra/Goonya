@@ -79,9 +79,8 @@ public:
         return *this;
     }
 
-    MaterialBuilder &add_sampler(uint32_t binding_id, std::string texture_key, std::string texture_type = "rgb",
-                                 std::string warp_mode = "repeat", std::string filter_mode = "trilinear") {
-        desc.samplers.emplace_back(binding_id, texture_key, texture_type, warp_mode, filter_mode);
+    MaterialBuilder &add_sampler(uint32_t binding_id, std::string texture_key) {
+        desc.samplers.emplace_back(binding_id, texture_key);
         return *this;
     }
 

@@ -3,6 +3,7 @@
 #include "../graphics.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/GraphicsResource.h"
+#include "resource/resources.h"
 #include "shaderlib/pso_cache.h"
 
 namespace Goonya {
@@ -22,10 +23,8 @@ public:
     virtual void load_uber_shader(const std::string &name, const UberShaderDesc &desc) override;
     virtual intrusive_ptr<Mesh> load_mesh(Topology topology, const Resource::VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) override;
     virtual intrusive_ptr<Material> load_material(const Resource::MaterialDesc &desc, const std::vector<intrusive_ptr<Texture>>& textures) override;
-    virtual intrusive_ptr<Texture2D> load_texture2D(const std::string &image_path, bool is_color = false) override;
-    virtual intrusive_ptr<TextureCube> load_cubemap(const std::string &image_px, const std::string &image_nx,
-                     const std::string &image_py, const std::string &image_ny, const std::string &image_pz,
-                     const std::string &image_nz) override;
+    virtual intrusive_ptr<Texture2D> load_texture2D(const Resource::Texture2DDesc &desc) const override;
+    virtual intrusive_ptr<TextureCube> load_cubemap(const Resource::TextureCubeMapDesc& desc) const override;
 
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) override;
     virtual intrusive_ptr<UniformBuffer> create_uniform_buffer(uint32_t size, BufferType type) override;

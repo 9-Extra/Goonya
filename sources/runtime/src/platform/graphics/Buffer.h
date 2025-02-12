@@ -4,8 +4,6 @@
 #include <cstdint>
 #include <span>
 
-#include "resource/resources.h"
-
 namespace Goonya {
 namespace Graphics {
 

@@ -45,7 +45,9 @@
             "py": "skybox/valley/py.png",
             "ny": "skybox/valley/ny.png",
             "pz": "skybox/valley/pz.png",
-            "nz": "skybox/valley/nz.png"
+            "nz": "skybox/valley/nz.png",
+
+            "is_color": true
         }
     },
     "materials": {
@@ -62,10 +64,7 @@
             "samplers": [
                 {
                     "slot": 5,
-                    "name": "skybox_valley_color",
-                    "type": "cubemap",
-                    "warp_mode": "clamp",
-                    "filter_mode": "trilinear"
+                    "name": "skybox_valley_color"
                 }
             ]
         }

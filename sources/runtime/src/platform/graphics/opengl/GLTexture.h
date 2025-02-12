@@ -20,7 +20,6 @@ public:
     }
 protected:
     friend class OpenGLGraphicsAPI;
-    friend class GLMaterial;
     GLTextureBase(GLuint texture_id): texture_id(texture_id){}
     
     GLuint texture_id;

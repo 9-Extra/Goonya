@@ -16,7 +16,7 @@ Renderer renderer; // global renderer
 void init_resource() {
     // 从json加载大部分的资源
     Resource::load_json("../assets/resources.json");
-    // 材质资源比较特殊，暂时通过硬编码加载
+    // 通过硬编码加载的部分资源
     {
         // 平滑着色材质
         Vector3f color_while{1.0f, 1.0f, 1.0f};

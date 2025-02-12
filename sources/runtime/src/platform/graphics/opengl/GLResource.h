@@ -63,10 +63,6 @@ private:
     struct SampleData {
         GLuint binding_id;
         intrusive_ptr<Texture> texture;
-        GLenum texture_type;
-        GLenum min_filter;
-        GLenum mag_filter;
-        GLenum warp_mode;
     };
     intrusive_ptr<GLPipelineStateObject> pipeline_state;
     std::vector<UniformData> uniforms;
