@@ -4,17 +4,16 @@
 #include <cassert>
 #include <cstddef>
 #include <initializer_list>
-#include <string> 
+#include <string>
 #include <unordered_map>
 #include <vector>
-
 
 namespace Goonya {
 namespace Meta {
 
 enum class FieldType : uint32_t { nul, i32, i64, u32, u64, f32, f64, vec2f, vec3f, vec4f, mat4f };
 
-template <decltype(FieldType::nul)>
+template <FieldType>
 struct FieldType2CType {
     using Type = void;
 };
@@ -84,16 +83,15 @@ struct LayoutInfo {
     std::unordered_map<std::string, Field> fields;
     size_t size;
 
-    static LayoutInfo init(size_t size, std::initializer_list<std::tuple<std::string, FieldType, size_t>> fields){
+    static LayoutInfo init(size_t size, std::initializer_list<std::tuple<std::string, FieldType, size_t>> fields) {
         LayoutInfo layout;
         layout.size = size;
-        for(const auto &[name, type, offset]: fields){
+        for (const auto &[name, type, offset] : fields) {
             layout.fields.emplace(name, Field{type, offset});
         }
         return layout;
     }
 };
-
 
 class DynamicStruct {
 public:
@@ -148,3 +146,49 @@ private:
 
 } // namespace Meta
 } // namespace Goonya
+
+template <>
+struct std::formatter<Goonya::Meta::FieldType> {
+    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
+    constexpr auto format(const Goonya::Meta::FieldType t, std::format_context &ctx) const {
+        switch (t) {
+        case Goonya::Meta::FieldType::nul:
+            return std::format_to(ctx.out(), "nul");
+        case Goonya::Meta::FieldType::i32:
+            return std::format_to(ctx.out(), "i32");
+        case Goonya::Meta::FieldType::i64:
+            return std::format_to(ctx.out(), "i64");
+        case Goonya::Meta::FieldType::u32:
+            return std::format_to(ctx.out(), "u32");
+        case Goonya::Meta::FieldType::u64:
+            return std::format_to(ctx.out(), "u64");
+        case Goonya::Meta::FieldType::f32:
+            return std::format_to(ctx.out(), "f32");
+        case Goonya::Meta::FieldType::f64:
+            return std::format_to(ctx.out(), "f64");
+        case Goonya::Meta::FieldType::vec2f:
+            return std::format_to(ctx.out(), "vec2f");
+        case Goonya::Meta::FieldType::vec3f:
+            return std::format_to(ctx.out(), "vec3f");
+        case Goonya::Meta::FieldType::vec4f:
+            return std::format_to(ctx.out(), "vec4f");
+        case Goonya::Meta::FieldType::mat4f:
+            return std::format_to(ctx.out(), "mat4f");
+        }
+        return std::format_to(ctx.out(), "illegal");
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Meta::LayoutInfo> {
+    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
+    auto format(const Goonya::Meta::LayoutInfo &p, std::format_context &ctx) const {
+        auto i = std::format_to(ctx.out(), "{{\n");
+        ctx.advance_to(i);
+        for (const auto &[name, f] : p.fields) {
+            auto i = std::format_to(ctx.out(), "{}: {}\n", name, f.type);
+            ctx.advance_to(i);
+        }
+        return std::format_to(ctx.out(), "}}");
+    }
+};

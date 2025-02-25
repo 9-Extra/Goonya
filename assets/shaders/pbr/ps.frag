@@ -62,16 +62,15 @@ float D_GGX(float dotNH, float roughness)
 }
 
 // Geometric Shadowing function --------------------------------------
+// https://learnopengl-cn.github.io/07%20PBR/01%20Theory/
+// 计算了微表面上的遮蔽和阴影
 float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
     float r  = (roughness + 1.0);
     float k  = (r * r) / 8.0;
-    float GL = dotNL / (dotNL * (1.0 - k) + k);
-    float GV = dotNV / (dotNV * (1.0 - k) + k);
-    // float alpha = roughness * roughness;
-    // float GL = 2 * dotNL / (dotNL * (2 - alpha) + alpha);
-    // float GV = 2 * dotNV / (dotNV * (2 - alpha) + alpha); 
-    return GL * GV;
+    float GL = dotNL / (dotNL * (1.0 - k) + k); // Schlick-GGX 计算遮蔽或者阴影，RTR4上没找到？
+    float GV = dotNV / (dotNV * (1.0 - k) + k); 
+    return GL * GV; // 使用Smith的方法乘起来计算两个效应的叠加，RTR4上有这个
 }
 
 // Fresnel function ----------------------------------------------------
@@ -92,10 +91,7 @@ vec3 F_SchlickR(float cosTheta, vec3 F0, float roughness)
 }
 
 // Specular and diffuse BRDF composition --------------------------------------------
-vec3 BRDF(vec3  L,
-                vec3  V,
-                vec3  N,
-                PixelArribute pixel_attribute)
+vec3 BRDF(vec3 L, vec3 V, vec3 N, PixelArribute pixel_attribute)
 {
     // Precalculate vectors and dot products
     vec3  H     = normalize(V + L);
@@ -103,8 +99,6 @@ vec3 BRDF(vec3  L,
     float dotNL = clamp(dot(N, L), 0.0, 1.0);
     float dotLH = clamp(dot(L, H), 0.0, 1.0);
     float dotNH = clamp(dot(N, H), 0.0, 1.0);
-
-    vec3 color = vec3(0.0);
 
     float rroughness = max(0.05, pixel_attribute.roughness);
     // D 微表面法线分布
@@ -115,11 +109,12 @@ vec3 BRDF(vec3  L,
     vec3 F = F_Schlick(dotNV, pixel_attribute.F0);
 
     vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001); // 高光BRDF
-    vec3 kD   = (vec3(1.0) - F) * (1.0 - pixel_attribute.metallic);
-
-    color += (kD * pixel_attribute.albedo / PI + (1.0 - kD) * spec);
     
-    return color;
+    // 计算漫反射
+    vec3 diff = pixel_attribute.albedo / PI; // lambert diffuse
+    // 乘上系数，最后加起来
+    float kD  = 1.0 - pixel_attribute.metallic;
+    return kD * diff + spec;
 }
 
 vec3 caculate_normal(){
