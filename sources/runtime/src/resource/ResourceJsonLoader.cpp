@@ -137,11 +137,11 @@ void load_json(const std::string &path) {
         mat_builder.set_pso(pso_builder.build());
 
         for (const Json::Value &uniform_json : material_desc["constants"]) {
-            mat_builder.add_uniform(uniform_json["slot"].asUInt(), uniform_json["size"].asUInt(), nullptr);
+            mat_builder.add_parameter(uniform_json["name"].asString(), uniform_json["vaule"].asUInt());
         }
 
         for (const Json::Value &sampler_json : material_desc["samplers"]) {
-            mat_builder.add_sampler(sampler_json["slot"].asUInt(), sampler_json["name"].asString());
+            mat_builder.add_sampler(sampler_json["name"].asString(), sampler_json["texture_key"].asString());
         }
 
         Graphics::resources.add_material(key, mat_builder.build());

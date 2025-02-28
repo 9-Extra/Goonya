@@ -1,5 +1,6 @@
 #include "shaderlib.h"
 #include "core/metatype/metatype.h"
+#include "platform/graphics/graphics.h"
 #include "runtime/GoonyaException.h"
 
 #include <format>
@@ -81,11 +82,12 @@ ShaderResource ShaderLib::load_shader(const Resource::ShaderDesc &desc) {
     GLuint id = complie_shader_program(mixed_vs, mixed_ps);
     ShaderIntrospector introspector(id);
     auto buffer_info = introspector.get_constant_buffer_info();
+    auto texture_info = introspector.get_texture_info();
     ShaderResource resource{
         id,
-        std::move(buffer_info["per_object"]),
-        std::move(buffer_info["per_material"]),
-        std::move(buffer_info["per_frame"]),
+        std::move(buffer_info["per_material"]), // 可以没有此项
+        std::move(buffer_info.at("per_frame")),
+        std::move(texture_info)
     };
 
     return resource;
@@ -111,14 +113,14 @@ static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
     return Meta::FieldType::nul;
 }
 
-std::unordered_map<std::string, Meta::LayoutInfo> ShaderIntrospector::get_constant_buffer_info() const noexcept {
+std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_constant_buffer_info() const noexcept {
     // 获取所有uniform_block内部所有字段和偏移量
     GLint uniform_block_num;
     glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
-    const GLenum uniform_block_properties[] = {GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
+    const GLenum uniform_block_properties[] = {GL_BUFFER_BINDING, GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
     const size_t property_count = std::extent_v<decltype(uniform_block_properties)>;
 
-    std::unordered_map<std::string, Meta::LayoutInfo> result;
+    std::unordered_map<std::string, ShaderUniformBlockInfo> result;
     result.reserve(uniform_block_num);
 
     for (int i = 0; i < uniform_block_num; ++i) {
@@ -127,7 +129,7 @@ std::unordered_map<std::string, Meta::LayoutInfo> ShaderIntrospector::get_consta
         glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, uniform_block_properties, property_count, NULL,
                                values);
         checkError();
-        auto [name_len, size, var_num] = values;
+        auto [binding, name_len, size, var_num] = values;
         // 获取块名称
         std::string name;
         // OpenGL返回的名称长度包括尾部的'\n'，但c++的不需要，同时后面的bufSize也是假定包括'\n'的。
@@ -138,7 +140,7 @@ std::unordered_map<std::string, Meta::LayoutInfo> ShaderIntrospector::get_consta
         const GLenum var_property[] = {GL_ACTIVE_VARIABLES};
         glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, 1, var_property, var_num, NULL, unifrom_ids.data());
 
-        std::unordered_map<std::string, Meta::Field> fields;
+        std::unordered_map<std::string, Meta::FieldInfo> fields;
         for (int i = 0; i < var_num; ++i) {
             const GLenum uniform_properties[] = {GL_NAME_LENGTH, GL_TYPE, GL_OFFSET};
             const size_t property_count = std::extent_v<decltype(uniform_properties)>;
@@ -151,12 +153,87 @@ std::unordered_map<std::string, Meta::LayoutInfo> ShaderIntrospector::get_consta
             std::string field_name;
             field_name.resize(name_len - 1);
             glGetProgramResourceName(id, GL_UNIFORM, unifrom_ids[i], name_len, NULL, field_name.data());
-            fields.emplace(field_name, Meta::Field{GLType2FieldType(type), (size_t)offset});
+            fields.emplace(field_name, Meta::FieldInfo{GLType2FieldType(type), (size_t)offset});
         }
 
-        result.emplace(name, Meta::LayoutInfo{std::move(fields), (size_t)size});
+        result.emplace(name, ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), (size_t)size}, (GLuint)binding});
     }
 
+    checkError();
+
+    return result;
+}
+
+std::unordered_map<std::string, GLuint> ShaderIntrospector::get_texture_info() const noexcept{
+    std::unordered_map<std::string, GLuint> result;
+
+    // 获取活跃uniform变量数量
+    GLint num_uniforms;
+    glGetProgramInterfaceiv(id, GL_UNIFORM, GL_ACTIVE_RESOURCES, &num_uniforms);
+
+    const GLenum UNIFORM_PROPERTIES[] = {GL_BLOCK_INDEX, GL_TYPE, GL_NAME_LENGTH, GL_LOCATION};
+    const size_t property_count = std::extent_v<decltype(UNIFORM_PROPERTIES)>;
+    
+    for (int i = 0; i < num_uniforms; ++i) {
+        GLint properties[property_count];
+        glGetProgramResourceiv(id, GL_UNIFORM, i, property_count, UNIFORM_PROPERTIES, property_count, nullptr, properties);
+        auto [block_index, uniform_type, name_len, location] = properties;
+        if (block_index != -1) continue;
+
+        // 判断是否是采样器类型
+        bool is_sampler = false;
+        switch (uniform_type) {
+            // 标准采样器类型
+            case GL_SAMPLER_1D:
+            case GL_SAMPLER_2D:
+            case GL_SAMPLER_3D:
+            case GL_SAMPLER_CUBE:
+            case GL_SAMPLER_1D_SHADOW:
+            case GL_SAMPLER_2D_SHADOW:
+            case GL_SAMPLER_1D_ARRAY:
+            case GL_SAMPLER_2D_ARRAY:
+            case GL_SAMPLER_CUBE_MAP_ARRAY:
+            case GL_SAMPLER_BUFFER:
+            case GL_SAMPLER_2D_MULTISAMPLE:
+            case GL_SAMPLER_2D_MULTISAMPLE_ARRAY:
+            // 整数采样器类型
+            case GL_INT_SAMPLER_1D:
+            case GL_INT_SAMPLER_2D:
+            case GL_INT_SAMPLER_3D:
+            case GL_INT_SAMPLER_CUBE:
+            case GL_INT_SAMPLER_1D_ARRAY:
+            case GL_INT_SAMPLER_2D_ARRAY:
+            case GL_INT_SAMPLER_BUFFER:
+            case GL_INT_SAMPLER_2D_MULTISAMPLE:
+            case GL_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
+            // 无符号整数采样器类型
+            case GL_UNSIGNED_INT_SAMPLER_1D:
+            case GL_UNSIGNED_INT_SAMPLER_2D:
+            case GL_UNSIGNED_INT_SAMPLER_3D:
+            case GL_UNSIGNED_INT_SAMPLER_CUBE:
+            case GL_UNSIGNED_INT_SAMPLER_1D_ARRAY:
+            case GL_UNSIGNED_INT_SAMPLER_2D_ARRAY:
+            case GL_UNSIGNED_INT_SAMPLER_BUFFER:
+            case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE:
+            case GL_UNSIGNED_INT_SAMPLER_2D_MULTISAMPLE_ARRAY:
+                is_sampler = true;
+                break;
+            default:
+                break;
+        }
+
+        if (!is_sampler) continue;
+
+        // 获取名称长度并提取名称
+        std::string name_buffer;
+        name_buffer.resize(name_len - 1);
+        glGetProgramResourceName(id, GL_UNIFORM, i, name_len, nullptr, name_buffer.data());
+        // 插入结果集
+
+        GLuint texture_unit;
+        glGetUniformuiv(id, location, &texture_unit); // 绑定的纹理单元视为对应location中存储的值
+        result.emplace(name_buffer, texture_unit);
+    }
     checkError();
 
     return result;

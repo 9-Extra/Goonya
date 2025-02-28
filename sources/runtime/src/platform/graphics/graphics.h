@@ -5,9 +5,8 @@
 #include <memory>
 #include <optional>
 #include <sys/types.h>
-#include <vector>
 
-#include "GraphicsResource.h"
+#include "Material.h"
 #include "Buffer.h"
 #include "Texture.h"
 #include "Mesh.h"
@@ -40,7 +39,6 @@ public:
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
     virtual void load_uber_shader(const std::string &name, const UberShaderDesc &desc) = 0;
     virtual intrusive_ptr<Mesh> load_mesh(Topology topology, const Resource::VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) = 0;
-    virtual intrusive_ptr<Material> load_material(const Resource::MaterialDesc &desc, const std::vector<intrusive_ptr<Texture>>& textures) = 0;
     virtual intrusive_ptr<Texture2D> load_texture2D(const Resource::Texture2DDesc &desc) const = 0;
     virtual intrusive_ptr<TextureCube> load_cubemap(const Resource::TextureCubeMapDesc& desc) const = 0;
     
@@ -48,6 +46,8 @@ public:
     virtual intrusive_ptr<UniformBuffer> create_uniform_buffer(uint32_t size, BufferType type) = 0;
 
     virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) = 0;
+    
+    virtual intrusive_ptr<Material> create_material(const Resource::PSODesc &desc) = 0;
     // drawcall
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt, std::optional<int> stencil = std::nullopt) noexcept = 0;
     virtual void clear(bool color = true, bool depth = true, bool stencil = false) const noexcept = 0; // 清理当前绑定的RenderTarget

@@ -1,4 +1,5 @@
 #pragma once
+#include "core/metatype/metatype.h"
 #include "resources.h"
 #include "runtime/GoonyaException.h"
 
@@ -74,13 +75,14 @@ public:
         return *this;
     }
 
-    MaterialBuilder &add_uniform(uint32_t binding_id, uint32_t size, const void *data) {
-        desc.uniforms.emplace_back(binding_id, size, data);
+    template<Meta::meta_type T>
+    MaterialBuilder &add_parameter(const std::string& name, const T& vaule) {
+        desc.parameters.emplace(name, vaule);
         return *this;
     }
 
-    MaterialBuilder &add_sampler(uint32_t binding_id, std::string texture_key) {
-        desc.samplers.emplace_back(binding_id, texture_key);
+    MaterialBuilder &add_sampler(const std::string& name, std::string texture_key) {
+        desc.textures.emplace_back(name, texture_key);
         return *this;
     }
 

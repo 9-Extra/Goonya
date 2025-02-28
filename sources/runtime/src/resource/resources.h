@@ -150,20 +150,10 @@ struct PSODesc {
 };
 
 struct MaterialDesc {
-    struct UniformDataDesc {
-        const uint32_t binding_id;
-        const uint32_t size;
-        const void *data = nullptr;
-    };
-
-    struct SamplerData {
-        uint32_t binding_id;
-        std::string texture_key;
-    };
+    std::unordered_map<std::string, Meta::DynamicData> parameters;
+    std::vector<std::tuple<std::string, std::string>> textures; // (着色器中名称, 资源键)
 
     PSODesc pso_desc;
-    std::vector<UniformDataDesc> uniforms;
-    std::vector<SamplerData> samplers;
 };
 
 } // namespace Resource

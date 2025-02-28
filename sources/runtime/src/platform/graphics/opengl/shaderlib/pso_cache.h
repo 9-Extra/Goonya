@@ -1,6 +1,6 @@
 #pragma once
 
-#include "platform/graphics/opengl/GLResource.h"
+#include "platform/graphics/opengl/GLMaterial.h"
 #include "resource/resources.h"
 #include "shaderlib.h"
 

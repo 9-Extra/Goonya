@@ -2,7 +2,7 @@
 
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
-#include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/Material.h"
 
 namespace Goonya {
 namespace Graphics {

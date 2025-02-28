@@ -7,15 +7,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
-#include <ranges>
 
 #include "GLBuffer.h"
-#include "GLResource.h"
+#include "GLMaterial.h"
 #include "GLTexture.h"
 #include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
-#include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/Material.h"
 #include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/resources.h"
@@ -74,26 +73,6 @@ intrusive_ptr<PipelineStateObject> OpenGLGraphicsAPI::query_pso(const Resource::
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
 void OpenGLGraphicsAPI::load_uber_shader(const std::string &name, const UberShaderDesc &desc) {
     pso_cache.add_uber_shader(name, desc);
-}
-
-intrusive_ptr<Material> OpenGLGraphicsAPI::load_material(const Resource::MaterialDesc &desc,
-                                                         const std::vector<intrusive_ptr<Texture>> &textures) {
-    intrusive_ptr<GLMaterial> mat{new GLMaterial()};
-    mat->pipeline_state = pso_cache.query_pso(desc.pso_desc);
-
-    for (const auto &u : desc.uniforms) {
-        GLuint buffer_id;
-        glCreateBuffers(1, &buffer_id);
-        glNamedBufferData(buffer_id, u.size, u.data, GL_STATIC_DRAW);
-        mat->uniforms.emplace_back(GLMaterial::UniformData{u.binding_id, buffer_id});
-    }
-
-    for (const auto &[s, t] : std::views::zip(desc.samplers, textures)) {
-        mat->samplers.emplace_back(
-            GLMaterial::SampleData{s.binding_id, t});
-    }
-
-    return mat;
 }
 
 static GLenum Topology2OpenGL(Topology t) noexcept{

@@ -2,7 +2,7 @@
 
 #include "core/cgmath.h"
 #include "function/renderer/RenderResource.h"
-#include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/Material.h"
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
@@ -157,16 +157,16 @@ void load_gltf(const std::string &base_key, const std::string &path) {
             if (material["pbrMetallicRoughness"].isMember("roughnessFactor")) {
                 roughnessFactor = material["pbrMetallicRoughness"]["roughnessFactor"].asFloat();
             }
-            float uniform_data[2] = {metallicFactor, roughnessFactor};
 
             Resource::PSODesc pso = Resource::PSOBuilder().set_uber_shader("pbr").build();
             Resource::MaterialBuilder mat_builder;
             Resource::MaterialDesc desc = Resource::MaterialBuilder()
                                               .set_pso(pso)
-                                              .add_uniform(2, sizeof(float) * 2, &uniform_data)
-                                              .add_sampler(0, basecolor_texture)
-                                              .add_sampler(1, normal_texture)
-                                              .add_sampler(2, metallic_roughness_texture)
+                                              .add_parameter("metallic_factor", metallicFactor)
+                                              .add_parameter("roughness_factor", roughnessFactor)
+                                              .add_sampler("basecolor_texture", basecolor_texture)
+                                              .add_sampler("normal_texture", normal_texture)
+                                              .add_sampler("metallic_roughness_texture", metallic_roughness_texture)
                                               .build();
 
             Graphics::resources.add_material(key, desc);

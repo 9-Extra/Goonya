@@ -5,31 +5,39 @@
 #include <string>
 #include <unordered_map>
 
-#include "platform/read_file.h"
 #include "core/metatype/metatype.h"
+#include "platform/graphics/Material.h"
+#include "platform/read_file.h"
 #include "resource/resources.h"
-#include "platform/graphics/graphics.h"
+
 
 namespace Goonya {
 namespace Graphics {
 
-class ShaderIntrospector {
-public:
-    ShaderIntrospector(GLuint program_id) noexcept : id(program_id) {}
-
-    std::unordered_map<std::string, Meta::LayoutInfo> get_constant_buffer_info() const noexcept;
-
-private:
-    GLuint id;
+struct ShaderUniformBlockInfo {
+    Meta::LayoutInfo layout;
+    GLuint binding;
 };
 
 struct ShaderResource {
     GLuint gl_id;
     // std::vector<std::tuple<std::string, Meta::FieldType>> vertex_input;
-    Meta::LayoutInfo per_object;
-    Meta::LayoutInfo per_material;
-    Meta::LayoutInfo per_frame;
-     
+
+    ShaderUniformBlockInfo per_material;
+    ShaderUniformBlockInfo per_frame;
+
+    std::unordered_map<std::string, GLuint> texture_units;
+};
+
+class ShaderIntrospector {
+public:
+    ShaderIntrospector(GLuint program_id) noexcept : id(program_id) {}
+
+    std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept;
+    std::unordered_map<std::string, GLuint> get_texture_info() const noexcept;
+
+private:
+    GLuint id;
 };
 
 class ShaderLib {
@@ -41,7 +49,7 @@ public:
         shader_cache.clear();
         uber_shader_sources.clear();
     }
-    
+
     void add_uber_shader(const std::string &name, const UberShaderDesc &desc) {
         assert(!uber_shader_sources.contains(name));
         uber_shader_sources.emplace(name,
@@ -60,7 +68,6 @@ public:
         return r;
     }
 
-
 private:
     struct UberShaderSource {
         std::string vs_src;
@@ -71,7 +78,6 @@ private:
 
     ShaderResource load_shader(const Resource::ShaderDesc &desc);
 };
-
 
 } // namespace Graphics
 } // namespace Goonya

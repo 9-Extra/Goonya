@@ -1,8 +1,10 @@
-#include "GLResource.h"
+#include "GLMaterial.h"
 
+#include "core/intrusive_ptr.h"
 #include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
+#include "runtime/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -66,18 +68,36 @@ void GLPipelineStateObject::bind() const {
     checkError();
 };
 
+void GLMaterial::update_parameters() const noexcept {
+    if (!is_dirty) {
+        return;
+    }
+    {
+        const auto &layout = get_shader().per_material.layout;
+        std::unique_ptr<uint8_t> memory{new uint8_t[layout.size]};
+        auto w = Meta::DynamicStructWriter(layout, memory.get());
+        for (const auto &[name, value] : parameters) {
+            w.set_field(name, value);
+        }
+        // 直接创建新的
+        per_material =
+            intrusive_ptr<UniformBuffer>(new GLUniformBuffer{std::span(memory.get(), layout.size), BufferType::STATIC});
+    }
+    is_dirty = false;
+}
+
 void GLMaterial::bind() const {
     checkError();
-    pipeline_state->bind(); // 绑定此材质关联的着色器
+    pso->bind(); // 绑定此材质关联的着色器
+    this->update_parameters();
     // 绑定材质的uniform buffer
-    for (const GLMaterial::UniformData &u : uniforms) {
-        glBindBufferBase(GL_UNIFORM_BUFFER, u.binding_id, u.buffer_id);
-    }
+    ((GLUniformBuffer*)per_material.get())->bind_uniform(get_shader().per_material.binding);
     // 绑定所有纹理
-    for (const GLMaterial::SampleData &s : samplers) {
-        s.texture->bind(s.binding_id);
+    for (const auto&  [id, t] : textures) {
+        t->bind(id);
     }
     checkError();
 }
+
 } // namespace Graphics
 } // namespace Goonya

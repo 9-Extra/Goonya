@@ -4,7 +4,7 @@
 #include "core/intrusive_ptr.h"
 #include "function/renderer/RenderItem.h"
 #include "platform/graphics/Buffer.h"
-#include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/Material.h"
 #include "platform/graphics/graphics.h"
 
 namespace Goonya {

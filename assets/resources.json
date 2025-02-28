@@ -63,8 +63,8 @@
             },
             "samplers": [
                 {
-                    "slot": 5,
-                    "name": "skybox_valley_color"
+                    "name": "skybox_specular_texture",
+                    "texture_key": "skybox_valley_color"
                 }
             ]
         }

@@ -7,7 +7,7 @@
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntSkybox.h"
-#include "platform/graphics/GraphicsResource.h"
+#include "platform/graphics/Material.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {

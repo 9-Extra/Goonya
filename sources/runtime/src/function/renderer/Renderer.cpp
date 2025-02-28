@@ -1,6 +1,7 @@
 #include "Renderer.h"
 
 #include "HardcodeAssets.h"
+#include "core/cgmath.h"
 #include "core/eventbus/eventbus.h"
 #include "core/metatype/metatype.h"
 #include "function/renderer/RenderResource.h"
@@ -22,8 +23,8 @@ void init_resource() {
         Vector3f color_while{1.0f, 1.0f, 1.0f};
         resources.add_material("wood_flat", Resource::MaterialBuilder()
                                                 .set_pso(Resource::PSOBuilder().set_uber_shader("flat").build())
-                                                .add_uniform(2, sizeof(Vector3f), &color_while)
-                                                .add_sampler(3, "wood_diffusion")
+                                                .add_parameter("base_color", color_while)
+                                                .add_sampler("color_texture", "wood_diffusion")
                                                 .build());
     }
 
@@ -33,7 +34,7 @@ void init_resource() {
         Resource::MaterialDesc green_material_desc =
             Resource::MaterialBuilder()
                 .set_pso(Resource::PSOBuilder().set_uber_shader("single_color").build())
-                .add_uniform(2, sizeof(Vector3f), color_green.data())
+                .add_parameter("color", color_green)
                 .build();
 
         resources.add_material("default", green_material_desc);

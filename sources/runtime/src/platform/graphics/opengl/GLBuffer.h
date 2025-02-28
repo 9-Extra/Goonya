@@ -38,6 +38,13 @@ public:
         glNamedBufferData(id, size, (void*)data.data(), GLBufferType(type));
     };
 
+    template<typename D>
+    GLBufferImpl(std::span<D> data, BufferType type) : size(data.size_bytes()), type(type) {
+        glCreateBuffers(1, &id);
+        glNamedBufferData(id, size, (void*)data.data(), GLBufferType(type));
+    };
+
+
     GLuint get_id() const noexcept { return id; }
 
     virtual uint32_t get_size() const noexcept override { return size; }

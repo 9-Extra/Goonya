@@ -3,9 +3,9 @@
 #include <cstdint>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
-#include "platform/graphics/GraphicsResource.h"
+#include "core/intrusive_ptr.h"
+#include "platform/graphics/Material.h"
 #include "platform/graphics/graphics.h"
 #include "resource/resources.h"
 #include "runtime/log/Log.h"
@@ -53,11 +53,14 @@ public:
 
     void add_material(const std::string &key, const Resource::MaterialDesc &desc) {
         LOG_INFO("Loading Material: {}", key);
-        std::vector<intrusive_ptr<Texture>> tx;
-        for (const auto &s : desc.samplers) {
-            tx.emplace_back(textures.at(s.texture_key));
+        intrusive_ptr<Material> mat{graphics_api->create_material(desc.pso_desc)};
+        for(const auto& [name, value]: desc.parameters){
+            mat->set_param(name, value);
         }
-        materials.emplace(key, graphics_api->load_material(desc, tx));
+        for(const auto& [name, texture_key]: desc.textures){
+            mat->set_texture(name, textures.at(texture_key));
+        }
+        materials.emplace(key, mat);
     }
     void add_texture(const std::string &key, const Resource::Texture2DDesc &desc) {
         LOG_INFO("Loading Texture: {}", key);
