@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <glad/glad.h>
-#include <memory>
 
 #include "../Material.h"
 #include "GLBuffer.h"

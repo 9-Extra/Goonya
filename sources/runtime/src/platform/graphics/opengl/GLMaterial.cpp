@@ -4,7 +4,6 @@
 #include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
-#include "runtime/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {

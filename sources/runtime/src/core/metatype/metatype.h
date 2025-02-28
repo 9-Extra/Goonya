@@ -9,7 +9,6 @@
 #include <initializer_list>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 namespace Goonya {
 namespace Meta {
@@ -80,6 +79,7 @@ constexpr size_t sizeof_field_type(FieldType type) noexcept {
     return 0;
 };
 
+// 存储一个类型为FieldType的动态类型的值
 struct DynamicData {
     DynamicData() : type(FieldType::nul) {}
 

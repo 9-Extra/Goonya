@@ -117,8 +117,8 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_
     // 获取所有uniform_block内部所有字段和偏移量
     GLint uniform_block_num;
     glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
-    const GLenum uniform_block_properties[] = {GL_BUFFER_BINDING, GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
-    const size_t property_count = std::extent_v<decltype(uniform_block_properties)>;
+    const GLenum UNIFORM_BLOCK_PROPERTIES[] = {GL_BUFFER_BINDING, GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE, GL_NUM_ACTIVE_VARIABLES};
+    const size_t property_count = std::extent_v<decltype(UNIFORM_BLOCK_PROPERTIES)>;
 
     std::unordered_map<std::string, ShaderUniformBlockInfo> result;
     result.reserve(uniform_block_num);
@@ -126,7 +126,7 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_
     for (int i = 0; i < uniform_block_num; ++i) {
         GLint values[property_count];
         // 获取名称长度，总大小，和字段数量
-        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, uniform_block_properties, property_count, NULL,
+        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, UNIFORM_BLOCK_PROPERTIES, property_count, NULL,
                                values);
         checkError();
         auto [binding, name_len, size, var_num] = values;
@@ -142,11 +142,11 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_
 
         std::unordered_map<std::string, Meta::FieldInfo> fields;
         for (int i = 0; i < var_num; ++i) {
-            const GLenum uniform_properties[] = {GL_NAME_LENGTH, GL_TYPE, GL_OFFSET};
-            const size_t property_count = std::extent_v<decltype(uniform_properties)>;
+            const GLenum UNIFORM_PROPERTIES[] = {GL_NAME_LENGTH, GL_TYPE, GL_OFFSET};
+            const size_t property_count = std::extent_v<decltype(UNIFORM_PROPERTIES)>;
             // 获取内部字段名称长度，类型和偏移量
             GLint values[property_count];
-            glGetProgramResourceiv(id, GL_UNIFORM, unifrom_ids[i], property_count, uniform_properties, property_count,
+            glGetProgramResourceiv(id, GL_UNIFORM, unifrom_ids[i], property_count, UNIFORM_PROPERTIES, property_count,
                                    NULL, values);
             auto [name_len, type, offset] = values;
             // 获取字段名称
@@ -224,11 +224,10 @@ std::unordered_map<std::string, GLuint> ShaderIntrospector::get_texture_info() c
 
         if (!is_sampler) continue;
 
-        // 获取名称长度并提取名称
+        // 获取名称
         std::string name_buffer;
         name_buffer.resize(name_len - 1);
         glGetProgramResourceName(id, GL_UNIFORM, i, name_len, nullptr, name_buffer.data());
-        // 插入结果集
 
         GLuint texture_unit;
         glGetUniformuiv(id, location, &texture_unit); // 绑定的纹理单元视为对应location中存储的值
