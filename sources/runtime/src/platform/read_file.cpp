@@ -9,7 +9,7 @@ namespace Goonya {
 std::string read_whole_file(const std::filesystem::path& path) {
     std::ifstream f(path, std::ios::in | std::ios::binary);
     if (!f){
-        throw RuntimeError(std::format("Fail to open file {}", path.generic_string()));
+        throw RuntimeError(std::format("Fail to open file {}", path.string()));
     }
 
     // Obtain the size of the file.

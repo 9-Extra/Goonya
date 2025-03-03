@@ -8,7 +8,7 @@
 #include <iostream>
 
 #include "core/eventbus/eventbus.h"
-#include "runtime/log/Log.h"
+#include "core/log/Log.h"
 
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>

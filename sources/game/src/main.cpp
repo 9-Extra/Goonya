@@ -3,12 +3,13 @@
 #include <json/json.h>
 #include <json/value.h>
 #include <runtime/Goonya.h>
-#include <runtime/log/Log.h>
+#include <core/log/Log.h>
 #include <core/world/World.h>
 #include <core/input/input.h>
 #include <core/timer/timer.h>
 #include <core/eventbus/eventbus.h>
 #include <function/scene/scene.h>
+#include <nowide/iostream.hpp>
 
 #include "logic.h"
 
@@ -27,10 +28,10 @@ int main() {
 
         Goonya::drop_engine();
     } catch (const std::exception &e) {
-        std::cerr << "抛出异常：" << e.what() << std::endl;
+        nowide::cerr << "抛出异常：" << e.what() << std::endl;
     }
 
-    std::cerr << "正常关闭" << std::endl;
+    nowide::cerr << "正常关闭" << std::endl;
 
     return 0;
 }

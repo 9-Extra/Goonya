@@ -1,11 +1,13 @@
 #include "OpenGLAPI.h"
-#include <FreeImage.h>
+#include "core/log/Log.h"
+#include <FreeImage.h> // FreeImage不知为何定义了_WINDOWS_，导致spdlog包含的Windows.h头文件不完整，所以先包含spdlog
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
 #include <glad/glad.h>
 
 #include "GLBuffer.h"
@@ -19,7 +21,6 @@
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
-#include "runtime/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -27,8 +28,7 @@ namespace Graphics {
 static FIBITMAP *freeimage_load_and_convert_image(const std::string &image_path, bool is_color) {
     FIBITMAP *pImage_ori = FreeImage_Load(FreeImage_GetFileType(image_path.c_str(), 0), image_path.c_str());
     if (pImage_ori == nullptr) {
-        std::cerr << "Failed to load image: " << image_path << std::endl;
-        exit(-1);
+        throw RuntimeError(std::format("Failed to load image: {}", image_path));
     }
     FIBITMAP *pImage = FreeImage_ConvertTo24Bits(pImage_ori);
     FreeImage_FlipVertical(pImage); // 翻转，适应opengl的方向

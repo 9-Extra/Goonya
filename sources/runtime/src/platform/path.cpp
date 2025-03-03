@@ -1,10 +1,16 @@
 #include "path.h"
 #include "runtime/GoonyaException.h"
 #include <filesystem>
-#include <linux/limits.h>
 #ifdef _WIN32
+    #ifndef NOMINMAX
+    #define NOMINMAX
+    #endif
+    #ifndef WIN32_LEAN_AND_MEAN
+    #define WIN32_LEAN_AND_MEAN
+    #endif
 #include <Windows.h>
 #elif __linux__
+#include <linux/limits.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #endif

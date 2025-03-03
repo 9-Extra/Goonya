@@ -3,10 +3,14 @@ add_rules("mode.debug", "mode.release")
 set_languages("c23", "c++23")
 set_warnings("all")
 
+set_encodings("utf-8")
+
+add_requires("nowide_standalone")
 add_requires("imgui", {configs = {glfw_opengl3 = true}})
 add_requires("glfw")
-add_requires("freeimage")
-add_requires("spdlog")
+add_requires("freeimage", {configs = {shared = true}})
+-- 在Windows上，spdlog需要SPDLOG_UTF8_TO_WCHAR_CONSOLE以将输出到命令行的日志转换为wchar以避免乱码，此设置还需要开启wchar支持
+add_requires("spdlog", {configs = {wchar = true, std_format = true, header_only = false, cxxflags = {"-DSPDLOG_UTF8_TO_WCHAR_CONSOLE"}}})
 add_requires("jsoncpp")
 
 if is_mode("debug") then
@@ -25,10 +29,10 @@ target("GRuntime")
     add_files("sources/runtime/src/**.cpp")
     add_includedirs("sources/runtime/src", {public = true, private=true})
     add_deps("glad")
-    add_defines("GLFW_INCLUDE_NONE")
+    add_defines("GLFW_INCLUDE_NONE") -- 手动包含glad
 
     add_packages("glfw", "freeimage")
-    add_packages("imgui", "spdlog", "jsoncpp", {public=true})
+    add_packages("imgui", "spdlog", "jsoncpp", "nowide_standalone", {public=true})
 
     add_includedirs("sources/runtime/include", {public = true})
 

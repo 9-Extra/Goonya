@@ -1,5 +1,6 @@
 #include <cmath>
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <imgui.h>
 #include <runtime/Goonya.h>
@@ -14,7 +15,7 @@
 #include "core/input/input.h"
 #include "core/timer/timer.h"
 #include "core/world/World.h"
-#include "runtime/log/Log.h"
+#include "core/log/Log.h"
 
 namespace Goonya {
 
@@ -33,6 +34,7 @@ static uint32_t calculate_fps(float delta_time) {
 
 void init_engine() {
     logger.inititalize();
+    LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
 
     EventBus::initalize();
     Input::initalize();

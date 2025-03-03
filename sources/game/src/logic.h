@@ -1,5 +1,5 @@
 #pragma once
-#include "runtime/log/Log.h"
+#include "core/log/Log.h"
 #include <core/cgmath.h>
 #include <core/world/GObject.h>
 #include <core/input/input.h>

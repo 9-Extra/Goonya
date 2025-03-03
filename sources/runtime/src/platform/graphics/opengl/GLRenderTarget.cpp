@@ -2,7 +2,7 @@
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/opengl/GLTexture.h"
-#include "runtime/log/Log.h"
+#include "core/log/Log.h"
 #include <spdlog/details/circular_q.h>
 #include <variant>
 

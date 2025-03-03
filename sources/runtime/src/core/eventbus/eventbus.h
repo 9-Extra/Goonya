@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <runtime/log/Log.h>
+#include "core/log/Log.h"
 
 namespace Goonya {
 namespace EventBus {
@@ -62,7 +62,6 @@ public:
 
         ListenerID id = ++uid;
         l.insert(iter, Listener{id, priority, args, (bool (*)(void *, void *))trigger});
-
         LOG_DEBUG("注册事件: {}，id: {}", typeid(E).name(), id);
         return id;
     }

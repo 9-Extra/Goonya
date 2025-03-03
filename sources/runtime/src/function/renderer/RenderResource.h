@@ -8,7 +8,7 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/graphics.h"
 #include "resource/resources.h"
-#include "runtime/log/Log.h"
+#include "core/log/Log.h"
 
 namespace Goonya {
 namespace Graphics {

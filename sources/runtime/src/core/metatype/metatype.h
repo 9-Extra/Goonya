@@ -9,6 +9,7 @@
 #include <initializer_list>
 #include <string>
 #include <unordered_map>
+#include <format>
 
 namespace Goonya {
 namespace Meta {
