@@ -27,7 +27,6 @@ private:
 class GLPipelineStateObject : public PipelineStateObject {
 public:
     GLPipelineStateObject(const Resource::PSODesc &desc);
-    ~GLPipelineStateObject() override { glDeleteVertexArrays(1, &vao_id); };
     virtual void bind() const override;
 
 private:
@@ -42,7 +41,6 @@ private:
     GLenum depth_func;
 
     ShaderResource shader;
-    GLuint vao_id; // 使用vao记录顶点内存布局，但是不绑定buffer
 };
 
 class GLMaterial : public Material {

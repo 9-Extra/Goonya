@@ -63,7 +63,7 @@ void GLPipelineStateObject::bind() const {
         glDisable(GL_DEPTH_TEST);
     }
     glDepthFunc(this->depth_func);
-    glUseProgram(this->shader.gl_id); // 绑定着色器
+    glUseProgram(this->shader.id); // 绑定着色器
     checkError();
 };
 

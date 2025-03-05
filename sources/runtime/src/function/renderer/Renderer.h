@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include "core/log/Log.h"
 #include "passes/Passes.h"
 #include "RenderItem.h"
 #include "RenderAspect.h"
@@ -36,7 +37,7 @@ public:
     void render() {
         if (!is_camera_updated) {
             main_camera = Camera();
-            std::cout << "没有设置相机" << std::endl;
+            LOG_WARN("主相机未设置");
         }
 
         lambertian_pass->run();

@@ -2,7 +2,7 @@
 
 #include <cassert>
 #include <cmath>
-#include <iostream>
+#include <format>
 
 namespace Goonya {
 
@@ -15,8 +15,8 @@ struct Vector2f {
         };
         float v[2];
     };
-    Vector2f() : x(0), y(0) {}
-    Vector2f(float x, float y) : x(x), y(y) {}
+    Vector2f() {}
+    constexpr Vector2f(float x, float y) : x(x), y(y) {}
 
     Vector2f operator+(const Vector2f b) { return Vector2f(x + b.x, y + b.y); }
 
@@ -35,11 +35,6 @@ struct Vector2f {
 
     Vector2f rotate(float radiam) {
         return Vector2f(x * cosf(radiam) + y * sinf(radiam), x * -sinf(radiam) + y * cosf(radiam));
-    }
-
-    friend std::ostream &operator<<(std::ostream &os, const Vector2f &v) {
-        os << "(" << v.x << ", " << v.y << ")";
-        return os;
     }
 };
 
@@ -62,7 +57,7 @@ struct Vector3f {
     };
 
     Vector3f() {}
-    Vector3f(float x, float y, float z) : x(x), y(y), z(z) {}
+    constexpr Vector3f(float x, float y, float z) : x(x), y(y), z(z) {}
 
     const float *data() const { return (float *)v; }
 
@@ -93,11 +88,6 @@ struct Vector3f {
     }
 
     inline float length() const { return std::sqrt(square()); }
-
-    friend std::ostream &operator<<(std::ostream &os, const Vector3f &v) {
-        os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
-        return os;
-    }
 };
 
 struct Vector4f {
@@ -395,3 +385,19 @@ struct BoundingBox {
 };
 
 } // namespace Goonya
+
+template <>
+struct std::formatter<Goonya::Vector2f> {
+    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
+    constexpr auto format(const Goonya::Vector2f vec2, std::format_context &ctx) const {
+        return std::format_to(ctx.out(), "({}, {})", vec2.x, vec2.y);
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Vector3f> {
+    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
+    constexpr auto format(const Goonya::Vector3f vec3, std::format_context &ctx) const {
+        return std::format_to(ctx.out(), "({}, {}, {})", vec3.x, vec3.y, vec3.z);
+    }
+};

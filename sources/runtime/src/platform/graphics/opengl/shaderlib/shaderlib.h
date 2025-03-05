@@ -20,8 +20,7 @@ struct ShaderUniformBlockInfo {
 };
 
 struct ShaderResource {
-    GLuint gl_id;
-    // std::vector<std::tuple<std::string, Meta::FieldType>> vertex_input;
+    GLuint id;
 
     ShaderUniformBlockInfo per_material;
     ShaderUniformBlockInfo per_frame;
@@ -44,7 +43,7 @@ class ShaderLib {
 public:
     ~ShaderLib() {
         for (const auto &[k, v] : shader_cache) {
-            glDeleteProgram(v.gl_id);
+            glDeleteProgram(v.id);
         }
         shader_cache.clear();
         uber_shader_sources.clear();

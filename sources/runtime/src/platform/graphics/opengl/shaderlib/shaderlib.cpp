@@ -4,16 +4,17 @@
 #include "runtime/GoonyaException.h"
 
 #include <format>
-#include <iostream>
 #include <sstream>
 
 namespace Goonya {
 namespace Graphics {
 
-unsigned int complie_shader(const char *const src, unsigned int shader_type) {
+unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
     unsigned int id = glCreateShader(shader_type);
 
-    glShaderSource(id, 1, &src, NULL);
+    const GLchar* data = source.c_str();
+    GLint length = (GLint)source.length();
+    glShaderSource(id, 1, &data, &length);
     glCompileShader(id);
 
     int success;

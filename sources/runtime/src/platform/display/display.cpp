@@ -5,7 +5,6 @@
 #include <cassert>
 #include <cstdint>
 #include <string>
-#include <iostream>
 
 #include "core/eventbus/eventbus.h"
 #include "core/log/Log.h"
@@ -153,7 +152,7 @@ void create_window(uint32_t width, uint32_t height) {
 }
 
 void static glfw_error_callback(int error, const char *description) {
-    std::cerr << "Error: " << description << std::endl;
+    LOG_ERROR("GLFW Error {}: {}", error, description);
 }
 
 void initalize(uint32_t width, uint32_t height) {

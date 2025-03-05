@@ -2,6 +2,7 @@
 
 #include "../Renderer.h"
 #include "core/intrusive_ptr.h"
+#include "core/log/Log.h"
 #include "function/renderer/RenderItem.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
@@ -45,7 +46,7 @@ void LambertianPass::run() {
         // 灯光参数
         data->ambient_light = renderer.ambient_light;
         if (renderer.pointlights.size() > POINTLIGNT_MAX) {
-            std::cout << "超出最大点光源数量" << std::endl;
+            LOG_WARN("点光源数量({})超出上限({})", renderer.pointlights.size(), POINTLIGNT_MAX);
         }
         uint32_t count = (uint32_t)std::min<size_t>(renderer.pointlights.size(), POINTLIGNT_MAX);
         for (uint32_t i = 0; i < count; ++i) {
