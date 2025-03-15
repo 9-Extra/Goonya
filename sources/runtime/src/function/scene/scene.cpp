@@ -2,11 +2,13 @@
 
 #include <fstream>
 #include <json/json.h>
+#include <memory>
 #include "core/intrusive_ptr.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntSkybox.h"
+#include "function/renderer/RenderResource.h"
 #include "platform/graphics/Material.h"
 #include "runtime/GoonyaException.h"
 
@@ -47,12 +49,15 @@ BoundingBox load_bbox(const Json::Value &json){
 // 从json加载组件
 void load_conponents_from_json(GObject *obj, const Json::Value &json) {
     for (const auto& cpnt_name :json.getMemberNames()) {
-        const Json::Value cpnt_desc = json[cpnt_name];
+        const Json::Value& cpnt_desc = json[cpnt_name];
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
-            if (cpnt_desc.isMember("parts")){
-                for(const Json::Value &p : cpnt_desc["parts"]) {
-                    cpnt_ptr->add_part(Graphics::RenderItem{p["mesh"].asString(), p["material"].asString(), load_transform(p)});
+            if (cpnt_desc.isMember("mesh")){
+                cpnt_ptr->mesh = Graphics::resources.meshes.at(cpnt_desc["mesh"].asString());
+            }
+            if (cpnt_desc.isMember("material")){
+                for(const Json::Value& material_name: cpnt_desc["material"]){
+                    cpnt_ptr->materials.emplace_back(Graphics::resources.materials.at(material_name.asString()));
                 }
             }
             obj->add_component(std::move(cpnt_ptr));   
@@ -65,10 +70,11 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             float near_z = cpnt_desc["near_z"].asFloat();
             float far_z = cpnt_desc["far_z"].asFloat();
             float fov = cpnt_desc["fov"].asFloat();
-            obj->add_component(std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov));  
+            std::unique_ptr<Graphics::CpntCamera> camera = std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov);
             if (is_main){
-                obj->get_component<Graphics::CpntCamera>()->set_main_camera();
+                camera->should_be_main = true;
             }
+            obj->add_component(std::move(camera));  
         } else if (cpnt_name == "sky_box") {
             intrusive_ptr<Graphics::Material> material = Graphics::resources.materials.at(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());

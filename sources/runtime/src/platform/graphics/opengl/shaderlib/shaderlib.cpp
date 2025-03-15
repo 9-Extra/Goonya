@@ -1,6 +1,6 @@
 #include "shaderlib.h"
 #include "core/metatype/metatype.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
 
 #include <format>
@@ -129,7 +129,7 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_
         // 获取名称长度，总大小，和字段数量
         glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, UNIFORM_BLOCK_PROPERTIES, property_count, NULL,
                                values);
-        checkError();
+        opengl_debug_check_error();
         auto [binding, name_len, size, var_num] = values;
         // 获取块名称
         std::string name;
@@ -160,7 +160,7 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_
         result.emplace(name, ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), (size_t)size}, (GLuint)binding});
     }
 
-    checkError();
+    opengl_debug_check_error();
 
     return result;
 }
@@ -234,7 +234,7 @@ std::unordered_map<std::string, GLuint> ShaderIntrospector::get_texture_info() c
         glGetUniformuiv(id, location, &texture_unit); // 绑定的纹理单元视为对应location中存储的值
         result.emplace(name_buffer, texture_unit);
     }
-    checkError();
+    opengl_debug_check_error();
 
     return result;
 }

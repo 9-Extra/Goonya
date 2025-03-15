@@ -1,12 +1,12 @@
 {
     "root": [
-        {   
+        {
             "name": "天空盒",
-            "components":{
+            "components": {
                 "sky_box": {
                     "ignore_range": true,
                     "material": "skybox_valley"
-                } 
+                }
             }
         },
         {
@@ -28,62 +28,145 @@
                     3
                 ]
             },
-            "components": {
-                "mesh_render": {
-                    "parts": [
-                        {
-                            "transform": {
-                                "position": [0, 0, 1],
-                                "rotation": [0, 0, 0]
-                            },
-                            "mesh": "plane",
-                            "material": "crafting_table.front"
-                        },
-                        {
-                            "transform": {
-                                "position": [0, 0, -1],
-                                "rotation": [0, 0, 3.1415926535]
-                            },
-                            "mesh": "plane",
-                            "material": "crafting_table.side"
-                        },
-                        {
-                            "transform": {
-                                "position": [0, 1, 0],
-                                "rotation": [0, -1.57079632675, 0]
-                            },
-                            "mesh": "plane",
-                            "material": "crafting_table.top"
-                        },
-                        {
-                            "transform": {
-                                "position": [0, -1, 0],
-                                "rotation": [0, 1.57079632675, 0]
-                            },
-                            "mesh": "plane",
-                            "material": "gold.gold"
-                        },
-                        {
-                            "transform": {
-                                "position": [1, 0, 0],
-                                "rotation": [0, 0, -1.57079632675]
-                            },
-                            "mesh": "plane",
-                            "material": "crafting_table.side"
-                        },
-                        {
-                            "transform": {
-                                "position": [-1, 0, 0],
-                                "rotation": [0, 0, 1.57079632675]
-                            },
-                            "mesh": "plane",
-                            "material": "crafting_table.side"
-                        }
-                    ]
-                    
-                }
-            },
             "children": [
+                {
+                    "name": "front",
+                    "transform": {
+                        "position": [
+                            0,
+                            0,
+                            1
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            0
+                        ]
+                    },
+                    "components": {
+                        "mesh_render": {
+                            "mesh": "plane",
+                            "material": [
+                                "crafting_table.front"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "side",
+                    "transform": {
+                        "position": [
+                            0,
+                            0,
+                            -1
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            3.1415926535
+                        ]
+                    },
+                    "components": {
+                        "mesh_render": {
+                            "mesh": "plane",
+                            "material": [
+                                "crafting_table.side"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "top",
+                    "transform": {
+                        "position": [
+                            0,
+                            1,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            -1.57079632675,
+                            0
+                        ]
+                    },
+                    "components": {
+                        "mesh_render": {
+                            "mesh": "plane",
+                            "material": [
+                                "crafting_table.top"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "down",
+                    "transform": {
+                        "position": [
+                            0,
+                            -1,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            1.57079632675,
+                            0
+                        ]
+                    },
+                    "components": {
+                        "mesh_render": {
+                            "mesh": "plane",
+                            "material": [
+                                "gold.gold"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "side",
+                    "transform": {
+                        "position": [
+                            1,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            -1.57079632675
+                        ]
+                    },
+                    "components": {
+                        "mesh_render": {
+                            "mesh": "plane",
+                            "material": [
+                                "crafting_table.side"
+                            ]
+                        }
+                    }
+                },
+                {
+                    "name": "side",
+                    "transform": {
+                        "position": [
+                            -1,
+                            0,
+                            0
+                        ],
+                        "rotation": [
+                            0,
+                            0,
+                            1.57079632675
+                        ]
+                    },
+                    "components": {
+                        "mesh_render": {
+                            "mesh": "plane",
+                            "material": [
+                                "crafting_table.side"
+                            ]
+                        }
+                    }
+                },
                 {
                     "name": "子球",
                     "transform": {
@@ -105,11 +188,9 @@
                     },
                     "components": {
                         "mesh_render": {
-                            "parts": [
-                                {
-                                    "mesh": "wood_floor.Sphere",
-                                    "material": "wood_floor.wood_floor_deck"
-                                }
+                            "mesh": "wood_floor.Sphere",
+                            "material": [
+                                "wood_floor.wood_floor_deck"
                             ]
                         },
                         "camera": {
@@ -137,11 +218,9 @@
             },
             "components": {
                 "mesh_render": {
-                    "parts": [
-                        {
-                            "mesh": "teapot.teapot",
-                            "material": "wood_floor.wood_floor_deck"
-                        }
+                    "mesh": "teapot.teapot",
+                    "material": [
+                        "wood_floor.wood_floor_deck"
                     ]
                 }
             }
@@ -166,11 +245,9 @@
             },
             "components": {
                 "mesh_render": {
-                    "parts": [
-                        {
-                            "mesh": "plane",
-                            "material": "stone.stone"
-                        }
+                    "mesh": "plane",
+                    "material": [
+                        "stone.stone"
                     ]
                 }
             }
@@ -190,11 +267,9 @@
             },
             "components": {
                 "mesh_render": {
-                    "parts": [
-                        {
-                            "mesh": "gold.\u7acb\u65b9\u4f53",
-                            "material": "gold.gold"
-                        }
+                    "mesh": "gold.\u7acb\u65b9\u4f53",
+                    "material": [
+                        "gold.gold"
                     ]
                 }
             }

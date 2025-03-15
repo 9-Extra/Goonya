@@ -1,9 +1,10 @@
 #pragma once
 
 #include <memory>
-#include "core/log/Log.h"
+#include <unordered_set>
+#include <vector>
+#include "core/cgmath.h"
 #include "passes/Passes.h"
-#include "RenderItem.h"
 #include "RenderAspect.h"
 
 namespace Goonya {
@@ -19,7 +20,6 @@ public:
     } main_viewport; // 主视口
 
     Camera main_camera;             // 主像机
-    bool is_camera_updated = false; // 是否是主视口的主相机
     void *active_camera;            // 实际上是CpntCamera的owner的指针
 
     Vector3f ambient_light = {0.02f, 0.02f, 0.02f}; // 环境光
@@ -30,26 +30,24 @@ public:
 
     std::vector<Skybox> current_skyboxs; // 天空盒
 
+    std::unordered_set<MeshRenderInfo*> meshes; // 要渲染的网格
+
     void init();
 
-    void accept(RenderItem *part) { lambertian_pass->accept(part); }
-
-    void render() {
-        if (!is_camera_updated) {
-            main_camera = Camera();
-            LOG_WARN("主相机未设置");
-        }
-
-        lambertian_pass->run();
-        skybox_pass->run();
-        // pickup_pass->run();
-
-        lambertian_pass->reset();
-        pointlights.clear();
-        checkError();
-
-        is_camera_updated = false;
+    void add_mesh_info(MeshRenderInfo* info){
+        meshes.emplace(info);
     }
+
+    void remove_mesh_info(MeshRenderInfo* info){
+        meshes.erase(meshes.find(info));
+    }
+
+    void update_mesh_transform(MeshRenderInfo* info, const Matrix4& model_matrxi, const Matrix4& normal_matrix){
+        info->model_matrix = model_matrxi;
+        info->normal_matrix = normal_matrix;
+    }
+
+    void render();
 
     void set_viewport(int32_t  x, int32_t  y, int32_t  width, int32_t  height) { main_viewport = {x, y, width, height}; }
 

@@ -3,7 +3,7 @@
 #include "../Renderer.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
-#include "function/renderer/RenderItem.h"
+#include "function/renderer/RenderAspect.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/graphics.h"
@@ -17,21 +17,17 @@ void LambertianPass::run() {
     graphics_api->bind_rendertarget_screen();
     Renderer::Viewport &v = renderer.main_viewport;
     graphics_api->set_viewport(v.x, v.y, v.width, v.height);
-    // 清除旧画面
-    graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f});
-    graphics_api->clear();
-    checkError();
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
     per_object_uniform->bind_uniform(1);
-    checkError();
+    debug_check_error();
     // 计算透视投影矩阵
     const float aspect = float(v.width) / float(v.height);
     const Camera &camera = renderer.main_camera;
     const Matrix4 view_perspective_matrix = compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
                                            Matrix4::rotate(camera.rotation).transpose() *
                                            Matrix4::translate(-camera.position);
-    checkError();
+    debug_check_error();
     {
         // 填充per_frame uniform数据
         StructBufferWriter<PerFrameData> data(per_frame_uniform);
@@ -56,17 +52,17 @@ void LambertianPass::run() {
         data->pointlight_num = count;
         // 填充结束
     }
-    checkError();
+    debug_check_error();
     // 遍历所有part，绘制每一个part
-    for (const RenderItem *p : parts) {
-        p->material->bind(); // 绑定材质
+    for (const MeshRenderInfo *mesh : renderer.meshes) {
+        mesh->materials[0]->bind(); // 绑定材质
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);
-            data->model_matrix = p->world_model_matrix.transpose();      // 变换矩阵
-            data->normal_matrix = p->world_normal_matrix.transpose(); // 法线变换矩阵
+            data->model_matrix = mesh->model_matrix.transpose();      // 变换矩阵
+            data->normal_matrix = mesh->normal_matrix.transpose(); // 法线变换矩阵
         }
-        graphics_api->draw(p->mesh);
+        graphics_api->draw(mesh->mesh);
     }
 }
 

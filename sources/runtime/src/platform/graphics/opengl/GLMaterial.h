@@ -47,7 +47,7 @@ class GLMaterial : public Material {
 public:
     GLMaterial(const intrusive_ptr<PipelineStateObject> &pso) : Material(pso) {
         const auto &layout = get_shader().per_material.layout;
-        per_material = intrusive_ptr<GLUniformBuffer>(layout.size, BufferType::STATIC);
+        per_material = intrusive_ptr<GLUniformBuffer>(layout.size, BufferType::DYNAMIC);
         for (const auto &[name, f] : layout.fields) {
             parameters[name] = Meta::DynamicData(); // 所有需要的值建立key
         }

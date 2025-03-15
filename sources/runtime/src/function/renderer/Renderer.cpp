@@ -78,5 +78,26 @@ void Renderer::init() {
     lambertian_pass = std::make_unique<LambertianPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();
 }
+
+void Renderer::render() {
+    // 清除旧画面
+    graphics_api->bind_rendertarget_screen();
+    graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f});
+    graphics_api->clear();
+    debug_check_error();
+
+    if (active_camera == nullptr) {
+        LOG_WARN("主相机未设置");
+        return;
+    }
+
+    lambertian_pass->run();
+    skybox_pass->run();
+    // pickup_pass->run();
+
+    lambertian_pass->reset();
+    pointlights.clear();
+    debug_check_error();
+}
 } // namespace Graphics
 } // namespace Goonya

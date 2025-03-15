@@ -13,9 +13,11 @@ public:
         using namespace Goonya;
         if (Goonya::Input::is_mouse_click(Goonya::Input::LEFT)) {
             lights->enable();
+            cube->enable();
         }
         if (Goonya::Input::is_mouse_click(Goonya::Input::RIGHT)) {
             lights->disable();
+            cube->disable();
         }
 
         // 使用鼠标中键旋转视角
@@ -81,7 +83,7 @@ public:
         // }
     }
 
-    virtual void on_attach() override {
+    virtual void on_register() override {
         cube = get_owner()->get_child_by_name("方块");
         assert(cube);
         lights = get_owner()->get_child_by_name("lights");

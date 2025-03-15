@@ -3,6 +3,9 @@
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Mesh.h"
+
+#include <vector>
 
 namespace Goonya {
 namespace Graphics {
@@ -55,6 +58,14 @@ struct Skybox {
     intrusive_ptr<Material> material;
     bool ignore_range;
     BoundingBox bbox;
+};
+
+struct MeshRenderInfo{
+    Matrix4 model_matrix;
+    Matrix4 normal_matrix;
+    intrusive_ptr<Mesh> mesh;
+
+    std::vector<intrusive_ptr<Material>> materials;
 };
 
 } // namespace Graphics

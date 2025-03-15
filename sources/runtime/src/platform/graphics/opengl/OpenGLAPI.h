@@ -3,6 +3,7 @@
 #include "../graphics.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/opengl/GLBasic.h"
 #include "resource/resources.h"
 #include "shaderlib/pso_cache.h"
 
@@ -16,7 +17,9 @@ public:
         // nothing
     }
 
-    virtual void check_error(const char* file, size_t line) override;
+    virtual void _check_error(const char* file, size_t line) override{
+        _opengl_check_error(file, line);
+    }
     virtual intrusive_ptr<PipelineStateObject> query_pso(const Resource::PSODesc &desc) override;
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------

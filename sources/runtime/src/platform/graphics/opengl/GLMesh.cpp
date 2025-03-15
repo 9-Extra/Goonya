@@ -1,8 +1,22 @@
 #include "GLMesh.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Mesh.h"
+#include <cstddef>
+#include <vector>
 
 namespace Goonya {
 namespace Graphics {
+
+static GLenum Topology2OpenGL(Topology t) noexcept {
+    switch (t) {
+    case Topology::POINT:
+        return GL_POINTS;
+    case Topology::LINE:
+        return GL_LINES;
+    case Topology::TRIANGLE:
+        return GL_TRIANGLES;
+    }
+    return GL_INVALID_VALUE;
+}
 
 static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldType type) {
     switch (type) {
@@ -34,9 +48,14 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invaild Field Type");
 }
 
-GLMesh::GLMesh(GLenum topology, Resource::VertexLayout layout, intrusive_ptr<GLVertexBuffer> vertex_buffers,
+GLMesh::GLMesh(Topology topology, Resource::VertexLayout layout, intrusive_ptr<GLVertexBuffer> vertex_buffers,
                intrusive_ptr<GLIndexBuffer> index_buffer)
-    : topology(topology), layout(std::move(layout)), vertex_buffer(vertex_buffers), index_buffer(index_buffer) {
+    : GLMesh(std::vector<SubMesh>{SubMesh{0, index_buffer->get_index_count(), topology}}, layout, vertex_buffers,
+             index_buffer) {}
+
+GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, Resource::VertexLayout layout,
+               intrusive_ptr<GLVertexBuffer> vertex_buffers, intrusive_ptr<GLIndexBuffer> index_buffer)
+    : layout(std::move(layout)), vertex_buffer(vertex_buffers), index_buffer(index_buffer) {
     // 使用顶点格式创建VAO
     glCreateVertexArrays(1, &vao_id);
     GLsizei stride = this->layout.size;
@@ -54,7 +73,15 @@ GLMesh::GLMesh(GLenum topology, Resource::VertexLayout layout, intrusive_ptr<GLV
         glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);
         glVertexArrayAttribBinding(vao_id, index, stream_id);
     }
-    checkError();
+
+    // 传递SubMesh信息
+    this->submeshes.reserve(submeshes.size());
+    for (size_t i = 0; i < submeshes.size(); i++) {
+        this->submeshes.emplace_back(submeshes[i].start_index, submeshes[i].index_count,
+                                     Topology2OpenGL(submeshes[i].topology));
+    }
+
+    opengl_debug_check_error();
 }
 
 } // namespace Graphics

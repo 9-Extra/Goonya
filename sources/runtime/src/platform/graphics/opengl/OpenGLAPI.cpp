@@ -16,7 +16,6 @@
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
@@ -56,14 +55,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
 
-    check_error(__FILE__, __LINE__); // 现在graphics指针还没有设置，不能用宏
-}
-
-void OpenGLGraphicsAPI::check_error(const char *file, size_t line) {
-    GLenum error;
-    while ((error = glGetError()) != GL_NO_ERROR) {
-        LOG_ERROR("GL error 0x{}: At: {}:{}", error, file, line);
-    }
+    opengl_debug_check_error();
 }
 
 intrusive_ptr<PipelineStateObject> OpenGLGraphicsAPI::query_pso(const Resource::PSODesc &desc) {
@@ -74,15 +66,6 @@ void OpenGLGraphicsAPI::load_uber_shader(const std::string &name, const UberShad
     pso_cache.add_uber_shader(name, desc);
 }
 
-static GLenum Topology2OpenGL(Topology t) noexcept{
-    switch (t) {
-        case Topology::POINT: return GL_POINTS;
-        case Topology::LINE: return GL_LINES;
-        case Topology::TRIANGLE: return GL_TRIANGLES;
-    }
-    return GL_INVALID_VALUE;
-}
-
 intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resource::VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
@@ -90,7 +73,7 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resour
     intrusive_ptr<GLVertexBuffer> vertex_buffer{raw_vertices};
     intrusive_ptr<GLIndexBuffer> index_buffer{indices};
 
-    return intrusive_ptr<GLMesh>{new GLMesh{Topology2OpenGL(topology), vertex_layout, vertex_buffer, index_buffer}};
+    return intrusive_ptr<GLMesh>{new GLMesh{topology, vertex_layout, vertex_buffer, index_buffer}};
 }
 // virtual void load_material(const std::string &key, const Resource::MaterialDesc &desc);
 intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const Resource::Texture2DDesc& desc) const {
@@ -141,7 +124,7 @@ intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const Resource::Textu
     glTextureSubImage2D(texture_id, 0, 0, 0, nWidth, nHeight, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));
     glGenerateTextureMipmap(texture_id);
 
-    checkError();
+    opengl_debug_check_error();
 
     FreeImage_Unload(pImage);
 
@@ -179,7 +162,7 @@ intrusive_ptr<TextureCube> OpenGLGraphicsAPI::load_cubemap(const Resource::Textu
     }
     glGenerateTextureMipmap(texture_id);
 
-    checkError();
+    opengl_debug_check_error();
     
     return intrusive_ptr<GLTextureCube>(new GLTextureCube{texture_id});
 }
@@ -223,9 +206,11 @@ void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
     assert(gl_mesh);
 
     gl_mesh->bind();
+    for(const GLSubMesh& submesh : gl_mesh->submeshes){
+        glDrawElements(submesh.topology, submesh.index_count, GL_UNSIGNED_SHORT, reinterpret_cast<void*>(submesh.start_index)); // 绘制
+    }
 
-    glDrawElements(gl_mesh->topology, gl_mesh->get_indices_count(), GL_UNSIGNED_SHORT, 0); // 绘制
-    check_error(__FILE__, __LINE__);
+    check_error();
 }
 
 // -----------------------bind-------------------------------

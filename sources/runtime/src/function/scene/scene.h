@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/world/World.h"
+#include "core/world/GObject.h"
 
 namespace Goonya{
 namespace Scene {

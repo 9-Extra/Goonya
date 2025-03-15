@@ -10,7 +10,7 @@
 namespace Goonya {
 namespace Graphics {
 
-enum BufferType { STATIC, DYNAMIC, READBACK };
+enum BufferType { STATIC, DYNAMIC, STREAM, READBACK };
 
 class Buffer : public intrusive_ptr_base<Buffer> {
 public:

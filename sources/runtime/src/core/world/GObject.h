@@ -60,19 +60,31 @@ public:
     };
 
     void enable() noexcept{
-        if (is_disable()){
-            dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY); // 重新计算变换矩阵
-            disabled = false;
+        if (!is_disabled()) return;
+        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY); // 重新计算变换矩阵
+        disabled = false;
+        for (auto &component : components) {
+            component->on_register();
+        }
+        for (std::shared_ptr<GObject>& child: children){
+            child->enable();
         }
     }
 
     void disable() noexcept{
+        if (is_disabled()) return;
         disabled = true;
+        for (auto &component : components) {
+            component->on_unregister();
+        }
+        for (std::shared_ptr<GObject>& child: children){
+            child->disable();
+        }
     }
 
     void add_component(std::unique_ptr<Component>&& component) {
         component->set_owner(this);
-        component->on_attach();
+        component->on_register();
         components.push_back(std::move(component));
     }
 
@@ -94,7 +106,7 @@ public:
     bool remove_component(const std::type_info& t_info) {
         for (auto it = components.begin(); it!= components.end(); ++it) {
             auto& c = **it;// 比较其内容而非智能指针
-            c.on_detach();
+            c.on_unregister();
             c.set_owner(nullptr);
             if (typeid(c) == t_info) {
                 components.erase(it);
@@ -198,7 +210,7 @@ public:
         }
     }
 
-    bool is_disable() noexcept{
+    bool is_disabled() noexcept{
         return disabled;
     }
 

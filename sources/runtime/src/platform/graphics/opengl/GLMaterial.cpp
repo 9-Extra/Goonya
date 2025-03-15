@@ -1,6 +1,7 @@
 #include "GLMaterial.h"
 
 #include "core/intrusive_ptr.h"
+#include "platform/graphics/Buffer.h"
 #include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
@@ -64,29 +65,25 @@ void GLPipelineStateObject::bind() const {
     }
     glDepthFunc(this->depth_func);
     glUseProgram(this->shader.id); // 绑定着色器
-    checkError();
+    opengl_debug_check_error();
 };
 
 void GLMaterial::update_parameters() const noexcept {
     if (!is_dirty) {
         return;
     }
+    const auto &layout = get_shader().per_material.layout;
     {
-        const auto &layout = get_shader().per_material.layout;
-        std::unique_ptr<uint8_t> memory{new uint8_t[layout.size]};
-        auto w = Meta::DynamicStructWriter(layout, memory.get());
+        auto w = DynamicBufferWriter(per_material, layout);
         for (const auto &[name, value] : parameters) {
             w.set_field(name, value);
         }
-        // 直接创建新的
-        per_material =
-            intrusive_ptr<UniformBuffer>(new GLUniformBuffer{std::span(memory.get(), layout.size), BufferType::STATIC});
     }
     is_dirty = false;
 }
 
 void GLMaterial::bind() const {
-    checkError();
+    opengl_debug_check_error();
     pso->bind(); // 绑定此材质关联的着色器
     this->update_parameters();
     // 绑定材质的uniform buffer
@@ -95,7 +92,7 @@ void GLMaterial::bind() const {
     for (const auto&  [id, t] : textures) {
         t->bind(id);
     }
-    checkError();
+    opengl_debug_check_error();
 }
 
 } // namespace Graphics

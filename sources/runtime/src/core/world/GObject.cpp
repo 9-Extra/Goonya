@@ -3,7 +3,7 @@
 
 namespace Goonya {
 void GObject::tick(DirtyFlag parent_flag) {
-    if (is_disable())
+    if (is_disabled())
         return; // 跳过不启用的物体
 
     dirty_flag.append(parent_flag);
