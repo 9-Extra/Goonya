@@ -64,6 +64,24 @@ public:
         texture_info[name] = texture;
     }
 
+    void set_shader_variant_key(const std::string &key) {
+        std::unordered_set<std::string>& shader_def = pso_desc.shader_desc.variant_keys;
+        
+        if (shader_def.contains(key)) return;
+
+        shader_def.emplace(key);
+        is_pso_dirty = true;
+    }
+
+    void remove_shader_variant_key(const std::string &key) {
+        std::unordered_set<std::string>& shader_def = pso_desc.shader_desc.variant_keys;
+        
+        if (auto iter = shader_def.find(key);iter != shader_def.end()){
+            shader_def.erase(iter);
+            is_pso_dirty = true;
+        }
+    }
+
 protected:
     Material(const Resource::PSODesc &pso) : pso_desc(pso), is_parameters_dirty(true), is_pso_dirty(true) {};
     
@@ -79,7 +97,7 @@ protected:
 
     // 设备侧
     intrusive_ptr<PipelineStateObject> pso;
-    intrusive_ptr<UniformBuffer> per_material;                     // 显存中的材质参数
+    intrusive_ptr<Buffer> per_material;                     // 显存中的材质参数
     std::unordered_map<uint32_t, intrusive_ptr<Texture>> textures; // slot -> texture
 };
 

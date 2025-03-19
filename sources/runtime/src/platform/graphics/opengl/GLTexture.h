@@ -1,70 +1,37 @@
 #pragma once
 
 #include "../Texture.h"
+#include "platform/graphics/opengl/GLBasic.h"
+#include <cassert>
 #include <cstdint>
 #include <glad/glad.h>
 
 namespace Goonya {
 namespace Graphics {
 
-class GLTextureBase{
+class GLTexture: public Texture{
 public:
-    ~GLTextureBase(){
-        glDeleteTextures(1, &texture_id);
+    ~GLTexture(){
+        glDeleteTextures(1, &id);
     }
     void bind(uint32_t binding) const noexcept{
-        glBindTextureUnit(binding, texture_id);
+        glBindTextureUnit(binding, id);
     }
+
     GLuint get_id() const noexcept{
-        return texture_id;
+        return id;
+    }
+
+    void set_filter_mode(TextureFilterMode filter_mode) noexcept;
+    void set_warp_mode(TextureWarpMode warp_mode) noexcept;
+    void generate_mipmaps() noexcept{
+        glGenerateTextureMipmap(id);
     }
 protected:
     friend class OpenGLGraphicsAPI;
-    GLTextureBase(GLuint texture_id): texture_id(texture_id){}
-    
-    GLuint texture_id;
+    GLTexture(TextureType type, std::tuple<uint32_t, uint32_t, uint32_t> shape);
+    GLuint id;
 };
-
-
-class GLTexture: public Texture, public GLTextureBase {
-public:
-    ~GLTexture() = default;
-    virtual void bind(uint32_t binding) const noexcept override{
-        this->GLTextureBase::bind(binding);
-    }
-protected:
-    friend class OpenGLGraphicsAPI;
-    friend class GLMaterial;
-    GLTexture(GLuint texture_id): GLTextureBase(texture_id){}
-};
-
-class GLTextureCube: public TextureCube, public GLTextureBase {
-public:
-    ~GLTextureCube() = default;
-    virtual void bind(uint32_t binding) const noexcept override{
-        this->GLTextureBase::bind(binding);
-    }
-protected:
-    friend class OpenGLGraphicsAPI;
-    GLTextureCube(GLuint texture_id): GLTextureBase(texture_id){}
-};
-
-class GLTexture2D: public Texture2D, public GLTextureBase  {
-public:
-    ~GLTexture2D() = default;
-    virtual void bind(uint32_t binding) const noexcept override{
-        this->GLTextureBase::bind(binding);
-    }
-    virtual std::tuple<uint32_t, uint32_t> get_size() const noexcept override{
-        return size;
-    }
-protected:
-    friend class OpenGLGraphicsAPI;
-    GLTexture2D(GLuint texture_id, uint32_t width, uint32_t height): GLTextureBase(texture_id), size(width, height){}
-private:
-    std::tuple<uint32_t, uint32_t> size;
-};
-
 
 }
 }

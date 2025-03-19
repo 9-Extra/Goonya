@@ -3,6 +3,7 @@
 #include "core/cgmath.h"
 #include "function/renderer/RenderResource.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Texture.h"
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
@@ -105,9 +106,9 @@ void load_gltf(const std::string &base_key, const std::string &path) {
         if (sampler_info.isMember("magFilter")) {
             uint32_t value = sampler_info["magFilter"].asUInt();
             if (value == 9728) {
-                desc.filter_mode = TextureSampleMode::POINT;
+                desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
             } else if (value == 9729) {
-                desc.filter_mode = TextureSampleMode::BILINEAR;
+                desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
             } else {
                 throw RuntimeError(std::format("无效的sampler.magFilter: {}", value));
             }
@@ -116,13 +117,13 @@ void load_gltf(const std::string &base_key, const std::string &path) {
         if (sampler_info.isMember("minFilter")) {
             uint32_t value = sampler_info["minFilter"].asUInt();
             if (value == 9728) {
-                desc.filter_mode = TextureSampleMode::POINT;
+                desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
             } else if (value == 9729) {
-                desc.filter_mode = TextureSampleMode::BILINEAR;
+                desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
             } else if (value == 9987) {
-                desc.filter_mode = TextureSampleMode::TRILINEAR;
+                desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
             } else if (value == 9984 || value == 9985 || value == 9986) {
-                desc.filter_mode = TextureSampleMode::TRILINEAR; // 不严格
+                desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR; // 不严格
             } else {
                 throw RuntimeError(std::format("无效的sampler.minFilter: {}", value));
             }

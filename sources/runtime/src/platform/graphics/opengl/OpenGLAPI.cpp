@@ -2,10 +2,8 @@
 #include "core/log/Log.h"
 #include <FreeImage.h> // FreeImage不知为何定义了_WINDOWS_，导致spdlog包含的Windows.h头文件不完整，所以先包含spdlog
 #include <GLFW/glfw3.h>
-#include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
 
@@ -16,6 +14,7 @@
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
@@ -70,85 +69,44 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resour
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
 
-    intrusive_ptr<GLVertexBuffer> vertex_buffer{raw_vertices};
-    intrusive_ptr<GLIndexBuffer> index_buffer{indices};
+    intrusive_ptr<GLBuffer> vertex_buffer{raw_vertices, BufferType::STATIC};
+    intrusive_ptr<GLBuffer> index_buffer{indices, BufferType::STATIC};
 
     return intrusive_ptr<GLMesh>{new GLMesh{topology, vertex_layout, vertex_buffer, index_buffer}};
 }
 // virtual void load_material(const std::string &key, const Resource::MaterialDesc &desc);
-intrusive_ptr<Texture2D> OpenGLGraphicsAPI::load_texture2D(const Resource::Texture2DDesc& desc) const {
-    using Resource::TextureSampleMode;
-    using Resource::TextureWarpMode;
+intrusive_ptr<Texture> OpenGLGraphicsAPI::load_texture2D(const Resource::Texture2DDesc& desc) const {
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
     
-    GLuint texture_id;
-    glCreateTextures(GL_TEXTURE_2D, 1, &texture_id);
-    
-    // 缩放（采样）模式
-    GLenum min_filter, mag_filter;
-    if (desc.filter_mode == TextureSampleMode::POINT) {
-        min_filter = GL_NEAREST;
-        mag_filter = GL_NEAREST;
-    } else if (desc.filter_mode == TextureSampleMode::BILINEAR) {
-        min_filter = GL_LINEAR;
-        mag_filter = GL_LINEAR;
-    } else if (desc.filter_mode == TextureSampleMode::TRILINEAR) {
-        min_filter = GL_LINEAR_MIPMAP_LINEAR;
-        mag_filter = GL_LINEAR;
-    } else {
-        throw Goonya::RuntimeError(std::format("无效的filter_mode：{}", (size_t)desc.filter_mode));
-    }
-    // 重复模式
-    GLenum warp_mode;
-    if (desc.warp_mode == Resource::TextureWarpMode::REPEAT) {
-        warp_mode = GL_REPEAT;
-    } else if (desc.warp_mode == Resource::TextureWarpMode::ClAMP) {
-        warp_mode = GL_CLAMP_TO_EDGE;
-    } else if (desc.warp_mode == Resource::TextureWarpMode::MIRROR) {
-        warp_mode = GL_MIRRORED_REPEAT;
-    } else {
-        throw Goonya::RuntimeError(std::format("无效的warp_mode：{}", (size_t)desc.warp_mode));
-    }
+    intrusive_ptr<GLTexture> texture{new GLTexture(TextureType::TEXTURE_2D, {nWidth, nHeight, 0})};
+    texture->set_filter_mode(desc.filter_mode);
+    texture->set_warp_mode(desc.warp_mode);
 
-    glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, min_filter);
-    glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, mag_filter);
-    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, warp_mode);
-    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, warp_mode);
-    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, warp_mode);
-    
-    GLsizei max_level = (GLsizei)std::log2(std::max(nWidth, nHeight)) + 1; 
-    glTextureStorage2D(texture_id, max_level, GL_RGB32F, nWidth, nHeight);
-    glTextureSubImage2D(texture_id, 0, 0, 0, nWidth, nHeight, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));
-    glGenerateTextureMipmap(texture_id);
+    glTextureSubImage2D(texture->get_id(), 0, 0, 0, nWidth, nHeight, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));
+    texture->generate_mipmaps();
 
     opengl_debug_check_error();
 
     FreeImage_Unload(pImage);
 
-    return intrusive_ptr<GLTexture2D>(new GLTexture2D{texture_id, nWidth, nHeight});
+    return texture;
 }
-intrusive_ptr<TextureCube> OpenGLGraphicsAPI::load_cubemap(const Resource::TextureCubeMapDesc& desc) const {
-    GLuint texture_id;
-    glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &texture_id);
-
-    glTextureParameteri(texture_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTextureParameteri(texture_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTextureParameteri(texture_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    
+intrusive_ptr<Texture> OpenGLGraphicsAPI::load_cubemap(const Resource::TextureCubeMapDesc& desc) const {
     // 使用第一张图像的宽高信息分配纹理空间
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
     
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
-    GLsizei max_level = (GLsizei)std::log2(std::max(nWidth, nHeight)) + 1; 
-    glTextureStorage2D(texture_id, max_level, GL_RGB32F, nWidth, nHeight);
+
+    intrusive_ptr<GLTexture> texture{new GLTexture(TextureType::TEXTURE_CUBEMAP, {nWidth, nHeight, 0})};
+    texture->set_filter_mode(desc.filter_mode);
+    texture->set_warp_mode(desc.warp_mode);
+
     // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
-    glTextureSubImage3D(texture_id, 0, 0, 0, 0, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
+    glTextureSubImage3D(texture->get_id(), 0, 0, 0, 0, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
     FreeImage_Unload(pImage);
 
     // 加载其余方向上的图像
@@ -157,22 +115,18 @@ intrusive_ptr<TextureCube> OpenGLGraphicsAPI::load_cubemap(const Resource::Textu
         if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)){
             throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i]));
         }
-        glTextureSubImage3D(texture_id, 0, 0, 0, i, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
+        glTextureSubImage3D(texture->get_id(), 0, 0, 0, i, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
         FreeImage_Unload(pImage);
     }
-    glGenerateTextureMipmap(texture_id);
+    texture->generate_mipmaps();
 
     opengl_debug_check_error();
     
-    return intrusive_ptr<GLTextureCube>(new GLTextureCube{texture_id});
+    return texture;
 }
 
 intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
     return intrusive_ptr<GLBuffer>(new GLBuffer(size, type));
-}
-
-intrusive_ptr<UniformBuffer> OpenGLGraphicsAPI::create_uniform_buffer(uint32_t size, BufferType type) {
-    return intrusive_ptr<GLUniformBuffer>(size, type);
 }
 
 intrusive_ptr<RenderTarget> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {

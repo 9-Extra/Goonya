@@ -6,6 +6,7 @@
 
 #include "GraphicsResourceBuilder.h"
 #include "function/renderer/RenderResource.h"
+#include "platform/graphics/Texture.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
 
@@ -52,21 +53,25 @@ void load_json(const std::string &path) {
             }
             if (texture_desc.isMember("filter_mode")) {
                 if (texture_desc["filter_mode"] == "point") {
-                    desc.filter_mode = TextureSampleMode::POINT;
+                    desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
                 } else if (texture_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = TextureSampleMode::BILINEAR;
-                } else if (texture_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = TextureSampleMode::TRILINEAR;
+                    desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
+                } else if (texture_desc["filter_mode"] == "trilinear") {
+                    desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+                } else {
+                    throw RuntimeError(std::format("未知的纹理过滤模式：{}", texture_desc["filter_mode"].asString()));
                 }
             }
 
             if (texture_desc.isMember("warp_mode")) {
                 if (texture_desc["warp_mode"] == "repeat") {
-                    desc.warp_mode = TextureWarpMode::REPEAT;
+                    desc.warp_mode = Graphics::TextureWarpMode::REPEAT;
                 } else if (texture_desc["warp_mode"] == "clamp") {
-                    desc.warp_mode = TextureWarpMode::ClAMP;
+                    desc.warp_mode = Graphics::TextureWarpMode::ClAMP;
                 } else if (texture_desc["warp_mode"] == "mirror") {
-                    desc.warp_mode = TextureWarpMode::MIRROR;
+                    desc.warp_mode = Graphics::TextureWarpMode::MIRROR;
+                } else {
+                    throw RuntimeError(std::format("未知的纹理重复模式：{}", texture_desc["warp_mode"].asString()));
                 }
             }
 
@@ -88,21 +93,25 @@ void load_json(const std::string &path) {
 
             if (cubemap_desc.isMember("filter_mode")) {
                 if (cubemap_desc["filter_mode"] == "point") {
-                    desc.filter_mode = TextureSampleMode::POINT;
+                    desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
                 } else if (cubemap_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = TextureSampleMode::BILINEAR;
+                    desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
                 } else if (cubemap_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = TextureSampleMode::TRILINEAR;
+                    desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+                } else {
+                    throw RuntimeError(std::format("未知的纹理过滤模式：{}", cubemap_desc["filter_mode"].asString()));
                 }
             }
 
             if (cubemap_desc.isMember("warp_mode")) {
                 if (cubemap_desc["warp_mode"] == "repeat") {
-                    desc.warp_mode = TextureWarpMode::REPEAT;
+                    desc.warp_mode = Graphics::TextureWarpMode::REPEAT;
                 } else if (cubemap_desc["warp_mode"] == "clamp") {
-                    desc.warp_mode = TextureWarpMode::ClAMP;
+                    desc.warp_mode = Graphics::TextureWarpMode::ClAMP;
                 } else if (cubemap_desc["warp_mode"] == "mirror") {
-                    desc.warp_mode = TextureWarpMode::MIRROR;
+                    desc.warp_mode = Graphics::TextureWarpMode::MIRROR;
+                } else {
+                    throw RuntimeError(std::format("未知的纹理重复模式：{}", cubemap_desc["warp_mode"].asString()));
                 }
             }
             Graphics::resources.add_cubemap(key, desc);
@@ -119,18 +128,15 @@ void load_json(const std::string &path) {
     for (const auto &key : json["materials"].getMemberNames()) {
         const Json::Value &material_desc = json["materials"][key];
 
-        const Json::Value &shader_desc_json = material_desc["pso"]["shader"];
-        std::unordered_map<std::string, std::string> definations;
-        for (const auto &key : shader_desc_json["definations"].getMemberNames()) {
-            definations.emplace(key, shader_desc_json["definations"][key].asString());
+        Resource::PSOBuilder pso_builder(material_desc["uber_shader"].asString());
+        
+        for (const auto &key : material_desc["variant_keys"]) {
+            pso_builder.set_variant_key(key.asString());
         }
 
-        Resource::PSOBuilder pso_builder(shader_desc_json["uber"].asString());
-        pso_builder.update_shader_defines(definations);
-
-        const Json::Value &pso_config = material_desc["pso"]["config"];
-        if (pso_config.isMember("depth_func")) {
-            pso_builder.set_depth_func(pso_config["depth_func"].asString());
+        const Json::Value &config = material_desc["config"];
+        if (config.isMember("depth_func")) {
+            pso_builder.set_depth_func(config["depth_func"].asString());
         }
 
         Resource::MaterialBuilder mat_builder(pso_builder.build());

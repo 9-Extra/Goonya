@@ -62,8 +62,7 @@ GLuint complie_shader_program(const std::string &vs_src, const std::string &ps_s
  * @param 宏定义 
  * @return 生成的代码 
  */
-static std::string shader_source_inject(const std::string &src,
-                                   const std::unordered_map<std::string, std::string> &definations) {
+static std::string shader_source_inject(const std::string &src, const std::unordered_set<std::string> &variant_key) {
     
     const std::string LOACLTING_PATTER = "#pragma GYA_INJECT";
     
@@ -76,8 +75,8 @@ static std::string shader_source_inject(const std::string &src,
 
     ss << "//------Combined Definations---------: \n";
 
-    for (const auto &[k, v] : definations) {
-        ss << std::format("#ifdef {0}\n#undef {0}\n#endif\n#define {0} {1}\n", k, v);
+    for (const std::string &key: variant_key) {
+        ss << std::format("#ifdef {0}\n#undef {0}\n#endif\n#define {0}\n", key);
     }
 
     ss << "//------Combined Defination End------: \n";
@@ -90,8 +89,8 @@ static std::string shader_source_inject(const std::string &src,
 ShaderResource ShaderLib::load_shader(const Resource::ShaderDesc &desc) {
     const UberShaderSource &u_src = uber_shader_sources.at(desc.uber_name);
 
-    std::string mixed_vs = shader_source_inject(u_src.vs_src, desc.definations);
-    std::string mixed_ps = shader_source_inject(u_src.ps_src, desc.definations);
+    std::string mixed_vs = shader_source_inject(u_src.vs_src, desc.variant_keys);
+    std::string mixed_ps = shader_source_inject(u_src.ps_src, desc.variant_keys);
 
     // std::ofstream(desc.uber_name + "_vs_mixed.vert", std::ios_base::binary) << mixed_vs;
     // std::ofstream(desc.uber_name + "_ps_mixed.frag", std::ios_base::binary) << mixed_ps;

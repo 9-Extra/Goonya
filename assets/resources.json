@@ -43,20 +43,17 @@
             "pz": "skybox/valley/pz.png",
             "nz": "skybox/valley/nz.png",
 
-            "is_color": true
+            "is_color": true,
+            "warp_mode": "clamp"
         }
     },
     "materials": {
         "skybox_valley": {
-            "pso": {
-                "shader": {
-                    "uber": "skybox",
-                    "definations": {}
-                },
-                "config": {
-                    "depth_func": "less_equal"
-                }
+            "uber_shader": "skybox",
+            "config": {
+                "depth_func": "less_equal"
             },
+            "variant_keys": [],
             "samplers": [
                 {
                     "name": "skybox_specular_texture",

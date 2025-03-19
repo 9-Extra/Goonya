@@ -19,8 +19,8 @@ public:
 class LambertianPass : public Pass {
 public:
     LambertianPass()
-        : per_frame_uniform(graphics_api->create_uniform_buffer(sizeof(PerFrameData), BufferType::DYNAMIC)),
-          per_object_uniform(graphics_api->create_uniform_buffer(sizeof(PerObjectData), BufferType::STREAM)) {}
+        : per_frame_uniform(graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC)),
+          per_object_uniform(graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM)) {}
 
     void reset() { }
 
@@ -47,13 +47,13 @@ private:
         Matrix4 normal_matrix;
     };
 
-    intrusive_ptr<UniformBuffer> per_frame_uniform;  // 用于一般渲染每帧变化的数据
-    intrusive_ptr<UniformBuffer> per_object_uniform; // 用于一般渲染每个物体不同的数据
+    intrusive_ptr<Buffer> per_frame_uniform;  // 用于一般渲染每帧变化的数据
+    intrusive_ptr<Buffer> per_object_uniform; // 用于一般渲染每个物体不同的数据
 };
 
 class SkyBoxPass : public Pass {
 public:
-    SkyBoxPass(): skybox_uniform(graphics_api->create_uniform_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)), mesh(resources.meshes.at("skybox_cube")) {}
+    SkyBoxPass(): skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)), mesh(resources.meshes.at("skybox_cube")) {}
 
     virtual void run() override;
 
@@ -63,7 +63,7 @@ private:
         Matrix4 skybox_view_perspective_matrix;
     };
 
-    intrusive_ptr<UniformBuffer> skybox_uniform;
+    intrusive_ptr<Buffer> skybox_uniform;
     intrusive_ptr<Mesh> mesh;
 };
 

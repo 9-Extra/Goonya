@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 
@@ -13,13 +14,13 @@ namespace Graphics {
 
 static GLuint GLBufferType(BufferType type) {
     switch (type) {
-    case STATIC:
+    case BufferType::STATIC:
         return GL_STATIC_DRAW;
-    case DYNAMIC:
+    case BufferType::DYNAMIC:
         return GL_DYNAMIC_DRAW;
-    case STREAM:
+    case BufferType::STREAM:
         return GL_STREAM_DRAW;
-    case READBACK:
+    case BufferType::READBACK:
         return GL_STATIC_READ;
     }
 
@@ -27,24 +28,23 @@ static GLuint GLBufferType(BufferType type) {
     return 0;
 }
 
-template <class T>
-class GLBufferImpl : public T {
+class GLBuffer : public Buffer {
     // 为了防止反复写Buffer的基础实现所以写进了模板里，避免菱形继承（也可以使用组合的方式）
 public:
-    GLBufferImpl(uint32_t size, BufferType type) : size(size), type(type) {
+    GLBuffer(size_t size, BufferType type) : Buffer(size, type) {
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, nullptr, GLBufferType(type));
         opengl_debug_check_error();
     };
     template <typename D>
-    GLBufferImpl(std::span<const D> data, BufferType type) : size(data.size_bytes()), type(type) {
+    GLBuffer(std::span<const D> data, BufferType type) : Buffer(data.size_bytes(), type) {
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, (void *)data.data(), GLBufferType(type));
         opengl_debug_check_error();
     };
 
     template <typename D>
-    GLBufferImpl(std::span<D> data, BufferType type) : size(data.size_bytes()), type(type) {
+    GLBuffer(std::span<D> data, BufferType type) : Buffer(data.size_bytes(), type) {
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, (void *)data.data(), GLBufferType(type));
         opengl_debug_check_error();
@@ -52,10 +52,8 @@ public:
 
     GLuint get_id() const noexcept { return id; }
 
-    virtual uint32_t get_size() const noexcept override { return size; }
-    virtual BufferType get_type() const noexcept override { return type; }
     // access
-    virtual void write(const std::span<uint8_t> data, uint32_t offset = 0) noexcept override {
+    virtual void write(const std::span<uint8_t> data, size_t offset = 0) noexcept override {
         assert(data.size_bytes() + offset <= get_size());
         glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
     };
@@ -74,43 +72,15 @@ public:
         }
     };
 
-    virtual ~GLBufferImpl() { glDeleteBuffers(1, &id); }
+    // bind
+    virtual void bind_uniform(uint32_t binding) const noexcept override{
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding, id);
+    }
+
+    virtual ~GLBuffer() { glDeleteBuffers(1, &id); }
 
 protected:
     GLuint id;
-
-private:
-    uint32_t size;
-    BufferType type;
-};
-
-class GLBuffer : public GLBufferImpl<Buffer> {
-public:
-    using GLBufferImpl<Buffer>::GLBufferImpl;
-};
-
-class GLIndexBuffer : public GLBufferImpl<IndexBuffer> {
-public:
-    GLIndexBuffer(std::span<const uint16_t> indices)
-        : GLBufferImpl<IndexBuffer>(indices, BufferType::STATIC), index_count(indices.size()) {}
-    virtual uint32_t get_index_count() const noexcept { return index_count; };
-
-private:
-    uint32_t index_count;
-};
-
-class GLUniformBuffer : public GLBufferImpl<UniformBuffer> {
-public:
-    using GLBufferImpl<UniformBuffer>::GLBufferImpl;
-    virtual void bind_uniform(uint32_t binding) const noexcept override {
-        glBindBufferBase(GL_UNIFORM_BUFFER, binding, id);
-    }
-};
-
-class GLVertexBuffer : public GLBufferImpl<VertexBuffer> {
-public:
-    template <typename D>
-    GLVertexBuffer(std::span<const D> data) : GLBufferImpl<VertexBuffer>(data, BufferType::STATIC) {}
 };
 
 } // namespace Graphics

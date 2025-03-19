@@ -9,18 +9,46 @@ namespace Goonya {
 namespace Graphics {
 
 // ============纹理================
-class Texture: public intrusive_ptr_base<Texture>{
+enum class TextureType {
+    UNKNOWN = 0,
+
+    TEXTURE_1D,
+    TEXTURE_1D_ARRYA,
+    TEXTURE_2D,
+    TEXTURE_2D_ARRYA,
+    TEXTURE_CUBEMAP,
+    TEXTURE_CUBEMAP_ARRYA,
+    TEXTURE_3D,
+};
+
+enum class TextureWarpMode{
+    REPEAT,
+    ClAMP,
+    MIRROR
+};
+
+enum class TextureFilterMode{
+    NEAREST,
+    BILINEAR,
+    TRILINEAR
+};
+
+
+class Texture : public intrusive_ptr_base<Texture> {
 public:
     virtual ~Texture() = default;
-    virtual void bind(uint32_t binding) const noexcept=0;
+    virtual void bind(uint32_t binding) const noexcept = 0;
+
+    TextureType get_type() const noexcept { return type; }
+
+    std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
+
+protected:
+    Texture(TextureType type, std::tuple<uint32_t, uint32_t, uint32_t> shape) : type(type), shape(shape) {}
+
+    TextureType type;
+    std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
 };
 
-class Texture2D: public Texture{
-public:
-    virtual std::tuple<uint32_t, uint32_t> get_size() const noexcept = 0; // (weight, height)    
-};
-
-class TextureCube: public Texture{};
-
-}
-}
+} // namespace Graphics
+} // namespace Goonya

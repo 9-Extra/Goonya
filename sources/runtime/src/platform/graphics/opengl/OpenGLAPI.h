@@ -25,16 +25,14 @@ public:
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
     virtual void load_uber_shader(const std::string &name, const UberShaderDesc &desc) override;
     virtual intrusive_ptr<Mesh> load_mesh(Topology topology, const Resource::VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) override;
-    virtual intrusive_ptr<Texture2D> load_texture2D(const Resource::Texture2DDesc &desc) const override;
-    virtual intrusive_ptr<TextureCube> load_cubemap(const Resource::TextureCubeMapDesc& desc) const override;
+    virtual intrusive_ptr<Texture> load_texture2D(const Resource::Texture2DDesc &desc) const override;
+    virtual intrusive_ptr<Texture> load_cubemap(const Resource::TextureCubeMapDesc& desc) const override;
 
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) override;
-    virtual intrusive_ptr<UniformBuffer> create_uniform_buffer(uint32_t size, BufferType type) override;
-
     virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) override;
     
     virtual intrusive_ptr<Material> create_material(const Resource::PSODesc &desc) override{
-        return intrusive_ptr<GLMaterial>{new GLMaterial{desc}};
+        return intrusive_ptr<Material>{new GLMaterial{desc}};
     }
     // drawcall
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <vector>
 
+#include <glad/glad.h>
+
 namespace Goonya {
 namespace Graphics {
 
@@ -31,16 +33,16 @@ private:
     std::vector<GLSubMesh> submeshes;
 
     Resource::VertexLayout layout;
-    intrusive_ptr<GLVertexBuffer> vertex_buffer;
-    intrusive_ptr<GLIndexBuffer> index_buffer;
+    intrusive_ptr<GLBuffer> vertex_buffer;
+    intrusive_ptr<GLBuffer> index_buffer;
     GLuint vao_id;
 
     friend class OpenGLGraphicsAPI;
-    GLMesh(Topology topology, Resource::VertexLayout layout, intrusive_ptr<GLVertexBuffer> vertex_buffers,
-           intrusive_ptr<GLIndexBuffer> index_buffer);
+    GLMesh(Topology topology, Resource::VertexLayout layout, intrusive_ptr<GLBuffer> vertex_buffers,
+           intrusive_ptr<GLBuffer> index_buffer);
 
-    GLMesh(const std::vector<SubMesh>& submeshes, Resource::VertexLayout layout, intrusive_ptr<GLVertexBuffer> vertex_buffers,
-    intrusive_ptr<GLIndexBuffer> index_buffer);
+    GLMesh(const std::vector<SubMesh>& submeshes, Resource::VertexLayout layout, intrusive_ptr<GLBuffer> vertex_buffers,
+    intrusive_ptr<GLBuffer> index_buffer);
 };
 
 } // namespace Graphics

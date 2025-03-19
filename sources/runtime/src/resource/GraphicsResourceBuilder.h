@@ -1,6 +1,6 @@
 #pragma once
 #include "core/metatype/metatype.h"
-#include "resources.h"
+#include "resource/resources.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -10,13 +10,20 @@ class PSOBuilder {
 public:
     PSOBuilder(const std::string &shader_name): uber_shader_name(shader_name) {}
 
-    PSOBuilder &set_shader_define(const std::string &key, const std::string &value = "") {
-        shader_define[key] = value;
+    PSOBuilder &set_variant_keys(std::unordered_set<std::string> variant_keys) {
+        variant_keys.merge(std::move(variant_keys));
         return *this;
     }
 
-    PSOBuilder &update_shader_defines(const std::unordered_map<std::string, std::string>& shader_define){
-        this->shader_define.insert(shader_define.begin(), shader_define.end());
+    PSOBuilder &set_variant_key(const std::string &key) {
+        variant_keys.emplace(key);
+        return *this;
+    }
+
+    PSOBuilder &remove_variant_key(const std::string &key){
+        if (auto iter = variant_keys.find(key);iter != variant_keys.end()){
+            variant_keys.erase(iter);
+        }
         return *this;
     }
 
@@ -45,7 +52,7 @@ public:
             throw RuntimeError("着色器名称不应为空");
         }
 
-        return PSODesc{.shader_desc = ShaderDesc{std::move(uber_shader_name), std::move(shader_define)},
+        return PSODesc{.shader_desc = ShaderDesc{std::move(uber_shader_name), std::move(variant_keys)},
                        .enable_cilp = b_enable_cilp,
                        .cull_face_mode = std::move(cull_face_mode),
                        .front_face_clockwise = std::move(front_face_clockwise),
@@ -55,7 +62,7 @@ public:
 
 private:
     std::string uber_shader_name;
-    std::unordered_map<std::string, std::string> shader_define;
+    std::unordered_set<std::string> variant_keys;
     bool b_enable_cilp = true;
     std::string cull_face_mode = "back";
     std::string front_face_clockwise = "counterclockwise";

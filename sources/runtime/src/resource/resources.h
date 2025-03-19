@@ -2,12 +2,14 @@
 
 #include "core/metatype/metatype.h"
 #include "core/hash_helper.h"
+#include "platform/graphics/Texture.h"
 
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <array>
 
@@ -37,64 +39,48 @@ namespace Resource {
 
 */
 
-enum class TextureWarpMode{
-    REPEAT,
-    ClAMP,
-    MIRROR
-};
-
-enum class TextureSampleMode{
-    POINT,
-    BILINEAR,
-    TRILINEAR
-};
-
-
 struct Texture2DDesc {
     std::string path;
     bool is_srgb = false; // 是否需要转换到线性空间
     bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
-    TextureSampleMode filter_mode = TextureSampleMode::TRILINEAR;
-    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
+    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };
 
 struct TextureCubeMapDesc {
     std::array<std::string, 6> path; // px, nx, py, ny, pz, nz
     bool is_srgb = false; // 是否需要转换到线性空间
     bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
-    TextureSampleMode filter_mode = TextureSampleMode::TRILINEAR;
-    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
+    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };
 
 struct ShaderDesc {
     std::string uber_name;
-    std::unordered_map<std::string, std::string> definations;
+    std::unordered_set<std::string> variant_keys;
 
     ShaderDesc() {}
 
     template <typename T1, typename T2>
-    ShaderDesc(T1 &&uber_name, T2 &&definations) noexcept : uber_name(uber_name), definations(definations) {
+    ShaderDesc(T1 &&uber_name, T2 &&variant_keys) noexcept : uber_name(uber_name), variant_keys(variant_keys) {
         assert(!uber_name.empty());
     }
 
     ShaderDesc(const ShaderDesc &desc) noexcept
-        : uber_name(desc.uber_name), definations(desc.definations) {}
+        : uber_name(desc.uber_name), variant_keys(desc.variant_keys) {}
     ShaderDesc(ShaderDesc &&desc) noexcept
-        : uber_name(std::move(desc.uber_name)), definations(std::move(desc.definations)) {}
+        : uber_name(std::move(desc.uber_name)), variant_keys(std::move(desc.variant_keys)) {}
 
     ShaderDesc &operator=(const ShaderDesc &desc) noexcept = default;
+    bool operator==(const ShaderDesc &b) const noexcept = default;
 
-    bool operator==(const ShaderDesc &b) const noexcept {
-        return uber_name == b.uber_name && definations == b.definations;
-    }
 
 private:
     friend struct std::hash<Goonya::Resource::ShaderDesc>;
     size_t hash() const noexcept {
         size_t seed = std::hash<std::string>{}(uber_name);
-        for (const auto &[k, v] : definations) {
-            hash_combine(seed, k);
-            hash_combine(seed, v);
+        for (const std::string& key : variant_keys) {
+            hash_combine(seed, key);
         }
         return seed;
     }

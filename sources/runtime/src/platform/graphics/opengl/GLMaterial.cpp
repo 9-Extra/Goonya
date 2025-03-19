@@ -1,7 +1,6 @@
 #include "GLMaterial.h"
 
 #include "core/intrusive_ptr.h"
-#include "core/log/Log.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/graphics.h"
@@ -82,7 +81,7 @@ void GLMaterial::bind() {
 
     pso->bind(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
-    ((GLUniformBuffer*)per_material.get())->bind_uniform(get_shader().per_material.binding);
+    per_material->bind_uniform(get_shader().per_material.binding);
     // 绑定所有纹理
     for (const auto&  [unit, t] : textures) {
         t->bind(unit);
@@ -94,12 +93,11 @@ void GLMaterial::reset_pso() {
     if (!is_pso_dirty)
         return;
     
-    LOG_TRACE("update pso");
     pso = graphics_api->query_pso(pso_desc);
     const auto &layout = get_shader().per_material.layout;
     if (!per_material || per_material->get_size() != layout.size){
         // 材质参数Buffer大小可能发生变化，必要生成新的
-        per_material = intrusive_ptr<GLUniformBuffer>(layout.size, BufferType::DYNAMIC);
+        per_material = intrusive_ptr<GLBuffer>(new GLBuffer{layout.size, BufferType::DYNAMIC});
     }
 
     // 更新纹理
@@ -107,7 +105,6 @@ void GLMaterial::reset_pso() {
         if (!texture_info.contains(sampler_name)){
             throw RuntimeError(std::format("材质需要的纹理{}未设置", sampler_name));
         }
-        LOG_TRACE("{}: {}", sampler_name, unit);
         textures[unit] = texture_info.at(sampler_name);
     }
 
@@ -118,7 +115,6 @@ void GLMaterial::reset_pso() {
 void GLMaterial::update_parameter() {
     if (!is_parameters_dirty)
         return;
-    LOG_TRACE("update parameter");
     const auto &layout = get_shader().per_material.layout;
     {
         auto w = DynamicBufferWriter(per_material, layout);
