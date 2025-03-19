@@ -1,0 +1,10 @@
+{
+    "sources": {
+        "vertex_shader": "shaders/vs.vert",
+        "pixel_shader": "shaders/ps.frag"
+    },
+    "variants": [
+        ["", "GYA_IBL_ENVIRONMENT_LIGHT"]
+    ]
+
+}

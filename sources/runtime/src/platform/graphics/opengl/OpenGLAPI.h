@@ -34,7 +34,7 @@ public:
     virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) override;
     
     virtual intrusive_ptr<Material> create_material(const Resource::PSODesc &desc) override{
-        return intrusive_ptr<GLMaterial>{new GLMaterial{this->query_pso(desc)}};
+        return intrusive_ptr<GLMaterial>{new GLMaterial{desc}};
     }
     // drawcall
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,

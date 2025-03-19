@@ -2,17 +2,15 @@
 
 #define POINTLIGNT_MAX 8
 
-layout(binding = 2, std140) uniform per_material
-{
-    float metallic_factor;
-    float roughness_factor;
-};
+#pragma GYA_INJECT
+
 
 struct PointLight{
     vec3 position; // 0
     vec3 intensity; // 4
 };
 
+// 帧相关参数和纹理
 layout(binding = 0, std140) uniform per_frame
 {
     mat4 view_perspective_matrix; //16 * 4
@@ -24,11 +22,19 @@ layout(binding = 0, std140) uniform per_frame
     PointLight pointlight_list[POINTLIGNT_MAX];
 };
 
+layout(binding = 5) uniform samplerCube skybox_specular_texture;
+
+// 材质参数和纹理
+layout(binding = 2) uniform per_material
+{
+    float metallic_factor;
+    float roughness_factor;
+};
+
 layout(binding = 0) uniform sampler2D basecolor_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
 layout(binding = 2) uniform sampler2D metallic_roughness_texture;
 
-layout(binding = 5) uniform samplerCube skybox_specular_texture;
 
 in VS_OUT
 {
@@ -44,7 +50,6 @@ out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类
 
 struct PixelArribute{
     vec3 albedo;
-    vec3 normal;
     vec3 emission; // 自发光颜色
     float roughness;
     float metallic;
@@ -135,14 +140,25 @@ void main()
 
     PixelArribute pixel_attribute;
     pixel_attribute.albedo = texture(basecolor_texture, vs_out.tex_coords).xyz;//基础色
-    pixel_attribute.normal = N;
     pixel_attribute.roughness = metallic_roughness.y * roughness_factor;//粗糙度
     pixel_attribute.metallic = metallic_roughness.x * metallic_factor;//金属度
     // 对于金属，其反射率就是albedo。对于一般电介质，其反射率取一般值0.04。不考虑半导体。
     // 反射率F用于计算Fresnel反射
     pixel_attribute.F0 = mix(vec3(dielectric_specular), pixel_attribute.albedo, pixel_attribute.metallic);
 
-    vec3 result_color = ambient_light * pixel_attribute.albedo;
+    // 环境光
+    vec3 result_color = vec3(0);
+
+    result_color += ambient_light * pixel_attribute.albedo;
+
+#ifdef GYA_IBL_ENVIRONMENT_LIGHT
+    vec3 V = normalize(camera_position - vs_out.world_position);
+    vec3 L = 2 * dot(V, N) * N - V;
+    vec3 environment_light_indensity = texture(skybox_specular_texture, L, pixel_attribute.roughness * textureQueryLevels(skybox_specular_texture)).xyz;
+    result_color += environment_light_indensity * BRDF(L, V, N, pixel_attribute);
+#endif
+
+    // 点光源
     for(uint i = 0;i < pointlight_num;i++){
         vec3 light_pos = pointlight_list[i].position;
         vec3 light_intensity = pointlight_list[i].intensity;
@@ -152,9 +168,9 @@ void main()
 
         float squared_distance = dot(light_pos - vs_out.world_position, light_pos - vs_out.world_position);
 
-        vec3 result_light = light_intensity / squared_distance * max(dot(L, N), 0.0f);
+        vec3 point_light_indensity = pointlight_list[i].intensity / squared_distance * max(dot(L, N), 0.0f);
         
-        result_color += result_light * BRDF(L, V, N, pixel_attribute);
+        result_color += point_light_indensity * BRDF(L, V, N, pixel_attribute);
         //result_color = light_intensity;
     }
 

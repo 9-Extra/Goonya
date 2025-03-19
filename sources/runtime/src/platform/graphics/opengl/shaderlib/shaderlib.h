@@ -55,7 +55,7 @@ public:
                                     UberShaderSource{read_whole_file(desc.vs_path), read_whole_file(desc.ps_path)});
     }
     ShaderResource query_shader(const Resource::ShaderDesc &desc) {
-        assert(!desc.get_uber_name().empty());
+        assert(!desc.uber_name.empty());
         auto iter = shader_cache.find(desc);
         if (iter != shader_cache.end()) {
             return iter->second;

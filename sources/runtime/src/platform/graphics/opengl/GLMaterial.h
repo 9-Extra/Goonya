@@ -6,10 +6,7 @@
 #include <glad/glad.h>
 
 #include "../Material.h"
-#include "GLBuffer.h"
 #include "core/intrusive_ptr.h"
-#include "core/metatype/metatype.h"
-#include "platform/graphics/Buffer.h"
 #include "platform/graphics/opengl/shaderlib/shaderlib.h"
 
 namespace Goonya {
@@ -45,19 +42,16 @@ private:
 
 class GLMaterial : public Material {
 public:
-    GLMaterial(const intrusive_ptr<PipelineStateObject> &pso) : Material(pso) {
-        const auto &layout = get_shader().per_material.layout;
-        per_material = intrusive_ptr<GLUniformBuffer>(layout.size, BufferType::DYNAMIC);
-        for (const auto &[name, f] : layout.fields) {
-            parameters[name] = Meta::DynamicData(); // 所有需要的值建立key
-        }
-        texture_info = get_shader().texture_units;
-    }
+    GLMaterial(const Resource::PSODesc &pso) : Material(pso) {}
 
-    virtual void bind() const override;
-    virtual void update_parameters() const noexcept override;
+    virtual void bind() override;
+    virtual void update() override;
 
 private:
+    void reset_pso();
+
+    void update_parameter();
+
     const ShaderResource &get_shader() const {
         auto pso = dynamic_cast<GLPipelineStateObject *>(this->pso.get());
         assert(pso);

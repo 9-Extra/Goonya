@@ -1,10 +1,13 @@
 #include "GLMaterial.h"
 
 #include "core/intrusive_ptr.h"
+#include "core/log/Log.h"
+#include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
+#include "runtime/GoonyaException.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -68,10 +71,54 @@ void GLPipelineStateObject::bind() const {
     opengl_debug_check_error();
 };
 
-void GLMaterial::update_parameters() const noexcept {
-    if (!is_dirty) {
-        return;
+void GLMaterial::update() {
+    reset_pso();
+    update_parameter();
+}
+
+void GLMaterial::bind() {
+    opengl_debug_check_error();
+    this->update();
+
+    pso->bind(); // 绑定此材质关联的着色器
+    // 绑定材质的uniform buffer
+    ((GLUniformBuffer*)per_material.get())->bind_uniform(get_shader().per_material.binding);
+    // 绑定所有纹理
+    for (const auto&  [unit, t] : textures) {
+        t->bind(unit);
     }
+    opengl_debug_check_error();
+}
+
+void GLMaterial::reset_pso() {
+    if (!is_pso_dirty)
+        return;
+    
+    LOG_TRACE("update pso");
+    pso = graphics_api->query_pso(pso_desc);
+    const auto &layout = get_shader().per_material.layout;
+    if (!per_material || per_material->get_size() != layout.size){
+        // 材质参数Buffer大小可能发生变化，必要生成新的
+        per_material = intrusive_ptr<GLUniformBuffer>(layout.size, BufferType::DYNAMIC);
+    }
+
+    // 更新纹理
+    for (const auto& [sampler_name, unit]: get_shader().texture_units){
+        if (!texture_info.contains(sampler_name)){
+            throw RuntimeError(std::format("材质需要的纹理{}未设置", sampler_name));
+        }
+        LOG_TRACE("{}: {}", sampler_name, unit);
+        textures[unit] = texture_info.at(sampler_name);
+    }
+
+    is_parameters_dirty = true;
+
+    is_pso_dirty = false;
+}
+void GLMaterial::update_parameter() {
+    if (!is_parameters_dirty)
+        return;
+    LOG_TRACE("update parameter");
     const auto &layout = get_shader().per_material.layout;
     {
         auto w = DynamicBufferWriter(per_material, layout);
@@ -79,21 +126,7 @@ void GLMaterial::update_parameters() const noexcept {
             w.set_field(name, value);
         }
     }
-    is_dirty = false;
+    is_parameters_dirty = false;
 }
-
-void GLMaterial::bind() const {
-    opengl_debug_check_error();
-    pso->bind(); // 绑定此材质关联的着色器
-    this->update_parameters();
-    // 绑定材质的uniform buffer
-    ((GLUniformBuffer*)per_material.get())->bind_uniform(get_shader().per_material.binding);
-    // 绑定所有纹理
-    for (const auto&  [id, t] : textures) {
-        t->bind(id);
-    }
-    opengl_debug_check_error();
-}
-
 } // namespace Graphics
 } // namespace Goonya

@@ -21,10 +21,9 @@ void init_resource() {
     {
         // 平滑着色材质
         Vector3f color_while{1.0f, 1.0f, 1.0f};
-        resources.add_material("wood_flat", Resource::MaterialBuilder()
-                                                .set_pso(Resource::PSOBuilder().set_uber_shader("flat").build())
-                                                .add_parameter("base_color", color_while)
-                                                .add_sampler("color_texture", "wood_diffusion")
+        resources.add_material("wood_flat", Resource::MaterialBuilder(Resource::PSOBuilder("unlit").build())
+                                                .add_parameter("emissive", color_while)
+                                                .add_sampler("emissive_texture", "wood_diffusion")
                                                 .build());
     }
 
@@ -32,8 +31,7 @@ void init_resource() {
         // 单一颜色材质
         Vector3f color_green{0.0f, 1.0f, 0.0f};
         Resource::MaterialDesc green_material_desc =
-            Resource::MaterialBuilder()
-                .set_pso(Resource::PSOBuilder().set_uber_shader("single_color").build())
+            Resource::MaterialBuilder(Resource::PSOBuilder("single_color").build())
                 .add_parameter("color", color_green)
                 .build();
 

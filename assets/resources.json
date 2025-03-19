@@ -4,9 +4,9 @@
             "vs_path": "shaders/single_color/vs.vert",
             "ps_path": "shaders/single_color/ps.frag"
         },
-        "flat": {
-            "vs_path": "shaders/flat/vs.vert",
-            "ps_path": "shaders/flat/ps.frag"
+        "unlit": {
+            "vs_path": "shaders/unlit/vs.vert",
+            "ps_path": "shaders/unlit/ps.frag"
         },
         "pbr": {
             "vs_path": "shaders/pbr/vs.vert",
@@ -15,10 +15,6 @@
         "skybox": {
             "vs_path": "shaders/skybox/vs.vert",
             "ps_path": "shaders/skybox/ps.frag"
-        },
-        "pick": {
-            "vs_path": "shaders/pick/vs.vert",
-            "ps_path": "shaders/pick/ps.frag"
         }
     },
     "texture": {

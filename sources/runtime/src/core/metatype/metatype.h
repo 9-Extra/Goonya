@@ -155,6 +155,17 @@ struct DynamicData {
         return *this;
     }
 
+    bool operator==(const DynamicData& other) const noexcept{
+        if (this->type != other.type){
+            return false;
+        }
+        if (is_internal()){
+            return this->storage.value == other.storage.value; // 不考虑vaule所占位数问题
+        } else {
+            return memcmp(this->storage.ptr, this->storage.ptr, size_bytes());
+        }
+    }
+
     template <meta_type T>
     T& get_value() const {
         if (type != CType2FieldType<T>::Type){

@@ -1,5 +1,7 @@
 #version 440 core
 
+#pragma GYA_INJECT
+
 layout(binding = 5) uniform samplerCube skybox_specular_texture;
 
 in VS_OUT

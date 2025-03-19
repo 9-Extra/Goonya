@@ -8,10 +8,7 @@ namespace Resource {
 
 class PSOBuilder {
 public:
-    PSOBuilder &set_uber_shader(const std::string &shader_name) {
-        uber_shader_name = shader_name;
-        return *this;
-    }
+    PSOBuilder(const std::string &shader_name): uber_shader_name(shader_name) {}
 
     PSOBuilder &set_shader_define(const std::string &key, const std::string &value = "") {
         shader_define[key] = value;
@@ -69,10 +66,8 @@ private:
 
 class MaterialBuilder {
 public:
-    MaterialBuilder &set_pso(const PSODesc &pso) {
+    MaterialBuilder(const PSODesc &pso) {
         desc.pso_desc = pso;
-        pso_set = true;
-        return *this;
     }
 
     template<Meta::meta_type T>
@@ -92,7 +87,6 @@ public:
 
 private:
     MaterialDesc desc;
-    bool pso_set = false;
 };
 
 } // namespace Resource

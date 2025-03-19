@@ -1,10 +1,12 @@
 #include "shaderlib.h"
+#include "core/log/Log.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
 
 #include <format>
 #include <sstream>
+#include <string>
 
 namespace Goonya {
 namespace Graphics {
@@ -53,11 +55,24 @@ GLuint complie_shader_program(const std::string &vs_src, const std::string &ps_s
     return shaderProgram;
 }
 
-std::string mix_shader_definations(const std::string &src,
+/**
+ * @brief 将宏定义等代码插入到着色器中以生成对应变体
+ * 插入的代码将替换着色器源码中的#pragma GYA_INJECT
+ * @param 着色器代码
+ * @param 宏定义 
+ * @return 生成的代码 
+ */
+static std::string shader_source_inject(const std::string &src,
                                    const std::unordered_map<std::string, std::string> &definations) {
+    
+    const std::string LOACLTING_PATTER = "#pragma GYA_INJECT";
+    
     std::stringstream ss;
-    size_t first_line = src.find('\n');
-    ss << src.substr(0, first_line) << std::endl;
+    size_t injection_point = src.find(LOACLTING_PATTER);
+    if (injection_point == std::string::npos){
+        LOG_WARN("着色器中未找到\"{}\"，无法正确进行变体生成", LOACLTING_PATTER);
+    }
+    ss << src.substr(0, injection_point);
 
     ss << "//------Combined Definations---------: \n";
 
@@ -67,15 +82,16 @@ std::string mix_shader_definations(const std::string &src,
 
     ss << "//------Combined Defination End------: \n";
 
-    ss << src.substr(first_line);
+    ss << src.substr(injection_point + LOACLTING_PATTER.size());
+
     return ss.str();
 }
 
 ShaderResource ShaderLib::load_shader(const Resource::ShaderDesc &desc) {
-    const UberShaderSource &u_src = uber_shader_sources.at(desc.get_uber_name());
+    const UberShaderSource &u_src = uber_shader_sources.at(desc.uber_name);
 
-    std::string mixed_vs = mix_shader_definations(u_src.vs_src, desc.get_definations());
-    std::string mixed_ps = mix_shader_definations(u_src.ps_src, desc.get_definations());
+    std::string mixed_vs = shader_source_inject(u_src.vs_src, desc.definations);
+    std::string mixed_ps = shader_source_inject(u_src.ps_src, desc.definations);
 
     // std::ofstream(desc.uber_name + "_vs_mixed.vert", std::ios_base::binary) << mixed_vs;
     // std::ofstream(desc.uber_name + "_ps_mixed.frag", std::ios_base::binary) << mixed_ps;

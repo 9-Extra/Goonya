@@ -1,4 +1,7 @@
 #version 440 core
+
+#pragma GYA_INJECT
+
 layout (location = 0) in vec3 position;
 
 layout(binding = 0, std140) uniform per_frame
@@ -12,7 +15,7 @@ layout(binding = 1, std140) uniform per_object
 };
 
 
-layout(binding = 2, std140) uniform per_material
+layout(binding = 2) uniform per_material
 {
     vec3 color;
 };

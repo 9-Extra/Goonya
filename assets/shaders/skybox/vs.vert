@@ -1,4 +1,7 @@
 #version 440 core
+
+#pragma GYA_INJECT
+
 layout (location = 0) in vec3 position;
 
 layout(binding = 0, std140) uniform per_frame

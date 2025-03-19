@@ -6,8 +6,8 @@
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/resources.h"
 #include "runtime/GoonyaException.h"
-#include <json/json.h>
 #include <fstream>
+#include <json/json.h>
 
 namespace Goonya {
 namespace Resource {
@@ -158,11 +158,8 @@ void load_gltf(const std::string &base_key, const std::string &path) {
                 roughnessFactor = material["pbrMetallicRoughness"]["roughnessFactor"].asFloat();
             }
 
-            Resource::PSODesc pso = Resource::PSOBuilder().set_uber_shader("pbr").build();
-            Resource::MaterialBuilder mat_builder;
-            Resource::MaterialDesc desc = Resource::MaterialBuilder()
-                                              .set_pso(pso)
-                                              .add_parameter("metallic_factor", metallicFactor)
+            Resource::MaterialBuilder mat_builder(Resource::PSOBuilder("pbr").build());
+            Resource::MaterialDesc desc = mat_builder.add_parameter("metallic_factor", metallicFactor)
                                               .add_parameter("roughness_factor", roughnessFactor)
                                               .add_sampler("basecolor_texture", basecolor_texture)
                                               .add_sampler("normal_texture", normal_texture)

@@ -70,6 +70,10 @@ public:
         if (Goonya::Input::is_key_click('0')) {
             camera->set_transform(Goonya::Transform{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1, 1, 1}});
         }
+
+        if (Goonya::Input::is_key_click('F')){
+            
+        }
         //Vector3f pos = camera->get_transform().position;
         //LOG_DEBUG("x = {}, y = {}, z = {}", pos.x, pos.y, pos.z);
 

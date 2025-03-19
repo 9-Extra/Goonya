@@ -1,4 +1,7 @@
 #version 440 core
+
+#pragma GYA_INJECT
+
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec3 tangent;
@@ -22,7 +25,7 @@ layout(binding = 0, std140) uniform per_frame
     PointLight pointlight_list[POINTLIGNT_MAX];
 };
 
-layout(binding = 1, std140) uniform per_object
+layout(binding = 1) uniform per_object
 {
     mat4 model_matrix;
     mat4 normal_matrix;

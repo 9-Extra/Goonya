@@ -125,16 +125,15 @@ void load_json(const std::string &path) {
             definations.emplace(key, shader_desc_json["definations"][key].asString());
         }
 
-        Resource::PSOBuilder pso_builder;
-        pso_builder.set_uber_shader(shader_desc_json["uber"].asString()).update_shader_defines(definations);
+        Resource::PSOBuilder pso_builder(shader_desc_json["uber"].asString());
+        pso_builder.update_shader_defines(definations);
 
         const Json::Value &pso_config = material_desc["pso"]["config"];
         if (pso_config.isMember("depth_func")) {
             pso_builder.set_depth_func(pso_config["depth_func"].asString());
         }
 
-        Resource::MaterialBuilder mat_builder;
-        mat_builder.set_pso(pso_builder.build());
+        Resource::MaterialBuilder mat_builder(pso_builder.build());
 
         for (const Json::Value &uniform_json : material_desc["constants"]) {
             mat_builder.add_parameter(uniform_json["name"].asString(), uniform_json["vaule"].asUInt());

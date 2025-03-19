@@ -5,6 +5,7 @@
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Texture.h"
+#include "resource/resources.h"
 #include <cassert>
 #include <cstdint>
 #include <string>
@@ -42,40 +43,43 @@ protected:
 
 class Material : public intrusive_ptr_base<Material> {
 public:
-    virtual void bind() const = 0;
-    virtual void update_parameters() const noexcept = 0;
+    virtual void bind() = 0;
+    virtual void update() = 0;
 
     virtual ~Material() = default;
 
     void set_param(const std::string &name, const Meta::DynamicData &value) {
-        parameters.at(name) = value;
-        is_dirty = true;
-    }
-    void set_param_if_exist(const std::string &name, const Meta::DynamicData &vaule) noexcept {
         if (auto iter = parameters.find(name); iter != parameters.end()) {
-            iter->second = vaule;
-            is_dirty = true;
+            if (iter->second != value){
+                iter->second = value;
+                is_parameters_dirty = true;
+            }
+        } else {
+            parameters.emplace(name, value);
+            is_parameters_dirty = true;
         }
     }
+
     void set_texture(const std::string &name, intrusive_ptr<Texture> texture) {
-        textures[texture_info.at(name)] = texture;
-    }
-    void set_texture_if_exist(const std::string &name, intrusive_ptr<Texture> texture) noexcept {
-        if (auto iter = texture_info.find(name); iter != texture_info.end()) {
-            textures[iter->second] = texture;
-        }
+        texture_info[name] = texture;
     }
 
 protected:
-    Material(const intrusive_ptr<PipelineStateObject> &pso) : is_dirty(true), pso(pso) { assert(pso); };
+    Material(const Resource::PSODesc &pso) : pso_desc(pso), is_parameters_dirty(true), is_pso_dirty(true) {};
+    
+    Resource::PSODesc pso_desc;
+    
     // 所有参数在内存中保存一份
-    std::unordered_map<std::string, Meta::DynamicData> parameters; // 只保存真正需要的参数
-    std::unordered_map<std::string, uint32_t> texture_info;        // 需要的纹理
-    mutable bool is_dirty;
+    std::unordered_map<std::string, Meta::DynamicData> parameters; // 只保存参数，无论它是否被着色器需要
+    std::unordered_map<std::string, intrusive_ptr<Texture>> texture_info;     // 需要的纹理，sampler-name -> texture
+    
+    // 脏标记
+    mutable bool is_parameters_dirty;
+    mutable bool is_pso_dirty;
 
     // 设备侧
     intrusive_ptr<PipelineStateObject> pso;
-    mutable intrusive_ptr<UniformBuffer> per_material;                     // 显存中的材质参数
+    intrusive_ptr<UniformBuffer> per_material;                     // 显存中的材质参数
     std::unordered_map<uint32_t, intrusive_ptr<Texture>> textures; // slot -> texture
 };
 

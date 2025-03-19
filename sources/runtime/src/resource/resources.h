@@ -67,40 +67,36 @@ struct TextureCubeMapDesc {
 };
 
 struct ShaderDesc {
-    ShaderDesc() noexcept : hash_cache(), uber_name(), definations() {};
+    std::string uber_name;
+    std::unordered_map<std::string, std::string> definations;
+
+    ShaderDesc() {}
 
     template <typename T1, typename T2>
     ShaderDesc(T1 &&uber_name, T2 &&definations) noexcept : uber_name(uber_name), definations(definations) {
         assert(!uber_name.empty());
-        hash_cache = hash();
     }
 
     ShaderDesc(const ShaderDesc &desc) noexcept
-        : hash_cache(desc.hash_cache), uber_name(desc.uber_name), definations(desc.definations) {}
+        : uber_name(desc.uber_name), definations(desc.definations) {}
     ShaderDesc(ShaderDesc &&desc) noexcept
-        : hash_cache(desc.hash_cache), uber_name(std::move(desc.uber_name)), definations(std::move(desc.definations)) {}
+        : uber_name(std::move(desc.uber_name)), definations(std::move(desc.definations)) {}
 
     ShaderDesc &operator=(const ShaderDesc &desc) noexcept = default;
 
-    const std::string &get_uber_name() const noexcept { return uber_name; }
-    const std::unordered_map<std::string, std::string> &get_definations() const noexcept { return definations; }
-
     bool operator==(const ShaderDesc &b) const noexcept {
-        return hash_cache == b.hash_cache && uber_name == b.uber_name && definations == b.definations;
+        return uber_name == b.uber_name && definations == b.definations;
     }
 
 private:
     friend struct std::hash<Goonya::Resource::ShaderDesc>;
-    size_t hash_cache;
-    std::string uber_name;
-    std::unordered_map<std::string, std::string> definations;
-
     size_t hash() const noexcept {
-        size_t result = std::hash<std::string>{}(uber_name);
+        size_t seed = std::hash<std::string>{}(uber_name);
         for (const auto &[k, v] : definations) {
-            result ^= std::hash<std::string>{}(k) ^ std::hash<std::string>{}(v);
+            hash_combine(seed, k);
+            hash_combine(seed, v);
         }
-        return result;
+        return seed;
     }
 };
 
@@ -162,7 +158,7 @@ struct MaterialDesc {
 
 template <>
 struct std::hash<Goonya::Resource::ShaderDesc> {
-    size_t operator()(const Goonya::Resource::ShaderDesc &desc) const noexcept { return desc.hash_cache; }
+    size_t operator()(const Goonya::Resource::ShaderDesc &desc) const noexcept { return desc.hash(); }
 };
 
 template <>
