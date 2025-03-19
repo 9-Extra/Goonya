@@ -7,7 +7,6 @@
 #include "GraphicsResourceBuilder.h"
 #include "function/renderer/RenderResource.h"
 #include "platform/graphics/Texture.h"
-#include "resource/resources.h"
 #include "runtime/GoonyaException.h"
 
 #include "glTFLoader.h"
@@ -44,7 +43,7 @@ void load_json(const std::string &path) {
     if (json.isMember("texture")) {
         for (const auto &key : json["texture"].getMemberNames()) {
             const Json::Value &texture_desc = json["texture"][key];
-            Texture2DDesc desc = {
+            Graphics::Texture2DDesc desc = {
                 .path = base_dir + texture_desc["image"].asString()
             };
 
@@ -82,7 +81,7 @@ void load_json(const std::string &path) {
     if (json.isMember("cubemap")) {
         for (const auto &key : json["cubemap"].getMemberNames()) {
             const Json::Value &cubemap_desc = json["cubemap"][key];
-            TextureCubeMapDesc desc{
+            Graphics::TextureCubeMapDesc desc{
                 .path = {base_dir + cubemap_desc["px"].asString(), base_dir + cubemap_desc["nx"].asString(),
                          base_dir + cubemap_desc["py"].asString(), base_dir + cubemap_desc["ny"].asString(),
                          base_dir + cubemap_desc["pz"].asString(), base_dir + cubemap_desc["nz"].asString()}};

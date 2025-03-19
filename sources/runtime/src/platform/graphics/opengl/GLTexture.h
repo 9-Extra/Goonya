@@ -9,29 +9,22 @@
 namespace Goonya {
 namespace Graphics {
 
-class GLTexture: public Texture{
+class GLTexture : public Texture {
 public:
-    ~GLTexture(){
-        glDeleteTextures(1, &id);
-    }
-    void bind(uint32_t binding) const noexcept{
-        glBindTextureUnit(binding, id);
-    }
+    ~GLTexture() { glDeleteTextures(1, &id); }
+    void bind(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
 
-    GLuint get_id() const noexcept{
-        return id;
-    }
+    GLuint get_id() const noexcept { return id; }
 
     void set_filter_mode(TextureFilterMode filter_mode) noexcept;
     void set_warp_mode(TextureWarpMode warp_mode) noexcept;
-    void generate_mipmaps() noexcept{
-        glGenerateTextureMipmap(id);
-    }
+    void generate_mipmaps() noexcept { glGenerateTextureMipmap(id); }
+
 protected:
     friend class OpenGLGraphicsAPI;
     GLTexture(TextureType type, std::tuple<uint32_t, uint32_t, uint32_t> shape);
     GLuint id;
 };
 
-}
-}
+} // namespace Graphics
+} // namespace Goonya

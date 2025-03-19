@@ -1,6 +1,7 @@
 #pragma once
 #include "core/metatype/metatype.h"
-#include "resource/resources.h"
+#include "platform/graphics/Material.h"
+#include "platform/graphics/Shader.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -47,12 +48,12 @@ public:
         return *this;
     }
 
-    PSODesc build() {
+    Graphics::PSODesc build() {
         if (uber_shader_name == "") {
             throw RuntimeError("着色器名称不应为空");
         }
 
-        return PSODesc{.shader_desc = ShaderDesc{std::move(uber_shader_name), std::move(variant_keys)},
+        return Graphics::PSODesc{.shader_desc = Graphics::ShaderDesc{std::move(uber_shader_name), std::move(variant_keys)},
                        .enable_cilp = b_enable_cilp,
                        .cull_face_mode = std::move(cull_face_mode),
                        .front_face_clockwise = std::move(front_face_clockwise),
@@ -73,7 +74,7 @@ private:
 
 class MaterialBuilder {
 public:
-    MaterialBuilder(const PSODesc &pso) {
+    MaterialBuilder(const Graphics::PSODesc &pso) {
         desc.pso_desc = pso;
     }
 
@@ -88,12 +89,12 @@ public:
         return *this;
     }
 
-    MaterialDesc build(){
+    Graphics::MaterialDesc build(){
         return desc;
     }
 
 private:
-    MaterialDesc desc;
+    Graphics::MaterialDesc desc;
 };
 
 } // namespace Resource

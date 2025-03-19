@@ -1,13 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <unordered_map>
 
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Shader.h"
 #include "platform/graphics/graphics.h"
-#include "resource/resources.h"
 #include "core/log/Log.h"
 
 namespace Goonya {
@@ -23,13 +24,20 @@ public:
     ResourceContainer<Material> materials;
     ResourceContainer<Texture> textures;
 
+    std::unique_ptr<ShaderLib> shader_lib;
+
+    void init(){
+        shader_lib = graphics_api->create_shader_lib();
+    }
+
     void clear() {
         meshes.clear();
         materials.clear();
         textures.clear();
+        shader_lib.reset();
     }
 
-    void add_mesh(const std::string &key, const Resource::VertexLayout &vertex_layout,
+    void add_mesh(const std::string &key, const Graphics::VertexLayout &vertex_layout,
                   std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices,
                   Topology topology = Topology::TRIANGLE) {
         LOG_INFO("Loading Mesh: {}", key);
@@ -37,7 +45,7 @@ public:
     };
     template <typename D>
         requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const std::string &key, const Resource::VertexLayout &vertex_layout, std::span<const D> vertices,
+    void add_mesh(const std::string &key, const Graphics::VertexLayout &vertex_layout, std::span<const D> vertices,
                   std::span<const uint16_t> indices, Topology topology = Topology::TRIANGLE) {
         add_mesh(key, vertex_layout, std::span((uint8_t *const)vertices.data(), vertices.size_bytes()), indices,
                  topology);
@@ -45,13 +53,13 @@ public:
 
     template <typename D>
         requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const std::string &key, const Resource::VertexLayout &vertex_layout, std::span<D> vertices,
+    void add_mesh(const std::string &key, const Graphics::VertexLayout &vertex_layout, std::span<D> vertices,
                   std::span<const uint16_t> indices, Topology topology = Topology::TRIANGLE) {
         add_mesh(key, vertex_layout, std::span((uint8_t *const)vertices.data(), vertices.size_bytes()), indices,
                  topology);
     }
 
-    void add_material(const std::string &key, const Resource::MaterialDesc &desc) {
+    void add_material(const std::string &key, const MaterialDesc &desc) {
         LOG_INFO("Loading Material: {}", key);
         intrusive_ptr<Material> mat{graphics_api->create_material(desc.pso_desc)};
         for(const auto& [name, value]: desc.parameters){
@@ -62,17 +70,17 @@ public:
         }
         materials.emplace(key, mat);
     }
-    void add_texture(const std::string &key, const Resource::Texture2DDesc &desc) {
+    void add_texture(const std::string &key, const Texture2DDesc &desc) {
         LOG_INFO("Loading Texture: {}", key);
         textures.emplace(key, graphics_api->load_texture2D(desc));
     }
-    void add_cubemap(const std::string &key, const Resource::TextureCubeMapDesc &desc) {
+    void add_cubemap(const std::string &key, const TextureCubeMapDesc &desc) {
         LOG_INFO("Loading CubeMap: {}", key);
         textures.emplace(key, graphics_api->load_cubemap(desc));
     };
     void add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path) {
         LOG_INFO("Loading Shader: {}", key);
-        graphics_api->load_uber_shader(key, UberShaderDesc{vs_path, ps_path});
+        shader_lib->add_uber_shader(key, UberShaderDesc{vs_path, ps_path});
     }
 };
 

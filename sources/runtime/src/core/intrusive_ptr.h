@@ -111,3 +111,9 @@ public:
 private:
     mutable uint32_t ref_count;
 };
+
+template<class T, class S>
+intrusive_ptr<T> static_intrusive_ptr_cast(const intrusive_ptr<S>& source_ptr){
+    T* ptr = dynamic_cast<T*>(source_ptr.get());
+    return intrusive_ptr<T>(ptr);
+}

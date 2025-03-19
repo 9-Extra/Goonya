@@ -5,7 +5,7 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Texture.h"
 #include "resource/GraphicsResourceBuilder.h"
-#include "resource/resources.h"
+
 #include "runtime/GoonyaException.h"
 #include <fstream>
 #include <json/json.h>
@@ -84,11 +84,11 @@ void load_gltf(const std::string &base_key, const std::string &path) {
                 vertices[i] = {pos[i], normal[i], tang, uv[i]};
             }
 
-            const static Resource::VertexLayout vertex_layout{
-                {{VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
-                 {VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
-                 {VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
-                 {VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
+            const static Graphics::VertexLayout vertex_layout{
+                {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
+                 {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
+                 {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
+                 {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
                 sizeof(Graphics::Vertex)};
 
             Graphics::resources.add_mesh(key, vertex_layout, std::span(vertices),
@@ -101,7 +101,7 @@ void load_gltf(const std::string &base_key, const std::string &path) {
         const Json::Value &image_info = json["images"][texture_info["source"].asUInt()];
         const Json::Value &sampler_info = json["samplers"][texture_info["sampler"].asUInt()];
         const std::string key = base_key + '.' + image_info["name"].asString();
-        Texture2DDesc desc = {.path = root + image_info["uri"].asString(), .is_srgb = is_color};
+        Graphics::Texture2DDesc desc = {.path = root + image_info["uri"].asString(), .is_srgb = is_color};
         // 不严格支持glTF标准
         if (sampler_info.isMember("magFilter")) {
             uint32_t value = sampler_info["magFilter"].asUInt();
@@ -160,7 +160,7 @@ void load_gltf(const std::string &base_key, const std::string &path) {
             }
 
             Resource::MaterialBuilder mat_builder(Resource::PSOBuilder("pbr").build());
-            Resource::MaterialDesc desc = mat_builder.add_parameter("metallic_factor", metallicFactor)
+            Graphics::MaterialDesc desc = mat_builder.add_parameter("metallic_factor", metallicFactor)
                                               .add_parameter("roughness_factor", roughnessFactor)
                                               .add_sampler("basecolor_texture", basecolor_texture)
                                               .add_sampler("normal_texture", normal_texture)

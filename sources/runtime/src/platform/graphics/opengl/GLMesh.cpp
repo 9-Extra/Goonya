@@ -49,12 +49,12 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invaild Field Type");
 }
 
-GLMesh::GLMesh(Topology topology, Resource::VertexLayout layout, intrusive_ptr<GLBuffer> vertex_buffers,
+GLMesh::GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<GLBuffer> vertex_buffers,
                intrusive_ptr<GLBuffer> index_buffer)
     : GLMesh(std::vector<SubMesh>{SubMesh{0, (uint32_t)index_buffer->get_size(), topology}}, layout, vertex_buffers,
              index_buffer) {}
 
-GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, Resource::VertexLayout layout,
+GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout,
                intrusive_ptr<GLBuffer> vertex_buffers, intrusive_ptr<GLBuffer> index_buffer)
     : layout(std::move(layout)), vertex_buffer(vertex_buffers), index_buffer(index_buffer) {
     // 使用顶点格式创建VAO

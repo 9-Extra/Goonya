@@ -2,16 +2,16 @@
 
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
+#include "function/renderer/RenderResource.h"
 #include "platform/graphics/Buffer.h"
-#include "platform/graphics/graphics.h"
 #include "platform/graphics/opengl/GLBuffer.h"
-#include "platform/graphics/opengl/OpenGLAPI.h"
 #include "runtime/GoonyaException.h"
+#include <cassert>
 
 namespace Goonya {
 namespace Graphics {
 
-GLPipelineStateObject::GLPipelineStateObject(const Resource::PSODesc &desc) {
+GLPipelineStateObject::GLPipelineStateObject(const PSODesc &desc) {
     enable_cilp = desc.enable_cilp;
     if (desc.cull_face_mode == "front") {
         cull_face_mode = GL_FRONT;
@@ -49,7 +49,8 @@ GLPipelineStateObject::GLPipelineStateObject(const Resource::PSODesc &desc) {
         throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", desc.depth_func));
     }
 
-    shader = ((OpenGLGraphicsAPI*)graphics_api.get())->pso_cache.shader_lib.query_shader(desc.shader_desc);
+    shader = static_intrusive_ptr_cast<GLShader>(resources.shader_lib->query_shader(desc.shader_desc));
+    assert(shader);
 }
 
 void GLPipelineStateObject::bind() const {
@@ -66,7 +67,7 @@ void GLPipelineStateObject::bind() const {
         glDisable(GL_DEPTH_TEST);
     }
     glDepthFunc(this->depth_func);
-    glUseProgram(this->shader.id); // 绑定着色器
+    this->shader->bind(); // 绑定着色器
     opengl_debug_check_error();
 };
 
@@ -81,7 +82,7 @@ void GLMaterial::bind() {
 
     pso->bind(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
-    per_material->bind_uniform(get_shader().per_material.binding);
+    per_material->bind_uniform(get_shader()->get_per_material_layout().binding);
     // 绑定所有纹理
     for (const auto&  [unit, t] : textures) {
         t->bind(unit);
@@ -93,15 +94,15 @@ void GLMaterial::reset_pso() {
     if (!is_pso_dirty)
         return;
     
-    pso = graphics_api->query_pso(pso_desc);
-    const auto &layout = get_shader().per_material.layout;
+    pso = resources.shader_lib->query_pso(pso_desc);
+    const auto &layout = get_shader()->get_per_material_layout().layout;
     if (!per_material || per_material->get_size() != layout.size){
         // 材质参数Buffer大小可能发生变化，必要生成新的
         per_material = intrusive_ptr<GLBuffer>(new GLBuffer{layout.size, BufferType::DYNAMIC});
     }
 
     // 更新纹理
-    for (const auto& [sampler_name, unit]: get_shader().texture_units){
+    for (const auto& [sampler_name, unit]: get_shader()->get_texture_units()){
         if (!texture_info.contains(sampler_name)){
             throw RuntimeError(std::format("材质需要的纹理{}未设置", sampler_name));
         }
@@ -115,7 +116,7 @@ void GLMaterial::reset_pso() {
 void GLMaterial::update_parameter() {
     if (!is_parameters_dirty)
         return;
-    const auto &layout = get_shader().per_material.layout;
+    const auto &layout = get_shader()->get_per_material_layout().layout;
     {
         auto w = DynamicBufferWriter(per_material, layout);
         for (const auto &[name, value] : parameters) {

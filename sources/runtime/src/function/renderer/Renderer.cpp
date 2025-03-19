@@ -8,7 +8,6 @@
 #include "platform/display/display.h"
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/ResourceJsonLoader.h"
-#include "resource/resources.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -30,8 +29,8 @@ void init_resource() {
     {
         // 单一颜色材质
         Vector3f color_green{0.0f, 1.0f, 0.0f};
-        Resource::MaterialDesc green_material_desc =
-            Resource::MaterialBuilder(Resource::PSOBuilder("single_color").build())
+        MaterialDesc green_material_desc =
+        Resource::MaterialBuilder(Resource::PSOBuilder("single_color").build())
                 .add_parameter("color", color_green)
                 .build();
 
@@ -39,13 +38,13 @@ void init_resource() {
     }
     {
         // 部分硬编码的mesh
-        resources.add_mesh("default", Resource::VertexLayout{{}, 0}, {}, {});
+        resources.add_mesh("default", VertexLayout{{}, 0}, {}, {});
 
-        const Resource::VertexLayout vertex_layout{
-            {{Resource::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
-             {Resource::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
-             {Resource::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
-             {Resource::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
+        const VertexLayout vertex_layout{
+            {{VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
+             {VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
+             {VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
+             {VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
             sizeof(Graphics::Vertex)};
 
         resources.add_mesh("plane", vertex_layout, std::span(Assets::plane_vertices), Assets::plane_indices);
@@ -53,13 +52,14 @@ void init_resource() {
 
     {
         // 添加天空盒的mesh，因为格式不一样所以单独处理
-        const Resource::VertexLayout vertex_layout{{{Resource::VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}},
+        const VertexLayout vertex_layout{{{VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}},
                                                    sizeof(Vector3f)};
         resources.add_mesh("skybox_cube", vertex_layout, std::span(Assets::skybox_cube_vertices),
                            std::span(Assets::skybox_cube_indices));
     }
 }
 void Renderer::init() {
+    resources.init();
     init_resource();
 
     auto [w, h] = Display::get_size();

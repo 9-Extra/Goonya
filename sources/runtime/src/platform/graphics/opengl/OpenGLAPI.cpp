@@ -16,7 +16,6 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLMesh.h"
-#include "resource/resources.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -57,15 +56,8 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
     opengl_debug_check_error();
 }
 
-intrusive_ptr<PipelineStateObject> OpenGLGraphicsAPI::query_pso(const Resource::PSODesc &desc) {
-    return pso_cache.query_pso(desc);
-}
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-void OpenGLGraphicsAPI::load_uber_shader(const std::string &name, const UberShaderDesc &desc) {
-    pso_cache.add_uber_shader(name, desc);
-}
-
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resource::VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const VertexLayout& vertex_layout, std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
 
@@ -75,7 +67,7 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Resour
     return intrusive_ptr<GLMesh>{new GLMesh{topology, vertex_layout, vertex_buffer, index_buffer}};
 }
 // virtual void load_material(const std::string &key, const Resource::MaterialDesc &desc);
-intrusive_ptr<Texture> OpenGLGraphicsAPI::load_texture2D(const Resource::Texture2DDesc& desc) const {
+intrusive_ptr<Texture> OpenGLGraphicsAPI::load_texture2D(const Texture2DDesc& desc) const {
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
@@ -94,7 +86,7 @@ intrusive_ptr<Texture> OpenGLGraphicsAPI::load_texture2D(const Resource::Texture
 
     return texture;
 }
-intrusive_ptr<Texture> OpenGLGraphicsAPI::load_cubemap(const Resource::TextureCubeMapDesc& desc) const {
+intrusive_ptr<Texture> OpenGLGraphicsAPI::load_cubemap(const TextureCubeMapDesc& desc) const {
     // 使用第一张图像的宽高信息分配纹理空间
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
     

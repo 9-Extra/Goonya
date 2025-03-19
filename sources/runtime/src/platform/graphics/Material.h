@@ -1,11 +1,10 @@
 #pragma once
 
-#include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Texture.h"
-#include "resource/resources.h"
+#include "platform/graphics/Shader.h"
 #include <cassert>
 #include <cstdint>
 #include <string>
@@ -14,32 +13,13 @@
 namespace Goonya {
 namespace Graphics {
 
-struct Vertex {
-    Vector3f position;
-    Vector3f normal;
-    Vector3f tangent;
-    Vector2f uv;
+struct MaterialDesc {
+    std::unordered_map<std::string, Meta::DynamicData> parameters;
+    std::vector<std::tuple<std::string, std::string>> textures; // (着色器中名称, 资源键)
+
+    PSODesc pso_desc;
 };
 
-struct UberShaderDesc {
-    std::string vs_path;
-    std::string ps_path;
-};
-
-class Shader : public intrusive_ptr_base<Shader> {
-public:
-    virtual void bind() = 0;
-    virtual ~Shader() = default;
-};
-
-class PipelineStateObject : public intrusive_ptr_base<PipelineStateObject> {
-public:
-    virtual void bind() const = 0;
-    virtual ~PipelineStateObject() = default;
-
-protected:
-    PipelineStateObject() {};
-};
 
 class Material : public intrusive_ptr_base<Material> {
 public:
@@ -83,9 +63,9 @@ public:
     }
 
 protected:
-    Material(const Resource::PSODesc &pso) : pso_desc(pso), is_parameters_dirty(true), is_pso_dirty(true) {};
+    Material(const PSODesc &pso) : pso_desc(pso), is_parameters_dirty(true), is_pso_dirty(true) {};
     
-    Resource::PSODesc pso_desc;
+    PSODesc pso_desc;
     
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, Meta::DynamicData> parameters; // 只保存参数，无论它是否被着色器需要
