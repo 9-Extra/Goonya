@@ -2,6 +2,7 @@
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Shader.h"
 #include "runtime/GoonyaException.h"
+#include <vector>
 
 namespace Goonya {
 namespace Graphics {
@@ -68,7 +69,7 @@ GLuint complie_shader_program(const std::string &vs_src, const std::string &ps_s
  * @param 宏定义
  * @return 生成的代码
  */
-static std::string shader_source_inject(const std::string &src, const std::unordered_set<std::string> &variant_key) {
+static std::string shader_source_inject(const std::string &src, const std::vector<std::string> &variant_key) {
 
     const std::string LOACLTING_PATTER = "#pragma GYA_INJECT";
 
@@ -90,23 +91,6 @@ static std::string shader_source_inject(const std::string &src, const std::unord
     ss << src.substr(injection_point + LOACLTING_PATTER.size());
 
     return ss.str();
-}
-
-intrusive_ptr<Shader> GLShaderLib::load_shader(const ShaderDesc &desc) {
-    if (!uber_shader_sources.contains(desc.uber_name)){
-        throw RuntimeError(std::format("UberShader {} 未加载", desc.uber_name));
-    }
-    const UberShaderSource &u_src = uber_shader_sources.at(desc.uber_name);
-
-    std::string mixed_vs = shader_source_inject(u_src.vs_src, desc.variant_keys);
-    std::string mixed_ps = shader_source_inject(u_src.ps_src, desc.variant_keys);
-
-    // std::ofstream(desc.uber_name + "_vs_mixed.vert", std::ios_base::binary) << mixed_vs;
-    // std::ofstream(desc.uber_name + "_ps_mixed.frag", std::ios_base::binary) << mixed_ps;
-
-    GLuint id = complie_shader_program(mixed_vs, mixed_ps);
-   
-    return intrusive_ptr<GLShader>{id};
 }
 
 static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
@@ -259,14 +243,39 @@ std::unordered_map<std::string, GLuint> ShaderIntrospector::get_texture_info() c
     return result;
 }
 
-GLShader::GLShader(GLuint id) : program_id(id) {
-    // 进行反射操作
+void GLShaderLib::add_uber_shader(const std::string &name, UberShaderDesc &&desc) {
+    std::unique_ptr<UberShader> uber_shader = std::make_unique<UberShader>(
+        std::move(desc.vs_src), std::move(desc.ps_src), std::move(desc.global_variant_keys), std::move(desc.local_variant_keys));
+
+    // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用create_variant
+    VariantCodeSet empty{.full_code = 0}; 
+    std::vector<std::string> variant_keys = decode_varient_keys(uber_shader.get(), empty);
+    std::string mixed_vs = shader_source_inject(uber_shader->vs_src, variant_keys);
+    std::string mixed_ps = shader_source_inject(uber_shader->ps_src, variant_keys);
+
+    GLuint id = complie_shader_program(mixed_vs, mixed_ps);
+    uber_shader->shaders[empty] = intrusive_ptr<GLShader>{id, uber_shader.get(), empty}; // 既然编译了就加入缓存
+
     ShaderIntrospector introspector(id);
     auto buffer_info = introspector.get_constant_buffer_info();
-    per_material = std::move(buffer_info["per_material"]);
-    per_frame = std::move(buffer_info.at("per_frame"));
-    texture_units = introspector.get_texture_info();
-}
 
+    uber_shader->per_material = std::move(buffer_info["per_material"]);
+    uber_shader->per_frame = std::move(buffer_info.at("per_frame"));
+    uber_shader->texture_units = introspector.get_texture_info();
+
+    uber_shaders.emplace(name, std::move(uber_shader));
+}
+intrusive_ptr<Shader> GLShaderLib::create_variant(UberShader *uber_shader, VariantCodeSet variant_code) {
+    std::vector<std::string> variant_keys = decode_varient_keys(uber_shader, variant_code);
+    std::string mixed_vs = shader_source_inject(uber_shader->vs_src, variant_keys);
+    std::string mixed_ps = shader_source_inject(uber_shader->ps_src, variant_keys);
+
+    // std::ofstream(desc.uber_name + "_vs_mixed.vert", std::ios_base::binary) << mixed_vs;
+    // std::ofstream(desc.uber_name + "_ps_mixed.frag", std::ios_base::binary) << mixed_ps;
+
+    GLuint id = complie_shader_program(mixed_vs, mixed_ps);
+
+    return intrusive_ptr<GLShader>{id, uber_shader, variant_code};
+}
 } // namespace Graphics
 } // namespace Goonya

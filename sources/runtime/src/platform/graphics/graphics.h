@@ -47,7 +47,7 @@ public:
     
     virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) = 0;
 
-    virtual intrusive_ptr<Material> create_material(const PSODesc &desc) = 0;
+    virtual intrusive_ptr<Material> create_material(UberShader* uber_shader) = 0;
     // drawcall
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                                      std::optional<int> stencil = std::nullopt) noexcept = 0;

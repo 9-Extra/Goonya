@@ -20,7 +20,7 @@ else
 end
 
 target("glad")
-    set_kind("static")
+    set_kind("object")
     add_files("thirdparty/glad/src/glad.c")
     add_includedirs("thirdparty/glad/include", {public = true, private=true})
 

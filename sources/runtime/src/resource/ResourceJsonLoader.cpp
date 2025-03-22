@@ -1,12 +1,15 @@
 #include "ResourceJsonLoader.h"
 
-#include <cstddef>
+#include <filesystem>
 #include <fstream>
 #include <json/json.h>
+#include <vector>
 
 #include "GraphicsResourceBuilder.h"
 #include "function/renderer/RenderResource.h"
+#include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
+#include "platform/read_file.h"
 #include "runtime/GoonyaException.h"
 
 #include "glTFLoader.h"
@@ -14,29 +17,46 @@
 namespace Goonya {
 namespace Resource {
 
-void load_json(const std::string &path) {
+void load_json(const std::filesystem::path &path) {
     Json::Value json;
     {
         Json::Reader reader;
         std::ifstream file(path);
         if (!file) {
-            throw RuntimeError(std::format("资源文件{}未找到", path));
+            throw RuntimeError(std::format("资源文件{}未找到", path.string()));
         }
         reader.parse(file, json, false);
     }
 
-    std::string base_dir;
-    if (size_t it = path.find_last_of("/\\"); it != std::string::npos) {
-        base_dir = path.substr(0, it + 1); // 包含'/'
-    } else {
-        base_dir = ""; // 可能在同一目录下
-    }
+    std::filesystem::path base_dir = std::filesystem::absolute(path.parent_path()); // 包含此json文件的文件夹
 
     if (json.isMember("shader")) {
         for (const auto &key : json["shader"].getMemberNames()) {
             const Json::Value &shader_desc = json["shader"][key];
-            Graphics::resources.add_shader(key, base_dir + shader_desc["vs_path"].asString(),
-                                           base_dir + shader_desc["ps_path"].asString());
+            const Json::Value &shader_sources = shader_desc["sources"];
+            
+            Graphics::UberShaderDesc desc{
+                .vs_src = read_whole_file(base_dir / shader_sources["vertex_shader"].asString()),
+                .ps_src = read_whole_file(base_dir / shader_sources["pixel_shader"].asString())
+            };
+
+            for(const auto& group: shader_desc["global_variants"]){
+                std::vector<std::string> desc_group;
+                for(const auto& key: group){
+                    desc_group.emplace_back(key.asString());
+                }
+                desc.global_variant_keys.emplace_back(std::move(desc_group));
+            }
+
+            for(const auto& group: shader_desc["local_variants"]){
+                std::vector<std::string> desc_group;
+                for(const auto& key: group){
+                    desc_group.emplace_back(key.asString());
+                }
+                desc.local_variant_keys.emplace_back(std::move(desc_group));
+            }
+
+            Graphics::resources.add_shader(key, std::move(desc));
         }
     }
 
@@ -44,7 +64,7 @@ void load_json(const std::string &path) {
         for (const auto &key : json["texture"].getMemberNames()) {
             const Json::Value &texture_desc = json["texture"][key];
             Graphics::Texture2DDesc desc = {
-                .path = base_dir + texture_desc["image"].asString()
+                .path = base_dir / texture_desc["image"].asString()
             };
 
             if (texture_desc.isMember("is_color")) {
@@ -82,9 +102,9 @@ void load_json(const std::string &path) {
         for (const auto &key : json["cubemap"].getMemberNames()) {
             const Json::Value &cubemap_desc = json["cubemap"][key];
             Graphics::TextureCubeMapDesc desc{
-                .path = {base_dir + cubemap_desc["px"].asString(), base_dir + cubemap_desc["nx"].asString(),
-                         base_dir + cubemap_desc["py"].asString(), base_dir + cubemap_desc["ny"].asString(),
-                         base_dir + cubemap_desc["pz"].asString(), base_dir + cubemap_desc["nz"].asString()}};
+                .path = {base_dir / cubemap_desc["px"].asString(), base_dir / cubemap_desc["nx"].asString(),
+                         base_dir / cubemap_desc["py"].asString(), base_dir / cubemap_desc["ny"].asString(),
+                         base_dir / cubemap_desc["pz"].asString(), base_dir / cubemap_desc["nz"].asString()}};
 
             if (cubemap_desc.isMember("is_color")) {
                 desc.is_srgb = cubemap_desc["is_color"].asBool();
@@ -119,26 +139,52 @@ void load_json(const std::string &path) {
 
     if (json.isMember("gltf")) {
         for (const auto &key : json["gltf"].getMemberNames()) {
-            load_gltf(key, base_dir + json["gltf"][key]["path"].asString());
+            load_gltf(key, base_dir / json["gltf"][key]["path"].asString());
         }
     }
 
     // materials
     for (const auto &key : json["materials"].getMemberNames()) {
         const Json::Value &material_desc = json["materials"][key];
-
-        Resource::PSOBuilder pso_builder(material_desc["uber_shader"].asString());
         
+        Resource::MaterialBuilder mat_builder(material_desc["uber_shader"].asString());
+ 
         for (const auto &key : material_desc["variant_keys"]) {
-            pso_builder.set_variant_key(key.asString());
+            mat_builder.set_variant_key(key.asString());
         }
 
         const Json::Value &config = material_desc["config"];
-        if (config.isMember("depth_func")) {
-            pso_builder.set_depth_func(config["depth_func"].asString());
+        if (config.isMember("cull_mode")) {
+            const Json::Value &cull_mode = config["cull_mode"];
+            if (cull_mode == "front") {
+                mat_builder.set_cull_mode(Graphics::CullFaceMode::FRONT);
+            } else if (cull_mode == "back") {
+                mat_builder.set_cull_mode(Graphics::CullFaceMode::BACK);
+            } else if (cull_mode == "front_back") {
+                mat_builder.set_cull_mode(Graphics::CullFaceMode::FRONT_AND_BACK);
+            } else {
+                throw RuntimeError(std::format("不支持的面裁剪模式：\"{}\"", cull_mode.asString()));
+            }
         }
 
-        Resource::MaterialBuilder mat_builder(pso_builder.build());
+        if (config.isMember("depth_func")) {
+            const Json::Value &depth_test_mode = config["depth_func"];
+            if (depth_test_mode == "never") {
+                mat_builder.set_depth_test_mode(Graphics::DepthTestMode::NEVER);
+            } else if (depth_test_mode == "less") {
+                mat_builder.set_depth_test_mode(Graphics::DepthTestMode::LESS);
+            } else if (depth_test_mode == "less_equal") {
+                mat_builder.set_depth_test_mode(Graphics::DepthTestMode::LESS_EQUAL);
+            } else if (depth_test_mode == "greater") {
+                mat_builder.set_depth_test_mode(Graphics::DepthTestMode::GREATER);
+            } else if (depth_test_mode == "greater_equal") {
+                mat_builder.set_depth_test_mode(Graphics::DepthTestMode::GREATER_EQUAL);
+            } else if (depth_test_mode == "always") {
+                mat_builder.set_depth_test_mode(Graphics::DepthTestMode::ALWAYS);
+            } else {
+                throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", depth_test_mode.asString()));
+            }
+        }
 
         for (const Json::Value &uniform_json : material_desc["constants"]) {
             mat_builder.add_parameter(uniform_json["name"].asString(), uniform_json["vaule"].asUInt());

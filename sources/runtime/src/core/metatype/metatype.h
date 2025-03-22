@@ -91,7 +91,7 @@ struct DynamicData {
             *(T*)&storage.value = value;
         } else {
             storage.ptr = malloc(size_bytes());
-            memcpy(storage.ptr, &value, size_bytes());
+            *(T*)storage.ptr = value;
         }
     }
 

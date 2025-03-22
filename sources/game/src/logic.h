@@ -1,5 +1,7 @@
 #pragma once
-#include "core/log/Log.h"
+
+#include "function/renderer/RenderResource.h"
+#include "platform/graphics/Shader.h"
 #include <core/cgmath.h>
 #include <core/world/GObject.h>
 #include <core/input/input.h>
@@ -13,11 +15,9 @@ public:
         using namespace Goonya;
         if (Goonya::Input::is_mouse_click(Goonya::Input::LEFT)) {
             lights->enable();
-            cube->enable();
         }
         if (Goonya::Input::is_mouse_click(Goonya::Input::RIGHT)) {
             lights->disable();
-            cube->disable();
         }
 
         // 使用鼠标中键旋转视角
@@ -35,6 +35,16 @@ public:
         // wasd移动
         using namespace Goonya;
         const float move_speed = 0.02f * delta;
+
+        if (Goonya::Input::is_key_click('F')) {
+            static const std::string key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
+            Graphics::ShaderLib* shader_lib = Graphics::resources.shader_lib.get();
+            if (!shader_lib->is_global_varient_key_set(key_name)){
+                shader_lib->set_global_varient_key(key_name);
+            } else {
+                shader_lib->reset_global_varient_key(key_name);
+            }
+        }
 
         if (Goonya::Input::is_key_click(Goonya::Input::KeyCode::ESCAPE)) {
             Goonya::EventBus::dispatch_event(Goonya::Events::EngineStop{});
@@ -71,9 +81,6 @@ public:
             camera->set_transform(Goonya::Transform{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1, 1, 1}});
         }
 
-        if (Goonya::Input::is_key_click('F')){
-            
-        }
         //Vector3f pos = camera->get_transform().position;
         //LOG_DEBUG("x = {}, y = {}, z = {}", pos.x, pos.y, pos.z);
 

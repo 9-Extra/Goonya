@@ -3,6 +3,7 @@
 #include "../graphics.h"
 #include "GLMaterial.h"
 #include "GLBasic.h"
+#include "GLShader.h"
 
 
 namespace Goonya {
@@ -30,8 +31,8 @@ public:
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) override;
     virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) override;
     
-    virtual intrusive_ptr<Material> create_material(const PSODesc &desc) override{
-        return intrusive_ptr<Material>{new GLMaterial{desc}};
+    virtual intrusive_ptr<Material> create_material(UberShader* uber_shader) override{
+        return intrusive_ptr<Material>{new GLMaterial{uber_shader}};
     }
     // drawcall
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,

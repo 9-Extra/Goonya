@@ -20,7 +20,7 @@ void init_resource() {
     {
         // 平滑着色材质
         Vector3f color_while{1.0f, 1.0f, 1.0f};
-        resources.add_material("wood_flat", Resource::MaterialBuilder(Resource::PSOBuilder("unlit").build())
+        resources.add_material("wood_flat", Resource::MaterialBuilder("unlit")
                                                 .add_parameter("emissive", color_while)
                                                 .add_sampler("emissive_texture", "wood_diffusion")
                                                 .build());
@@ -30,9 +30,7 @@ void init_resource() {
         // 单一颜色材质
         Vector3f color_green{0.0f, 1.0f, 0.0f};
         MaterialDesc green_material_desc =
-        Resource::MaterialBuilder(Resource::PSOBuilder("single_color").build())
-                .add_parameter("color", color_green)
-                .build();
+            Resource::MaterialBuilder("single_color").add_parameter("color", color_green).build();
 
         resources.add_material("default", green_material_desc);
     }
@@ -52,8 +50,7 @@ void init_resource() {
 
     {
         // 添加天空盒的mesh，因为格式不一样所以单独处理
-        const VertexLayout vertex_layout{{{VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}},
-                                                   sizeof(Vector3f)};
+        const VertexLayout vertex_layout{{{VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}}, sizeof(Vector3f)};
         resources.add_mesh("skybox_cube", vertex_layout, std::span(Assets::skybox_cube_vertices),
                            std::span(Assets::skybox_cube_indices));
     }

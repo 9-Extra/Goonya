@@ -12,6 +12,7 @@
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
 #include <imgui_impl_glfw.h>
+#include <utility>
 
 
 namespace Goonya {
@@ -82,7 +83,7 @@ static void glfw_key_callback(GLFWwindow *window, int key, int scancode, int act
 
 static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
     // The action is one of GLFW_PRESS or GLFW_RELEASE，不会有GLFW_REPEAT
-    Input::MouseKey key;
+    Input::MouseKey key = Input::MouseKey::LEFT;
     switch (button) {
         case GLFW_MOUSE_BUTTON_LEFT:
             key = Input::MouseKey::LEFT;
@@ -93,6 +94,8 @@ static void glfw_mouse_button_callback(GLFWwindow* window, int button, int actio
         case GLFW_MOUSE_BUTTON_RIGHT:
             key = Input::MouseKey::RIGHT;
             break;
+        default:
+            std::unreachable();
     }
 
     EventBus::dispatch_event(Events::SysMouseClick{key, glfw_action2keystate(action)});

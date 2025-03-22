@@ -67,7 +67,9 @@ void load_gltf(const std::string &base_key, const std::string &path) {
             uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
             uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
-            assert(vertex_count == normal_count && vertex_count == uv_count && vertex_count == tangent_count);
+            if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count){
+                throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path));
+            }
             Vector3f *pos = (Vector3f *)((char *)buffers[position_buffer["buffer"].asUInt()].ptr +
                                          position_buffer["byteOffset"].asUInt());
             Vector3f *normal = (Vector3f *)((char *)buffers[normal_buffer["buffer"].asUInt()].ptr +
@@ -159,7 +161,7 @@ void load_gltf(const std::string &base_key, const std::string &path) {
                 roughnessFactor = material["pbrMetallicRoughness"]["roughnessFactor"].asFloat();
             }
 
-            Resource::MaterialBuilder mat_builder(Resource::PSOBuilder("pbr").build());
+            Resource::MaterialBuilder mat_builder("pbr");
             Graphics::MaterialDesc desc = mat_builder.add_parameter("metallic_factor", metallicFactor)
                                               .add_parameter("roughness_factor", roughnessFactor)
                                               .add_sampler("basecolor_texture", basecolor_texture)

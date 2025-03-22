@@ -6,28 +6,27 @@
 
 #include "../Material.h"
 #include "core/intrusive_ptr.h"
-#include "GLShader.h"
+#include "platform/graphics/Buffer.h"
+#include "platform/graphics/Shader.h"
+#include "platform/graphics/opengl/GLBuffer.h"
 
 namespace Goonya {
 namespace Graphics {
 
 class GLMaterial : public Material {
 public:
-    GLMaterial(const PSODesc &pso) : Material(pso) {}
+    GLMaterial(UberShader* uber_shader) : Material(uber_shader) {
+        per_material = intrusive_ptr<GLBuffer>(uber_shader->per_material.layout.size, BufferType::DYNAMIC);
+    }
 
     virtual void bind() override;
     virtual void update() override;
 
 private:
-    void reset_pso();
-
+    void update_shader_variant();
     void update_parameter();
+    void set_pipeline_state() const noexcept;
 
-    const GLShader* get_shader() const {
-        auto pso = dynamic_cast<GLPipelineStateObject *>(this->pso.get());
-        assert(pso);
-        return pso->shader.get();
-    }
 };
 
 } // namespace Graphics

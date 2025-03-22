@@ -61,7 +61,10 @@ public:
 
     void add_material(const std::string &key, const MaterialDesc &desc) {
         LOG_INFO("Loading Material: {}", key);
-        intrusive_ptr<Material> mat{graphics_api->create_material(desc.pso_desc)};
+        intrusive_ptr<Material> mat{graphics_api->create_material(shader_lib->query_uber_shader(desc.uber_shader_name))};
+        mat->set_depth_test_mode(desc.depth_test);
+        mat->set_cull_mode(desc.cull_mode);
+        
         for(const auto& [name, value]: desc.parameters){
             mat->set_param(name, value);
         }
@@ -78,9 +81,9 @@ public:
         LOG_INFO("Loading CubeMap: {}", key);
         textures.emplace(key, graphics_api->load_cubemap(desc));
     };
-    void add_shader(const std::string &key, const std::string &vs_path, const std::string &ps_path) {
+    void add_shader(const std::string &key, UberShaderDesc&& desc) {
         LOG_INFO("Loading Shader: {}", key);
-        shader_lib->add_uber_shader(key, UberShaderDesc{vs_path, ps_path});
+        shader_lib->add_uber_shader(key, std::move(desc));
     }
 };
 
