@@ -3,7 +3,7 @@
 #include "core/intrusive_ptr.h"
 #include <cstdint>
 
-#include <string>
+#include <filesystem>
 #include <tuple>
 #include <array>
 
@@ -36,7 +36,7 @@ enum class TextureFilterMode{
 };
 
 struct Texture2DDesc {
-    std::string path;
+    std::filesystem::path path;
     bool is_srgb = false;         // 是否需要转换到线性空间
     bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
     Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
@@ -44,7 +44,7 @@ struct Texture2DDesc {
 };
 
 struct TextureCubeMapDesc {
-    std::array<std::string, 6> path; // px, nx, py, ny, pz, nz
+    std::array<std::filesystem::path, 6> path; // px, nx, py, ny, pz, nz
     bool is_srgb = false;            // 是否需要转换到线性空间
     bool is_uv_left_down = false;    // UV坐标系是否以左下角为原点
     Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;

@@ -13,11 +13,9 @@
 namespace Goonya {
 namespace Resource {
 
-void load_gltf(const std::string &base_key, const std::string &path) {
-    std::string root = path;
-    for (; !(root.empty() || root.back() == '/' || root.back() == '\\'); root.pop_back())
-        ;
-
+void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
+    std::filesystem::path root = path.parent_path();
+   
     Json::Value json;
     {
         Json::Reader reader;
@@ -38,7 +36,7 @@ void load_gltf(const std::string &base_key, const std::string &path) {
     std::vector<Buffer> buffers;
     if (json.isMember("buffers")) {
         for (const Json::Value &buffer : json["buffers"]) {
-            std::string bin_path = root + buffer["uri"].asString();
+            std::filesystem::path bin_path = root / buffer["uri"].asString();
             Buffer &b = buffers.emplace_back(buffer["byteLength"].asUInt());
             std::fstream file(bin_path, std::ios_base::in | std::ios_base::binary);
             file.read(b.ptr, b.len);
@@ -68,7 +66,7 @@ void load_gltf(const std::string &base_key, const std::string &path) {
             uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
             uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
             if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count){
-                throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path));
+                throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
             Vector3f *pos = (Vector3f *)((char *)buffers[position_buffer["buffer"].asUInt()].ptr +
                                          position_buffer["byteOffset"].asUInt());
@@ -103,7 +101,7 @@ void load_gltf(const std::string &base_key, const std::string &path) {
         const Json::Value &image_info = json["images"][texture_info["source"].asUInt()];
         const Json::Value &sampler_info = json["samplers"][texture_info["sampler"].asUInt()];
         const std::string key = base_key + '.' + image_info["name"].asString();
-        Graphics::Texture2DDesc desc = {.path = root + image_info["uri"].asString(), .is_srgb = is_color};
+        Graphics::Texture2DDesc desc = {.path = root / image_info["uri"].asString(), .is_srgb = is_color};
         // 不严格支持glTF标准
         if (sampler_info.isMember("magFilter")) {
             uint32_t value = sampler_info["magFilter"].asUInt();

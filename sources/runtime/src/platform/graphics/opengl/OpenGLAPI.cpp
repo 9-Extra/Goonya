@@ -3,9 +3,9 @@
 #include <FreeImage.h> // FreeImage不知为何定义了_WINDOWS_，导致spdlog包含的Windows.h头文件不完整，所以先包含spdlog
 #include <GLFW/glfw3.h>
 #include <cassert>
-#include <cmath>
 #include <cstdint>
 #include <glad/glad.h>
+#include <string>
 
 #include "GLBuffer.h"
 #include "GLTexture.h"
@@ -19,10 +19,16 @@
 namespace Goonya {
 namespace Graphics {
 
-static FIBITMAP *freeimage_load_and_convert_image(const std::string &image_path, bool is_color) {
-    FIBITMAP *pImage_ori = FreeImage_Load(FreeImage_GetFileType(image_path.c_str(), 0), image_path.c_str());
+static FIBITMAP *freeimage_load_and_convert_image(const std::filesystem::path &image_path, bool is_color) {
+#ifdef _WIN32
+    const std::wstring& path = image_path.native();
+    FIBITMAP *pImage_ori = FreeImage_LoadU(FreeImage_GetFileTypeU(path.c_str(), 0), path.c_str());
+#else
+    const std::string& path = image_path.native();
+    FIBITMAP *pImage_ori = FreeImage_Load(FreeImage_GetFileType(path.c_str(), 0), path.c_str());   
+#endif
     if (pImage_ori == nullptr) {
-        throw RuntimeError(std::format("Failed to load image: {}", image_path));
+        throw RuntimeError(std::format("Failed to load image: {}", image_path.string()));
     }
     FIBITMAP *pImage = FreeImage_ConvertTo24Bits(pImage_ori);
     FreeImage_FlipVertical(pImage); // 翻转，适应opengl的方向
@@ -104,7 +110,7 @@ intrusive_ptr<Texture> OpenGLGraphicsAPI::load_cubemap(const TextureCubeMapDesc&
     for (unsigned int i = 1; i < desc.path.size(); i++) {
         FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_srgb);    
         if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)){
-            throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i]));
+            throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i].string()));
         }
         glTextureSubImage3D(texture->get_id(), 0, 0, 0, i, nWidth, nHeight, 1, GL_BGR, GL_UNSIGNED_BYTE, (void *)FreeImage_GetBits(pImage));      
         FreeImage_Unload(pImage);

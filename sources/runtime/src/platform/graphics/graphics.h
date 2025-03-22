@@ -3,7 +3,6 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
-#include <sys/types.h>
 
 #include "Buffer.h"
 #include "Material.h"

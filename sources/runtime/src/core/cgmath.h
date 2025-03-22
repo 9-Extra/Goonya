@@ -388,16 +388,16 @@ struct BoundingBox {
 
 template <>
 struct std::formatter<Goonya::Vector2f> {
-    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
-    constexpr auto format(const Goonya::Vector2f vec2, std::format_context &ctx) const {
+    auto parse(std::format_parse_context &context) { return context.begin(); }
+    auto format(const Goonya::Vector2f vec2, std::format_context &ctx) const {
         return std::format_to(ctx.out(), "({}, {})", vec2.x, vec2.y);
     }
 };
 
 template <>
 struct std::formatter<Goonya::Vector3f> {
-    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
-    constexpr auto format(const Goonya::Vector3f vec3, std::format_context &ctx) const {
+    auto parse(std::format_parse_context &context) { return context.begin(); }
+    auto format(const Goonya::Vector3f vec3, std::format_context &ctx) const {
         return std::format_to(ctx.out(), "({}, {}, {})", vec3.x, vec3.y, vec3.z);
     }
 };
