@@ -7,10 +7,13 @@ void ShaderVariantKeyCollect::add_variant_key_group(std::vector<std::string> &&g
     uint8_t group_index = variants_key_map.size();
     uint8_t index = 0;
     for (const std::string &key : group_keys) {
-        auto [_, inserted] = variants_key_map.emplace(key, std::make_tuple(group_index, index++));
-        if (!inserted) {
-            throw RuntimeError("着色器变体键重复定义");
+        if (key.size() != 0){ // 略过空定义    
+            auto [_, inserted] = variants_key_map.emplace(key, std::make_tuple(group_index, index));
+            if (!inserted) {
+                throw RuntimeError("着色器变体键重复定义");
+            }
         }
+        index++;
     }
 
     uint32_t group_key_count = group_keys.size();

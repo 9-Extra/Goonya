@@ -63,7 +63,7 @@ float D_GGX(float dotNH, float roughness)
     float alpha  = roughness * roughness;
     float alpha2 = alpha * alpha;
     float denom  = dotNH * dotNH * (alpha2 - 1.0) + 1.0;
-    return (alpha2) / (PI * denom * denom);
+    return alpha2 / (PI * denom * denom);
 }
 
 // Geometric Shadowing function --------------------------------------
@@ -105,11 +105,11 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, PixelArribute pixel_attribute)
     float dotLH = clamp(dot(L, H), 0.0, 1.0);
     float dotNH = clamp(dot(N, H), 0.0, 1.0);
 
-    float rroughness = max(0.05, pixel_attribute.roughness);
+    float roughness = max(0.05, pixel_attribute.roughness);
     // D 微表面法线分布
-    float D = D_GGX(dotNH, rroughness);
+    float D = D_GGX(dotNH, roughness);
     // G = Geometric shadowing term (Microfacets shadowing)
-    float G = G_SchlicksmithGGX(dotNL, dotNV, rroughness);
+    float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
     // F = Fresnel factor (Reflectance depending on angle of incidence)
     vec3 F = F_Schlick(dotNV, pixel_attribute.F0);
 
@@ -117,8 +117,8 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, PixelArribute pixel_attribute)
     
     // 计算漫反射
     vec3 diff = pixel_attribute.albedo / PI; // lambert diffuse
-    // 乘上系数，最后加起来
-    float kD  = 1.0 - pixel_attribute.metallic;
+    // 漫反射是由折射光在的次表面散射产生的，并且金属没有次表面散射，由此计算系数kD
+    vec3 kD = (vec3(1) - F) * (1.0 - pixel_attribute.metallic);
     return kD * diff + spec;
 }
 
@@ -133,10 +133,11 @@ vec3 caculate_normal(){
 
 void main()
 {
-    const float dielectric_specular = 0.04;//一般电解质的基础反射率
+    const vec3 dielectric_specular = vec3(0.04);//一般电解质的基础反射率
 
     const vec3 N = caculate_normal();//法线
     const vec3 metallic_roughness = texture(metallic_roughness_texture, vs_out.tex_coords).xyz;
+    const vec3 V = normalize(camera_position - vs_out.world_position); // 观察方向
 
     PixelArribute pixel_attribute;
     pixel_attribute.albedo = texture(basecolor_texture, vs_out.tex_coords).xyz;//基础色
@@ -144,7 +145,7 @@ void main()
     pixel_attribute.metallic = metallic_roughness.x * metallic_factor;//金属度
     // 对于金属，其反射率就是albedo。对于一般电介质，其反射率取一般值0.04。不考虑半导体。
     // 反射率F用于计算Fresnel反射
-    pixel_attribute.F0 = mix(vec3(dielectric_specular), pixel_attribute.albedo, pixel_attribute.metallic);
+    pixel_attribute.F0 = mix(dielectric_specular, pixel_attribute.albedo, pixel_attribute.metallic);
 
     // 环境光
     vec3 result_color = vec3(0);
@@ -152,10 +153,11 @@ void main()
     result_color += ambient_light * pixel_attribute.albedo;
 
 #ifdef GYA_IBL_ENVIRONMENT_LIGHT
-    vec3 V = normalize(camera_position - vs_out.world_position);
     vec3 L = 2 * dot(V, N) * N - V;
+    float dotNV = clamp(dot(N, V), 0.0, 1.0);
+    float dotNL = clamp(dot(N, L), 0.0, 1.0);
     vec3 environment_light_indensity = texture(skybox_specular_texture, L, pixel_attribute.roughness * textureQueryLevels(skybox_specular_texture)).xyz;
-    result_color += environment_light_indensity * BRDF(L, V, N, pixel_attribute);
+    result_color += environment_light_indensity * G_SchlicksmithGGX(dotNL, dotNV, pixel_attribute.roughness) * F_Schlick(dotNV, pixel_attribute.F0);
 #endif
 
     // 点光源
@@ -164,7 +166,6 @@ void main()
         vec3 light_intensity = pointlight_list[i].intensity;
 
         vec3 L = normalize(light_pos - vs_out.world_position);
-        vec3 V = normalize(camera_position - vs_out.world_position);
 
         float squared_distance = dot(light_pos - vs_out.world_position, light_pos - vs_out.world_position);
 
@@ -175,12 +176,13 @@ void main()
     }
 
     result_color = min(result_color, 1.0f);
-
+# ifdef GYA_FOG_EXP
     const vec3 fog_color = vec3(1.0f ,1.0f ,1.0f);
     float distance = max(0.0f, length(vs_out.world_position - camera_position) - fog_min_distance);
     float fog_factor = exp(-distance * fog_density);
     result_color = mix(fog_color, result_color, fog_factor);
-
+# endif
     out_color = vec4(pow(result_color, vec3(1 / 2.2)), 1.0f);
-    //out_color = vec4(max(normal,0), 1.0f);
+    
+    //out_color = vec4(BRDF(L, V, N, pixel_attribute) / 2, 1);
 }

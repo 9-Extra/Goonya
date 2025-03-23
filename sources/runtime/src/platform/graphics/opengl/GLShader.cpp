@@ -263,6 +263,11 @@ void GLShaderLib::add_uber_shader(const std::string &name, UberShaderDesc &&desc
     uber_shader->per_frame = std::move(buffer_info.at("per_frame"));
     uber_shader->texture_units = introspector.get_texture_info();
 
+    // 设置现有的全局变体键
+    for(const std::string& key: global_variant_key_names){
+        uber_shader->global_variant_key_collect.set_varient_code(uber_shader->global_key_code, key); 
+    }
+
     uber_shaders.emplace(name, std::move(uber_shader));
 }
 intrusive_ptr<Shader> GLShaderLib::create_variant(UberShader *uber_shader, VariantCodeSet variant_code) {

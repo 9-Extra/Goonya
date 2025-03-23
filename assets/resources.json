@@ -21,6 +21,10 @@
                 [
                     "",
                     "GYA_IBL_ENVIRONMENT_LIGHT"
+                ],
+                [
+                    "",
+                    "GYA_FOG_EXP"
                 ]
             ],
             "local_variants": []

@@ -144,7 +144,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
             }
             const std::string basecolor_texture =
                 load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asInt64(), true);
-            std::string metallic_roughness_texture = "white";
+            std::string metallic_roughness_texture = "black";
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
                 metallic_roughness_texture = load_texture(
                     material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asInt64(), false);

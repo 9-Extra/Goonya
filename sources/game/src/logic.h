@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/log/Log.h"
 #include "function/renderer/RenderResource.h"
 #include "platform/graphics/Shader.h"
 #include <core/cgmath.h>
@@ -8,6 +9,7 @@
 #include <core/eventbus/eventbus.h>
 #include <core/events.h>
 #include <core/timer/timer.h>
+#include <vector>
 
 class MoveSystem : public Goonya::Component {
 public:
@@ -43,6 +45,12 @@ public:
                 shader_lib->set_global_varient_key(key_name);
             } else {
                 shader_lib->reset_global_varient_key(key_name);
+            }
+            Graphics::UberShader* pbr = shader_lib->query_uber_shader("pbr");
+            std::vector<std::string> keys;
+            pbr->global_variant_key_collect.get_variant_key_names(pbr->global_key_code, keys);
+            for(const std::string& key: keys){
+                LOG_TRACE("{}", key);
             }
         }
 
