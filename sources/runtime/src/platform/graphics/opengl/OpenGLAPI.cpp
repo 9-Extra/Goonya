@@ -14,6 +14,7 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLMesh.h"
+#include "platform/graphics/opengl/GLShader.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -128,6 +129,51 @@ intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType
 
 intrusive_ptr<RenderTarget> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
     return intrusive_ptr<GLRenderTarget>(size);
+}
+
+
+unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
+    unsigned int id = glCreateShader(shader_type);
+
+    const GLchar *data = source.c_str();
+    GLint length = (GLint)source.length();
+    glShaderSource(id, 1, &data, &length);
+    glCompileShader(id);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+
+    if (!success) {
+        glGetShaderInfoLog(id, 512, NULL, infoLog);
+        throw RuntimeError(std::format("着色器编译错误： {}", infoLog));
+    }
+
+    return id;
+}
+intrusive_ptr<Shader> OpenGLGraphicsAPI::complie_shader_program(const std::string &vs_src, const std::string &ps_src) const {
+    unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
+    unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
+
+    GLuint id = glCreateProgram();
+
+    glAttachShader(id, vs);
+    glAttachShader(id, ps);
+    glLinkProgram(id);
+
+    int success;
+    char infoLog[512];
+
+    glGetProgramiv(id, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(id, 512, NULL, infoLog);
+        throw RuntimeError(std::format("着色器链接错误： {}", infoLog));
+    }
+
+    glDeleteShader(vs);
+    glDeleteShader(ps);
+
+    return intrusive_ptr<GLShader>{id};
 }
 
 // ---------------------drawcall---------------------------

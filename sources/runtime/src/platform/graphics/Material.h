@@ -48,16 +48,13 @@ public:
     }
 
     void set_texture(const std::string &name, intrusive_ptr<Texture> texture) {
-        uint32_t slot = uber_shader->texture_units.at(name);
+        uint32_t slot = uber_shader->get_texture_units().at(name);
         this->textures[slot] = texture;
     }
 
-    void set_loacl_variant_key(const std::string &key) {
-        uber_shader->local_variant_key_collect.set_varient_code(local_variant_code, key);
-    }
-
+    void set_loacl_variant_key(const std::string &key) { uber_shader->set_loacl_variant_key(local_variant_code, key); }
     void remove_loacl_variant_key(const std::string &key) {
-        uber_shader->local_variant_key_collect.reset_varient_code(local_variant_code, key);
+        uber_shader->reset_loacl_variant_key(local_variant_code, key);
     }
 
 protected:
@@ -67,6 +64,11 @@ protected:
 
         depth_test = DepthTestMode::LESS;
         cull_mode = CullFaceMode::BACK;
+
+        local_variant_code = 0;
+        current_variant_code.global_code = uber_shader->get_global_key_code();
+        current_variant_code.loacl_code = local_variant_code;
+        shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
     };
 
     // 着色器设置
@@ -79,13 +81,14 @@ protected:
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, Meta::DynamicData> parameters;
     std::unordered_map<uint32_t, intrusive_ptr<Texture>> textures; // slot -> texture
-   
+
     // 脏标记
     mutable bool is_parameters_dirty;
 
     // 设备侧
+    VariantCodeSet current_variant_code; // 当前绑定的着色器的变体码
     intrusive_ptr<Shader> shader;
-    intrusive_ptr<Buffer> per_material;                            // 显存中的材质参数
+    intrusive_ptr<Buffer> per_material; // 显存中的材质参数
 };
 
 } // namespace Graphics

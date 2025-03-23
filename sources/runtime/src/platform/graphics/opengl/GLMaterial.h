@@ -16,7 +16,7 @@ namespace Graphics {
 class GLMaterial : public Material {
 public:
     GLMaterial(UberShader* uber_shader) : Material(uber_shader) {
-        per_material = intrusive_ptr<GLBuffer>(uber_shader->per_material.layout.size, BufferType::DYNAMIC);
+        per_material = intrusive_ptr<GLBuffer>(uber_shader->per_material_block().layout.size, BufferType::DYNAMIC);
     }
 
     virtual void bind() override;

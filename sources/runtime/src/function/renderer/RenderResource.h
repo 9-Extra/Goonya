@@ -27,7 +27,7 @@ public:
     std::unique_ptr<ShaderLib> shader_lib;
 
     void init(){
-        shader_lib = graphics_api->create_shader_lib();
+        shader_lib = std::make_unique<ShaderLib>();
     }
 
     void clear() {

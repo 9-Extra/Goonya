@@ -1,7 +1,6 @@
 #include "GLMaterial.h"
 
 #include "core/intrusive_ptr.h"
-#include "function/renderer/RenderResource.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/opengl/GLBasic.h"
@@ -103,7 +102,7 @@ void GLMaterial::bind() {
     set_pipeline_state();
     shader->bind(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
-    per_material->bind_uniform(uber_shader->per_material.binding);
+    per_material->bind_uniform(uber_shader->per_material_block().binding);
     // 绑定所有纹理
     for (const auto &[unit, t] : textures) {
         t->bind(unit);
@@ -113,18 +112,19 @@ void GLMaterial::bind() {
 
 void GLMaterial::update_shader_variant() {
     VariantCodeSet code{
-        .global_code = uber_shader->global_key_code,
+        .global_code = uber_shader->get_global_key_code(),
         .loacl_code = local_variant_code
     };
-    if (!shader || shader->get_variant_code() != code){
-        shader = resources.shader_lib->query_shader(uber_shader, code);
+    if (current_variant_code != code){
+        shader = uber_shader->query_variant(code);
+        current_variant_code = code;
     }
 }
 
 void GLMaterial::update_parameter() {
     if (!is_parameters_dirty)
         return;
-    const auto &layout = uber_shader->per_material.layout;
+    const auto &layout = uber_shader->per_frame_block().layout;
     {
         auto w = DynamicBufferWriter(per_material, layout);
         for (const auto &[name, value] : parameters) {

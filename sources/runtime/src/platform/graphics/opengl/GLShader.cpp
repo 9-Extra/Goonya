@@ -1,97 +1,9 @@
 #include "GLShader.h"
-#include "core/intrusive_ptr.h"
 #include "platform/graphics/Shader.h"
-#include "runtime/GoonyaException.h"
 #include <vector>
 
 namespace Goonya {
 namespace Graphics {
-
-class ShaderIntrospector {
-public:
-    ShaderIntrospector(GLuint program_id) noexcept : id(program_id) {}
-
-    std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept;
-    std::unordered_map<std::string, GLuint> get_texture_info() const noexcept;
-
-private:
-    GLuint id;
-};
-
-unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
-    unsigned int id = glCreateShader(shader_type);
-
-    const GLchar *data = source.c_str();
-    GLint length = (GLint)source.length();
-    glShaderSource(id, 1, &data, &length);
-    glCompileShader(id);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(id, 512, NULL, infoLog);
-        throw RuntimeError(std::format("着色器编译错误： {}", infoLog));
-    }
-
-    return id;
-}
-GLuint complie_shader_program(const std::string &vs_src, const std::string &ps_src) {
-    unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
-    unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
-
-    GLuint shaderProgram = glCreateProgram();
-
-    glAttachShader(shaderProgram, vs);
-    glAttachShader(shaderProgram, ps);
-    glLinkProgram(shaderProgram);
-
-    int success;
-    char infoLog[512];
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        throw RuntimeError(std::format("着色器链接错误： {}", infoLog));
-    }
-
-    glDeleteShader(vs);
-    glDeleteShader(ps);
-
-    return shaderProgram;
-}
-
-/**
- * @brief 将宏定义等代码插入到着色器中以生成对应变体
- * 插入的代码将替换着色器源码中的#pragma GYA_INJECT
- * @param 着色器代码
- * @param 宏定义
- * @return 生成的代码
- */
-static std::string shader_source_inject(const std::string &src, const std::vector<std::string> &variant_key) {
-
-    const std::string LOACLTING_PATTER = "#pragma GYA_INJECT";
-
-    std::stringstream ss;
-    size_t injection_point = src.find(LOACLTING_PATTER);
-    if (injection_point == std::string::npos) {
-        LOG_WARN("着色器中未找到\"{}\"，无法正确进行变体生成", LOACLTING_PATTER);
-    }
-    ss << src.substr(0, injection_point);
-
-    ss << "//------Combined Definations---------: \n";
-
-    for (const std::string &key : variant_key) {
-        ss << std::format("#ifdef {0}\n#undef {0}\n#endif\n#define {0}\n", key);
-    }
-
-    ss << "//------Combined Defination End------: \n";
-
-    ss << src.substr(injection_point + LOACLTING_PATTER.size());
-
-    return ss.str();
-}
 
 static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
     switch (gl_type) {
@@ -113,7 +25,7 @@ static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
     return Meta::FieldType::nul;
 }
 
-std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_constant_buffer_info() const noexcept {
+std::unordered_map<std::string, ShaderUniformBlockInfo> GLShaderIntrospector::get_constant_buffer_info() const noexcept {
     // 获取所有uniform_block内部所有字段和偏移量
     GLint uniform_block_num;
     glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
@@ -166,7 +78,7 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> ShaderIntrospector::get_
     return result;
 }
 
-std::unordered_map<std::string, GLuint> ShaderIntrospector::get_texture_info() const noexcept {
+std::unordered_map<std::string, GLuint> GLShaderIntrospector::get_texture_info() const noexcept {
     std::unordered_map<std::string, GLuint> result;
 
     // 获取活跃uniform变量数量
@@ -243,44 +155,5 @@ std::unordered_map<std::string, GLuint> ShaderIntrospector::get_texture_info() c
     return result;
 }
 
-void GLShaderLib::add_uber_shader(const std::string &name, UberShaderDesc &&desc) {
-    std::unique_ptr<UberShader> uber_shader = std::make_unique<UberShader>(
-        std::move(desc.vs_src), std::move(desc.ps_src), std::move(desc.global_variant_keys), std::move(desc.local_variant_keys));
-
-    // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用create_variant
-    VariantCodeSet empty{.full_code = 0}; 
-    std::vector<std::string> variant_keys = decode_varient_keys(uber_shader.get(), empty);
-    std::string mixed_vs = shader_source_inject(uber_shader->vs_src, variant_keys);
-    std::string mixed_ps = shader_source_inject(uber_shader->ps_src, variant_keys);
-
-    GLuint id = complie_shader_program(mixed_vs, mixed_ps);
-    uber_shader->shaders[empty] = intrusive_ptr<GLShader>{id, uber_shader.get(), empty}; // 既然编译了就加入缓存
-
-    ShaderIntrospector introspector(id);
-    auto buffer_info = introspector.get_constant_buffer_info();
-
-    uber_shader->per_material = std::move(buffer_info["per_material"]);
-    uber_shader->per_frame = std::move(buffer_info.at("per_frame"));
-    uber_shader->texture_units = introspector.get_texture_info();
-
-    // 设置现有的全局变体键
-    for(const std::string& key: global_variant_key_names){
-        uber_shader->global_variant_key_collect.set_varient_code(uber_shader->global_key_code, key); 
-    }
-
-    uber_shaders.emplace(name, std::move(uber_shader));
-}
-intrusive_ptr<Shader> GLShaderLib::create_variant(UberShader *uber_shader, VariantCodeSet variant_code) {
-    std::vector<std::string> variant_keys = decode_varient_keys(uber_shader, variant_code);
-    std::string mixed_vs = shader_source_inject(uber_shader->vs_src, variant_keys);
-    std::string mixed_ps = shader_source_inject(uber_shader->ps_src, variant_keys);
-
-    // std::ofstream(desc.uber_name + "_vs_mixed.vert", std::ios_base::binary) << mixed_vs;
-    // std::ofstream(desc.uber_name + "_ps_mixed.frag", std::ios_base::binary) << mixed_ps;
-
-    GLuint id = complie_shader_program(mixed_vs, mixed_ps);
-
-    return intrusive_ptr<GLShader>{id, uber_shader, variant_code};
-}
 } // namespace Graphics
 } // namespace Goonya
