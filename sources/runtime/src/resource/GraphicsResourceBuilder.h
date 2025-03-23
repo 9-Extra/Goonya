@@ -1,7 +1,6 @@
 #pragma once
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Shader.h"
 #include <iterator>
 #include <unordered_set>
 #include <vector>

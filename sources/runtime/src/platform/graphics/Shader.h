@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "runtime/GoonyaException.h"
@@ -16,7 +15,7 @@
 namespace Goonya {
 namespace Graphics {
 
-struct UberShaderDesc {
+struct UberShaderDesc final{
     std::string vs_src;
     std::string ps_src;
 
@@ -91,7 +90,7 @@ private:
     uint32_t varient_count = 1;
 };
 
-struct ShaderDesc {
+struct ShaderDesc final{
     std::string uber_name;
     std::vector<std::string> variant_keys;
 
@@ -111,29 +110,13 @@ struct ShaderDesc {
     bool operator==(const ShaderDesc &b) const noexcept = default;
 };
 
-enum class CullFaceMode {
-    BACK = 0,
-    FRONT,
-    FRONT_AND_BACK,
-    DISABLE,
-};
-
-enum class DepthTestMode { LESS, LESS_EQUAL, GREATER, GREATER_EQUAL, NEVER, ALWAYS, DISABLE };
-
-struct Vertex {
-    Vector3f position;
-    Vector3f normal;
-    Vector3f tangent;
-    Vector2f uv;
-};
-
-struct ShaderUniformBlockInfo {
+struct ShaderUniformBlockInfo final{
     Meta::LayoutInfo layout;
     uint32_t binding;
 };
 
 class Shader;
-class UberShader {
+class UberShader final{
     friend class ShaderLib;
 
 public:

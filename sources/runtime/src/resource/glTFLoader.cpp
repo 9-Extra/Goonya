@@ -76,8 +76,14 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
                 (Vector2f *)((char *)buffers[uv_buffer["buffer"].asUInt()].ptr + uv_buffer["byteOffset"].asInt64());
             Vector4f *tangent = (Vector4f *)((char *)buffers[tangent_buffer["buffer"].asUInt()].ptr +
                                              tangent_buffer["byteOffset"].asUInt());
-
-            std::vector<Graphics::Vertex> vertices(vertex_count);
+            
+            struct Vertex {
+                Vector3f position;
+                Vector3f normal;
+                Vector3f tangent;
+                Vector2f uv;
+            };
+            std::vector<Vertex> vertices(vertex_count);
             for (uint32_t i = 0; i < vertex_count; i++) {
                 // tangent的第四个分量是用来根据平台决定手性的，在opengl中始终应该取1，所以忽略
                 Vector3f tang = Vector3f(tangent[i].x, tangent[i].y, tangent[i].z);
@@ -85,11 +91,11 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
             }
 
             const static Graphics::VertexLayout vertex_layout{
-                {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
-                 {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
-                 {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
-                 {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
-                sizeof(Graphics::Vertex)};
+                {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Vertex, position)},
+                 {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Vertex, normal)},
+                 {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Vertex, tangent)},
+                 {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
+                sizeof(Vertex)};
 
             Graphics::resources.add_mesh(key, vertex_layout, std::span(vertices),
                                          std::span(indices_ptr, indices_count));

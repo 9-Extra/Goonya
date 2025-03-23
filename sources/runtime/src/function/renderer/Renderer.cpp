@@ -37,21 +37,14 @@ void init_resource() {
     {
         // 部分硬编码的mesh
         resources.add_mesh("default", VertexLayout{{}, 0}, {}, {});
-
-        const VertexLayout vertex_layout{
-            {{VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, position)},
-             {VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, normal)},
-             {VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Graphics::Vertex, tangent)},
-             {VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Graphics::Vertex, uv)}},
-            sizeof(Graphics::Vertex)};
-
-        resources.add_mesh("plane", vertex_layout, std::span(Assets::plane_vertices), Assets::plane_indices);
+        resources.add_mesh("plane", Assets::plane_vertices_vertex_layout, std::span(Assets::plane_vertices),
+                           Assets::plane_indices);
     }
 
     {
         // 添加天空盒的mesh，因为格式不一样所以单独处理
         const VertexLayout vertex_layout{{{VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}}, sizeof(Vector3f)};
-        resources.add_mesh("skybox_cube", vertex_layout, std::span(Assets::skybox_cube_vertices),
+        resources.add_mesh("skybox_cube", Assets::skybox_cube_vertex_layout, std::span(Assets::skybox_cube_vertices),
                            std::span(Assets::skybox_cube_indices));
     }
 }
