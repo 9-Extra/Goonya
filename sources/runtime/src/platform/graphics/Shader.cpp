@@ -129,6 +129,7 @@ void ShaderLib::add_uber_shader(const std::string &name, UberShaderDesc &&desc) 
     uber_shader->per_frame = std::move(buffer_info.at("per_frame"));
     uber_shader->texture_units = introspector->get_texture_info();
 
+    uber_shader->global_key_code = 0; // 记得初始化为0！
     // 设置现有的全局变体键
     for(const std::string& key: global_variant_key_names){
         uber_shader->global_variant_key_collect.set_varient_code(uber_shader->global_key_code, key); 
