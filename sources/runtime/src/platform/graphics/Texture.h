@@ -3,9 +3,9 @@
 #include "core/intrusive_ptr.h"
 #include <cstdint>
 
-#include <filesystem>
 #include <tuple>
-#include <array>
+
+struct FIBITMAP;
 
 namespace Goonya {
 namespace Graphics {
@@ -23,6 +23,38 @@ enum class TextureType {
     TEXTURE_3D,
 };
 
+enum class TextureStorageFormat{
+    UNKNOWN = 0,
+
+    RGBA_f32,
+    RGBA_i32,
+    RGBA_u32,
+    RGBA_f16,
+    RGBA_i16,
+    RGBA_u16,
+    RGBA_f8, // 8位无符号归一化为浮点数 [0, 255] -> [0.0f, 1.0f]
+    RGBA_i8,
+    RGBA_u8,
+    RGB_f32,
+    RGB_i32,
+    RGB_u32,
+    RGB_f16,
+    RGB_i16,
+    RGB_u16,
+    RGB_f8,
+    RGB_i8,
+    RGB_u8,
+    R_f32,
+    R_i32,
+    R_u32,
+    R_f16,
+    R_i16,
+    R_u16,
+    R_f8,
+    R_i8,
+    R_u8,
+};
+
 enum class TextureWarpMode{
     REPEAT,
     ClAMP,
@@ -35,36 +67,31 @@ enum class TextureFilterMode{
     TRILINEAR
 };
 
-struct Texture2DDesc {
-    std::filesystem::path path;
-    bool is_srgb = false;         // 是否需要转换到线性空间
-    bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
-    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
+struct TextureCreateDesc{
+    TextureType type;
+    TextureStorageFormat format;
+    std::tuple<uint32_t, uint32_t, uint32_t> shape;
 };
-
-struct TextureCubeMapDesc {
-    std::array<std::filesystem::path, 6> path; // px, nx, py, ny, pz, nz
-    bool is_srgb = false;            // 是否需要转换到线性空间
-    bool is_uv_left_down = false;    // UV坐标系是否以左下角为原点
-    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
-};
-
 
 class Texture : public intrusive_ptr_base<Texture> {
 public:
     virtual ~Texture() = default;
     virtual void bind(uint32_t binding) const noexcept = 0;
+    virtual void set_filter_mode(TextureFilterMode filter_mode) noexcept = 0;
+    virtual void set_warp_mode(TextureWarpMode warp_mode) noexcept = 0;
+    virtual void generate_mipmaps() noexcept = 0;
+
+    virtual void write_image(FIBITMAP* image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0, uint32_t zoffset = 0) = 0;
 
     TextureType get_type() const noexcept { return type; }
 
     std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
 
 protected:
-    Texture(TextureType type, std::tuple<uint32_t, uint32_t, uint32_t> shape) : type(type), shape(shape) {}
+    Texture(const TextureCreateDesc& desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
 
     TextureType type;
+    TextureStorageFormat format;
     std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
 };
 

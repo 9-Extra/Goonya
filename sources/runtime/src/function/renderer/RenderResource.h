@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <filesystem>
 
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Material.h"
@@ -13,6 +14,22 @@
 
 namespace Goonya {
 namespace Graphics {
+
+struct Texture2DDesc {
+    std::filesystem::path path;
+    bool is_srgb = false;         // 是否需要转换到线性空间
+    bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
+    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
+};
+
+struct TextureCubeMapDesc {
+    std::array<std::filesystem::path, 6> path; // px, nx, py, ny, pz, nz
+    bool is_srgb = false;            // 是否需要转换到线性空间
+    bool is_uv_left_down = false;    // UV坐标系是否以左下角为原点
+    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
+};
 
 // 资源管理器
 class RenderReousce final {
@@ -73,14 +90,8 @@ public:
         }
         materials.emplace(key, mat);
     }
-    void add_texture(const std::string &key, const Texture2DDesc &desc) {
-        LOG_INFO("Loading Texture: {}", key);
-        textures.emplace(key, graphics_api->load_texture2D(desc));
-    }
-    void add_cubemap(const std::string &key, const TextureCubeMapDesc &desc) {
-        LOG_INFO("Loading CubeMap: {}", key);
-        textures.emplace(key, graphics_api->load_cubemap(desc));
-    };
+    void add_texture2d(const std::string &key, const Texture2DDesc &desc);
+    void add_cubemap(const std::string &key, const TextureCubeMapDesc &desc);
     void add_shader(const std::string &key, UberShaderDesc&& desc) {
         LOG_INFO("Loading Shader: {}", key);
         shader_lib->add_uber_shader(key, std::move(desc));

@@ -11,22 +11,26 @@ namespace Graphics {
 
 GLRenderTarget::GLRenderTarget(std::tuple<uint32_t, uint32_t> size) : size(size) { glCreateFramebuffers(1, &id); }
 
-void GLRenderTarget::bind_read() const { glBindFramebuffer(GL_READ_FRAMEBUFFER, id); }
-// 忽略glDrawBuffers的再次重定向，在绑定时直接将所有关联的颜色缓冲按照attachment用作渲染目标
-void GLRenderTarget::bind_draw() const { glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id); }
-
-// 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
-void GLRenderTarget::attach_color_texture(uint32_t attachment, intrusive_ptr<Texture> texture, int32_t level) {
-    glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + attachment, ((GLTexture *)texture.get())->get_id(), level);
-    attached_color_texture[attachment] = texture;
+void GLRenderTarget::bind_read() const {
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, id); 
     update_drawbuffers();
 }
-void GLRenderTarget::attach_color_texture_layer(uint32_t attachment, intrusive_ptr<Texture> texture, int32_t layer,
-                                                int32_t level) {
-    glNamedFramebufferTextureLayer(id, GL_COLOR_ATTACHMENT0 + attachment, ((GLTexture *)texture.get())->get_id(), level,
-                                   layer);
-    attached_color_texture[attachment] = texture;
+// 忽略glDrawBuffers的再次重定向，在绑定时直接将所有关联的颜色缓冲按照attachment用作渲染目标
+void GLRenderTarget::bind_draw() const { 
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id); 
     update_drawbuffers();
+}
+
+// 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
+void GLRenderTarget::attach_color_texture(uint32_t location, intrusive_ptr<Texture> texture, int32_t level) {
+    glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level);
+    attached_color_texture[location] = texture;
+}
+void GLRenderTarget::attach_color_texture_layer(uint32_t location, intrusive_ptr<Texture> texture, int32_t layer,
+                                                int32_t level) {
+    glNamedFramebufferTextureLayer(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level,
+                                   layer);
+    attached_color_texture[location] = texture;
 }
 
 // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture

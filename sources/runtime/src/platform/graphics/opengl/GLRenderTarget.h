@@ -66,8 +66,8 @@ public:
     virtual std::tuple<uint32_t, uint32_t> get_size() const noexcept override { return size; }
 
     // 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
-    virtual void attach_color_texture(uint32_t attachment, intrusive_ptr<Texture> texture, int32_t level = 0) override;
-    virtual void attach_color_texture_layer(uint32_t attachment, intrusive_ptr<Texture> texture, int32_t layer,
+    virtual void attach_color_texture(uint32_t location, intrusive_ptr<Texture> texture, int32_t level = 0) override;
+    virtual void attach_color_texture_layer(uint32_t location, intrusive_ptr<Texture> texture, int32_t layer,
                                             int32_t level = 0) override;
     // 不会有想要渲染到RenderBuffer的吧？不会吧不会吧
 
@@ -98,7 +98,7 @@ private:
         depth_buffer; // 可能是空的，也可能和stencil_buffer是同一个
     std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>> stencil_buffer;
 
-    void update_drawbuffers() {
+    void update_drawbuffers() const noexcept{
         std::array<GLenum, MAX_ATTACH_COLOR> attachment;
         for (size_t i = 0; i < MAX_ATTACH_COLOR; i++) {
             attachment[i] = attached_color_texture[i] ? GL_COLOR_ATTACHMENT0 + i : GL_NONE;

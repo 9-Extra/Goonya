@@ -41,8 +41,8 @@ public:
     virtual std::tuple<uint32_t, uint32_t> get_size() const noexcept = 0;
 
     // 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
-    virtual void attach_color_texture(uint32_t attachment, intrusive_ptr<Texture> texture, int32_t level = 0) = 0;
-    virtual void attach_color_texture_layer(uint32_t attachment, intrusive_ptr<Texture> texture, int32_t layer, int32_t level = 0) = 0;
+    virtual void attach_color_texture(uint32_t location, intrusive_ptr<Texture> texture, int32_t level = 0) = 0;
+    virtual void attach_color_texture_layer(uint32_t location, intrusive_ptr<Texture> texture, int32_t layer, int32_t level = 0) = 0;
     
     // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
     virtual void set_depth_texture(intrusive_ptr<Texture> texture, int32_t level = 0) = 0;

@@ -11,18 +11,19 @@ namespace Graphics {
 
 class GLTexture : public Texture {
 public:
+    GLTexture(const TextureCreateDesc& desc);
     ~GLTexture() { glDeleteTextures(1, &id); }
-    void bind(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
+    virtual void bind(uint32_t binding) const noexcept override { glBindTextureUnit(binding, id); }
 
     GLuint get_id() const noexcept { return id; }
 
-    void set_filter_mode(TextureFilterMode filter_mode) noexcept;
-    void set_warp_mode(TextureWarpMode warp_mode) noexcept;
-    void generate_mipmaps() noexcept { glGenerateTextureMipmap(id); }
+    virtual void set_filter_mode(TextureFilterMode filter_mode) noexcept override;
+    virtual void set_warp_mode(TextureWarpMode warp_mode) noexcept override;
+    virtual void generate_mipmaps() noexcept override { glGenerateTextureMipmap(id); }
+
+    virtual void write_image(FIBITMAP* image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0, uint32_t zoffset = 0) override;
 
 protected:
-    friend class OpenGLGraphicsAPI;
-    GLTexture(TextureType type, std::tuple<uint32_t, uint32_t, uint32_t> shape);
     GLuint id;
 };
 

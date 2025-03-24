@@ -135,7 +135,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
             }
         }
 
-        Graphics::resources.add_texture(key, desc);
+        Graphics::resources.add_texture2d(key, desc);
         return key;
     };
 

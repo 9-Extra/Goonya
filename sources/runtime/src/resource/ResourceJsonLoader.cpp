@@ -94,7 +94,7 @@ void load_json(const std::filesystem::path &path) {
                 }
             }
 
-            Graphics::resources.add_texture(key, desc);
+            Graphics::resources.add_texture2d(key, desc);
         }
     }
 
