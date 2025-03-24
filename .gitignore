@@ -13,6 +13,9 @@ vsxmake*/
 .cache/
 bin/
 
+# vs
+.vs
+
 
 
 

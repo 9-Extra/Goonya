@@ -14,39 +14,16 @@ namespace Graphics {
 Renderer renderer; // global renderer
 
 void init_resource() {
+    // 部分硬编码的mesh
+    resources.add_mesh("default", VertexLayout{{}, 0}, {}, {});
+    resources.add_mesh("plane", Assets::plane_vertices_vertex_layout, std::span(Assets::plane_vertices),
+                       Assets::plane_indices);
+    // 添加天空盒的mesh，因为格式不一样所以单独处理
+    resources.add_mesh("skybox_cube", Assets::skybox_cube_vertex_layout, std::span(Assets::skybox_cube_vertices),
+                       std::span(Assets::skybox_cube_indices));
     // 从json加载大部分的资源
     Resource::load_json("../assets/resources.json");
     // 通过硬编码加载的部分资源
-    {
-        // 平滑着色材质
-        Vector3f color_while{1.0f, 1.0f, 1.0f};
-        resources.add_material("wood_flat", Resource::MaterialBuilder("unlit")
-                                                .add_parameter("emissive", color_while)
-                                                .add_sampler("emissive_texture", "wood_diffusion")
-                                                .build());
-    }
-
-    {
-        // 单一颜色材质
-        Vector3f color_green{0.0f, 1.0f, 0.0f};
-        MaterialDesc green_material_desc =
-            Resource::MaterialBuilder("single_color").add_parameter("color", color_green).build();
-
-        resources.add_material("default", green_material_desc);
-    }
-    {
-        // 部分硬编码的mesh
-        resources.add_mesh("default", VertexLayout{{}, 0}, {}, {});
-        resources.add_mesh("plane", Assets::plane_vertices_vertex_layout, std::span(Assets::plane_vertices),
-                           Assets::plane_indices);
-    }
-
-    {
-        // 添加天空盒的mesh，因为格式不一样所以单独处理
-        const VertexLayout vertex_layout{{{VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}}, sizeof(Vector3f)};
-        resources.add_mesh("skybox_cube", Assets::skybox_cube_vertex_layout, std::span(Assets::skybox_cube_vertices),
-                           std::span(Assets::skybox_cube_indices));
-    }
 }
 void Renderer::init() {
     resources.init();

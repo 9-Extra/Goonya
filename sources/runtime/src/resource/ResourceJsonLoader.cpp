@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <fstream>
 #include <json/json.h>
+#include <regex>
 #include <vector>
 
 #include "GraphicsResourceBuilder.h"
@@ -30,127 +31,120 @@ void load_json(const std::filesystem::path &path) {
 
     std::filesystem::path base_dir = std::filesystem::absolute(path.parent_path()); // 包含此json文件的文件夹
 
-    if (json.isMember("shader")) {
-        for (const auto &key : json["shader"].getMemberNames()) {
-            const Json::Value &shader_desc = json["shader"][key];
-            const Json::Value &shader_sources = shader_desc["sources"];
-            
-            Graphics::UberShaderDesc desc{
-                .vs_src = read_whole_file(base_dir / shader_sources["vertex_shader"].asString()),
-                .ps_src = read_whole_file(base_dir / shader_sources["pixel_shader"].asString())
-            };
+    // 着色器
+    for (auto iter = json["shader"].begin(); iter != json["shader"].end(); iter++) {
+        const std::string &key = iter.name();
+        const Json::Value &shader_desc = *iter;
 
-            for(const auto& group: shader_desc["global_variants"]){
-                std::vector<std::string> desc_group;
-                for(const auto& key: group){
-                    desc_group.emplace_back(key.asString());
-                }
-                desc.global_variant_keys.emplace_back(std::move(desc_group));
+        const Json::Value &shader_sources = shader_desc["sources"];
+        Graphics::UberShaderDesc desc{.vs_src = read_whole_file(base_dir / shader_sources["vertex_shader"].asString()),
+                                      .ps_src = read_whole_file(base_dir / shader_sources["pixel_shader"].asString())};
+
+        for (const auto &group : shader_desc["global_variants"]) {
+            std::vector<std::string> desc_group;
+            for (const auto &key : group) {
+                desc_group.emplace_back(key.asString());
             }
-
-            for(const auto& group: shader_desc["local_variants"]){
-                std::vector<std::string> desc_group;
-                for(const auto& key: group){
-                    desc_group.emplace_back(key.asString());
-                }
-                desc.local_variant_keys.emplace_back(std::move(desc_group));
-            }
-
-            Graphics::resources.add_shader(key, std::move(desc));
+            desc.global_variant_keys.emplace_back(std::move(desc_group));
         }
+
+        for (const auto &group : shader_desc["local_variants"]) {
+            std::vector<std::string> desc_group;
+            for (const auto &key : group) {
+                desc_group.emplace_back(key.asString());
+            }
+            desc.local_variant_keys.emplace_back(std::move(desc_group));
+        }
+
+        Graphics::resources.add_shader(key, std::move(desc));
     }
 
-    if (json.isMember("texture")) {
-        for (const auto &key : json["texture"].getMemberNames()) {
-            const Json::Value &texture_desc = json["texture"][key];
-            Graphics::Texture2DDesc desc = {
-                .path = base_dir / texture_desc["image"].asString()
-            };
+    // 贴图
+    for (auto iter = json["texture"].begin(); iter != json["texture"].end(); iter++) {
+        const std::string &key = iter.name();
+        const Json::Value &texture_desc = *iter;
 
-            if (texture_desc.isMember("is_color")) {
-                desc.is_srgb = texture_desc["is_color"].asBool();
-            }
-            if (texture_desc.isMember("filter_mode")) {
-                if (texture_desc["filter_mode"] == "point") {
-                    desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
-                } else if (texture_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
-                } else if (texture_desc["filter_mode"] == "trilinear") {
-                    desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-                } else {
-                    throw RuntimeError(std::format("未知的纹理过滤模式：{}", texture_desc["filter_mode"].asString()));
-                }
-            }
+        Graphics::Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
 
-            if (texture_desc.isMember("warp_mode")) {
-                if (texture_desc["warp_mode"] == "repeat") {
-                    desc.warp_mode = Graphics::TextureWarpMode::REPEAT;
-                } else if (texture_desc["warp_mode"] == "clamp") {
-                    desc.warp_mode = Graphics::TextureWarpMode::ClAMP;
-                } else if (texture_desc["warp_mode"] == "mirror") {
-                    desc.warp_mode = Graphics::TextureWarpMode::MIRROR;
-                } else {
-                    throw RuntimeError(std::format("未知的纹理重复模式：{}", texture_desc["warp_mode"].asString()));
-                }
-            }
-
-            Graphics::resources.add_texture2d(key, desc);
+        if (texture_desc.isMember("is_color")) {
+            desc.is_srgb = texture_desc["is_color"].asBool();
         }
+        if (texture_desc.isMember("filter_mode")) {
+            if (texture_desc["filter_mode"] == "point") {
+                desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
+            } else if (texture_desc["filter_mode"] == "bilinear") {
+                desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
+            } else if (texture_desc["filter_mode"] == "trilinear") {
+                desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+            } else {
+                throw RuntimeError(std::format("未知的纹理过滤模式：{}", texture_desc["filter_mode"].asString()));
+            }
+        }
+
+        if (texture_desc.isMember("warp_mode")) {
+            if (texture_desc["warp_mode"] == "repeat") {
+                desc.warp_mode = Graphics::TextureWarpMode::REPEAT;
+            } else if (texture_desc["warp_mode"] == "clamp") {
+                desc.warp_mode = Graphics::TextureWarpMode::ClAMP;
+            } else if (texture_desc["warp_mode"] == "mirror") {
+                desc.warp_mode = Graphics::TextureWarpMode::MIRROR;
+            } else {
+                throw RuntimeError(std::format("未知的纹理重复模式：{}", texture_desc["warp_mode"].asString()));
+            }
+        }
+
+        Graphics::resources.add_texture2d(key, desc);
     }
 
-    if (json.isMember("cubemap")) {
-        for (const auto &key : json["cubemap"].getMemberNames()) {
-            const Json::Value &cubemap_desc = json["cubemap"][key];
-            Graphics::TextureCubeMapDesc desc{
-                .path = {base_dir / cubemap_desc["px"].asString(), base_dir / cubemap_desc["nx"].asString(),
-                         base_dir / cubemap_desc["py"].asString(), base_dir / cubemap_desc["ny"].asString(),
-                         base_dir / cubemap_desc["pz"].asString(), base_dir / cubemap_desc["nz"].asString()}};
+    // 立方体贴图
+    for (auto iter = json["cubemap"].begin(); iter != json["cubemap"].end(); iter++) {
+        const std::string &key = iter.name();
+        const Json::Value &cubemap_desc = *iter;
 
-            if (cubemap_desc.isMember("is_color")) {
-                desc.is_srgb = cubemap_desc["is_color"].asBool();
-            }
+        Graphics::TextureCubeMapDesc desc{
+            .path = {base_dir / cubemap_desc["px"].asString(), base_dir / cubemap_desc["nx"].asString(),
+                     base_dir / cubemap_desc["py"].asString(), base_dir / cubemap_desc["ny"].asString(),
+                     base_dir / cubemap_desc["pz"].asString(), base_dir / cubemap_desc["nz"].asString()}};
 
-            if (cubemap_desc.isMember("filter_mode")) {
-                if (cubemap_desc["filter_mode"] == "point") {
-                    desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
-                } else if (cubemap_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
-                } else if (cubemap_desc["filter_mode"] == "bilinear") {
-                    desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-                } else {
-                    throw RuntimeError(std::format("未知的纹理过滤模式：{}", cubemap_desc["filter_mode"].asString()));
-                }
-            }
-
-            if (cubemap_desc.isMember("warp_mode")) {
-                if (cubemap_desc["warp_mode"] == "repeat") {
-                    desc.warp_mode = Graphics::TextureWarpMode::REPEAT;
-                } else if (cubemap_desc["warp_mode"] == "clamp") {
-                    desc.warp_mode = Graphics::TextureWarpMode::ClAMP;
-                } else if (cubemap_desc["warp_mode"] == "mirror") {
-                    desc.warp_mode = Graphics::TextureWarpMode::MIRROR;
-                } else {
-                    throw RuntimeError(std::format("未知的纹理重复模式：{}", cubemap_desc["warp_mode"].asString()));
-                }
-            }
-            Graphics::resources.add_cubemap(key, desc);
+        if (cubemap_desc.isMember("is_color")) {
+            desc.is_srgb = cubemap_desc["is_color"].asBool();
         }
+
+        if (cubemap_desc.isMember("filter_mode")) {
+            if (cubemap_desc["filter_mode"] == "point") {
+                desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
+            } else if (cubemap_desc["filter_mode"] == "bilinear") {
+                desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
+            } else if (cubemap_desc["filter_mode"] == "bilinear") {
+                desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+            } else {
+                throw RuntimeError(std::format("未知的纹理过滤模式：{}", cubemap_desc["filter_mode"].asString()));
+            }
+        }
+
+        if (cubemap_desc.isMember("warp_mode")) {
+            if (cubemap_desc["warp_mode"] == "repeat") {
+                desc.warp_mode = Graphics::TextureWarpMode::REPEAT;
+            } else if (cubemap_desc["warp_mode"] == "clamp") {
+                desc.warp_mode = Graphics::TextureWarpMode::ClAMP;
+            } else if (cubemap_desc["warp_mode"] == "mirror") {
+                desc.warp_mode = Graphics::TextureWarpMode::MIRROR;
+            } else {
+                throw RuntimeError(std::format("未知的纹理重复模式：{}", cubemap_desc["warp_mode"].asString()));
+            }
+        }
+        Graphics::resources.add_cubemap(key, desc);
     }
 
-    if (json.isMember("gltf")) {
-        for (const auto &key : json["gltf"].getMemberNames()) {
-            load_gltf(key, base_dir / json["gltf"][key]["path"].asString());
-        }
-    }
+    // 材质
+    for (auto iter = json["materials"].begin(); iter != json["materials"].end(); iter++) {
+        const std::string &key = iter.name();
+        const Json::Value &material_desc = *iter;
 
-    // materials
-    for (const auto &key : json["materials"].getMemberNames()) {
-        const Json::Value &material_desc = json["materials"][key];
-        
         Resource::MaterialBuilder mat_builder(material_desc["uber_shader"].asString());
- 
-        for (const auto &key : material_desc["variant_keys"]) {
-            mat_builder.set_variant_key(key.asString());
+
+        for (const auto &variant_key : material_desc["variant_keys"]) {
+            mat_builder.set_variant_key(variant_key.asString());
         }
 
         const Json::Value &config = material_desc["config"];
@@ -186,15 +180,79 @@ void load_json(const std::filesystem::path &path) {
             }
         }
 
-        for (const Json::Value &uniform_json : material_desc["constants"]) {
-            mat_builder.add_parameter(uniform_json["name"].asString(), uniform_json["vaule"].asUInt());
+        for (auto iter = material_desc["parameters"].begin(); iter != material_desc["parameters"].end(); iter++) {
+            const std::string &name = iter.name();
+            const std::string &parameter_string = iter->asString();
+            // 解析形如"vec3(1.0, 0, 2.0)"这样的参数
+            const std::regex pattern(R"(^\s*(\w+)\s*\((.*)\)$)");
+            const std::regex number_pattern(R"(\s*([-+]?\d*\.?\d+\s*))");
+            std::smatch matches;
+            if (std::regex_match(parameter_string, matches, pattern)) {
+                // matches[0] 是整个匹配的字符串
+                std::string type_name = matches[1].str(); // 类型
+                std::string numbers_str = matches[2].str();
+                std::sregex_iterator it(numbers_str.begin(), numbers_str.end(), number_pattern);
+                std::sregex_iterator end;
+
+                Meta::FieldType type;
+                if (type_name == "vec2") {
+                    Vector2f param;
+                    for (size_t i = 0; i < 2; i++) {
+                        param.v[i] = std::stof(it->str());
+                        it++;
+                    }
+                    assert(it == end);
+                    mat_builder.add_parameter(name, param);
+                } else if (type_name == "vec3") {
+                    Vector3f param;
+                    for (size_t i = 0; i < 3; i++) {
+                        param.v[i] = std::stof(it->str());
+                        it++;
+                    }
+                    assert(it == end);
+                    mat_builder.add_parameter(name, param);
+                } else if (type_name == "vec4") {
+                    Vector4f param;
+                    for (size_t i = 0; i < 4; i++) {
+                        param.v[i] = std::stof(it->str());
+                        it++;
+                    }
+                    assert(it == end);
+                    mat_builder.add_parameter(name, param);
+                } else if (type_name == "f32") {
+                    float param = std::stof(it->str());
+                    assert(++it == end);
+                    mat_builder.add_parameter(name, param);
+                } else if (type_name == "mat4") {
+                    Matrix4 param{std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
+                                  std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
+                                  std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
+                                  std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
+                                  std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
+                                  std::stof((it++)->str())};
+
+                    assert(it == end);
+                    mat_builder.add_parameter(name, param);
+                } else {
+                    throw RuntimeError(std::format("着色器参数类型\"{}\"不支持", type_name));
+                }
+
+            } else {
+                throw RuntimeError(std::format("着色器参数格式\"{}\"不正确", parameter_string));
+            }
         }
 
-        for (const Json::Value &sampler_json : material_desc["samplers"]) {
-            mat_builder.add_sampler(sampler_json["name"].asString(), sampler_json["texture_key"].asString());
+        for (auto iter = material_desc["samplers"].begin(); iter != material_desc["samplers"].end(); iter++) {
+            const std::string &name = iter.name();
+            mat_builder.add_sampler(name, iter->asString());
         }
 
         Graphics::resources.add_material(key, mat_builder.build());
+    }
+
+    // gltf
+    for (auto iter = json["gltf"].begin(); iter != json["gltf"].end(); iter++) {
+        load_gltf(iter.name(), base_dir / (*iter)["path"].asString());
     }
 }
 

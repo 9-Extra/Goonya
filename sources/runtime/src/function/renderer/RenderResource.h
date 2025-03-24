@@ -78,6 +78,7 @@ public:
     }
 
     void add_material(const std::string &key, const MaterialDesc &desc) {
+        assert(!materials.contains(key));
         LOG_INFO("Loading Material: {}", key);
         intrusive_ptr<Material> mat{graphics_api->create_material(shader_lib->query_uber_shader(desc.uber_shader_name))};
         mat->set_depth_test_mode(desc.depth_test);
