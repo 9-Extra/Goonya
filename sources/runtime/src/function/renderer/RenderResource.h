@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <filesystem>
+#include <array>
 
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Material.h"
