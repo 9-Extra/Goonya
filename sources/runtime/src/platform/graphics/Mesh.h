@@ -14,16 +14,26 @@ namespace Graphics {
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec3 tangent;
-layout (location = 3) in vec2 uv;
+layout (location = 3) in vec3 color;
+layout (location = 4) in vec2 uv;
 
 如果着色器需要的数据Mesh中没有，UB。
+*/
+
+/*
+UV应以左上角为(0,0)点，即
+(0,0)-(1,0)
+  |     |
+(0,1)-(1,1)
+这与DX的内部设定相同，与OpenGL的上下相反
 */
 
 enum class VertexAttribute : uint32_t {
     POSITION = 0, // 指定location
     NORMAL = 1,
     TANGENT = 2,
-    UV = 3,
+    COLOR = 3,
+    UV = 4,
 };
 
 struct VertexLayout {

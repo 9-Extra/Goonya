@@ -51,6 +51,10 @@
         "ground_color": {
             "is_color": true,
             "image": "materials/ground/ground512.bmp"
+        },
+        "正": {
+            "is_color": true,
+            "image": "textures/正.png"
         }
     },
     "cubemap": {
@@ -79,7 +83,6 @@
         },
         "wood_flat": {
             "uber_shader": "unlit",
-            "variant_keys": [],
             "parameters": {
                 "emissive": "vec3(1, 1, 1)"
             },
@@ -87,9 +90,17 @@
                 "emissive_texture": "wood_diffusion"
             }
         },
+        "test_material": {
+            "uber_shader": "unlit",
+            "parameters": {
+                "emissive": "vec3(1, 1, 1)"
+            },
+            "samplers": {
+                "emissive_texture": "正"
+            }
+        },
         "default": {
             "uber_shader": "single_color",
-            "variant_keys": [],
             "parameters": {
                 "color": "vec3(0, 1, 0)"
             }

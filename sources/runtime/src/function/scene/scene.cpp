@@ -57,7 +57,11 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             }
             if (cpnt_desc.isMember("material")){
                 for(const Json::Value& material_name: cpnt_desc["material"]){
-                    cpnt_ptr->materials.emplace_back(Graphics::resources.materials.at(material_name.asString()));
+                    if (auto iter = Graphics::resources.materials.find(material_name.asString()); iter != Graphics::resources.materials.end()){
+                        cpnt_ptr->materials.emplace_back(Graphics::resources.materials.at(material_name.asString()));
+                    } else {
+                        throw RuntimeError(std::format("材质\"{}\"未加载", material_name.asString()));
+                    }
                 }
             }
             obj->add_component(std::move(cpnt_ptr));   

@@ -31,8 +31,8 @@ target("GRuntime")
     add_deps("glad")
     add_defines("GLFW_INCLUDE_NONE") -- 手动包含glad
 
-    add_packages("glfw", "freeimage")
-    add_packages("imgui", "spdlog", "jsoncpp", "nowide_standalone", {public=true})
+    add_packages("glfw")
+    add_packages("imgui", "spdlog", "jsoncpp", "nowide_standalone", "freeimage", {public=true})
 
     add_includedirs("sources/runtime/include", {public = true})
 

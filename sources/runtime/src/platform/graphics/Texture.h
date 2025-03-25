@@ -82,6 +82,7 @@ public:
     virtual void generate_mipmaps() noexcept = 0;
 
     virtual void write_image(FIBITMAP* image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0, uint32_t zoffset = 0) = 0;
+    virtual FIBITMAP* read_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const = 0;
 
     TextureType get_type() const noexcept { return type; }
 

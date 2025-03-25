@@ -126,7 +126,7 @@ vec3 caculate_normal(){
     const vec3 normal = normalize(vs_out.normal);
     // 施密特正交化
     const vec3 tangent = normalize(vs_out.tangent - normal * dot(normal, vs_out.tangent));
-    const mat3 tbn = mat3(tangent, cross(normal, tangent), normal);
+    const mat3 tbn = mat3(tangent, cross(tangent, normal), normal);
     vec3 texture_value = texture(normal_texture, vs_out.tex_coords).xyz * 2 - 1;
     return tbn * texture_value;
 }
@@ -156,7 +156,7 @@ void main()
     vec3 L = 2 * dot(V, N) * N - V;
     float dotNV = clamp(dot(N, V), 0.0, 1.0);
     float dotNL = clamp(dot(N, L), 0.0, 1.0);
-    vec3 environment_light_indensity = texture(skybox_specular_texture, L, pixel_attribute.roughness * textureQueryLevels(skybox_specular_texture)).xyz;
+    vec3 environment_light_indensity = textureLod(skybox_specular_texture, L, pixel_attribute.roughness * textureQueryLevels(skybox_specular_texture)).xyz;
     result_color += environment_light_indensity * G_SchlicksmithGGX(dotNL, dotNV, pixel_attribute.roughness) * F_Schlick(dotNV, pixel_attribute.F0);
 #endif
 

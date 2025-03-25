@@ -3,10 +3,8 @@
 #include "HardcodeAssets.h"
 #include "core/cgmath.h"
 #include "core/eventbus/eventbus.h"
-#include "core/metatype/metatype.h"
 #include "function/renderer/RenderResource.h"
 #include "platform/display/display.h"
-#include "resource/GraphicsResourceBuilder.h"
 #include "resource/ResourceJsonLoader.h"
 
 namespace Goonya {

@@ -34,16 +34,12 @@ RenderReousce resources; // Global
     }
 }
 
-static FIBITMAP *freeimage_load_and_convert_image(const std::filesystem::path &image_path, bool need_gammar_correct,
-                                                  bool need_filp) {
+static FIBITMAP *freeimage_load_and_convert_image(const std::filesystem::path &image_path, bool need_gammar_correct) {
     FIBITMAP *pImage = freeimage_open_image(image_path.native());
     if (pImage == nullptr) {
         throw RuntimeError(std::format("加载图像失败: {}", image_path.string()));
     }
 
-    if (need_filp) {
-        FreeImage_FlipVertical(pImage); // 翻转，适应opengl的方向
-    }
     if (need_gammar_correct) {
         // 对于颜色贴图，进行矫正
         FreeImage_AdjustGamma(pImage, 1 / 2.2); // FreeImage的实现中用1/gamme，所以这里的1/2.2是对的
@@ -98,7 +94,7 @@ static TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) {
 
 void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &desc) {
     LOG_INFO("Loading Texture: {}", key);
-    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb, true);
+    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
@@ -113,7 +109,7 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
     texture->set_filter_mode(desc.filter_mode);
     texture->set_warp_mode(desc.warp_mode);
 
-    texture->write_image(pImage);
+    texture->write_image(pImage, 0);
     texture->generate_mipmaps();
 
     debug_check_error();
@@ -126,7 +122,7 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
 void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc &desc) {
     LOG_INFO("Loading CubeMap: {}", key);
     // 使用第一张图像的宽高信息分配纹理空间
-    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb, true);
+    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
@@ -145,7 +141,7 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
 
     // 加载其余方向上的图像
     for (unsigned int i = 1; i < desc.path.size(); i++) {
-        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_srgb, true);
+        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_srgb);
         if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)) {
             throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i].string()));
         }

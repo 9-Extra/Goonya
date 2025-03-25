@@ -22,6 +22,7 @@ public:
     virtual void generate_mipmaps() noexcept override { glGenerateTextureMipmap(id); }
 
     virtual void write_image(FIBITMAP* image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0, uint32_t zoffset = 0) override;
+    virtual FIBITMAP *read_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const override;
 
 protected:
     GLuint id;

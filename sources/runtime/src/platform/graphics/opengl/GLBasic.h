@@ -1,8 +1,8 @@
 #pragma once
 
+#include <cstddef>
 #include <glad/glad.h>
 
-#include "core/log/Log.h"
 
 #ifdef NDEBUG
 #define opengl_debug_check_error()
@@ -15,12 +15,6 @@
 namespace Goonya {
 namespace Graphics{
 
-inline void _opengl_check_error(const char *file, size_t line) {
-    GLenum error;
-    while ((error = glGetError()) != GL_NO_ERROR) {
-        LOG_ERROR("GL error 0x{}: At: {}:{}", error, file, line);
-    }
-}
-
+void _opengl_check_error(const char *file, size_t line);
 }
 }

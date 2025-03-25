@@ -226,6 +226,34 @@
             }
         },
         {
+            "name": "测试片",
+            "transform": {
+                "position": [
+                    0,
+                    0,
+                    -20
+                ],
+                "rotation": [
+                    0,
+                    0,
+                    0
+                ],
+                "scale": [
+                    10,
+                    10,
+                    10
+                ]
+            },
+            "components": {
+                "mesh_render": {
+                    "mesh": "plane",
+                    "material": [
+                        "test_material"
+                    ]
+                }
+            }
+        },
+        {
             "transform": {
                 "position": [
                     0,

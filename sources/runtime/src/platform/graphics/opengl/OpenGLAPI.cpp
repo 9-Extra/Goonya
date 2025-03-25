@@ -35,6 +35,11 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
     glFrontFace(GL_CCW); // 逆时针为正面
+    /*
+     * 启动无缝立方体贴图，允许硬件在立方体贴图边界“相邻”的纹理上跨界采样
+     * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
+     */
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     opengl_check_error();
 }
@@ -45,7 +50,7 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const Vertex
                                                  std::span<const uint16_t> indices) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
-
+    // Goonya定义的uv以右上角为原点，而OpenGL的uv使用左下角
     intrusive_ptr<GLBuffer> vertex_buffer{raw_vertices, BufferType::STATIC};
     intrusive_ptr<GLBuffer> index_buffer{indices, BufferType::STATIC};
 

@@ -4,7 +4,8 @@
 #include "runtime/GoonyaException.h"
 #include <FreeImage.h>
 #include <cassert>
-#include <cstddef>
+#include <cmath>
+#include <cstdint>
 
 namespace Goonya {
 namespace Graphics {
@@ -165,13 +166,10 @@ void GLTexture::set_filter_mode(TextureFilterMode filter_mode) noexcept {
     glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, mag_filter);
     opengl_debug_check_error();
 }
-void GLTexture::write_image(FIBITMAP *pImage, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
-                            uint32_t zoffset) {
-    unsigned int nWidth = FreeImage_GetWidth(pImage);
-    unsigned int nHeight = FreeImage_GetHeight(pImage);
 
+static std::tuple<GLenum, GLenum> get_freeimage_gl_format(FIBITMAP *image) noexcept {
     GLenum source_type = 0, source_format = 0;
-    switch (FreeImage_GetImageType(pImage)) {
+    switch (FreeImage_GetImageType(image)) {
     case FIT_UINT16: {
         source_type = GL_UNSIGNED_SHORT;
         source_format = GL_RED;
@@ -218,42 +216,184 @@ void GLTexture::write_image(FIBITMAP *pImage, uint32_t mipmap_level, uint32_t xo
         break;
     }
     case FIT_BITMAP: {
-        unsigned int bpp = FreeImage_GetBPP(pImage);
+        unsigned int bpp = FreeImage_GetBPP(image);
         source_type = GL_UNSIGNED_BYTE;
         if (bpp == 24) {
-#if FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR
-            source_format = GL_BGR;
-#else
-            source_format = GL_RBG;
-#endif
+            source_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
         } else if (bpp == 32) {
-#if FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR
-            source_format = GL_BGRA;
-#else
-            source_format = GL_RBGA;
-#endif
-        } else {
-            throw RuntimeError("不支持的图像像素格式");
+            source_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGRA : GL_RGBA;
         }
         break;
     }
     default: {
+        break;
+    }
+    }
+    return {source_type, source_format};
+}
+
+void GLTexture::write_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
+                            uint32_t zoffset) {
+
+    unsigned int nWidth = FreeImage_GetWidth(image);
+    unsigned int nHeight = FreeImage_GetHeight(image);
+
+    // 对于CUBEMAP纹理，由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
+    // 对于其他纹理，由于Goonya定义的纹理坐标uv的原点为左上角（与DX一致），而OpenGL为左下角，解决方法是对纹理进行翻转
+    // 结果就是，所有的类型纹理都需要翻转一下
+    FIBITMAP *filp = FreeImage_Clone(image);
+    FreeImage_FlipVertical(filp);
+
+    auto [source_type, source_format] = get_freeimage_gl_format(image);
+    if (source_type == 0 || source_format == 0) {
         throw RuntimeError("不支持的图像像素格式");
     }
-    }
+
     if (type == TextureType::TEXTURE_2D || type == TextureType::TEXTURE_1D_ARRYA) {
         glTextureSubImage2D(id, mipmap_level, xoffset, yoffset, nWidth, nHeight, source_format, source_type,
-                            FreeImage_GetBits(pImage));
-    } else if (type == TextureType::TEXTURE_2D_ARRYA || type == TextureType::TEXTURE_CUBEMAP ||
-               type == TextureType::TEXTURE_CUBEMAP_ARRYA || type == TextureType::TEXTURE_3D) {
+                            FreeImage_GetBits(filp));
+    } else if (type == TextureType::TEXTURE_2D_ARRYA || type == TextureType::TEXTURE_3D) {
         // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
         glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, nWidth, nHeight, 1, source_format, source_type,
-                            FreeImage_GetBits(pImage));
+                            FreeImage_GetBits(filp));
+    } else if (type == TextureType::TEXTURE_CUBEMAP || type == TextureType::TEXTURE_CUBEMAP_ARRYA) {
+        // 由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
+        glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, nWidth, nHeight, 1, source_format, source_type,
+                            FreeImage_GetBits(filp));
     } else {
         // todo
         assert(false);
     }
     opengl_check_error();
 }
+
+FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
+    GLuint level;
+    glGetTextureParameterIuiv(id, GL_TEXTURE_MAX_LEVEL, &level);
+    if (mipmap_level > level) {
+        throw RuntimeError("指定的Level超过上限");
+    }
+
+    GLint width, height;
+    glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &width);
+    glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &height);
+
+    opengl_debug_check_error();
+
+    FIBITMAP *image = nullptr;
+
+    GLenum target_type = 0, target_format = 0;
+    FREE_IMAGE_TYPE free_image_format;
+
+    unsigned int bpp = 0;
+    switch (type) {
+
+    case TextureType::TEXTURE_CUBEMAP:
+    case TextureType::TEXTURE_2D:
+    case TextureType::TEXTURE_2D_ARRYA:
+    case TextureType::TEXTURE_3D: {
+        switch (format) {
+        case TextureStorageFormat::RGBA_f32:
+        case TextureStorageFormat::RGBA_i32:
+        case TextureStorageFormat::RGBA_u32: {
+            target_format = GL_RGBA;
+            target_type = GL_FLOAT;
+            free_image_format = FIT_RGBAF;
+            break;
+        }
+        case TextureStorageFormat::RGBA_f16:
+        case TextureStorageFormat::RGBA_i16:
+        case TextureStorageFormat::RGBA_u16: {
+            target_format = GL_RGBA;
+            target_type = GL_UNSIGNED_SHORT;
+            free_image_format = FIT_RGBA16;
+            break;
+        }
+        case TextureStorageFormat::RGBA_f8:
+        case TextureStorageFormat::RGBA_i8:
+        case TextureStorageFormat::RGBA_u8: {
+            target_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGRA : GL_RGBA;
+            target_type = GL_UNSIGNED_BYTE;
+            free_image_format = FIT_BITMAP;
+            bpp = 32;
+            break;
+        }
+        case TextureStorageFormat::RGB_f32:
+        case TextureStorageFormat::RGB_i32:
+        case TextureStorageFormat::RGB_u32: {
+            target_format = GL_RGB;
+            target_type = GL_FLOAT;
+            free_image_format = FIT_RGBF;
+            break;
+        }
+        case TextureStorageFormat::RGB_f16:
+        case TextureStorageFormat::RGB_i16:
+        case TextureStorageFormat::RGB_u16: {
+            target_format = GL_RGB;
+            target_type = GL_UNSIGNED_SHORT;
+            free_image_format = FIT_RGB16;
+            break;
+        }
+        case TextureStorageFormat::RGB_f8:
+        case TextureStorageFormat::RGB_i8:
+        case TextureStorageFormat::RGB_u8: {
+            target_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
+            target_type = GL_UNSIGNED_BYTE;
+            free_image_format = FIT_BITMAP;
+            bpp = 24;
+            break;
+        }
+        case TextureStorageFormat::R_f32:
+        case TextureStorageFormat::R_i32:
+        case TextureStorageFormat::R_u32: {
+            target_format = GL_RED;
+            target_type = GL_FLOAT;
+            free_image_format = FIT_FLOAT;
+            break;
+        }
+        case TextureStorageFormat::R_f16:
+        case TextureStorageFormat::R_i16:
+        case TextureStorageFormat::R_u16: {
+            target_format = GL_RED;
+            target_type = GL_UNSIGNED_SHORT;
+            free_image_format = FIT_UINT16;
+            break;
+        }
+        case TextureStorageFormat::R_f8:
+        case TextureStorageFormat::R_i8:
+        case TextureStorageFormat::R_u8: {
+            target_format = GL_RED;
+            target_type = GL_UNSIGNED_BYTE;
+            free_image_format = FIT_BITMAP;
+            bpp = 8;
+            break;
+        }
+        default: {
+            throw RuntimeError("不支持的格式");
+        }
+        }
+        image = FreeImage_AllocateExT(free_image_format, width, height, bpp, NULL);
+        unsigned int buf_size = FreeImage_GetMemorySize(image);
+        glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
+                             FreeImage_GetBits(image));
+        // 因为所有的类型纹理在加载是都进行了翻转，读取时就重新翻转回来
+        FreeImage_FlipVertical(image);
+        
+        break;
+    }
+
+    case TextureType::UNKNOWN:
+    case TextureType::TEXTURE_1D:
+    case TextureType::TEXTURE_1D_ARRYA:
+    case TextureType::TEXTURE_CUBEMAP_ARRYA: {
+        throw RuntimeError("不支持");
+    }
+    }
+
+    opengl_check_error();
+
+    return image;
+};
+
 } // namespace Graphics
 } // namespace Goonya
