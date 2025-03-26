@@ -4,42 +4,40 @@
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
+#include "platform/graphics/RenderTarget.h"
 
 #include <vector>
 
 namespace Goonya {
 namespace Graphics {
-struct Camera {
+
+struct CameraRenderInfo {
 public:
-    Camera() {
-        position = {0.0f, 0.0f, 0.0f};
-        rotation = {0.0f, 0.0f, 0.0f};
+    CameraRenderInfo() {
         near_z = 1.0f;
         far_z = 1000.0f;
         fov = 1.57f;
+        view_port = {0, 0, 0, 0};
     }
 
-    Vector3f position;
-    Vector3f rotation; // zxy
+    // 相机不受缩放属性影响，由组件更新
+    Transform transform;
+
     float fov;
     float near_z, far_z;
 
-    // 获取目视方向
-    Vector3f get_orientation() const {
-        float pitch = rotation[1];
-        float yaw = rotation[2];
-        return {sinf(yaw) * cosf(pitch), sinf(pitch), -cosf(pitch) * cosf(yaw)};
+    Viewport view_port; // 需要手动设置
+    intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
+
+    Matrix4 get_view_matrix() const noexcept {
+        return Matrix4::rotate(transform.rotation).transpose() * Matrix4::translate(-transform.position);
     }
-
-    Vector3f get_up_direction() const {
-        float sp = sinf(rotation[1]);
-        float cp = cosf(rotation[1]);
-        float cr = cosf(rotation[0]);
-        float sr = sinf(rotation[0]);
-        float sy = sinf(rotation[2]);
-        float cy = cosf(rotation[2]);
-
-        return {-sp * sy * cr - sr * cy, cp * cr, sp * cr * cy - sr * sy};
+    Matrix4 get_perspective_matrix() const noexcept {
+        float aspect = float(view_port.width) / float(view_port.height);
+        return compute_perspective_matrix(aspect, fov, near_z, far_z);
+    }
+    Matrix4 get_view_perspective_matrix() const noexcept {
+        return get_perspective_matrix() * get_view_matrix();
     }
 };
 
@@ -60,7 +58,7 @@ struct Skybox {
     BoundingBox bbox;
 };
 
-struct MeshRenderInfo{
+struct MeshRenderInfo {
     Matrix4 model_matrix;
     Matrix4 normal_matrix;
     intrusive_ptr<Mesh> mesh;

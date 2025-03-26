@@ -2,10 +2,14 @@
 
 #include "HardcodeAssets.h"
 #include "core/cgmath.h"
-#include "core/eventbus/eventbus.h"
+#include "core/log/Log.h"
+#include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderResource.h"
-#include "platform/display/display.h"
+#include "platform/graphics/RenderTarget.h"
+#include "platform/graphics/graphics.h"
 #include "resource/ResourceJsonLoader.h"
+#include <FreeImage.h>
+#include <cstdint>
 
 namespace Goonya {
 namespace Graphics {
@@ -27,40 +31,63 @@ void Renderer::init() {
     resources.init();
     init_resource();
 
-    auto [w, h] = Display::get_size();
-    LOG_INFO("初始Framebuffer大小{}x{}", w, h);
-    renderer.set_viewport(0, 0, w, h); // 初始化时也需要设置一下视口
-
-    EventBus::subscribe_event<Display::Events::SysDisplayResize, void>(
-        0, nullptr, [](void *, Display::Events::SysDisplayResize &e) {
-            auto [w, h] = e.size;
-            renderer.set_viewport(0, 0, w, h);
-            return false;
-        });
-
     lambertian_pass = std::make_unique<LambertianPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();
 }
 
 void Renderer::render() {
-    // 清除旧画面
-    graphics_api->bind_rendertarget_screen();
-    graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f});
-    graphics_api->clear();
-    debug_check_error();
+    bool is_screen_printed = false;
+    for (CameraRenderInfo *camera : cameras) {
+        if (!camera->render_target)
+            continue;
+        if (camera->render_target->is_screen()){
+            is_screen_printed = true;
+        }
 
-    if (active_camera == nullptr) {
-        LOG_WARN("主相机未设置");
-        return;
+        // intrusive_ptr<FrameBuffer> test_target;
+        // intrusive_ptr<Texture> render_texture;
+        // test_target = graphics_api->create_rendertarget({1024, 1024});
+        // TextureCreateDesc desc{TextureType::TEXTURE_2D, TextureStorageFormat::RGBA_f32, {1024, 1024, 0}};
+        // render_texture = graphics_api->create_texture(desc);
+        // test_target->attach_color_texture(0, render_texture);
+        // test_target->check_status();
+        // camera->render_target = test_target;
+        // camera->set_view_port_cover_render_target();
+
+        // todo: ViewPort的大小计算不完善
+        auto [w, h] = camera->render_target->get_size();
+        camera->view_port = {0, 0, (int32_t)w, (int32_t)h};
+    
+        current_camera = camera;
+        current_camera->render_target->bind_draw();
+        graphics_api->set_viewport(current_camera->view_port);
+    
+        // 清除旧画面
+        graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f});
+        graphics_api->clear();
+        debug_check_error();
+
+        lambertian_pass->run();
+        skybox_pass->run();
+        // pickup_pass->run();
+
+        lambertian_pass->reset();
+        pointlights.clear();
+
+        // FIBITMAP *image = render_texture->read_image();
+        // assert(image);
+
+        // if (!FreeImage_Save(FIF_PNG, image, "output.png")) {
+        //     LOG_ERROR("导出图像失败");
+        // }
+        // EventBus::dispatch_event(Events::EngineStop{});
+
+        debug_check_error();
     }
 
-    lambertian_pass->run();
-    skybox_pass->run();
-    // pickup_pass->run();
-
-    lambertian_pass->reset();
-    pointlights.clear();
-    debug_check_error();
+    if (!is_screen_printed){
+        LOG_ERROR("没有相机绑定到屏幕！");
+    }
 }
 } // namespace Graphics
 } // namespace Goonya

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
 #include <utility>
@@ -31,6 +32,14 @@ public:
         if (px != nullptr){
             intrusive_ptr_add_ref(px);
         }
+        return *this;
+    }
+
+    intrusive_ptr<T>& operator=(std::nullptr_t null) noexcept{
+        if (px != nullptr) {
+            intrusive_ptr_release(px);
+        }
+        px = nullptr;
         return *this;
     }
 

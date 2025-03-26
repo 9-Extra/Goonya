@@ -56,22 +56,22 @@ void MoveSystem::handle_keyboard(float delta) {
     }
     const Goonya::Transform &trans = camera->get_transform();
     if (Goonya::Input::get_key_state('W') == Input::KeyState::DOWN) {
-        Vector3f ori = trans.get_orientation();
+        Vector3f ori = trans.get_forward_direction();
         ori.y = 0.0;
         camera->translate(ori.normalize() * move_speed);
     }
     if (Goonya::Input::get_key_state('S') == Input::KeyState::DOWN) {
-        Vector3f ori = trans.get_orientation();
+        Vector3f ori = trans.get_forward_direction();
         ori.y = 0.0;
         camera->translate(ori.normalize() * -move_speed);
     }
     if (Goonya::Input::get_key_state('A') == Input::KeyState::DOWN) {
-        Vector3f ori = trans.get_orientation();
+        Vector3f ori = trans.get_forward_direction();
         ori = {ori.z, 0.0, -ori.x};
         camera->translate(ori.normalize() * move_speed);
     }
     if (Goonya::Input::get_key_state('D') == Input::KeyState::DOWN) {
-        Vector3f ori = trans.get_orientation();
+        Vector3f ori = trans.get_forward_direction();
         ori = {ori.z, 0.0, -ori.x};
         camera->translate(ori.normalize() * -move_speed);
     }

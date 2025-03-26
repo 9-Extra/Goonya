@@ -1,4 +1,5 @@
 #include "GLTexture.h"
+#include "core/log/Log.h"
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
@@ -276,7 +277,7 @@ FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
 
     GLint width, height;
     glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &width);
-    glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &height);
+    glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_HEIGHT, &height);
 
     opengl_debug_check_error();
 
@@ -296,9 +297,10 @@ FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
         case TextureStorageFormat::RGBA_f32:
         case TextureStorageFormat::RGBA_i32:
         case TextureStorageFormat::RGBA_u32: {
+            // 使用FIT_RGBAF导致了错误
             target_format = GL_RGBA;
-            target_type = GL_FLOAT;
-            free_image_format = FIT_RGBAF;
+            target_type = GL_UNSIGNED_SHORT;
+            free_image_format = FIT_RGBA16;
             break;
         }
         case TextureStorageFormat::RGBA_f16:
@@ -321,9 +323,10 @@ FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
         case TextureStorageFormat::RGB_f32:
         case TextureStorageFormat::RGB_i32:
         case TextureStorageFormat::RGB_u32: {
+            // 使用FIT_RGBAF导致了错误
             target_format = GL_RGB;
-            target_type = GL_FLOAT;
-            free_image_format = FIT_RGBF;
+            target_type = GL_UNSIGNED_SHORT;
+            free_image_format = FIT_RGB16;
             break;
         }
         case TextureStorageFormat::RGB_f16:
@@ -372,8 +375,9 @@ FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
             throw RuntimeError("不支持的格式");
         }
         }
-        image = FreeImage_AllocateExT(free_image_format, width, height, bpp, NULL);
+        image = FreeImage_AllocateT(free_image_format, width, height, bpp);
         unsigned int buf_size = FreeImage_GetMemorySize(image);
+        LOG_TRACE("pitch: {}", FreeImage_GetPitch(image));
         glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
                              FreeImage_GetBits(image));
         // 因为所有的类型纹理在加载是都进行了翻转，读取时就重新翻转回来

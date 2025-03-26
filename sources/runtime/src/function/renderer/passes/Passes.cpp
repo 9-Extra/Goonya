@@ -7,34 +7,34 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/graphics.h"
+#include <FreeImage.h>
+#include <cassert>
 
 namespace Goonya {
 namespace Graphics {
 
+LambertianPass::LambertianPass() {
+    per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
+    per_object_uniform = graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM);
+    check_error();
+}
+
 // 一般物体渲染
 void LambertianPass::run() {
-    // 初始化渲染配置
-    graphics_api->bind_rendertarget_screen();
-    Renderer::Viewport &v = renderer.main_viewport;
-    graphics_api->set_viewport(v.x, v.y, v.width, v.height);
+    const CameraRenderInfo* camera = renderer.current_camera;
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
     per_object_uniform->bind_uniform(1);
+    
     debug_check_error();
-    // 计算透视投影矩阵
-    const float aspect = float(v.width) / float(v.height);
-    const Camera &camera = renderer.main_camera;
-    const Matrix4 view_perspective_matrix = compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
-                                           Matrix4::rotate(camera.rotation).transpose() *
-                                           Matrix4::translate(-camera.position);
-    debug_check_error();
+
     {
         // 填充per_frame uniform数据
         StructBufferWriter<PerFrameData> data(per_frame_uniform);
         // 透视投影矩阵
-        data->view_perspective_matrix = view_perspective_matrix.transpose();
+        data->view_perspective_matrix = camera->get_view_perspective_matrix().transpose();
         // 相机位置
-        data->camera_position = camera.position;
+        data->camera_position = camera->transform.position;
         // 雾参数
         assert(renderer.fog_density >= 0.0f);
         data->fog_density = renderer.fog_density;
@@ -59,7 +59,7 @@ void LambertianPass::run() {
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);
-            data->model_matrix = mesh->model_matrix.transpose();      // 变换矩阵
+            data->model_matrix = mesh->model_matrix.transpose();   // 变换矩阵
             data->normal_matrix = mesh->normal_matrix.transpose(); // 法线变换矩阵
         }
         graphics_api->draw(mesh->mesh);
@@ -68,11 +68,11 @@ void LambertianPass::run() {
 
 // 渲染天空盒
 void SkyBoxPass::run() {
-    const Camera &camera = renderer.main_camera;
-    Vector3f camera_pos = camera.position;
+    const CameraRenderInfo* camera = renderer.current_camera;
+    Vector3f camera_pos = camera->transform.position;
 
     // 寻找包含且最小，接近中心的天空盒
-    Material* skybox_material = nullptr;
+    Material *skybox_material = nullptr;
     float min_distance = std::numeric_limits<float>::infinity();
     for (const Skybox &s : renderer.current_skyboxs) {
         if (!s.ignore_range && !s.bbox.contains(camera_pos)) {
@@ -89,13 +89,10 @@ void SkyBoxPass::run() {
         return; // 没有合适的天空盒，跳过
     }
 
-    graphics_api->bind_rendertarget_screen();
-
-    // 用于天空盒的投影矩阵
-    const float aspect = float(renderer.main_viewport.width) / float(renderer.main_viewport.height);
+    // 用于天空盒的投影矩阵（不需要位移）
     const Matrix4 skybox_view_perspective_matrix =
-        compute_perspective_matrix(aspect, camera.fov, camera.near_z, camera.far_z) *
-        Matrix4::rotate(camera.rotation).transpose();
+        camera->get_perspective_matrix() *
+        Matrix4::rotate(camera->transform.rotation).transpose();
 
     // 绑定天空盒材质
     skybox_material->bind();

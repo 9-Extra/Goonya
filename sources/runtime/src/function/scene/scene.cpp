@@ -1,16 +1,17 @@
 #include "scene.h"
 
-#include <fstream>
-#include <json/json.h>
-#include <memory>
 #include "core/intrusive_ptr.h"
+#include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
-#include "function/components/CpntCamera.h"
 #include "function/components/CpntSkybox.h"
 #include "function/renderer/RenderResource.h"
 #include "platform/graphics/Material.h"
 #include "runtime/GoonyaException.h"
+#include <fstream>
+#include <json/json.h>
+#include <memory>
+
 
 namespace Goonya {
 namespace Scene {
@@ -42,48 +43,46 @@ Transform load_transform(const Json::Value &json) {
     return trans;
 }
 
-BoundingBox load_bbox(const Json::Value &json){
-    return BoundingBox{load_vec3(json["min"]), load_vec3(json["max"])};
-}
+BoundingBox load_bbox(const Json::Value &json) { return BoundingBox{load_vec3(json["min"]), load_vec3(json["max"])}; }
 
 // 从json加载组件
 void load_conponents_from_json(GObject *obj, const Json::Value &json) {
-    for (const auto& cpnt_name :json.getMemberNames()) {
-        const Json::Value& cpnt_desc = json[cpnt_name];
+    for (const auto &cpnt_name : json.getMemberNames()) {
+        const Json::Value &cpnt_desc = json[cpnt_name];
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
-            if (cpnt_desc.isMember("mesh")){
+            if (cpnt_desc.isMember("mesh")) {
                 cpnt_ptr->mesh = Graphics::resources.meshes.at(cpnt_desc["mesh"].asString());
             }
-            if (cpnt_desc.isMember("material")){
-                for(const Json::Value& material_name: cpnt_desc["material"]){
-                    if (auto iter = Graphics::resources.materials.find(material_name.asString()); iter != Graphics::resources.materials.end()){
+            if (cpnt_desc.isMember("material")) {
+                for (const Json::Value &material_name : cpnt_desc["material"]) {
+                    if (auto iter = Graphics::resources.materials.find(material_name.asString());
+                        iter != Graphics::resources.materials.end()) {
                         cpnt_ptr->materials.emplace_back(Graphics::resources.materials.at(material_name.asString()));
                     } else {
                         throw RuntimeError(std::format("材质\"{}\"未加载", material_name.asString()));
                     }
                 }
             }
-            obj->add_component(std::move(cpnt_ptr));   
+            obj->add_component(std::move(cpnt_ptr));
         } else if (cpnt_name == "point_light") {
             Vector3f color = load_vec3(cpnt_desc["color"]);
             float radius = cpnt_desc["factor"].asFloat();
-            obj->add_component(std::make_unique<Graphics::CpntPointLight>(color, radius));      
+            obj->add_component(std::make_unique<Graphics::CpntPointLight>(color, radius));
         } else if (cpnt_name == "camera") {
             bool is_main = cpnt_desc.isMember("is_main") && cpnt_desc["is_main"].asBool();
             float near_z = cpnt_desc["near_z"].asFloat();
             float far_z = cpnt_desc["far_z"].asFloat();
             float fov = cpnt_desc["fov"].asFloat();
-            std::unique_ptr<Graphics::CpntCamera> camera = std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov);
-            if (is_main){
-                camera->should_be_main = true;
-            }
-            obj->add_component(std::move(camera));  
+            std::unique_ptr<Graphics::CpntCamera> camera =
+                std::make_unique<Graphics::CpntCamera>(is_main, near_z, far_z, fov);
+            obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
-            intrusive_ptr<Graphics::Material> material = Graphics::resources.materials.at(cpnt_desc["material"].asString());
+            intrusive_ptr<Graphics::Material> material =
+                Graphics::resources.materials.at(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
-            if (cpnt_desc.isMember("bbox")){
+            if (cpnt_desc.isMember("bbox")) {
                 bbox = load_bbox(cpnt_desc["bbox"]);
             } else if (!ignore_range) {
                 throw RuntimeError("带范围的天空盒必须指定包围盒");
@@ -97,13 +96,13 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
 
 // 从json递归加载节点
 void load_node_from_json(const Json::Value &node, GObject *root) {
-    for (const Json::Value &object_desc: node) {
+    for (const Json::Value &object_desc : node) {
         const std::string &name = object_desc.isMember("name") ? object_desc["name"].asString() : "";
         auto gobject = std::make_shared<GObject>(load_transform(object_desc), name);
         if (object_desc.isMember("components")) {
             load_conponents_from_json(gobject.get(), object_desc["components"]);
         }
-    
+
         root->attach_child(gobject);
         if (object_desc.isMember("children")) {
             load_node_from_json(object_desc["children"], root->get_children().back().get());
@@ -128,5 +127,5 @@ Scene load_scene_from_json(const std::string &path) {
     return scene;
 }
 
-}
-}
+} // namespace Scene
+} // namespace Goonya

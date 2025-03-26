@@ -145,6 +145,11 @@ void create_window(uint32_t width, uint32_t height) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, true);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, false);
+    glfwWindowHint(GLFW_AUX_BUFFERS, false);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+    
 #ifdef DEBUG
     glfwWindowHint(GLFW_CONTEXT_DEBUG, GLFW_TRUE);
 #endif

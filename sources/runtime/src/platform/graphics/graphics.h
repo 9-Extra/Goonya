@@ -41,7 +41,7 @@ public:
 
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) = 0;
     
-    virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) = 0;
+    virtual intrusive_ptr<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) = 0;
     
     // ---------------------------------材质和着色器相关------------------------------------------
     virtual intrusive_ptr<Shader> complie_shader_program(const std::string& vs_src, const std::string& ps_src) const = 0;
@@ -50,6 +50,7 @@ public:
     virtual intrusive_ptr<Material> create_material(UberShader* uber_shader) = 0;
     
     // ---------------------------------绘制调用-------------------------------------------------------------
+    virtual intrusive_ptr<RenderTarget> get_rendertarget_screen() noexcept = 0;
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                                      std::optional<int> stencil = std::nullopt) noexcept = 0;
     virtual void clear(bool color = true, bool depth = true,
@@ -57,9 +58,7 @@ public:
     virtual void draw(intrusive_ptr<Mesh> mesh) = 0;
 
     // bind
-    // virtual void bind_render_target() = 0;
-    virtual void bind_rendertarget_screen() noexcept = 0;
-    virtual void set_viewport(int32_t x, int32_t y, int32_t w, int32_t h) noexcept = 0;
+    virtual void set_viewport(const Viewport& view_port) noexcept = 0;
 };
 
 extern std::unique_ptr<GraphicsAPI> graphics_api;

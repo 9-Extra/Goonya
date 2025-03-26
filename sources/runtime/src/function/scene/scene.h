@@ -8,7 +8,7 @@ namespace Scene {
 struct Scene{
     std::shared_ptr<GObject> root;
     Scene(){
-        root = std::make_shared<GObject>(Transform{{0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}, "root");
+        root = std::make_shared<GObject>(Transform{}, "root");
     }
 };
 

@@ -5,13 +5,14 @@
 #include "GLBasic.h"
 #include "GLShader.h"
 #include "GLTexture.h"
+#include "GLRenderTarget.h"
 #include <memory>
 
 
 namespace Goonya {
 namespace Graphics {
 
-class OpenGLGraphicsAPI : public GraphicsAPI {
+class OpenGLGraphicsAPI final: public GraphicsAPI {
 public:
     OpenGLGraphicsAPI();
     ~OpenGLGraphicsAPI() {
@@ -27,7 +28,7 @@ public:
         return intrusive_ptr<GLTexture>{desc};
     };
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) override;
-    virtual intrusive_ptr<RenderTarget> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) override;
+    virtual intrusive_ptr<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) override;
     
     
     // ---------------------------------材质和着色器相关------------------------------------------
@@ -39,15 +40,17 @@ public:
     virtual intrusive_ptr<Material> create_material(UberShader* uber_shader) override{
         return intrusive_ptr<Material>{new GLMaterial{uber_shader}};
     }
-    // drawcall
+    // ---------------------------------绘制调用-------------------------------------------------------------
+    virtual intrusive_ptr<RenderTarget> get_rendertarget_screen() noexcept override {return rendertarget_screen;};
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                                      std::optional<int> stencil = std::nullopt) noexcept override;
     virtual void clear(bool color = true, bool depth = true, bool stencil = true) const noexcept override;
     virtual void draw(intrusive_ptr<Mesh> mesh) override;
 
-    virtual void bind_rendertarget_screen() noexcept override;
-    virtual void set_viewport(int32_t x, int32_t y, int32_t w, int32_t h) noexcept override;
+    virtual void set_viewport(const Viewport& view_port) noexcept override;
 
+private:
+    intrusive_ptr<RenderTarget> rendertarget_screen;
 };
 
 } // namespace Graphics

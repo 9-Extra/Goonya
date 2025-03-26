@@ -41,6 +41,8 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
      */
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
+    rendertarget_screen = new GLRenderTargetScreen();
+
     opengl_check_error();
 }
 
@@ -61,8 +63,8 @@ intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType
     return intrusive_ptr<GLBuffer>(new GLBuffer(size, type));
 }
 
-intrusive_ptr<RenderTarget> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
-    return intrusive_ptr<GLRenderTarget>(size);
+intrusive_ptr<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
+    return intrusive_ptr<GLFrameBuffer>(size);
 }
 
 unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
@@ -110,7 +112,7 @@ intrusive_ptr<Shader> OpenGLGraphicsAPI::complie_shader_program(const std::strin
     return intrusive_ptr<GLShader>{id};
 }
 
-// ---------------------drawcall---------------------------
+// ---------------------------------绘制调用-------------------------------------------------------------
 void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::optional<float> depth,
                                             std::optional<int> stencil) noexcept {
     if (color) {
@@ -146,10 +148,8 @@ void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
 }
 
 // -----------------------bind-------------------------------
-void OpenGLGraphicsAPI::bind_rendertarget_screen() noexcept {
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); // 绑定默认帧缓冲
-    glDrawBuffer(GL_BACK);                     // 渲染到后缓冲区
+void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
+    glViewport(view_port.x, view_port.y, view_port.width, view_port.height);
 }
-void OpenGLGraphicsAPI::set_viewport(int32_t x, int32_t y, int32_t w, int32_t h) noexcept { glViewport(x, y, w, h); }
 } // namespace Graphics
 } // namespace Goonya

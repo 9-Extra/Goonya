@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../RenderResource.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/graphics.h"
-#include "../RenderResource.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -18,11 +18,8 @@ public:
 
 class LambertianPass : public Pass {
 public:
-    LambertianPass()
-        : per_frame_uniform(graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC)),
-          per_object_uniform(graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM)) {}
-
-    void reset() { }
+    LambertianPass();
+    void reset() {}
 
     virtual void run() override;
 
@@ -53,7 +50,9 @@ private:
 
 class SkyBoxPass : public Pass {
 public:
-    SkyBoxPass(): skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)), mesh(resources.meshes.at("skybox_cube")) {}
+    SkyBoxPass()
+        : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
+          mesh(resources.meshes.at("skybox_cube")) {}
 
     virtual void run() override;
 

@@ -333,6 +333,7 @@ struct Transform {
     Vector3f rotation;
     Vector3f scale;
 
+    constexpr Transform(Vector3f position = {0, 0, 0}, Vector3f rotation = {0, 0, 0}, Vector3f scale = {1, 1, 1}): position(position), rotation(rotation), scale(scale) {}
     static Transform from_matrix(const Matrix4 &matrix) {
         Transform transform;
         transform.position = Vector3f(matrix.m[0][3], matrix.m[1][3], matrix.m[2][3]);
@@ -341,11 +342,21 @@ struct Transform {
         return transform;
     }
 
-    // 获取目视方向
-    Vector3f get_orientation() const {
+    Vector3f get_forward_direction() const {
         float pitch = rotation[1];
         float yaw = rotation[2];
         return {sinf(yaw) * cosf(pitch), sinf(pitch), -cosf(pitch) * cosf(yaw)};
+    }
+
+    Vector3f get_up_direction() const {
+        float sp = sinf(rotation[1]);
+        float cp = cosf(rotation[1]);
+        float cr = cosf(rotation[0]);
+        float sr = sinf(rotation[0]);
+        float sy = sinf(rotation[2]);
+        float cy = cosf(rotation[2]);
+
+        return {-sp * sy * cr - sr * cy, cp * cr, sp * cr * cy - sr * sy};
     }
 
     Matrix4 model_matrix() const {
