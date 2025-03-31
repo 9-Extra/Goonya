@@ -17,7 +17,6 @@ namespace Graphics {
 LambertianPass::LambertianPass() {
     per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
     per_object_uniform = graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM);
-    check_error();
 }
 
 // 一般物体渲染
@@ -28,8 +27,6 @@ void LambertianPass::run() {
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
     per_object_uniform->bind_uniform(1);
-    
-    debug_check_error();
 
     {
         // 填充per_frame uniform数据
@@ -55,7 +52,7 @@ void LambertianPass::run() {
         data->pointlight_num = count;
         // 填充结束
     }
-    debug_check_error();
+
     // 遍历所有part，绘制每一个part
     for (const MeshRenderInfo *mesh : renderer.meshes) {
         mesh->materials[0]->bind(); // 绑定材质

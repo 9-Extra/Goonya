@@ -12,6 +12,7 @@
 #include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
+#include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLShader.h"
 
@@ -104,7 +105,7 @@ void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
                        reinterpret_cast<void *>(submesh.start_index)); // 绘制
     }
 
-    check_error();
+    opengl_check_error();
 }
 
 // -----------------------bind-------------------------------

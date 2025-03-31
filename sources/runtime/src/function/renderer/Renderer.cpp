@@ -67,7 +67,6 @@ void Renderer::render() {
         // 清除旧画面
         graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         graphics_api->clear();
-        debug_check_error();
 
         lambertian_pass->run();
         skybox_pass->run();
@@ -83,8 +82,6 @@ void Renderer::render() {
         //     LOG_ERROR("导出图像失败");
         // }
         // EventBus::dispatch_event(Events::EngineStop{});
-
-        debug_check_error();
     }
 
     if (!is_screen_painted){

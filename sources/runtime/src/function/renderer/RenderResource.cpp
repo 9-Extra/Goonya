@@ -112,8 +112,6 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
     texture->import_image(pImage, 0);
     texture->generate_mipmaps();
 
-    debug_check_error();
-
     FreeImage_Unload(pImage);
 
     textures.emplace(key, texture);
@@ -149,8 +147,6 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
         FreeImage_Unload(pImage);
     }
     texture->generate_mipmaps();
-
-    debug_check_error();
 
     textures.emplace(key, texture);
 };
