@@ -6,7 +6,7 @@
 
 namespace Goonya {
 
-inline float to_radian(float angle) { return angle / 180.0f * 3.1415926535f; }
+constexpr float to_radian(float angle) { return angle / 180.0f * 3.1415926535f; }
 
 struct Vector2f {
     union {
@@ -15,7 +15,7 @@ struct Vector2f {
         };
         float v[2];
     };
-    Vector2f() {}
+    constexpr Vector2f() : x(0), y(0) {}
     constexpr Vector2f(float x, float y) : x(x), y(y) {}
 
     constexpr Vector2f operator+(const Vector2f b) { return Vector2f(x + b.x, y + b.y); }
@@ -40,6 +40,8 @@ struct Vector2f {
 
 struct Color {
     float r, g, b, a = 1.0f;
+    constexpr Color() : r(0), g(0), b(0), a(0) {}
+    constexpr Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
 
     inline const float *data() const { return (float *)this; }
 
@@ -113,8 +115,8 @@ struct Quaternion {
 
     // 按XYZ顺序顺时针，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度。实际计算顺序和逻辑上的应用顺序相反
     static constexpr Quaternion from_eular(Vector3f rotate) {
-        return Quaternion::from_rotation({0, 0, 1}, rotate.z) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
-               Quaternion::from_rotation({1, 0, 0}, rotate.x);
+        return Quaternion::from_rotation({1, 0, 0}, rotate.x) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
+               Quaternion::from_rotation({0, 0, 1}, rotate.z);
     }
 
     constexpr Vector3f rotate_direction(Vector3f src) const {
@@ -190,18 +192,18 @@ struct Matrix3 {
     static constexpr Matrix3 rotate(Quaternion rotation) {
         auto [x, y, z, w] = rotation;
         return Matrix3{
-            1.0f - 2.0f * (y * y + z * z), 2.0f * (x * y - w * z),        2.0f * (x * z + w * y),
-            2.0f * (x * y + w * z),        1.0f - 2.0f * (x * x + z * z), 2.0f * (y * z - w * x),
-            2.0f * (x * z - w * y),        2.0f * (y * z + w * x),        1.0f - 2.0f * (x * x + y * y),
+            1.0f - 2.0f * (y * y + z * z), 2.0f * (x * y + w * z),        2.0f * (x * z - w * y),
+            2.0f * (x * y - w * z),        1.0f - 2.0f * (x * x + z * z), 2.0f * (y * z + w * x),
+            2.0f * (x * z + w * y),        2.0f * (y * z - w * x),        1.0f - 2.0f * (x * x + y * y),
         };
     }
 
     // ----------------从矩阵中提取缩放，旋转--------------------
     constexpr Vector3f resolve_scale() const noexcept {
         // 乘在右边的缩放矩阵对矩阵的每个列向量进行了缩放
-        Vector3f c1 = Vector3f{m[0][0], m[1][0], m[2][0]};
-        Vector3f c2 = Vector3f{m[0][1], m[1][1], m[2][1]};
-        Vector3f c3 = Vector3f{m[0][2], m[1][2], m[2][2]};
+        Vector3f c1 = Vector3f{m[0][0], m[0][1], m[0][2]};
+        Vector3f c2 = Vector3f{m[1][0], m[1][1], m[1][2]};
+        Vector3f c3 = Vector3f{m[2][0], m[2][1], m[2][2]};
         return Vector3f{c1.length(), c2.length(), c3.length()};
     }
     // 从矩阵中反解出其旋转对应的四元数
@@ -263,9 +265,7 @@ struct Matrix4 {
     }
     // ----------------构造缩放，旋转，位移矩阵--------------------
     static constexpr Matrix4 translate(float x, float y, float z) {
-        return Matrix4{
-            1.0, 0.0, 0.0, x, 0.0, 1.0, 0.0, y, 0.0, 0.0, 1.0, z, 0.0, 0.0, 0.0, 1.0,
-        };
+        return Matrix4{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1};
     }
     static constexpr Matrix4 translate(Vector3f delta) { return Matrix4::translate(delta.x, delta.y, delta.z); }
     static constexpr Matrix4 rotate(Quaternion rotation) { return Matrix4{Matrix3::rotate(rotation)}; }
@@ -279,13 +279,13 @@ struct Matrix4 {
     // ----------------从矩阵中提取缩放，旋转，位移--------------------
     constexpr Vector3f resolve_scale() const noexcept {
         // 乘在右边的缩放矩阵对矩阵的每个列向量进行了缩放
-        Vector3f c1 = Vector3f{m[0][0], m[1][0], m[2][0]};
-        Vector3f c2 = Vector3f{m[0][1], m[1][1], m[2][1]};
-        Vector3f c3 = Vector3f{m[0][2], m[1][2], m[2][2]};
+        Vector3f c1 = Vector3f{m[0][0], m[0][1], m[0][2]};
+        Vector3f c2 = Vector3f{m[1][0], m[1][1], m[1][2]};
+        Vector3f c3 = Vector3f{m[2][0], m[2][1], m[2][2]};
         return Vector3f{c1.length(), c2.length(), c3.length()} / m[3][3];
     }
 
-    constexpr Vector3f resolve_translate() const noexcept { return Vector3f{m[0][3], m[1][3], m[2][3]} / m[3][3]; }
+    constexpr Vector3f resolve_translate() const noexcept { return Vector3f{m[3][0], m[3][1], m[3][2]} / m[3][3]; }
 
     // 从矩阵中反解出其旋转对应的四元数
     constexpr Quaternion resolve_rotation() const noexcept {
@@ -319,11 +319,11 @@ struct Transform {
     constexpr Vector3f get_up_direction() const { return rotation.rotate_direction({0, 1, 0}); }
 
     constexpr Matrix4 model_matrix() const {
-        return Matrix4::translate(position) * Matrix4{Matrix3::rotate(rotation) * Matrix3::scale(scale)};
+        return Matrix4{Matrix3::scale(scale) * Matrix3::rotate(rotation)} * Matrix4::translate(position);
     }
     constexpr Matrix3 normal_matrix() const {
         // 旋转矩阵 * 缩放矩阵的伴随矩阵
-        return Matrix3::rotate(rotation) * Matrix3::scale(scale.y * scale.z, scale.x * scale.z, scale.y * scale.z);
+        return Matrix3::scale(scale.y * scale.z, scale.x * scale.z, scale.y * scale.z) * Matrix3::rotate(rotation);
     }
 };
 

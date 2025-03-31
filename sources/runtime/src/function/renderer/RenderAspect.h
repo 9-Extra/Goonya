@@ -24,6 +24,7 @@ public:
 
     // 由组件更新，不受缩放属性影响
     Matrix4 view_matrix;
+    Vector3f camera_pos;
 
     float fov;
     float near_z, far_z;
@@ -32,7 +33,7 @@ public:
     intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
 
     Vector3f get_position() const noexcept{
-        return -view_matrix.resolve_translate();
+        return camera_pos;
     }
 
     Matrix4 get_view_matrix() const noexcept {
@@ -45,15 +46,15 @@ public:
     }
     Matrix4 get_view_perspective_matrix() const noexcept {
         // 先转换到相机坐标系，再投影
-        return get_perspective_matrix() * get_view_matrix();
+        return get_view_matrix() * get_perspective_matrix();
     }
 
     Matrix4 get_skybox_view_perspective_matrix() const noexcept {
         Matrix4 view = get_view_matrix();
-        view.m[0][3] = 0;
-        view.m[1][3] = 0;
-        view.m[2][3] = 0;
-        return get_perspective_matrix() * view;
+        view.m[3][0] = 0;
+        view.m[3][1] = 0;
+        view.m[3][2] = 0;
+        return view * get_perspective_matrix();
     }
 };
 

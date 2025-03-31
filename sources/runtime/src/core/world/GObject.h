@@ -148,7 +148,7 @@ public:
         rotate_local_axis(Quaternion::from_eular(angle));
     }
     void rotate_local_axis(Quaternion rotation) noexcept{
-        this->transform.rotation *= rotation;
+        this->transform.rotation = this->transform.rotation * rotation;
         dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
     }
 
@@ -160,9 +160,9 @@ public:
         // todo: 如果父节点的world_model_matrix是脏的怎么办？
         if (has_parent()){
             Quaternion parent_rotation = parent.lock()->world_model_matrix.resolve_rotation();
-            this->transform.rotation = parent_rotation * rotation * parent_rotation.conjugate() * this->transform.rotation;
+            this->transform.rotation = parent_rotation.conjugate() * rotation * parent_rotation * this->transform.rotation;
         } else {
-            this->transform.rotation = this->transform.rotation * rotation;
+            this->transform.rotation = rotation * this->transform.rotation;
         }
         dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
     }

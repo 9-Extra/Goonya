@@ -134,10 +134,10 @@ Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, fl
                    0.0f,
                    0.0f,
                    -(near_z + far_z) / (far_z - near_z),
-                   -2 * far_z * near_z / (far_z - near_z),
-                   0.0f,
-                   0.0f,
                    -1.0f,
+                   0.0f,
+                   0.0f,
+                   -2 * far_z * near_z / (far_z - near_z),
                    0.0f};
 }
 } // namespace Graphics

@@ -22,5 +22,5 @@ layout(binding = 2) uniform per_material
 
 void main()
 {
-    gl_Position = view_perspective_matrix * model_matrix * vec4(position.xyz, 1.0f);
+    gl_Position = vec4(position.xyz, 1.0f) * model_matrix * view_perspective_matrix;
 }

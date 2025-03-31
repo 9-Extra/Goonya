@@ -26,5 +26,5 @@ out VS_OUT
 void main()
 {
     vs_out.tex_coords = uv;
-    gl_Position = view_perspective_matrix * model_matrix * vec4(position.xyz, 1.0f);
+    gl_Position = vec4(position.xyz, 1.0f) * model_matrix * view_perspective_matrix;
 }

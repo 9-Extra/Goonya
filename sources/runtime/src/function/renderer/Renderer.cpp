@@ -75,7 +75,7 @@ void Renderer::render() {
         lambertian_pass->reset();
         pointlights.clear();
 
-        // FIBITMAP *image = render_texture->read_image();
+        // FIBITMAP *image = render_texture->export_image();
         // assert(image);
 
         // if (!FreeImage_Save(FIF_PNG, image, "output.png")) {

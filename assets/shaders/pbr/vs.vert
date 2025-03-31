@@ -42,11 +42,11 @@ out VS_OUT
 
 void main()
 {
-    vec4 world_position = model_matrix * vec4(position.xyz, 1.0f);
+    vec4 world_position = vec4(position.xyz, 1.0f) * model_matrix;
     vs_out.world_position = world_position.xyz / world_position.w;
-    vs_out.normal = (normal_matrix * vec4(normal, 0.0f)).xyz;
-    vs_out.tangent = (model_matrix * vec4(tangent, 0.0f)).xyz; // 切线应该使用模型变换
+    vs_out.normal = (vec4(normal, 0.0f) * normal_matrix).xyz;
+    vs_out.tangent = (vec4(tangent, 0.0f) * model_matrix).xyz; // 切线应该使用模型变换
     vs_out.tex_coords = uv;
 
-    gl_Position = view_perspective_matrix * world_position;
+    gl_Position = world_position * view_perspective_matrix;
 }

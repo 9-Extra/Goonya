@@ -17,6 +17,6 @@ out VS_OUT
 void main()
 {
     vs_out.cube_map_texcoords = position.xyz;
-    vec4 pos = view_perspective_matrix * vec4(position, 1.0f);
+    vec4 pos = vec4(position, 1.0f) * view_perspective_matrix;
     gl_Position = pos.xyww;// 相当于z = w， 欺骗一下深度测试 https://www.jianshu.com/p/ad691b3ea9d5
 }
