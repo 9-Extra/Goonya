@@ -31,6 +31,10 @@ public:
     Viewport view_port; // 需要手动设置
     intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
 
+    Vector3f get_position() const noexcept{
+        return -view_matrix.resolve_translate();
+    }
+
     Matrix4 get_view_matrix() const noexcept {
         // 进行一个与相机Transform相反的变换，无视scale
         return view_matrix;

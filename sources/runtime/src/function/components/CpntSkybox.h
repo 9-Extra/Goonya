@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/cgmath.h"
 #include "core/world/GObject.h"
 #include "function/renderer/Renderer.h"
 
@@ -13,7 +14,7 @@ public:
         : skybox_material(skybox_material),ignore_range(ingore_range), bbox(bbox) {}
     virtual void on_tick() override {
         assert(get_owner() != nullptr);
-        Vector3f pos = position_from_matrix(get_owner()->get_world_model_matrix());
+        Vector3f pos = get_owner()->get_world_model_matrix().resolve_translate();
         if (ignore_range){
             renderer.current_skyboxs.emplace_back(skybox_material, ignore_range);
         } else {

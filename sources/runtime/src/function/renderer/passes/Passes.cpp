@@ -23,7 +23,8 @@ LambertianPass::LambertianPass() {
 // 一般物体渲染
 void LambertianPass::run() {
     const CameraRenderInfo* camera = renderer.current_camera;
-    Vector3f camera_pos = -Matrix4::parse_translate(camera->view_matrix);
+    Vector3f camera_pos = camera->get_position();
+
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
     per_object_uniform->bind_uniform(1);
@@ -71,7 +72,7 @@ void LambertianPass::run() {
 // 渲染天空盒
 void SkyBoxPass::run() {
     const CameraRenderInfo* camera = renderer.current_camera;
-    Vector3f camera_pos = -Matrix4::parse_translate(camera->view_matrix);
+    Vector3f camera_pos = camera->get_position();
 
     // 寻找包含且最小，接近中心的天空盒
     Material *skybox_material = nullptr;

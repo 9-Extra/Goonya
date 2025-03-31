@@ -147,22 +147,19 @@ public:
     void rotate_local_axis(Vector3f angle) noexcept{
         rotate_local_axis(Quaternion::from_eular(angle));
     }
-
     void rotate_local_axis(Quaternion rotation) noexcept{
         this->transform.rotation *= rotation;
         dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
     }
 
-    
     void rotate_global_axis(Vector3f angle) noexcept{
         rotate_global_axis(Quaternion::from_eular(angle));
     }
-
     void rotate_global_axis(Quaternion rotation) noexcept{
-        // 沿全局坐标系旋转，依赖于父节点相对世界的旋转
+        // 沿全局坐标系旋转（原点依然是物体中心而非世界中心），依赖于父节点相对世界的旋转
         // todo: 如果父节点的world_model_matrix是脏的怎么办？
         if (has_parent()){
-            Quaternion parent_rotation = Quaternion::from_matrix(parent.lock()->world_model_matrix);
+            Quaternion parent_rotation = parent.lock()->world_model_matrix.resolve_rotation();
             this->transform.rotation = parent_rotation * rotation * parent_rotation.conjugate() * this->transform.rotation;
         } else {
             this->transform.rotation = this->transform.rotation * rotation;
