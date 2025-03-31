@@ -1,6 +1,7 @@
 #include "Passes.h"
 
 #include "../Renderer.h"
+#include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderAspect.h"
@@ -22,6 +23,7 @@ LambertianPass::LambertianPass() {
 // 一般物体渲染
 void LambertianPass::run() {
     const CameraRenderInfo* camera = renderer.current_camera;
+    Vector3f camera_pos = -Matrix4::parse_translate(camera->view_matrix);
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
     per_object_uniform->bind_uniform(1);
@@ -34,7 +36,7 @@ void LambertianPass::run() {
         // 透视投影矩阵
         data->view_perspective_matrix = camera->get_view_perspective_matrix().transpose();
         // 相机位置
-        data->camera_position = camera->transform.position;
+        data->camera_position = camera_pos;
         // 雾参数
         assert(renderer.fog_density >= 0.0f);
         data->fog_density = renderer.fog_density;
@@ -60,7 +62,7 @@ void LambertianPass::run() {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);
             data->model_matrix = mesh->model_matrix.transpose();   // 变换矩阵
-            data->normal_matrix = mesh->normal_matrix.transpose(); // 法线变换矩阵
+            data->normal_matrix = Matrix4{mesh->normal_matrix}.transpose(); // 法线变换矩阵
         }
         graphics_api->draw(mesh->mesh);
     }
@@ -69,7 +71,7 @@ void LambertianPass::run() {
 // 渲染天空盒
 void SkyBoxPass::run() {
     const CameraRenderInfo* camera = renderer.current_camera;
-    Vector3f camera_pos = camera->transform.position;
+    Vector3f camera_pos = -Matrix4::parse_translate(camera->view_matrix);
 
     // 寻找包含且最小，接近中心的天空盒
     Material *skybox_material = nullptr;
@@ -90,9 +92,7 @@ void SkyBoxPass::run() {
     }
 
     // 用于天空盒的投影矩阵（不需要位移）
-    const Matrix4 skybox_view_perspective_matrix =
-        camera->get_perspective_matrix() *
-        Matrix4::rotate(camera->transform.rotation).transpose();
+    Matrix4 skybox_view_perspective_matrix = camera->get_skybox_view_perspective_matrix();
 
     // 绑定天空盒材质
     skybox_material->bind();

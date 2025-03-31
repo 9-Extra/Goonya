@@ -14,7 +14,7 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLShader.h"
-#include "runtime/GoonyaException.h"
+
 
 namespace Goonya {
 namespace Graphics {
@@ -40,7 +40,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
      * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
      */
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
+    // OpenGL默认renderframe的封装
     rendertarget_screen = new GLRenderTargetScreen();
 
     opengl_check_error();
@@ -67,49 +67,9 @@ intrusive_ptr<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uin
     return intrusive_ptr<GLFrameBuffer>(size);
 }
 
-unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
-    unsigned int id = glCreateShader(shader_type);
-
-    const GLchar *data = source.c_str();
-    GLint length = (GLint)source.length();
-    glShaderSource(id, 1, &data, &length);
-    glCompileShader(id);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
-
-    if (!success) {
-        glGetShaderInfoLog(id, 512, NULL, infoLog);
-        throw RuntimeError(std::format("着色器编译错误： {}", infoLog));
-    }
-
-    return id;
-}
 intrusive_ptr<Shader> OpenGLGraphicsAPI::complie_shader_program(const std::string &vs_src,
                                                                 const std::string &ps_src) const {
-    unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
-    unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
-
-    GLuint id = glCreateProgram();
-
-    glAttachShader(id, vs);
-    glAttachShader(id, ps);
-    glLinkProgram(id);
-
-    int success;
-    char infoLog[512];
-
-    glGetProgramiv(id, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(id, 512, NULL, infoLog);
-        throw RuntimeError(std::format("着色器链接错误： {}", infoLog));
-    }
-
-    glDeleteShader(vs);
-    glDeleteShader(ps);
-
-    return intrusive_ptr<GLShader>{id};
+    return intrusive_ptr<GLShader>{vs_src, ps_src};
 }
 
 // ---------------------------------绘制调用-------------------------------------------------------------
@@ -150,6 +110,34 @@ void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
 // -----------------------bind-------------------------------
 void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
     glViewport(view_port.x, view_port.y, view_port.width, view_port.height);
+}
+
+Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
+                                                      bool render_to_texture) const noexcept {
+    assert(near_z < far_z); // 不要写反了！！！！！！！！！！
+    float c = 1.0f / std::tan(fov / 2);
+
+    if (render_to_texture) {
+        // todo
+        assert(false);
+    }
+
+    return Matrix4{c / ratio,
+                   0.0f,
+                   0.0f,
+                   0.0f,
+                   0.0f,
+                   c,
+                   0.0f,
+                   0.0f,
+                   0.0f,
+                   0.0f,
+                   -(near_z + far_z) / (far_z - near_z),
+                   -2 * far_z * near_z / (far_z - near_z),
+                   0.0f,
+                   0.0f,
+                   -1.0f,
+                   0.0f};
 }
 } // namespace Graphics
 } // namespace Goonya

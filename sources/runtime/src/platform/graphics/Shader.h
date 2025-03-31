@@ -165,6 +165,8 @@ public:
 
 protected:
     Shader() {}
+    Shader(const Shader&) = delete;
+    Shader(Shader&&) = delete;
 };
 
 class ShaderIntrospector {

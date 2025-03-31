@@ -144,13 +144,34 @@ public:
         dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
     }
 
-    void rotate(Vector3f angle) noexcept{
-        this->transform.rotation += angle;
+    void rotate_local_axis(Vector3f angle) noexcept{
+        rotate_local_axis(Quaternion::from_eular(angle));
+    }
+
+    void rotate_local_axis(Quaternion rotation) noexcept{
+        this->transform.rotation *= rotation;
         dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
     }
 
-    void set_rotation(Vector3f angle) noexcept{
-        this->transform.rotation = angle;
+    
+    void rotate_global_axis(Vector3f angle) noexcept{
+        rotate_global_axis(Quaternion::from_eular(angle));
+    }
+
+    void rotate_global_axis(Quaternion rotation) noexcept{
+        // 沿全局坐标系旋转，依赖于父节点相对世界的旋转
+        // todo: 如果父节点的world_model_matrix是脏的怎么办？
+        if (has_parent()){
+            Quaternion parent_rotation = Quaternion::from_matrix(parent.lock()->world_model_matrix);
+            this->transform.rotation = parent_rotation * rotation * parent_rotation.conjugate() * this->transform.rotation;
+        } else {
+            this->transform.rotation = this->transform.rotation * rotation;
+        }
+        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
+    }
+
+    void set_rotation(Quaternion rotation) noexcept{
+        this->transform.rotation = rotation;
         dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
     }
     DirtyFlag get_dirty_flag() const noexcept{
@@ -160,7 +181,7 @@ public:
     const Matrix4& get_world_model_matrix() const noexcept{
         return world_model_matrix;
     }
-    const Matrix4& get_world_normal_matrix() const noexcept{
+    const Matrix3& get_world_normal_matrix() const noexcept{
         return world_normal_matrix;
     }
 
@@ -222,7 +243,7 @@ private:
     Transform transform;  // 相对父节点的变换
 
     Matrix4 world_model_matrix;  // 世界根节点的变换
-    Matrix4 world_normal_matrix; // 世界根节点的法线变换
+    Matrix3 world_normal_matrix; // 世界根节点的法线变换
 
     std::vector<std::unique_ptr<Component>> components;
     std::weak_ptr<GObject> parent;

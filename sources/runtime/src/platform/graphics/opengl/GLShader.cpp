@@ -5,6 +5,53 @@
 namespace Goonya {
 namespace Graphics {
 
+// -------------------------编译-------------------------------
+
+unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
+    unsigned int id = glCreateShader(shader_type);
+
+    const GLchar *data = source.c_str();
+    GLint length = (GLint)source.length();
+    glShaderSource(id, 1, &data, &length);
+    glCompileShader(id);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(id, GL_COMPILE_STATUS, &success);
+
+    if (!success) {
+        glGetShaderInfoLog(id, 512, NULL, infoLog);
+        throw RuntimeError(std::format("着色器编译错误： {}", infoLog));
+    }
+
+    return id;
+}
+
+GLShader::GLShader(const std::string &vs_src, const std::string &ps_src) {
+    unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
+    unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
+
+    this->id = glCreateProgram();
+
+    glAttachShader(id, vs);
+    glAttachShader(id, ps);
+    glLinkProgram(id);
+
+    int success;
+    char infoLog[512];
+
+    glGetProgramiv(id, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(id, 512, NULL, infoLog);
+        throw RuntimeError(std::format("着色器链接错误： {}", infoLog));
+    }
+
+    glDeleteShader(vs);
+    glDeleteShader(ps);
+};
+
+// ------------------------反射-------------------------------
+
 static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
     switch (gl_type) {
     case GL_UNSIGNED_INT:

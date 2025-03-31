@@ -32,7 +32,7 @@ public:
 
     void remove_mesh_info(MeshRenderInfo *info) { meshes.erase(meshes.find(info)); }
 
-    void update_mesh_transform(MeshRenderInfo *info, const Matrix4 &model_matrxi, const Matrix4 &normal_matrix) {
+    void update_mesh_transform(MeshRenderInfo *info, const Matrix4 &model_matrxi, const Matrix3 &normal_matrix) {
         info->model_matrix = model_matrxi;
         info->normal_matrix = normal_matrix;
     }

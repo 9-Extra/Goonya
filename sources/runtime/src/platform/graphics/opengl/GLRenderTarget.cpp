@@ -115,27 +115,35 @@ bool GLFrameBuffer::check_status() const noexcept {
     GLenum state = glCheckNamedFramebufferStatus(id, GL_DRAW_FRAMEBUFFER);
     switch (state) {
     case GL_FRAMEBUFFER_COMPLETE: {
-        if (glIsEnabled(GL_DEPTH_TEST) && std::holds_alternative<std::monostate>(depth_buffer)) {
-            LOG_WARN("启用了深度测试但是FBO里没有深度缓冲");
-        }
         return true;
     };
     case GL_FRAMEBUFFER_UNDEFINED:
         LOG_ERROR("FBO状态错误：未定义");
+        break;
     case GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
         LOG_ERROR("FBO状态错误：关联的对象被删除");
+        break;
     case GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
         LOG_ERROR("FBO状态错误：至少关联一个对象");
+        break;
     case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
         LOG_ERROR("FBO状态错误：指定的绘制目标中存在空对象");
+        break;
     case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
         LOG_ERROR("FBO状态错误：指定的读取目标中存在空对象");
+        break;
     case GL_FRAMEBUFFER_UNSUPPORTED:
         LOG_ERROR("FBO状态错误：包含不支持的内部格式");
+        break;
     case GL_FRAMEBUFFER_INCOMPLETE_MULTISAMPLE:
         LOG_ERROR("FBO状态错误：内部对象的多重采样样本数设定不一致，或者 GL_TEXTURE_FIXED_SAMPLE_LOCATIONS设定不一致");
+        break;
     case GL_FRAMEBUFFER_INCOMPLETE_LAYER_TARGETS:
         LOG_ERROR("FBO状态错误：有的对象是多层的但有的不是");
+        break;
+    default:
+        LOG_ERROR("FBO状态错误：未知");
+        break;
     }
     return false;
 }

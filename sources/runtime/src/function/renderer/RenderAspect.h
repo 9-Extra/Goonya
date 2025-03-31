@@ -5,6 +5,7 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/RenderTarget.h"
+#include "platform/graphics/graphics.h"
 
 #include <vector>
 
@@ -18,10 +19,11 @@ public:
         far_z = 1000.0f;
         fov = 1.57f;
         view_port = {0, 0, 0, 0};
+        view_matrix = Matrix4::identity();
     }
 
-    // 相机不受缩放属性影响，由组件更新
-    Transform transform;
+    // 由组件更新，不受缩放属性影响
+    Matrix4 view_matrix;
 
     float fov;
     float near_z, far_z;
@@ -30,14 +32,24 @@ public:
     intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
 
     Matrix4 get_view_matrix() const noexcept {
-        return Matrix4::rotate(transform.rotation).transpose() * Matrix4::translate(-transform.position);
+        // 进行一个与相机Transform相反的变换，无视scale
+        return view_matrix;
     }
     Matrix4 get_perspective_matrix() const noexcept {
         float aspect = float(view_port.width) / float(view_port.height);
-        return compute_perspective_matrix(aspect, fov, near_z, far_z);
+        return graphics_api->compute_perspective_matrix(aspect, fov, near_z, far_z, !render_target->is_screen());
     }
     Matrix4 get_view_perspective_matrix() const noexcept {
+        // 先转换到相机坐标系，再投影
         return get_perspective_matrix() * get_view_matrix();
+    }
+
+    Matrix4 get_skybox_view_perspective_matrix() const noexcept {
+        Matrix4 view = get_view_matrix();
+        view.m[0][3] = 0;
+        view.m[1][3] = 0;
+        view.m[2][3] = 0;
+        return get_perspective_matrix() * view;
     }
 };
 
@@ -60,7 +72,7 @@ struct Skybox {
 
 struct MeshRenderInfo {
     Matrix4 model_matrix;
-    Matrix4 normal_matrix;
+    Matrix3 normal_matrix;
     intrusive_ptr<Mesh> mesh;
 
     std::vector<intrusive_ptr<Material>> materials;

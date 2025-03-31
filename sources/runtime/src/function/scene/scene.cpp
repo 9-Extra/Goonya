@@ -1,5 +1,6 @@
 #include "scene.h"
 
+#include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
@@ -22,18 +23,14 @@ Vector3f load_vec3(const Json::Value &json) {
 }
 // 从json加载transform，对不完整或不存在的取默认值
 Transform load_transform(const Json::Value &json) {
-    Transform trans{
-        {0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f},
-        {1.0f, 1.0f, 1.0f},
-    };
+    Transform trans;
     if (json.isMember("transform")) {
         const Json::Value &t = json["transform"];
         if (t.isMember("position")) {
             trans.position = load_vec3(t["position"]);
         }
         if (t.isMember("rotation")) {
-            trans.rotation = load_vec3(t["rotation"]);
+            trans.rotation = Quaternion::from_eular(load_vec3(t["rotation"]));
         }
         if (t.isMember("scale")) {
             trans.scale = load_vec3(t["scale"]);

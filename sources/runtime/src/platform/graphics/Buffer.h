@@ -23,11 +23,11 @@ public:
     virtual void write(const std::span<uint8_t> data, size_t offset = 0) = 0;
     virtual void *map() const noexcept = 0;
     virtual void unmap() const noexcept = 0;
-    
+
     virtual void bind_uniform(uint32_t binding) const noexcept = 0;
 
-    protected:
-    Buffer(size_t size, BufferType type): size(size), type(type) {}
+protected:
+    Buffer(size_t size, BufferType type) : size(size), type(type) {}
 
     size_t size;
     BufferType type;
@@ -37,7 +37,9 @@ public:
 template <class T>
 class StructBufferWriter {
 public:
-    StructBufferWriter(intrusive_ptr<Buffer> buffer) : buffer(buffer), ptr((T *)(buffer->map())) {}
+    StructBufferWriter(intrusive_ptr<Buffer> buffer) : buffer(buffer.get()), ptr((T *)(buffer->map())) {
+        assert(buffer);
+    }
     StructBufferWriter(StructBufferWriter &other) = delete;
 
     T *operator->() noexcept { return ptr; }
@@ -45,20 +47,22 @@ public:
     ~StructBufferWriter() noexcept { buffer->unmap(); }
 
 private:
-    intrusive_ptr<Buffer> buffer;
+    Buffer *buffer;
     T *ptr;
 };
 
 class DynamicBufferWriter : public Meta::DynamicStructWriter {
 public:
     DynamicBufferWriter(intrusive_ptr<Buffer> buffer, const Meta::LayoutInfo &layout)
-        : Meta::DynamicStructWriter(layout, buffer->map()), buffer(buffer) {}
+        : Meta::DynamicStructWriter(layout, buffer->map()), buffer(buffer.get()) {
+        assert(buffer);
+    }
     DynamicBufferWriter(DynamicBufferWriter &other) = delete;
 
     ~DynamicBufferWriter() { buffer->unmap(); }
 
 private:
-    intrusive_ptr<Buffer> buffer;
+    Buffer *buffer;
 };
 
 } // namespace Graphics

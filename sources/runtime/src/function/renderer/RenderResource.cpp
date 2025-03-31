@@ -109,7 +109,7 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
     texture->set_filter_mode(desc.filter_mode);
     texture->set_warp_mode(desc.warp_mode);
 
-    texture->write_image(pImage, 0);
+    texture->import_image(pImage, 0);
     texture->generate_mipmaps();
 
     debug_check_error();
@@ -136,7 +136,7 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
     texture->set_filter_mode(desc.filter_mode);
     texture->set_warp_mode(desc.warp_mode);
 
-    texture->write_image(pImage, 0, 0, 0, 0);
+    texture->import_image(pImage, 0, 0, 0, 0);
     FreeImage_Unload(pImage);
 
     // 加载其余方向上的图像
@@ -145,7 +145,7 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
         if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)) {
             throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i].string()));
         }
-        texture->write_image(pImage, 0, 0, 0, i);
+        texture->import_image(pImage, 0, 0, 0, i);
         FreeImage_Unload(pImage);
     }
     texture->generate_mipmaps();

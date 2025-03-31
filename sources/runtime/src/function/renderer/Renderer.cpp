@@ -2,6 +2,8 @@
 
 #include "HardcodeAssets.h"
 #include "core/cgmath.h"
+#include "core/eventbus/eventbus.h"
+#include "core/events.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderResource.h"
@@ -36,12 +38,12 @@ void Renderer::init() {
 }
 
 void Renderer::render() {
-    bool is_screen_printed = false;
+    bool is_screen_painted = false;
     for (CameraRenderInfo *camera : cameras) {
         if (!camera->render_target)
             continue;
         if (camera->render_target->is_screen()){
-            is_screen_printed = true;
+            is_screen_painted = true;
         }
 
         // intrusive_ptr<FrameBuffer> test_target;
@@ -50,9 +52,9 @@ void Renderer::render() {
         // TextureCreateDesc desc{TextureType::TEXTURE_2D, TextureStorageFormat::RGBA_f32, {1024, 1024, 0}};
         // render_texture = graphics_api->create_texture(desc);
         // test_target->attach_color_texture(0, render_texture);
-        // test_target->check_status();
+        // test_target->set_depth_renderbuffer(RenderBufferPixelFormat::DEPTH24_STENCIL8);
         // camera->render_target = test_target;
-        // camera->set_view_port_cover_render_target();
+        // camera->render_target->check_status();
 
         // todo: ViewPort的大小计算不完善
         auto [w, h] = camera->render_target->get_size();
@@ -63,7 +65,7 @@ void Renderer::render() {
         graphics_api->set_viewport(current_camera->view_port);
     
         // 清除旧画面
-        graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f});
+        graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         graphics_api->clear();
         debug_check_error();
 
@@ -85,7 +87,7 @@ void Renderer::render() {
         debug_check_error();
     }
 
-    if (!is_screen_printed){
+    if (!is_screen_painted){
         LOG_ERROR("没有相机绑定到屏幕！");
     }
 }

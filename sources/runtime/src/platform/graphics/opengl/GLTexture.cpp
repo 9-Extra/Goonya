@@ -233,42 +233,47 @@ static std::tuple<GLenum, GLenum> get_freeimage_gl_format(FIBITMAP *image) noexc
     return {source_type, source_format};
 }
 
-void GLTexture::write_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
+void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
                             uint32_t zoffset) {
-
-    unsigned int nWidth = FreeImage_GetWidth(image);
-    unsigned int nHeight = FreeImage_GetHeight(image);
 
     // 对于CUBEMAP纹理，由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
     // 对于其他纹理，由于Goonya定义的纹理坐标uv的原点为左上角（与DX一致），而OpenGL为左下角，解决方法是对纹理进行翻转
     // 结果就是，所有的类型纹理都需要翻转一下
     FIBITMAP *filp = FreeImage_Clone(image);
     FreeImage_FlipVertical(filp);
+    
+    unsigned int width = FreeImage_GetWidth(filp);
+    unsigned int height = FreeImage_GetHeight(filp);
 
-    auto [source_type, source_format] = get_freeimage_gl_format(image);
+    auto [source_type, source_format] = get_freeimage_gl_format(filp);
     if (source_type == 0 || source_format == 0) {
         throw RuntimeError("不支持的图像像素格式");
     }
 
-    if (type == TextureType::TEXTURE_2D || type == TextureType::TEXTURE_1D_ARRYA) {
-        glTextureSubImage2D(id, mipmap_level, xoffset, yoffset, nWidth, nHeight, source_format, source_type,
+    switch (type) {
+    case TextureType::TEXTURE_1D_ARRYA:
+    case TextureType::TEXTURE_2D: {
+        glTextureSubImage2D(id, mipmap_level, xoffset, yoffset, width, height, source_format, source_type,
                             FreeImage_GetBits(filp));
-    } else if (type == TextureType::TEXTURE_2D_ARRYA || type == TextureType::TEXTURE_3D) {
-        // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
-        glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, nWidth, nHeight, 1, source_format, source_type,
-                            FreeImage_GetBits(filp));
-    } else if (type == TextureType::TEXTURE_CUBEMAP || type == TextureType::TEXTURE_CUBEMAP_ARRYA) {
-        // 由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
-        glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, nWidth, nHeight, 1, source_format, source_type,
-                            FreeImage_GetBits(filp));
-    } else {
-        // todo
-        assert(false);
+        break;
     }
+    case TextureType::TEXTURE_2D_ARRYA:
+    case TextureType::TEXTURE_CUBEMAP:
+    case TextureType::TEXTURE_CUBEMAP_ARRYA:
+    case TextureType::TEXTURE_3D: {
+        // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
+        glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, width, height, 1, source_format, source_type,
+                            FreeImage_GetBits(filp));
+        break;
+    }
+    default:
+        throw RuntimeError("不支持此类型");
+    }
+
     opengl_check_error();
 }
 
-FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
+FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const {
     GLuint level;
     glGetTextureParameterIuiv(id, GL_TEXTURE_MAX_LEVEL, &level);
     if (mipmap_level > level) {
@@ -382,7 +387,7 @@ FIBITMAP *GLTexture::read_image(uint32_t mipmap_level, uint32_t zoffset) const {
                              FreeImage_GetBits(image));
         // 因为所有的类型纹理在加载是都进行了翻转，读取时就重新翻转回来
         FreeImage_FlipVertical(image);
-        
+
         break;
     }
 

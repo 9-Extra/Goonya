@@ -1,4 +1,5 @@
 #include "logic.h"
+#include "core/cgmath.h"
 #include "core/input/input.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
@@ -20,9 +21,10 @@ void MoveSystem::handle_mouse() {
     //  左上角为(0,0)，右下角为(w,h)
     if (Goonya::Input::get_mouse_state(Goonya::Input::MIDDLE) == Input::KeyState::DOWN) {
         auto [dx, dy] = Goonya::Input::get_mouse_move();
-        // 鼠标向右拖拽，相机沿y轴顺时针旋转。鼠标向下拖拽时，相机沿x轴逆时针旋转
+        // 鼠标向右拖拽，相机沿全局坐标系y轴顺时针旋转。鼠标向下拖拽时，相机沿局部坐标系x轴顺时针旋转
         const float rotate_speed = 0.003f;
-        camera->rotate({0.0f, -dy * rotate_speed, dx * rotate_speed});
+        camera->rotate_local_axis({dy * rotate_speed, 0, 0});
+        camera->rotate_global_axis({0, dx * rotate_speed, 0});
     }
 }
 void MoveSystem::handle_keyboard(float delta) {
@@ -43,7 +45,7 @@ void MoveSystem::handle_keyboard(float delta) {
     if (Goonya::Input::is_key_click('P')){
         LOG_DEBUG("正在进行图像导出");
         intrusive_ptr<Graphics::Texture> skybox = Graphics::resources.textures.at("skybox_valley_color");
-        FIBITMAP* image = skybox->read_image(0);
+        FIBITMAP* image = skybox->export_image(0);
         FreeImage_AdjustGamma(image, 2.2);
         if (!FreeImage_Save(FIF_BMP, image, "output.bmp")){
             LOG_ERROR("图像导出失败");
@@ -83,7 +85,7 @@ void MoveSystem::handle_keyboard(float delta) {
     }
 
     if (Goonya::Input::is_key_click('0')) {
-        camera->set_transform(Goonya::Transform{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {1, 1, 1}});
+        camera->set_transform(Goonya::Transform{});
     }
 
     // Vector3f pos = camera->get_transform().position;
@@ -107,11 +109,15 @@ void MoveSystem::on_register() {
     assert(light1);
     camera = get_owner()->get_child_by_name("相机");
     assert(camera);
+    teapot = get_owner()->get_child_by_name("teapot");
+    assert(camera);
 }
 void MoveSystem::on_tick() {
     handle_keyboard(Goonya::Timer::delta());
     handle_mouse();
 
-    cube->rotate({Goonya::Timer::delta() * 0.001f, Goonya::Timer::delta() * 0.003f, 0.0f});
-    light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
+    //teapot->rotate(Goonya::Vector3f({0, Goonya::Timer::delta() * 0.001f, 0}));
+    //Goonya::Quaternion r = Goonya::Quaternion::from_eular({Goonya::Timer::delta() * 0.001f, Goonya::Timer::delta() * 0.0015f, 0.0f});
+    //cube->rotate(r);
+    //light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
 }

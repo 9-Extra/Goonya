@@ -48,6 +48,10 @@ public:
     virtual void draw(intrusive_ptr<Mesh> mesh) override;
 
     virtual void set_viewport(const Viewport& view_port) noexcept override;
+    
+    // --------------------其他------------------------------
+    virtual Matrix4 compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
+                                               bool render_to_texture = false) const noexcept override;
 
 private:
     intrusive_ptr<RenderTarget> rendertarget_screen;

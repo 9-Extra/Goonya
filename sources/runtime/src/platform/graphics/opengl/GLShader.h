@@ -10,7 +10,7 @@ namespace Graphics {
 
 class GLShader : public Shader {
 public:
-    GLShader(GLuint id): id(id) {};
+    GLShader(const std::string &vs_src, const std::string &ps_src);
     ~GLShader() { glDeleteProgram(id); }
 
     virtual void bind() override { glUseProgram(id); }
