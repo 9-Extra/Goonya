@@ -46,13 +46,17 @@ void Renderer::render() {
             is_screen_painted = true;
         }
 
-        // intrusive_ptr<FrameBuffer> test_target;
-        // intrusive_ptr<Texture> render_texture;
-        // test_target = graphics_api->create_rendertarget({1024, 1024});
-        // TextureCreateDesc desc{TextureType::TEXTURE_2D, TextureStorageFormat::RGBA_f32, {1024, 1024, 0}};
-        // render_texture = graphics_api->create_texture(desc);
-        // test_target->attach_color_texture(0, render_texture);
-        // test_target->set_depth_renderbuffer(RenderBufferPixelFormat::DEPTH24_STENCIL8);
+        // static intrusive_ptr<FrameBuffer> test_target;
+        // static intrusive_ptr<Texture> render_texture;
+        // if (!test_target){
+        //     test_target = graphics_api->create_rendertarget({1024, 1024});
+        //     test_target->set_depth_renderbuffer(RenderBufferPixelFormat::DEPTH24_STENCIL8);
+        // }
+        // if (!render_texture){
+        //     TextureCreateDesc desc{TextureType::TEXTURE_2D, TextureStorageFormat::RGBA_f32, {1024, 1024, 0}};
+        //     render_texture = graphics_api->create_texture(desc);
+        //     test_target->attach_color_texture(0, render_texture);
+        // }
         // camera->render_target = test_target;
         // camera->render_target->check_status();
 
@@ -78,9 +82,11 @@ void Renderer::render() {
         // FIBITMAP *image = render_texture->export_image();
         // assert(image);
 
-        // if (!FreeImage_Save(FIF_PNG, image, "output.png")) {
+        // static int i = 0;
+        // if (!FreeImage_Save(FIF_PNG, image, std::format("output{}.png", i).c_str())) {
         //     LOG_ERROR("导出图像失败");
         // }
+        // i++;
         // EventBus::dispatch_event(Events::EngineStop{});
     }
 

@@ -132,7 +132,6 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
     TextureCreateDesc texture_desc{TextureType::TEXTURE_CUBEMAP, storage_type, {nWidth, nHeight, 0}};
     intrusive_ptr<Texture> texture = graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
-    texture->set_warp_mode(desc.warp_mode);
 
     texture->import_image(pImage, 0, 0, 0, 0);
     FreeImage_Unload(pImage);

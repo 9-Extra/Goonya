@@ -7,8 +7,11 @@
 #include "resource/GraphicsResourceBuilder.h"
 
 #include "runtime/GoonyaException.h"
+#include <cassert>
+#include <cstddef>
 #include <fstream>
 #include <json/json.h>
+#include <vector>
 
 namespace Goonya {
 namespace Resource {
@@ -58,6 +61,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
             const Json::Value &tangent_buffer = get_buffer(primitive["attributes"]["TANGENT"].asInt64());
 
             uint32_t indices_count = json["accessors"][primitive["indices"].asUInt()]["count"].asUInt();
+            assert(indices_count % 3 == 0);
             uint16_t *indices_ptr = (uint16_t *)((char *)buffers[indices_buffer["buffer"].asUInt()].ptr +
                                                  indices_buffer["byteOffset"].asUInt());
 
@@ -90,6 +94,14 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
                 vertices[i] = {pos[i], normal[i], tang, uv[i]};
             }
 
+            // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
+            std::vector<uint16_t> indices(indices_count);
+            for(uint32_t i = 0; i < indices_count;i += 3){
+                indices[i + 0] = indices_ptr[i + 2];
+                indices[i + 1] = indices_ptr[i + 1];
+                indices[i + 2] = indices_ptr[i + 0];
+            }
+
             const static Graphics::VertexLayout vertex_layout{
                 {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Vertex, position)},
                  {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Vertex, normal)},
@@ -98,7 +110,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
                 sizeof(Vertex)};
 
             Graphics::resources.add_mesh(key, vertex_layout, std::span(vertices),
-                                         std::span(indices_ptr, indices_count));
+                                         std::span(indices));
         }
     }
     // 加载纹理（在加载材质时加载需要的纹理）

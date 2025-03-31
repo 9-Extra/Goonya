@@ -62,12 +62,8 @@ class GLRenderTargetScreen final : public RenderTarget{
     
     virtual ~GLRenderTargetScreen() = default;
 
-    virtual void bind_read() const {
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    };;
-    virtual void bind_draw() const {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-    };
+    virtual void bind_read() const;
+    virtual void bind_draw() const;
 
     virtual std::tuple<uint32_t, uint32_t> get_size() const noexcept {
         // OpenGL无法获取默认缓冲区的大小，使用GLFW

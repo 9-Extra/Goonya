@@ -16,8 +16,8 @@ const std::vector<Vector3f> skybox_cube_vertices = {{-1.0, -1.0, -1.0}, {1.0, -1
 const VertexLayout skybox_cube_vertex_layout{{{VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}},
                                              sizeof(Vector3f)};
 
-const std::vector<uint16_t> skybox_cube_indices = {3, 0, 1, 1, 2, 3, 6, 7, 3, 3, 2, 6, 0, 3, 7, 7, 4, 0,
-                                                   5, 6, 2, 2, 1, 5, 6, 5, 4, 4, 7, 6, 0, 4, 5, 5, 1, 0};
+const std::vector<uint16_t> skybox_cube_indices = {1, 0, 3, 3, 2, 1, 3, 7, 6, 6, 2, 3, 7, 3, 0, 0, 4, 7,
+                                                   2, 6, 5, 5, 1, 2, 4, 5, 6, 6, 7, 4, 5, 4, 0, 0, 1, 5};
 
 struct Vertex {
     Vector3f position;
@@ -40,7 +40,7 @@ const VertexLayout plane_vertices_vertex_layout{
      {VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
     sizeof(Vertex)};
 
-const std::vector<uint16_t> plane_indices = {3, 2, 0, 2, 1, 0};
+const std::vector<uint16_t> plane_indices = {0, 1, 2, 2, 3, 0};
 } // namespace Assets
 } // namespace Graphics
 } // namespace Goonya

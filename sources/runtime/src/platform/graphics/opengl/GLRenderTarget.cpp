@@ -12,6 +12,16 @@
 namespace Goonya {
 namespace Graphics {
 
+// --------------------------GLRenderTargetScreen------------------------------------
+void GLRenderTargetScreen::bind_draw() const {
+    // 在绘制到屏幕上时，Y轴不需要翻转，以顺时针为正面
+    glFrontFace(GL_CW);
+    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+};
+void GLRenderTargetScreen::bind_read() const { glBindFramebuffer(GL_READ_FRAMEBUFFER, 0); };
+
+// --------------------------GLFrameBuffer------------------------------------
+
 GLFrameBuffer::GLFrameBuffer(std::tuple<uint32_t, uint32_t> size) : FrameBuffer(size) { glCreateFramebuffers(1, &id); }
 
 void GLFrameBuffer::bind_read() const {
@@ -21,6 +31,8 @@ void GLFrameBuffer::bind_read() const {
 }
 // 忽略glDrawBuffers的再次重定向，在绑定时直接将所有关联的颜色缓冲按照attachment用作渲染目标
 void GLFrameBuffer::bind_draw() const {
+    // 在绘制到纹理上时，Y轴翻转（由透视投影矩阵完成），顶点环绕方向也反向了，所以改成逆时针
+    glFrontFace(GL_CCW);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
     update_drawbuffers();
     opengl_debug_check_error();

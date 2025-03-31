@@ -1,5 +1,4 @@
 #include "GLTexture.h"
-#include "core/log/Log.h"
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
@@ -382,7 +381,6 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
         }
         image = FreeImage_AllocateT(free_image_format, width, height, bpp);
         unsigned int buf_size = FreeImage_GetMemorySize(image);
-        LOG_TRACE("pitch: {}", FreeImage_GetPitch(image));
         glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
                              FreeImage_GetBits(image));
         // 因为所有的类型纹理在加载是都进行了翻转，读取时就重新翻转回来

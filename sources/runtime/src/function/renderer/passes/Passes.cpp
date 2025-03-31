@@ -89,7 +89,6 @@ void SkyBoxPass::run() {
         return; // 没有合适的天空盒，跳过
     }
 
-    // 用于天空盒的投影矩阵（不需要位移）
     Matrix4 skybox_view_perspective_matrix = camera->get_skybox_view_perspective_matrix();
 
     // 绑定天空盒材质

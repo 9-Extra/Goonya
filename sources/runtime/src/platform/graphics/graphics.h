@@ -59,16 +59,19 @@ public:
      * @brief 计算透视投影矩阵
      *
      * Goonya的世界坐标系使用右手坐标系，即+X向右，+Y向上，+Z向前，相机在没有旋转的情况下朝向-Z方向。
-     * 由此可知Goonya的相机坐标系中相机位于原点且朝向-Z方向，所有可见物体位于Z负半轴中以Z轴为中心的平截头体范围内，其近平面为
-     * z = -near_z，远平面为 z = -far_z 透视投影矩阵将此平截头体变换到一个统一的标准设备空间，其为从(-1,-1, -1)到(1, 1,
-     * 1)的小空间，投影在外的物理会被切除 相机在此空间中朝向+Z方向（本质上是因为Z重映射(默认到[0,
-     * 1])成为了深度，而深度越大视为离相机越远），因此透视投影矩阵中包含了Z坐标取反
+     * 由此可知Goonya的相机坐标系中相机位于原点且朝向-Z方向，所有可见物体位于Z负半轴中以Z轴为中心的平截头体范围内
+     * 透视投影矩阵将此平截头体变换到的标准设备坐标NDC，投影在标准设备空间外的物理会被剔除 
+     * NDC中顶点坐标的Z分量重映射(默认到[0, 1])成为了深度，深度小物体的遮挡深度大的物体，可以认为相机在NDC中朝向+Z方向
+     * 因此透视投影矩阵中包含了Z坐标取反
      *
-     * @attention 这里的NDC与图形API的NDC定义不一致，需要使用GraphicsAPI::native_projection_matrix进行修补
+     * 当render_to_texture为true时，对于像OpenGL这样UV坐标系从左上角开始的API，其纹理在内部都是Y轴翻转存储的，
+     * 因此绘制到纹理上是透视投影矩阵也需要进行一次额外的Y轴翻转。
+     * @note 不同的图形API规定的NDC并不统一，因此透视投影的计算与API相关
      * @param ratio 视口的宽高比(w / h)
      * @param fov 视场角（垂直），平截头体上下平面的夹角，弧度制
      * @param near_z 近平面距离
      * @param far_z 远平面距离
+     * @param render_to_texture 是否渲染到纹理
      * @return Matrix4 透视投影矩阵
      */
     virtual Matrix4 compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,

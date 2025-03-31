@@ -16,7 +16,6 @@
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLShader.h"
 
-
 namespace Goonya {
 namespace Graphics {
 
@@ -35,7 +34,6 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
     // }
 
     glClearColor(0.0, 0.0, 0.0, 0.0);
-    glFrontFace(GL_CCW); // 逆时针为正面
     /*
      * 启动无缝立方体贴图，允许硬件在立方体贴图边界“相邻”的纹理上跨界采样
      * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
@@ -119,26 +117,41 @@ Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, fl
     float c = 1.0f / std::tan(fov / 2);
 
     if (render_to_texture) {
-        // todo
-        assert(false);
+        // 翻转Y轴
+        return Matrix4{c / ratio,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       -c,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       -(near_z + far_z) / (far_z - near_z),
+                       -1.0f,
+                       0.0f,
+                       0.0f,
+                       -2 * far_z * near_z / (far_z - near_z),
+                       0.0f};
+    } else {
+        return Matrix4{c / ratio,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       c,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       0.0f,
+                       -(near_z + far_z) / (far_z - near_z),
+                       -1.0f,
+                       0.0f,
+                       0.0f,
+                       -2 * far_z * near_z / (far_z - near_z),
+                       0.0f};
     }
-
-    return Matrix4{c / ratio,
-                   0.0f,
-                   0.0f,
-                   0.0f,
-                   0.0f,
-                   c,
-                   0.0f,
-                   0.0f,
-                   0.0f,
-                   0.0f,
-                   -(near_z + far_z) / (far_z - near_z),
-                   -1.0f,
-                   0.0f,
-                   0.0f,
-                   -2 * far_z * near_z / (far_z - near_z),
-                   0.0f};
 }
 } // namespace Graphics
 } // namespace Goonya
