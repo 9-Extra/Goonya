@@ -4,7 +4,7 @@
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/Renderer.h"
 #include "core/world/GObject.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Graphics.h"
 
 
 namespace Goonya {

@@ -5,7 +5,7 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/RenderTarget.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Graphics.h"
 
 #include <vector>
 

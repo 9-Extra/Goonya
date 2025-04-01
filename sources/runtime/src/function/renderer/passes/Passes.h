@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../RenderResource.h"
+#include "resource/Resource.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Graphics.h"
 
 namespace Goonya {
 namespace Graphics {
@@ -52,7 +52,7 @@ class SkyBoxPass : public Pass {
 public:
     SkyBoxPass()
         : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
-          mesh(resources.meshes.at("skybox_cube")) {}
+          mesh(Resource::resources.meshes.at("skybox_cube")) {}
 
     virtual void run() override;
 

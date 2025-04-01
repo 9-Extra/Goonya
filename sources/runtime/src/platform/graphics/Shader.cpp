@@ -1,6 +1,6 @@
 #include "Shader.h"
 #include "core/log/Log.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Graphics.h"
 #include <memory>
 
 namespace Goonya {

@@ -1,4 +1,4 @@
-#include "graphics.h"
+#include "Graphics.h"
 
 #include "opengl/OpenGLAPI.h"
 #include "runtime/GoonyaException.h"

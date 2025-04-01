@@ -5,12 +5,12 @@
 #include <imgui.h>
 #include <runtime/Goonya.h>
 
-#include "function/renderer/RenderResource.h"
+#include "resource/Resource.h"
 #include "function/renderer/Renderer.h"
 #include "platform/display/display.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Graphics.h"
 #include "platform/imgui/imgui_module.h"
 #include "core/input/input.h"
 #include "core/timer/timer.h"
@@ -107,7 +107,7 @@ void drop_engine() {
 
     world.reset();
     Graphics::renderer.clear();
-    Graphics::resources.clear(); // 在设备drop之前清理资源
+    Resource::resources.clear(); // 在设备drop之前清理资源
     ImguiMng::drop();
 
     Graphics::drop();

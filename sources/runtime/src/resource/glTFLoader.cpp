@@ -1,7 +1,7 @@
 #include "glTFLoader.h"
 
 #include "core/cgmath.h"
-#include "function/renderer/RenderResource.h"
+#include "resource/Resource.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Texture.h"
 #include "resource/GraphicsResourceBuilder.h"
@@ -109,7 +109,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
                  {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
                 sizeof(Vertex)};
 
-            Graphics::resources.add_mesh(key, vertex_layout, std::span(vertices),
+            resources.add_mesh(key, vertex_layout, std::span(vertices),
                                          std::span(indices));
         }
     }
@@ -119,7 +119,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
         const Json::Value &image_info = json["images"][texture_info["source"].asUInt()];
         const Json::Value &sampler_info = json["samplers"][texture_info["sampler"].asUInt()];
         const std::string key = base_key + '.' + image_info["name"].asString();
-        Graphics::Texture2DDesc desc = {.path = root / image_info["uri"].asString(), .is_srgb = is_color};
+        Texture2DDesc desc = {.path = root / image_info["uri"].asString(), .is_srgb = is_color};
         // 不严格支持glTF标准
         if (sampler_info.isMember("magFilter")) {
             uint32_t value = sampler_info["magFilter"].asUInt();
@@ -147,7 +147,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
             }
         }
 
-        Graphics::resources.add_texture2d(key, desc);
+        resources.add_texture2d(key, desc);
         return key;
     };
 
@@ -185,7 +185,7 @@ void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
                                               .add_sampler("metallic_roughness_texture", metallic_roughness_texture)
                                               .build();
 
-            Graphics::resources.add_material(key, desc);
+            resources.add_material(key, desc);
         }
     }
 }

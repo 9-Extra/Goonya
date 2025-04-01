@@ -7,7 +7,7 @@
 #include "function/renderer/RenderAspect.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/graphics.h"
+#include "platform/graphics/Graphics.h"
 #include <FreeImage.h>
 #include <cassert>
 

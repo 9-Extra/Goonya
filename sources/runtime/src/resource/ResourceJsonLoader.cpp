@@ -8,23 +8,25 @@
 #include <vector>
 
 #include "GraphicsResourceBuilder.h"
-#include "function/renderer/RenderResource.h"
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
 #include "platform/read_file.h"
+#include "resource/Resource.h"
 #include "runtime/GoonyaException.h"
+
 
 #include "glTFLoader.h"
 
 namespace Goonya {
 namespace Resource {
 
-static std::tuple<Graphics::TextureFilterMode, Graphics::TextureWarpMode> parse_texture_profile(const Json::Value& texture_desc){
+static std::tuple<Graphics::TextureFilterMode, Graphics::TextureWarpMode>
+parse_texture_profile(const Json::Value &texture_desc) {
     Graphics::TextureFilterMode filter_mode;
     Graphics::TextureWarpMode warp_mode;
-    const Json::Value& filter_mode_name = texture_desc["filter_mode"];
-    const Json::Value& warp_mode_name = texture_desc["warp_mode"];
-    
+    const Json::Value &filter_mode_name = texture_desc["filter_mode"];
+    const Json::Value &warp_mode_name = texture_desc["warp_mode"];
+
     if (!filter_mode_name || filter_mode_name == "trilinear") {
         filter_mode = Graphics::TextureFilterMode::TRILINEAR;
     } else if (filter_mode_name == "point") {
@@ -34,7 +36,7 @@ static std::tuple<Graphics::TextureFilterMode, Graphics::TextureWarpMode> parse_
     } else {
         throw RuntimeError(std::format("未知的纹理过滤模式：{}", filter_mode_name.asString()));
     }
-    
+
     if (!warp_mode_name || warp_mode_name == "repeat") {
         warp_mode = Graphics::TextureWarpMode::REPEAT;
     } else if (warp_mode_name == "clamp") {
@@ -86,7 +88,7 @@ void load_json(const std::filesystem::path &path) {
             desc.local_variant_keys.emplace_back(std::move(desc_group));
         }
 
-        Graphics::resources.add_shader(key, std::move(desc));
+        resources.add_shader(key, std::move(desc));
     }
 
     // 贴图
@@ -94,14 +96,14 @@ void load_json(const std::filesystem::path &path) {
         const std::string &key = iter.name();
         const Json::Value &texture_desc = *iter;
 
-        Graphics::Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
+        Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
 
         desc.is_srgb = texture_desc.get("is_color", false).asBool();
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
         desc.filter_mode = filter_mode;
         desc.warp_mode = warp_mode;
 
-        Graphics::resources.add_texture2d(key, desc);
+        resources.add_texture2d(key, desc);
     }
 
     // 立方体贴图
@@ -109,7 +111,7 @@ void load_json(const std::filesystem::path &path) {
         const std::string &key = iter.name();
         const Json::Value &cubemap_desc = *iter;
 
-        Graphics::TextureCubeMapDesc desc{
+        TextureCubeMapDesc desc{
             .path = {base_dir / cubemap_desc["px"].asString(), base_dir / cubemap_desc["nx"].asString(),
                      base_dir / cubemap_desc["py"].asString(), base_dir / cubemap_desc["ny"].asString(),
                      base_dir / cubemap_desc["pz"].asString(), base_dir / cubemap_desc["nz"].asString()}};
@@ -119,7 +121,7 @@ void load_json(const std::filesystem::path &path) {
         desc.filter_mode = filter_mode;
         desc.warp_mode = warp_mode;
 
-        Graphics::resources.add_cubemap(key, desc);
+        resources.add_cubemap(key, desc);
     }
 
     // 材质
@@ -145,7 +147,7 @@ void load_json(const std::filesystem::path &path) {
         } else {
             throw RuntimeError(std::format("不支持的面裁剪模式：\"{}\"", cull_mode.asString()));
         }
-        
+
         const Json::Value &depth_test_mode = config["depth_func"];
         if (!depth_test_mode || depth_test_mode == "less") {
             mat_builder.set_depth_test_mode(Graphics::DepthTestMode::LESS);
@@ -162,7 +164,7 @@ void load_json(const std::filesystem::path &path) {
         } else {
             throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", depth_test_mode.asString()));
         }
-        
+
         for (auto iter = material_desc["parameters"].begin(); iter != material_desc["parameters"].end(); iter++) {
             const std::string &name = iter.name();
             const std::string &parameter_string = iter->asString();
@@ -229,7 +231,7 @@ void load_json(const std::filesystem::path &path) {
             mat_builder.add_sampler(name, iter->asString());
         }
 
-        Graphics::resources.add_material(key, mat_builder.build());
+        resources.add_material(key, mat_builder.build());
     }
 
     // gltf

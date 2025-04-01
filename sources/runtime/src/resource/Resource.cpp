@@ -1,12 +1,13 @@
-#include "RenderResource.h"
-#include "platform/graphics/graphics.h"
+#include "Resource.h"
+#include "platform/graphics/Graphics.h"
+#include "platform/graphics/Texture.h"
 
 #include <FreeImage.h>
 #include <glad/glad.h>
 #include <nowide/convert.hpp>
 
 namespace Goonya {
-namespace Graphics {
+namespace Resource {
 
 RenderReousce resources; // Global
 
@@ -47,7 +48,8 @@ static FIBITMAP *freeimage_load_and_convert_image(const std::filesystem::path &i
     return pImage;
 }
 
-static TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) {
+static Graphics::TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) {
+    using Graphics::TextureStorageFormat;
     switch (FreeImage_GetImageType(pImage)) {
     case FIT_UINT16: {
         return TextureStorageFormat::R_u16;
@@ -76,11 +78,11 @@ static TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) {
     case FIT_RGBAF: {
         return TextureStorageFormat::RGBA_f32;
     }
-    case FIT_BITMAP:{
+    case FIT_BITMAP: {
         unsigned int bpp = FreeImage_GetBPP(pImage);
-        if (bpp == 24){
+        if (bpp == 24) {
             return TextureStorageFormat::RGB_f8;
-        } else if (bpp == 32){
+        } else if (bpp == 32) {
             return TextureStorageFormat::RGBA_f8;
         }
     }
@@ -93,6 +95,7 @@ static TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) {
 }
 
 void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &desc) {
+    using Graphics::TextureStorageFormat;
     LOG_INFO("Loading Texture: {}", key);
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
 
@@ -100,12 +103,12 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
     unsigned int nHeight = FreeImage_GetHeight(pImage);
 
     TextureStorageFormat storage_type = get_proper_storage_type(pImage);
-    if (storage_type == TextureStorageFormat::UNKNOWN){
+    if (storage_type == TextureStorageFormat::UNKNOWN) {
         throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", desc.path.string()));
     }
-    TextureCreateDesc texture_desc{TextureType::TEXTURE_2D, storage_type, {nWidth, nHeight, 0}};
+    Graphics::TextureCreateDesc texture_desc{Graphics::TextureType::TEXTURE_2D, storage_type, {nWidth, nHeight, 0}};
 
-    intrusive_ptr<Texture> texture = graphics_api->create_texture(texture_desc);
+    intrusive_ptr<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
     texture->set_warp_mode(desc.warp_mode);
 
@@ -118,6 +121,7 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
 }
 
 void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc &desc) {
+    using Graphics::TextureStorageFormat;
     LOG_INFO("Loading CubeMap: {}", key);
     // 使用第一张图像的宽高信息分配纹理空间
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
@@ -126,11 +130,12 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
     unsigned int nHeight = FreeImage_GetHeight(pImage);
 
     TextureStorageFormat storage_type = get_proper_storage_type(pImage);
-    if (storage_type == TextureStorageFormat::UNKNOWN){
+    if (storage_type == TextureStorageFormat::UNKNOWN) {
         throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", desc.path[0].string()));
     }
-    TextureCreateDesc texture_desc{TextureType::TEXTURE_CUBEMAP, storage_type, {nWidth, nHeight, 0}};
-    intrusive_ptr<Texture> texture = graphics_api->create_texture(texture_desc);
+    Graphics::TextureCreateDesc texture_desc{
+        Graphics::TextureType::TEXTURE_CUBEMAP, storage_type, {nWidth, nHeight, 0}};
+    intrusive_ptr<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
 
     texture->import_image(pImage, 0, 0, 0, 0);
@@ -150,5 +155,5 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
     textures.emplace(key, texture);
 };
 
-} // namespace Graphics
+} // namespace Resource
 } // namespace Goonya

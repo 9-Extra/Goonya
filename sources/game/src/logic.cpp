@@ -3,7 +3,7 @@
 #include "core/input/input.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
-#include <function/renderer/RenderResource.h>
+#include <resource/Resource.h>
 #include <platform/graphics/Shader.h>
 
 #include <FreeImage.h>
@@ -34,7 +34,7 @@ void MoveSystem::handle_keyboard(float delta) {
 
     if (Goonya::Input::is_key_click('F')) {
         static const std::string key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
-        Graphics::ShaderLib *shader_lib = Graphics::resources.shader_lib.get();
+        Graphics::ShaderLib *shader_lib = Resource::resources.shader_lib.get();
         if (!shader_lib->is_global_varient_key_set(key_name)) {
             shader_lib->set_global_varient_key(key_name);
         } else {
@@ -44,7 +44,7 @@ void MoveSystem::handle_keyboard(float delta) {
 
     if (Goonya::Input::is_key_click('P')){
         LOG_DEBUG("正在进行图像导出");
-        intrusive_ptr<Graphics::Texture> skybox = Graphics::resources.textures.at("skybox_valley_color");
+        intrusive_ptr<Graphics::Texture> skybox = Resource::resources.textures.at("skybox_valley_color");
         FIBITMAP* image = skybox->export_image(0);
         FreeImage_AdjustGamma(image, 2.2);
         if (!FreeImage_Save(FIF_BMP, image, "output.bmp")){
