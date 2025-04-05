@@ -10,7 +10,7 @@ namespace Resource {
 
 class MaterialBuilder {
 public:
-    MaterialBuilder(const std::string &uber_shader_name) { desc.uber_shader_name = uber_shader_name; }
+    MaterialBuilder(const AssetKey &uber_shader_name) { desc.uber_shader_name = uber_shader_name; }
 
     void set_variant_key(const std::string &key) noexcept { varient_keys.emplace(key); }
     void set_depth_test_mode(Graphics::DepthTestMode mode) noexcept { desc.depth_test = mode; }

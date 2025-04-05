@@ -16,7 +16,7 @@
 namespace Goonya {
 namespace Resource {
 
-void load_gltf(const std::string &base_key, const std::filesystem::path &path) {
+void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
     std::filesystem::path root = path.parent_path();
    
     Json::Value json;

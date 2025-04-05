@@ -1,12 +1,13 @@
 #pragma once
 
-#include <string>
+#include "core/asserts.h"
+
 #include <filesystem>
 
 namespace Goonya {
 namespace Resource {
 
-void load_gltf(const std::string &base_key, const std::filesystem::path &path);
+void load_gltf(const AssetKey &base_key, const std::filesystem::path &path);
 
 }
 }

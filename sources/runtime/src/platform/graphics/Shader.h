@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/asserts.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "runtime/GoonyaException.h"
@@ -139,7 +140,7 @@ public:
     }
 
 private:
-    UberShader() {}
+    UberShader(UberShaderDesc &&desc);
     UberShader(const UberShader &) = delete;
     UberShader(UberShader &&) = delete;
     // 创建后会变的
@@ -218,7 +219,7 @@ public:
 protected:
     std::unordered_set<std::string> global_variant_key_names; // 全局着色器变体定义
 
-    std::unordered_map<std::string, std::unique_ptr<UberShader>> uber_shaders; // 从名称到UberShader
+    std::unordered_map<AssetKey, std::unique_ptr<UberShader>> uber_shaders; // 从名称到UberShader
 
     // 从全局定义到此定义影响的UberShader
     // std::unordered_map<std::string, UberShader *> global_key_relat_uber_shader;

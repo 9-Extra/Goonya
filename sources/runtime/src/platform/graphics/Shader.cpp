@@ -1,6 +1,7 @@
 #include "Shader.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
+#include "resource/Resource.h"
 #include <memory>
 
 namespace Goonya {
@@ -104,38 +105,39 @@ bool VariantKeyCollect::is_key_defined(VariantCode code, const std::string &key)
     return ss.str();
 }
 
-
-void ShaderLib::add_uber_shader(const std::string &name, UberShaderDesc &&desc) {
-    std::unique_ptr<UberShader> uber_shader{new UberShader()};
-    uber_shader->vs_src = std::move(desc.vs_src);
-    uber_shader->ps_src = std::move(desc.ps_src);
-    uber_shader->global_variant_key_collect = VariantKeyCollect(std::move(desc.global_variant_keys));
-    uber_shader->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
+UberShader::UberShader(UberShaderDesc &&desc) {
+    this->vs_src = std::move(desc.vs_src);
+    this->ps_src = std::move(desc.ps_src);
+    this->global_variant_key_collect = VariantKeyCollect(std::move(desc.global_variant_keys));
+    this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
    
     // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用create_variant
     VariantCodeSet empty{.full_code = 0}; 
     std::vector<std::string> variant_keys;
-    uber_shader->get_variant_key_names(empty, variant_keys);
-    std::string mixed_vs = shader_source_inject(uber_shader->vs_src, variant_keys);
-    std::string mixed_ps = shader_source_inject(uber_shader->ps_src, variant_keys);
+    this->get_variant_key_names(empty, variant_keys);
+    std::string mixed_vs = shader_source_inject(this->vs_src, variant_keys);
+    std::string mixed_ps = shader_source_inject(this->ps_src, variant_keys);
 
     intrusive_ptr<Shader> shader = graphics_api->complie_shader_program(mixed_vs, mixed_ps);
-    uber_shader->shaders[empty] = shader; // 既然编译了就加入缓存
+    this->shaders[empty] = shader; // 既然编译了就加入缓存
 
     std::unique_ptr<ShaderIntrospector> introspector = graphics_api->create_shader_introspect(shader.get());
     auto buffer_info = introspector->get_constant_buffer_info();
 
-    uber_shader->per_material = std::move(buffer_info["per_material"]);
-    uber_shader->per_frame = std::move(buffer_info.at("per_frame"));
-    uber_shader->texture_units = introspector->get_texture_info();
+    this->per_material = std::move(buffer_info["per_material"]);
+    this->per_frame = std::move(buffer_info.at("per_frame"));
+    this->texture_units = introspector->get_texture_info();
 
-    uber_shader->global_key_code = 0; // 记得初始化为0！
+    this->global_key_code = 0; // 记得初始化为0！
     // 设置现有的全局变体键
-    for(const std::string& key: global_variant_key_names){
-        uber_shader->global_variant_key_collect.set_varient_code(uber_shader->global_key_code, key); 
+    for(const std::string& key: Resource::resources.shader_lib->get_global_varient_keys()){
+        this->global_variant_key_collect.set_varient_code(this->global_key_code, key); 
     }
+}
 
-    uber_shaders.emplace(name, std::move(uber_shader));
+
+void ShaderLib::add_uber_shader(const AssetKey &name, UberShaderDesc &&desc) {
+    uber_shaders.emplace(name, new UberShader{std::move(desc)});
 }
 
 intrusive_ptr<Shader> UberShader::query_variant(VariantCodeSet variant_code) {

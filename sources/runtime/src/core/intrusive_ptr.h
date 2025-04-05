@@ -25,13 +25,13 @@ public:
     }
 
     intrusive_ptr<T>& operator=(const intrusive_ptr<T>& other) noexcept{
+        if (other.px != nullptr){
+            intrusive_ptr_add_ref(other.px);
+        }
         if (px != nullptr) {
             intrusive_ptr_release(px);
         }
         px = other.px;
-        if (px != nullptr){
-            intrusive_ptr_add_ref(px);
-        }
         return *this;
     }
 

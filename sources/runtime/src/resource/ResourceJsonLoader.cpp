@@ -65,7 +65,7 @@ void load_json(const std::filesystem::path &path) {
 
     // 着色器
     for (auto iter = json["shader"].begin(); iter != json["shader"].end(); iter++) {
-        const std::string &key = iter.name();
+        const AssetKey &key = iter.name();
         const Json::Value &shader_desc = *iter;
 
         const Json::Value &shader_sources = shader_desc["sources"];
@@ -93,7 +93,7 @@ void load_json(const std::filesystem::path &path) {
 
     // 贴图
     for (auto iter = json["texture"].begin(); iter != json["texture"].end(); iter++) {
-        const std::string &key = iter.name();
+        const AssetKey &key = iter.name();
         const Json::Value &texture_desc = *iter;
 
         Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
@@ -108,7 +108,7 @@ void load_json(const std::filesystem::path &path) {
 
     // 立方体贴图
     for (auto iter = json["cubemap"].begin(); iter != json["cubemap"].end(); iter++) {
-        const std::string &key = iter.name();
+        const AssetKey &key = iter.name();
         const Json::Value &cubemap_desc = *iter;
 
         TextureCubeMapDesc desc{
@@ -126,7 +126,7 @@ void load_json(const std::filesystem::path &path) {
 
     // 材质
     for (auto iter = json["materials"].begin(); iter != json["materials"].end(); iter++) {
-        const std::string &key = iter.name();
+        const AssetKey &key = iter.name();
         const Json::Value &material_desc = *iter;
 
         Resource::MaterialBuilder mat_builder(material_desc["uber_shader"].asString());

@@ -7,6 +7,7 @@
 #include <string>
 #include <unordered_map>
 
+#include "core/asserts.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
@@ -53,7 +54,7 @@ public:
         shader_lib.reset();
     }
 
-    void add_mesh(const std::string &key, const Graphics::VertexLayout &vertex_layout,
+    void add_mesh(const AssetKey &key, const Graphics::VertexLayout &vertex_layout,
                   std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices,
                   Graphics::Topology topology = Graphics::Topology::TRIANGLE) {
         LOG_INFO("Loading Mesh: {}", key);
@@ -61,7 +62,7 @@ public:
     };
     template <typename D>
         requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const std::string &key, const Graphics::VertexLayout &vertex_layout, std::span<const D> vertices,
+    void add_mesh(const AssetKey &key, const Graphics::VertexLayout &vertex_layout, std::span<const D> vertices,
                   std::span<const uint16_t> indices, Graphics::Topology topology = Graphics::Topology::TRIANGLE) {
         add_mesh(key, vertex_layout, std::span((uint8_t *const)vertices.data(), vertices.size_bytes()), indices,
                  topology);
@@ -69,13 +70,13 @@ public:
 
     template <typename D>
         requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const std::string &key, const Graphics::VertexLayout &vertex_layout, std::span<D> vertices,
+    void add_mesh(const AssetKey &key, const Graphics::VertexLayout &vertex_layout, std::span<D> vertices,
                   std::span<const uint16_t> indices, Graphics::Topology topology = Graphics::Topology::TRIANGLE) {
         add_mesh(key, vertex_layout, std::span((uint8_t *const)vertices.data(), vertices.size_bytes()), indices,
                  topology);
     }
 
-    void add_material(const std::string &key, const Graphics::MaterialDesc &desc) {
+    void add_material(const AssetKey &key, const Graphics::MaterialDesc &desc) {
         assert(!materials.contains(key));
         LOG_INFO("Loading Material: {}", key);
         intrusive_ptr<Graphics::Material> mat{
@@ -91,9 +92,9 @@ public:
         }
         materials.emplace(key, mat);
     }
-    void add_texture2d(const std::string &key, const Texture2DDesc &desc);
-    void add_cubemap(const std::string &key, const TextureCubeMapDesc &desc);
-    void add_shader(const std::string &key, Graphics::UberShaderDesc &&desc) {
+    void add_texture2d(const AssetKey &key, const Texture2DDesc &desc);
+    void add_cubemap(const AssetKey &key, const TextureCubeMapDesc &desc);
+    void add_shader(const AssetKey &key, Graphics::UberShaderDesc &&desc) {
         LOG_INFO("Loading Shader: {}", key);
         shader_lib->add_uber_shader(key, std::move(desc));
     }
