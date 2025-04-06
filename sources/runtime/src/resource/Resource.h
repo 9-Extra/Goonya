@@ -1,10 +1,11 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
+#include <cassert>
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <unordered_map>
 
 #include "core/asserts.h"
@@ -12,7 +13,10 @@
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Mesh.h"
 #include "platform/graphics/Shader.h"
+#include "platform/graphics/Texture.h"
+#include "runtime/GoonyaException.h"
 
 namespace Goonya {
 namespace Resource {
@@ -33,15 +37,92 @@ struct TextureCubeMapDesc {
     Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };
 
+template <class TDesc, class TAsset>
+class ResourceLoader {
+public:
+    const static std::string name;
+    intrusive_ptr<TAsset> load(const TDesc &desc) const {
+        assert(false); // 需要实现
+        return nullptr;
+    }
+};
+
+template <class TDesc, class TAsset>
+class ResourceContainer {
+public:
+    ResourceContainer(const std::string &name) : name(name) {}
+    template <typename T>
+        requires std::is_convertible_v<T, TDesc>
+    void add(const AssetKey &key, T &&desc) {
+        auto [_, ok] = container.emplace(key, std::tuple<intrusive_ptr<TAsset>, TDesc>{nullptr, std::forward<T>(desc)});
+        if (!ok) {
+            throw RuntimeError(std::format("资源\"{}\"重复注册", key));
+        }
+    }
+
+    intrusive_ptr<TAsset> get(const AssetKey &key) {
+        if (auto iter = container.find(key); iter != container.end()) {
+            auto &[asset, desc] = iter->second;
+            if (!asset) [[unlikely]] {
+                LOG_TRACE("正在加载{}：\"{}\"", name, key);
+                asset = load(desc);
+            }
+            return asset;
+        } else {
+            throw RuntimeError(std::format("资源\"{}\"未注册", key));
+        }
+    }
+
+    void clear() { container.clear(); }
+
+protected:
+    virtual intrusive_ptr<TAsset> load(const TDesc &desc) const = 0;
+
+    std::string name;
+    std::unordered_map<AssetKey, std::tuple<intrusive_ptr<TAsset>, TDesc>> container;
+};
+
+class MeshContainer final: public ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
+public:
+    MeshContainer() : ResourceContainer<Graphics::MeshDesc, Graphics::Mesh>("网格") {}
+
+protected:
+    intrusive_ptr<Graphics::Mesh> load(const Graphics::MeshDesc &desc) const override{
+        return Graphics::graphics_api->load_mesh(desc);
+    }
+};
+
+class MaterialContainer final: public ResourceContainer<Graphics::MaterialDesc, Graphics::Material> {
+public:
+    MaterialContainer() : ResourceContainer<Graphics::MaterialDesc, Graphics::Material>("材质") {}
+
+protected:
+    intrusive_ptr<Graphics::Material> load(const Graphics::MaterialDesc &desc) const override;
+};
+
+class Texture2DContainer final: public ResourceContainer<Texture2DDesc, Graphics::Texture> {
+public:
+    Texture2DContainer() : ResourceContainer<Texture2DDesc, Graphics::Texture>("纹理") {}
+
+protected:
+    intrusive_ptr<Graphics::Texture> load(const Texture2DDesc &desc) const override;
+};
+
+class TextureCubeMapContainer final: public ResourceContainer<TextureCubeMapDesc, Graphics::Texture> {
+public:
+    TextureCubeMapContainer() : ResourceContainer<TextureCubeMapDesc, Graphics::Texture>("纹理") {}
+
+protected:
+    intrusive_ptr<Graphics::Texture> load(const TextureCubeMapDesc &desc) const override;
+};
+
 // 资源管理器
 class RenderReousce final {
 public:
-    template <class T>
-    using ResourceContainer = std::unordered_map<std::string, intrusive_ptr<T>>;
-
-    ResourceContainer<Graphics::Mesh> meshes;
-    ResourceContainer<Graphics::Material> materials;
-    ResourceContainer<Graphics::Texture> textures;
+    MeshContainer meshes;
+    MaterialContainer materials;
+    Texture2DContainer texture2ds;
+    TextureCubeMapContainer cubemaps;
 
     std::unique_ptr<Graphics::ShaderLib> shader_lib;
 
@@ -50,50 +131,10 @@ public:
     void clear() {
         meshes.clear();
         materials.clear();
-        textures.clear();
+        texture2ds.clear();
         shader_lib.reset();
     }
 
-    void add_mesh(const AssetKey &key, const Graphics::VertexLayout &vertex_layout,
-                  std::span<const uint8_t> raw_vertices, std::span<const uint16_t> indices,
-                  Graphics::Topology topology = Graphics::Topology::TRIANGLE) {
-        LOG_INFO("Loading Mesh: {}", key);
-        meshes.emplace(key, Graphics::graphics_api->load_mesh(topology, vertex_layout, raw_vertices, indices));
-    };
-    template <typename D>
-        requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const AssetKey &key, const Graphics::VertexLayout &vertex_layout, std::span<const D> vertices,
-                  std::span<const uint16_t> indices, Graphics::Topology topology = Graphics::Topology::TRIANGLE) {
-        add_mesh(key, vertex_layout, std::span((uint8_t *const)vertices.data(), vertices.size_bytes()), indices,
-                 topology);
-    }
-
-    template <typename D>
-        requires std::is_trivially_copyable_v<D> && (!std::is_same_v<D, uint8_t>)
-    void add_mesh(const AssetKey &key, const Graphics::VertexLayout &vertex_layout, std::span<D> vertices,
-                  std::span<const uint16_t> indices, Graphics::Topology topology = Graphics::Topology::TRIANGLE) {
-        add_mesh(key, vertex_layout, std::span((uint8_t *const)vertices.data(), vertices.size_bytes()), indices,
-                 topology);
-    }
-
-    void add_material(const AssetKey &key, const Graphics::MaterialDesc &desc) {
-        assert(!materials.contains(key));
-        LOG_INFO("Loading Material: {}", key);
-        intrusive_ptr<Graphics::Material> mat{
-            Graphics::graphics_api->create_material(shader_lib->query_uber_shader(desc.uber_shader_name))};
-        mat->set_depth_test_mode(desc.depth_test);
-        mat->set_cull_mode(desc.cull_mode);
-
-        for (const auto &[name, value] : desc.parameters) {
-            mat->set_param(name, value);
-        }
-        for (const auto &[name, texture_key] : desc.textures) {
-            mat->set_texture(name, textures.at(texture_key));
-        }
-        materials.emplace(key, mat);
-    }
-    void add_texture2d(const AssetKey &key, const Texture2DDesc &desc);
-    void add_cubemap(const AssetKey &key, const TextureCubeMapDesc &desc);
     void add_shader(const AssetKey &key, Graphics::UberShaderDesc &&desc) {
         LOG_INFO("Loading Shader: {}", key);
         shader_lib->add_uber_shader(key, std::move(desc));

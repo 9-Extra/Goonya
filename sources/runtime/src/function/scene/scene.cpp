@@ -48,16 +48,11 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
             if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->mesh = Resource::resources.meshes.at(cpnt_desc["mesh"].asString());
+                cpnt_ptr->mesh = Resource::resources.meshes.get(cpnt_desc["mesh"].asString());
             }
             if (cpnt_desc.isMember("material")) {
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    if (auto iter = Resource::resources.materials.find(material_name.asString());
-                        iter != Resource::resources.materials.end()) {
-                        cpnt_ptr->materials.emplace_back(Resource::resources.materials.at(material_name.asString()));
-                    } else {
-                        throw RuntimeError(std::format("材质\"{}\"未加载", material_name.asString()));
-                    }
+                    cpnt_ptr->materials.emplace_back(Resource::resources.materials.get(material_name.asString()));
                 }
             }
             obj->add_component(std::move(cpnt_ptr));
@@ -75,7 +70,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
             intrusive_ptr<Graphics::Material> material =
-                Resource::resources.materials.at(cpnt_desc["material"].asString());
+                Resource::resources.materials.get(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
             if (cpnt_desc.isMember("bbox")) {

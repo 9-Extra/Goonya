@@ -52,7 +52,7 @@ class SkyBoxPass : public Pass {
 public:
     SkyBoxPass()
         : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
-          mesh(Resource::resources.meshes.at("skybox_cube")) {}
+          mesh(Resource::resources.meshes.get("skybox_cube")) {}
 
     virtual void run() override;
 

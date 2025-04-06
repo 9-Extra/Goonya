@@ -25,7 +25,7 @@ enum class DepthTestMode { LESS = 0, LESS_EQUAL, GREATER, GREATER_EQUAL, NEVER, 
 
 struct MaterialDesc {
     std::unordered_map<std::string, Meta::DynamicData> parameters;
-    std::vector<std::tuple<std::string, std::string>> textures; // (着色器中名称, 资源键)
+    std::vector<std::tuple<std::string, TextureType, std::string>> textures; // (着色器中名称, 纹理类型，资源键)
 
     std::string uber_shader_name;
     std::vector<std::string> variant_keys; // 不区分全局和局部

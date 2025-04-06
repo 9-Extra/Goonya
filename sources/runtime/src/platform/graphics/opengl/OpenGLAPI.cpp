@@ -46,16 +46,14 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(Topology topology, const VertexLayout &vertex_layout,
-                                                 std::span<const uint8_t> raw_vertices,
-                                                 std::span<const uint16_t> indices) {
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const MeshDesc& desc) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
     // Goonya定义的uv以右上角为原点，而OpenGL的uv使用左下角
-    intrusive_ptr<GLBuffer> vertex_buffer{raw_vertices, BufferType::STATIC};
-    intrusive_ptr<GLBuffer> index_buffer{indices, BufferType::STATIC};
+    intrusive_ptr<GLBuffer> vertex_buffer{desc.raw_vertices.as_span<uint8_t>(), BufferType::STATIC};
+    intrusive_ptr<GLBuffer> index_buffer{std::span(desc.indices), BufferType::STATIC};
 
-    return intrusive_ptr<GLMesh>{new GLMesh{topology, vertex_layout, vertex_buffer, index_buffer}};
+    return intrusive_ptr<GLMesh>{new GLMesh{desc.sub_meshes, desc.vertex_layout, vertex_buffer, index_buffer}};
 }
 
 intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {

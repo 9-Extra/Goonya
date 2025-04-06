@@ -1,8 +1,10 @@
 #include "Resource.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Texture.h"
+#include "runtime/GoonyaException.h"
 
 #include <FreeImage.h>
+#include <cassert>
 #include <glad/glad.h>
 #include <nowide/convert.hpp>
 
@@ -94,16 +96,45 @@ static Graphics::TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) 
     return TextureStorageFormat::UNKNOWN;
 }
 
-void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &desc) {
-    using Graphics::TextureStorageFormat;
-    LOG_INFO("Loading Texture: {}", key);
+intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::MaterialDesc &desc) const {
+    intrusive_ptr<Graphics::Material> mat{
+        Graphics::graphics_api->create_material(resources.shader_lib->query_uber_shader(desc.uber_shader_name))};
+    mat->set_depth_test_mode(desc.depth_test);
+    mat->set_cull_mode(desc.cull_mode);
+
+    for (const auto &[name, value] : desc.parameters) {
+        mat->set_param(name, value);
+    }
+    for (const auto &[name, texture_type, texture_key] : desc.textures) {
+        switch (texture_type) {
+
+        case Graphics::TextureType::UNKNOWN: {
+            throw RuntimeError(std::format("纹理资源\"{}\"类型未指定", texture_key));
+        }
+        case Graphics::TextureType::TEXTURE_2D: {
+            mat->set_texture(name, resources.texture2ds.get(texture_key));
+            break;
+        }
+        case Graphics::TextureType::TEXTURE_CUBEMAP: {
+            mat->set_texture(name, resources.cubemaps.get(texture_key));
+            break;
+        }
+        default: {
+            assert(false); // todo
+        }
+        }
+    }
+    return mat;
+}
+
+intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &desc) const {
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
 
-    TextureStorageFormat storage_type = get_proper_storage_type(pImage);
-    if (storage_type == TextureStorageFormat::UNKNOWN) {
+    Graphics::TextureStorageFormat storage_type = get_proper_storage_type(pImage);
+    if (storage_type == Graphics::TextureStorageFormat::UNKNOWN) {
         throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", desc.path.string()));
     }
     Graphics::TextureCreateDesc texture_desc{Graphics::TextureType::TEXTURE_2D, storage_type, {nWidth, nHeight, 0}};
@@ -117,12 +148,11 @@ void RenderReousce::add_texture2d(const std::string &key, const Texture2DDesc &d
 
     FreeImage_Unload(pImage);
 
-    textures.emplace(key, texture);
-}
+    return texture;
+};
 
-void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc &desc) {
+intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCubeMapDesc &desc) const {
     using Graphics::TextureStorageFormat;
-    LOG_INFO("Loading CubeMap: {}", key);
     // 使用第一张图像的宽高信息分配纹理空间
     FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
 
@@ -152,8 +182,7 @@ void RenderReousce::add_cubemap(const std::string &key, const TextureCubeMapDesc
     }
     texture->generate_mipmaps();
 
-    textures.emplace(key, texture);
+    return texture;
 };
-
 } // namespace Resource
 } // namespace Goonya

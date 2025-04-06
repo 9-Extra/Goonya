@@ -1,9 +1,11 @@
 #pragma once
 
+#include "core/Bytes.h"
 #include "core/hash_helper.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 namespace Goonya {
@@ -57,6 +59,22 @@ struct SubMesh {
     uint32_t start_index;
     uint32_t index_count;
     Topology topology;
+};
+
+struct MeshDesc {
+    VertexLayout vertex_layout;
+    Bytes raw_vertices;
+    std::vector<uint16_t> indices;
+    std::vector<SubMesh> sub_meshes;
+
+    template <typename T, typename I, typename M>
+    MeshDesc(T&& vertex_layout, Bytes&& raw_vertices, I&& indices, M&& sub_meshes)
+        : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
+          indices(std::forward<I>(indices)), sub_meshes(std::forward<M>(sub_meshes)) {}
+    template <typename T, typename I>
+    MeshDesc(T&& vertex_layout, Bytes&& raw_vertices, I&& indices, Topology topology)
+        : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
+          indices(std::forward<I>(indices)), sub_meshes({{0, (uint32_t)this->indices.size(), topology}}) {}
 };
 
 class Mesh : public intrusive_ptr_base<Mesh> {

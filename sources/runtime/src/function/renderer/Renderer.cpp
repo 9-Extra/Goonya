@@ -1,11 +1,13 @@
 #include "Renderer.h"
 
 #include "HardcodeAssets.h"
+#include "core/Bytes.h"
 #include "core/cgmath.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderAspect.h"
+#include "platform/graphics/Mesh.h"
 #include "resource/Resource.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/Graphics.h"
@@ -19,12 +21,21 @@ Renderer renderer; // global renderer
 
 void init_resource() {
     // 部分硬编码的mesh
-    Resource::resources.add_mesh("default", VertexLayout{{}, 0}, {}, {});
-    Resource::resources.add_mesh("plane", Assets::plane_vertices_vertex_layout, std::span(Assets::plane_vertices),
-                       Assets::plane_indices);
+    MeshDesc plane{
+        Assets::plane_vertices_vertex_layout,
+        Bytes::from_span(std::span(Assets::plane_vertices)),
+        Assets::plane_indices,
+        Topology::TRIANGLE
+    };
+    Resource::resources.meshes.add("plane", std::move(plane));
     // 添加天空盒的mesh，因为格式不一样所以单独处理
-    Resource::resources.add_mesh("skybox_cube", Assets::skybox_cube_vertex_layout, std::span(Assets::skybox_cube_vertices),
-                       std::span(Assets::skybox_cube_indices));
+    MeshDesc skybox_cube{
+        Assets::skybox_cube_vertex_layout,
+        Bytes::from_span(std::span(Assets::skybox_cube_vertices)),
+        Assets::skybox_cube_indices,
+        Topology::TRIANGLE
+    };
+    Resource::resources.meshes.add("skybox_cube", std::move(skybox_cube));
     // 从json加载大部分的资源
     Resource::load_json("../assets/resources.json");
     // 通过硬编码加载的部分资源

@@ -1,6 +1,7 @@
 #pragma once
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Texture.h"
 #include <iterator>
 #include <unordered_set>
 #include <vector>
@@ -22,8 +23,8 @@ public:
         return *this;
     }
 
-    MaterialBuilder &add_sampler(const std::string &name, std::string texture_key) noexcept {
-        desc.textures.emplace_back(name, texture_key);
+    MaterialBuilder &add_sampler(const std::string &name, Graphics::TextureType type, std::string texture_key) noexcept {
+        desc.textures.emplace_back(name, type, texture_key);
         return *this;
     }
 

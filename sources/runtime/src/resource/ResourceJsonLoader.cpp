@@ -103,7 +103,7 @@ void load_json(const std::filesystem::path &path) {
         desc.filter_mode = filter_mode;
         desc.warp_mode = warp_mode;
 
-        resources.add_texture2d(key, desc);
+        resources.texture2ds.add(key, desc);
     }
 
     // 立方体贴图
@@ -121,7 +121,7 @@ void load_json(const std::filesystem::path &path) {
         desc.filter_mode = filter_mode;
         desc.warp_mode = warp_mode;
 
-        resources.add_cubemap(key, desc);
+        resources.cubemaps.add(key, desc);
     }
 
     // 材质
@@ -228,10 +228,30 @@ void load_json(const std::filesystem::path &path) {
 
         for (auto iter = material_desc["samplers"].begin(); iter != material_desc["samplers"].end(); iter++) {
             const std::string &name = iter.name();
-            mat_builder.add_sampler(name, iter->asString());
+            const std::string& texture = iter->asString();
+            const static std::regex pattern(R"(^\s*(\w+)\s*\((.+)\)$)");
+            std::smatch matches;
+            if (std::regex_match(texture, matches, pattern)){
+                Graphics::TextureType type = Graphics::TextureType::UNKNOWN;
+                const auto type_name = matches[1];
+
+                if (type_name.compare("texture2d") == 0){
+                    type = Graphics::TextureType::TEXTURE_2D;
+                } else if (type_name.compare("cubemap") == 0){
+                    type = Graphics::TextureType::TEXTURE_CUBEMAP;
+                }
+
+                if (type != Graphics::TextureType::UNKNOWN){
+                    mat_builder.add_sampler(name, type, matches[2].str());
+                } else {
+                    throw RuntimeError(std::format("未知纹理类型\"{}\"", type_name.str()));    
+                }
+            } else {
+                throw RuntimeError(std::format("纹理参数格式\"{}\"不正确", texture));
+            }
         }
 
-        resources.add_material(key, mat_builder.build());
+        resources.materials.add(key, mat_builder.build());
     }
 
     // gltf

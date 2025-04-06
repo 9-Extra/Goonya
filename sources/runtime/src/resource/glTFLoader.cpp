@@ -1,14 +1,17 @@
 #include "glTFLoader.h"
 
+#include "core/Bytes.h"
 #include "core/cgmath.h"
-#include "resource/Resource.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Mesh.h"
 #include "platform/graphics/Texture.h"
 #include "resource/GraphicsResourceBuilder.h"
+#include "resource/Resource.h"
 
 #include "runtime/GoonyaException.h"
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <json/json.h>
 #include <vector>
@@ -18,7 +21,7 @@ namespace Resource {
 
 void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
     std::filesystem::path root = path.parent_path();
-   
+
     Json::Value json;
     {
         Json::Reader reader;
@@ -69,7 +72,7 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
             uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
             uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
-            if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count){
+            if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
                 throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
             Vector3f *pos = (Vector3f *)((char *)buffers[position_buffer["buffer"].asUInt()].ptr +
@@ -80,14 +83,15 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
                 (Vector2f *)((char *)buffers[uv_buffer["buffer"].asUInt()].ptr + uv_buffer["byteOffset"].asInt64());
             Vector4f *tangent = (Vector4f *)((char *)buffers[tangent_buffer["buffer"].asUInt()].ptr +
                                              tangent_buffer["byteOffset"].asUInt());
-            
+
             struct Vertex {
                 Vector3f position;
                 Vector3f normal;
                 Vector3f tangent;
                 Vector2f uv;
             };
-            std::vector<Vertex> vertices(vertex_count);
+            Bytes raw_vertices(vertex_count * sizeof(Vertex));
+            std::span<Vertex> vertices = raw_vertices.as_span<Vertex>();
             for (uint32_t i = 0; i < vertex_count; i++) {
                 // tangent的第四个分量是用来根据平台决定手性的，在opengl中始终应该取1，所以忽略
                 Vector3f tang = Vector3f(tangent[i].x, tangent[i].y, tangent[i].z);
@@ -96,7 +100,7 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
 
             // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
             std::vector<uint16_t> indices(indices_count);
-            for(uint32_t i = 0; i < indices_count;i += 3){
+            for (uint32_t i = 0; i < indices_count; i += 3) {
                 indices[i + 0] = indices_ptr[i + 2];
                 indices[i + 1] = indices_ptr[i + 1];
                 indices[i + 2] = indices_ptr[i + 0];
@@ -109,8 +113,8 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
                  {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
                 sizeof(Vertex)};
 
-            resources.add_mesh(key, vertex_layout, std::span(vertices),
-                                         std::span(indices));
+            resources.meshes.add(
+                key, Graphics::MeshDesc{vertex_layout, std::move(raw_vertices), indices, Graphics::Topology::TRIANGLE});
         }
     }
     // 加载纹理（在加载材质时加载需要的纹理）
@@ -147,7 +151,7 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
             }
         }
 
-        resources.add_texture2d(key, desc);
+        resources.texture2ds.add(key, std::move(desc));
         return key;
     };
 
@@ -178,14 +182,16 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
             }
 
             Resource::MaterialBuilder mat_builder("pbr");
-            Graphics::MaterialDesc desc = mat_builder.add_parameter("metallic_factor", metallicFactor)
-                                              .add_parameter("roughness_factor", roughnessFactor)
-                                              .add_sampler("basecolor_texture", basecolor_texture)
-                                              .add_sampler("normal_texture", normal_texture)
-                                              .add_sampler("metallic_roughness_texture", metallic_roughness_texture)
-                                              .build();
+            Graphics::MaterialDesc desc =
+                mat_builder.add_parameter("metallic_factor", metallicFactor)
+                    .add_parameter("roughness_factor", roughnessFactor)
+                    .add_sampler("basecolor_texture", Graphics::TextureType::TEXTURE_2D, basecolor_texture)
+                    .add_sampler("normal_texture", Graphics::TextureType::TEXTURE_2D, normal_texture)
+                    .add_sampler("metallic_roughness_texture", Graphics::TextureType::TEXTURE_2D,
+                                 metallic_roughness_texture)
+                    .build();
 
-            resources.add_material(key, desc);
+            resources.materials.add(key, std::move(desc));
         }
     }
 }

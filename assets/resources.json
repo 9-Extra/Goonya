@@ -78,7 +78,7 @@
             "variant_keys": [],
             "parameters": {},
             "samplers": {
-                "skybox_specular_texture": "skybox_valley_color"
+                "skybox_specular_texture": "cubemap(skybox_valley_color)"
             }
         },
         "wood_flat": {
@@ -87,7 +87,7 @@
                 "emissive": "vec3(1, 1, 1)"
             },
             "samplers": {
-                "emissive_texture": "wood_diffusion"
+                "emissive_texture": "texture2d(wood_diffusion)"
             }
         },
         "test_material": {
@@ -96,7 +96,7 @@
                 "emissive": "vec3(1, 1, 1)"
             },
             "samplers": {
-                "emissive_texture": "正"
+                "emissive_texture": "texture2d(正)"
             }
         },
         "default": {
