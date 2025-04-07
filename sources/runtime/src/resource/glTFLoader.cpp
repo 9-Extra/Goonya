@@ -123,7 +123,7 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
         const Json::Value &image_info = json["images"][texture_info["source"].asUInt()];
         const Json::Value &sampler_info = json["samplers"][texture_info["sampler"].asUInt()];
         const std::string key = base_key + '.' + image_info["name"].asString();
-        Texture2DDesc desc = {.path = root / image_info["uri"].asString(), .is_srgb = is_color};
+        Texture2DDesc desc = {.path = root / image_info["uri"].asString(), .is_color = is_color};
         // 不严格支持glTF标准
         if (sampler_info.isMember("magFilter")) {
             uint32_t value = sampler_info["magFilter"].asUInt();

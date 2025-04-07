@@ -1,20 +1,20 @@
 # Xmake cache
-.xmake/
-build/
-vsxmake*/
+/.xmake/
+/build/
+/vsxmake*/
 
 
 # MacOS Cache
 .DS_Store
 
 # vscode
-.vscode
+/.vscode
 
-.cache/
-bin/
+/.cache/
+/bin/
 
 # vs
-.vs
+/.vs
 
 
 

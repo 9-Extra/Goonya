@@ -128,7 +128,7 @@ intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::Materi
 }
 
 intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &desc) const {
-    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_srgb);
+    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_color);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
@@ -154,7 +154,7 @@ intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &d
 intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCubeMapDesc &desc) const {
     using Graphics::TextureStorageFormat;
     // 使用第一张图像的宽高信息分配纹理空间
-    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_srgb);
+    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_color);
 
     unsigned int nWidth = FreeImage_GetWidth(pImage);
     unsigned int nHeight = FreeImage_GetHeight(pImage);
@@ -173,7 +173,7 @@ intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCube
 
     // 加载其余方向上的图像
     for (unsigned int i = 1; i < desc.path.size(); i++) {
-        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_srgb);
+        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_color);
         if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)) {
             throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i].string()));
         }

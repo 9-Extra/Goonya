@@ -98,7 +98,7 @@ void load_json(const std::filesystem::path &path) {
 
         Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
 
-        desc.is_srgb = texture_desc.get("is_color", false).asBool();
+        desc.is_color = texture_desc.get("is_color", false).asBool();
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
         desc.filter_mode = filter_mode;
         desc.warp_mode = warp_mode;
@@ -116,7 +116,7 @@ void load_json(const std::filesystem::path &path) {
                      base_dir / cubemap_desc["py"].asString(), base_dir / cubemap_desc["ny"].asString(),
                      base_dir / cubemap_desc["pz"].asString(), base_dir / cubemap_desc["nz"].asString()}};
 
-        desc.is_srgb = cubemap_desc.get("is_color", false).asBool();
+        desc.is_color = cubemap_desc.get("is_color", false).asBool();
         auto [filter_mode, warp_mode] = parse_texture_profile(cubemap_desc);
         desc.filter_mode = filter_mode;
         desc.warp_mode = warp_mode;

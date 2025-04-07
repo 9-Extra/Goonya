@@ -23,16 +23,14 @@ namespace Resource {
 
 struct Texture2DDesc {
     std::filesystem::path path;
-    bool is_srgb = false;         // 是否需要转换到线性空间
-    bool is_uv_left_down = false; // UV坐标系是否以左下角为原点
+    bool is_color;
     Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
     Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };
 
 struct TextureCubeMapDesc {
-    std::array<std::filesystem::path, 6> path; // px, nx, py, ny, pz, nz
-    bool is_srgb = false;                      // 是否需要转换到线性空间
-    bool is_uv_left_down = false;              // UV坐标系是否以左下角为原点
+    std::array<std::filesystem::path, 6> path;
+    bool is_color;
     Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
     Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };
