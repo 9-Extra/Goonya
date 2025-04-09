@@ -85,7 +85,7 @@ struct DynamicData {
     DynamicData() : type(FieldType::nul) {}
 
     template <meta_type T>
-    DynamicData(const T &value) {
+    DynamicData(const T& value) {
         type = CType2FieldType<T>::Type;
         if (is_internal()) {
             *(T*)&storage.value = value;

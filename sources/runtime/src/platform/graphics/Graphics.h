@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <spdlog/logger.h>
 
 #include "Buffer.h"
 #include "Material.h"
@@ -26,6 +27,12 @@ class GraphicsAPI {
 public:
     GraphicsAPI() = default;
     virtual ~GraphicsAPI() = default;
+
+    std::shared_ptr<spdlog::logger> logger; // 图形相关日志，优先初始化，最后析构
+
+    // ---------------------------调试-----------------------------
+    virtual void push_debug_group_label(const std::string& label) const noexcept = 0;
+    virtual void pop_debug_group_label() const noexcept = 0;
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
     virtual intrusive_ptr<Mesh> load_mesh(const MeshDesc& desc) = 0;

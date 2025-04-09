@@ -16,7 +16,7 @@ struct GLSubMesh {
     GLenum topology;
 };
 
-class GLMesh : public Mesh {
+class GLMesh final : public Mesh {
 public:
     virtual uint32_t get_submesh_count() const noexcept override { return (uint32_t)submeshes.size(); }
     virtual ~GLMesh() { glDeleteVertexArrays(1, &vao_id); }
@@ -24,6 +24,10 @@ public:
     // ------------------------------------
     void bind() const noexcept { glBindVertexArray(vao_id); }
 
+protected:
+    virtual void _set_debug_label(const std::string &name) const noexcept override {
+        glObjectLabel(GL_VERTEX_ARRAY, vao_id, name.size(), name.data());
+    }
 private:
     std::vector<GLSubMesh> submeshes;
 

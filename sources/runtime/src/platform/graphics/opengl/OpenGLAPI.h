@@ -15,8 +15,18 @@ class OpenGLGraphicsAPI final: public GraphicsAPI {
 public:
     OpenGLGraphicsAPI();
     ~OpenGLGraphicsAPI() {
-        // nothing
+        // 取消消息回调防止logger在销毁后被使用
+        glDebugMessageCallback(nullptr, nullptr); // 文档没写怎么反注册消息回调，猜是这样
     }
+
+    // ---------------------------调试-----------------------------
+    virtual void push_debug_group_label(const std::string& label) const noexcept override{
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, label.size(), label.data()); 
+    };
+    virtual void pop_debug_group_label() const noexcept override{
+        glPopDebugGroup();
+    }
+
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------ 
     virtual intrusive_ptr<Mesh> load_mesh(const MeshDesc& desc) override;
     virtual intrusive_ptr<Texture> create_texture(const TextureCreateDesc &desc) const override{

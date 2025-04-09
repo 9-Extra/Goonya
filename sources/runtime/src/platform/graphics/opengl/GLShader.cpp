@@ -72,7 +72,8 @@ static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
     return Meta::FieldType::nul;
 }
 
-std::unordered_map<std::string, ShaderUniformBlockInfo> GLShaderIntrospector::get_constant_buffer_info() const noexcept {
+std::unordered_map<std::string, ShaderUniformBlockInfo>
+GLShaderIntrospector::get_constant_buffer_info() const noexcept {
     // 获取所有uniform_block内部所有字段和偏移量
     GLint uniform_block_num;
     glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
@@ -88,7 +89,7 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> GLShaderIntrospector::ge
         // 获取名称长度，总大小，和字段数量
         glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, UNIFORM_BLOCK_PROPERTIES, property_count, NULL,
                                values);
-        opengl_debug_check_error();
+
         auto [binding, name_len, size, var_num] = values;
         // 获取块名称
         std::string name;
@@ -119,8 +120,6 @@ std::unordered_map<std::string, ShaderUniformBlockInfo> GLShaderIntrospector::ge
         result.emplace(name,
                        ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), (size_t)size}, (GLuint)binding});
     }
-
-    opengl_debug_check_error();
 
     return result;
 }
@@ -197,7 +196,6 @@ std::unordered_map<std::string, GLuint> GLShaderIntrospector::get_texture_info()
         glGetUniformuiv(id, location, &texture_unit); // 绑定的纹理单元视为对应location中存储的值
         result.emplace(name_buffer, texture_unit);
     }
-    opengl_debug_check_error();
 
     return result;
 }

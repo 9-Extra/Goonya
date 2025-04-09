@@ -33,7 +33,7 @@ static uint32_t calculate_fps(float delta_time) {
 }
 
 void init_engine() {
-    logger.inititalize();
+    Logger::inititalize();
     LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
 
     EventBus::initalize();
@@ -114,6 +114,6 @@ void drop_engine() {
     Display::drop();
     Timer::drop();
 
-    logger.drop();
+    Logger::drop();
 }
 } // namespace Goonya

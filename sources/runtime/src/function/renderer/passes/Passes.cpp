@@ -16,9 +16,10 @@ namespace Graphics {
 
 LambertianPass::LambertianPass() {
     per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
+    per_frame_uniform->set_debug_label("Lambert Per Frame");
     per_object_uniform = graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM);
+    per_object_uniform->set_debug_label("Lambert Per Object");
 }
-
 // 一般物体渲染
 void LambertianPass::run() {
     const CameraRenderInfo* camera = renderer.current_camera;

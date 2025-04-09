@@ -6,6 +6,9 @@
 #include <cstdint>
 #include <glad/glad.h>
 #include <nowide/convert.hpp>
+#include <spdlog/async.h>
+#include <spdlog/common.h>
+#include <spdlog/spdlog.h>
 #include <string>
 
 #include "GLBuffer.h"
@@ -20,33 +23,59 @@ namespace Goonya {
 namespace Graphics {
 
 OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
-    GLenum err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
-    if (err != GL_TRUE) {
-        LOG_ERROR("gladLoadGL Error: {}", err);
+    // 初始化日志
+    {
+        const auto sinks = Logger::get_sinks();
+        logger = std::make_shared<spdlog::async_logger>("OpenGL", sinks.begin(), sinks.end(), spdlog::thread_pool());
+        logger->set_level(spdlog::level::trace);
+        spdlog::register_logger(logger);
+    }
+    
+    // 加载OpenGL函数
+    {
+        GLenum err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+        if (err != GL_TRUE) {
+            logger->error("gladLoadGL Error: {}", err);
+        }
     }
 
-    const char *vendorName = reinterpret_cast<const char *>(glGetString(GL_VENDOR));
-    const char *version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
-    LOG_INFO("vendor: {}, version: {}", vendorName, version);
+    // 显示显卡驱动信息
+    {
+        const char *vendorName = reinterpret_cast<const char *>(glGetString(GL_VENDOR));
+        const char *version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
+        logger->info("vendor: {}, version: {}", vendorName, version);
+    }
 
-    // if (!GL_EXT_gpu_shader4) {
-    //     std::cerr << "不兼容拓展" << std::endl;
-    // }
+    // 注册消息回调
+    {
+        glDebugMessageCallback(_opengl_debug_callback, nullptr);
+        glEnable(GL_DEBUG_OUTPUT); // 无论是否为调试模式，都要打开，不然不报错
+        // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+#ifdef NDEBUG
+        // 只报告重要的事
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_FALSE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, nullptr, GL_FALSE);
+        glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
+        glDisable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // 非调试模式下关闭同步日志
+#endif
+    }
 
-    glClearColor(0.0, 0.0, 0.0, 0.0);
-    /*
-     * 启动无缝立方体贴图，允许硬件在立方体贴图边界“相邻”的纹理上跨界采样
-     * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
-     */
-    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-    // OpenGL默认renderframe的封装
-    rendertarget_screen = new GLRenderTargetScreen();
+    // 其他
+    {
+        // OpenGL默认renderframe的封装
+        rendertarget_screen = new GLRenderTargetScreen();
 
-    opengl_check_error();
+        glClearColor(0.0, 0.0, 0.0, 0.0);
+        /*
+         * 启动无缝立方体贴图，允许硬件在立方体贴图边界“相邻”的纹理上跨界采样
+         * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
+         */
+        glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+    }
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const MeshDesc& desc) {
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const MeshDesc &desc) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
     // Goonya定义的uv以右上角为原点，而OpenGL的uv使用左下角
@@ -100,8 +129,6 @@ void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
         glDrawElements(submesh.topology, submesh.index_count, GL_UNSIGNED_SHORT,
                        reinterpret_cast<void *>(submesh.start_index)); // 绘制
     }
-
-    opengl_check_error();
 }
 
 // -----------------------bind-------------------------------

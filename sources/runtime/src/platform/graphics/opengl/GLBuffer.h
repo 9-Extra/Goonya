@@ -34,20 +34,17 @@ public:
     GLBuffer(size_t size, BufferType type) : Buffer(size, type) {
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, nullptr, GLBufferType(type));
-        opengl_debug_check_error();
     };
     template <typename D>
     GLBuffer(std::span<const D> data, BufferType type) : Buffer(data.size_bytes(), type) {
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, (void *)data.data(), GLBufferType(type));
-        opengl_debug_check_error();
     };
 
     template <typename D>
     GLBuffer(std::span<D> data, BufferType type) : Buffer(data.size_bytes(), type) {
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, (void *)data.data(), GLBufferType(type));
-        opengl_debug_check_error();
     };
 
     GLuint get_id() const noexcept { return id; }
@@ -66,14 +63,14 @@ public:
             return nullptr; // 对于大小为0的Buffer返回空指针
         }
     };
-    virtual void unmap() const noexcept override { 
-        if (size != 0){
-            glUnmapNamedBuffer(id); 
+    virtual void unmap() const noexcept override {
+        if (size != 0) {
+            glUnmapNamedBuffer(id);
         }
     };
 
     // bind
-    virtual void bind_uniform(uint32_t binding) const noexcept override{
+    virtual void bind_uniform(uint32_t binding) const noexcept override {
         glBindBufferBase(GL_UNIFORM_BUFFER, binding, id);
     }
 
@@ -81,6 +78,10 @@ public:
 
 protected:
     GLuint id;
+
+    virtual void _set_debug_label(const std::string &name) const noexcept override {
+        glObjectLabel(GL_BUFFER, id, name.size(), name.data());
+    }
 };
 
 } // namespace Graphics

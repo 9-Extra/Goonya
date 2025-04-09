@@ -86,8 +86,6 @@ void GLMaterial::set_pipeline_state() const noexcept {
     } else {
         glDisable(GL_CULL_FACE);
     }
-
-    opengl_debug_check_error();
 };
 
 void GLMaterial::update() {
@@ -96,7 +94,6 @@ void GLMaterial::update() {
 }
 
 void GLMaterial::bind() {
-    opengl_debug_check_error();
     this->update();
 
     set_pipeline_state();
@@ -107,7 +104,6 @@ void GLMaterial::bind() {
     for (const auto &[unit, t] : textures) {
         t->bind(unit);
     }
-    opengl_debug_check_error();
 }
 
 void GLMaterial::update_shader_variant() {

@@ -127,7 +127,6 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
         break;
     }
     }
-    opengl_check_error();
 }
 
 void GLTexture::set_warp_mode(TextureWarpMode warp_mode) noexcept {
@@ -145,7 +144,6 @@ void GLTexture::set_warp_mode(TextureWarpMode warp_mode) noexcept {
     glTextureParameteri(id, GL_TEXTURE_WRAP_R, gl_warp_mode);
     glTextureParameteri(id, GL_TEXTURE_WRAP_S, gl_warp_mode);
     glTextureParameteri(id, GL_TEXTURE_WRAP_T, gl_warp_mode);
-    opengl_debug_check_error();
 }
 
 void GLTexture::set_filter_mode(TextureFilterMode filter_mode) noexcept {
@@ -164,7 +162,6 @@ void GLTexture::set_filter_mode(TextureFilterMode filter_mode) noexcept {
     }
     glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, min_filter);
     glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, mag_filter);
-    opengl_debug_check_error();
 }
 
 static std::tuple<GLenum, GLenum> get_freeimage_gl_format(FIBITMAP *image) noexcept {
@@ -233,14 +230,14 @@ static std::tuple<GLenum, GLenum> get_freeimage_gl_format(FIBITMAP *image) noexc
 }
 
 void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
-                            uint32_t zoffset) {
+                             uint32_t zoffset) {
 
     // 对于CUBEMAP纹理，由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
     // 对于其他纹理，由于Goonya定义的纹理坐标uv的原点为左上角（与DX一致），而OpenGL为左下角，解决方法是对纹理进行翻转
     // 结果就是，所有的类型纹理都需要翻转一下
     FIBITMAP *filp = FreeImage_Clone(image);
     FreeImage_FlipVertical(filp);
-    
+
     unsigned int width = FreeImage_GetWidth(filp);
     unsigned int height = FreeImage_GetHeight(filp);
 
@@ -268,8 +265,6 @@ void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xo
     default:
         throw RuntimeError("不支持此类型");
     }
-
-    opengl_check_error();
 }
 
 FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const {
@@ -282,8 +277,6 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
     GLint width, height;
     glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &width);
     glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_HEIGHT, &height);
-
-    opengl_debug_check_error();
 
     FIBITMAP *image = nullptr;
 
@@ -396,8 +389,6 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
         throw RuntimeError("不支持");
     }
     }
-
-    opengl_check_error();
 
     return image;
 };

@@ -68,11 +68,11 @@ struct MeshDesc {
     std::vector<SubMesh> sub_meshes;
 
     template <typename T, typename I, typename M>
-    MeshDesc(T&& vertex_layout, Bytes&& raw_vertices, I&& indices, M&& sub_meshes)
+    MeshDesc(T &&vertex_layout, Bytes &&raw_vertices, I &&indices, M &&sub_meshes)
         : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
           indices(std::forward<I>(indices)), sub_meshes(std::forward<M>(sub_meshes)) {}
     template <typename T, typename I>
-    MeshDesc(T&& vertex_layout, Bytes&& raw_vertices, I&& indices, Topology topology)
+    MeshDesc(T &&vertex_layout, Bytes &&raw_vertices, I &&indices, Topology topology)
         : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
           indices(std::forward<I>(indices)), sub_meshes({{0, (uint32_t)this->indices.size(), topology}}) {}
 };
@@ -81,6 +81,15 @@ class Mesh : public intrusive_ptr_base<Mesh> {
 public:
     virtual uint32_t get_submesh_count() const noexcept = 0;
     virtual ~Mesh() = default;
+
+    void set_debug_label(const std::string &name) const noexcept {
+#ifdef DEBUG
+        _set_debug_label(name);
+#endif
+    }
+
+protected:
+    virtual void _set_debug_label(const std::string &name) const noexcept = 0;
 };
 
 } // namespace Graphics

@@ -81,8 +81,6 @@ GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout,
         this->submeshes.emplace_back(submeshes[i].start_index, submeshes[i].index_count,
                                      Topology2OpenGL(submeshes[i].topology));
     }
-
-    opengl_debug_check_error();
 }
 
 } // namespace Graphics

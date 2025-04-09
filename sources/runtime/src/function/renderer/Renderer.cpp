@@ -13,7 +13,9 @@
 #include "platform/graphics/Graphics.h"
 #include "resource/ResourceJsonLoader.h"
 #include <FreeImage.h>
+#include <cstddef>
 #include <cstdint>
+#include <format>
 
 namespace Goonya {
 namespace Graphics {
@@ -49,6 +51,8 @@ void Renderer::init() {
 }
 
 void Renderer::render() {
+    static size_t frame = 0;
+    graphics_api->push_debug_group_label(std::format("Frame {}", frame++));
     bool is_screen_painted = false;
     for (CameraRenderInfo *camera : cameras) {
         if (!camera->render_target)
@@ -104,6 +108,8 @@ void Renderer::render() {
     if (!is_screen_painted){
         LOG_ERROR("没有相机绑定到屏幕！");
     }
+
+    graphics_api->pop_debug_group_label();
 }
 } // namespace Graphics
 } // namespace Goonya

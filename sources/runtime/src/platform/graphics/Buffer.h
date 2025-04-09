@@ -26,8 +26,16 @@ public:
 
     virtual void bind_uniform(uint32_t binding) const noexcept = 0;
 
+    void set_debug_label(const std::string &name) const noexcept {
+#ifdef DEBUG
+        _set_debug_label(name);
+#endif
+    }
+
 protected:
     Buffer(size_t size, BufferType type) : size(size), type(type) {}
+
+    virtual void _set_debug_label(const std::string &name) const noexcept = 0;
 
     size_t size;
     BufferType type;

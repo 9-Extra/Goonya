@@ -1,20 +1,12 @@
 #pragma once
 
-#include <cstddef>
 #include <glad/glad.h>
 
-
-#ifdef NDEBUG
-#define opengl_debug_check_error()
-#else
-#define opengl_debug_check_error() _opengl_check_error(__FILE__, __LINE__)
-#endif // !NDEBUG
-
-#define opengl_check_error() _opengl_check_error(__FILE__, __LINE__)
-
 namespace Goonya {
-namespace Graphics{
+namespace Graphics {
 
-void _opengl_check_error(const char *file, size_t line);
+APIENTRY void _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
+                                     const GLchar *message, const void *userParam);
+
 }
-}
+} // namespace Goonya
