@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../Graphics.h"
-#include "GLMaterial.h"
 #include "GLShader.h"
 #include "GLTexture.h"
 #include "GLRenderTarget.h"
@@ -30,7 +29,7 @@ public:
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------ 
     virtual intrusive_ptr<Mesh> load_mesh(const MeshDesc& desc) override;
     virtual intrusive_ptr<Texture> create_texture(const TextureCreateDesc &desc) const override{
-        return intrusive_ptr<GLTexture>{desc};
+        return make_intrusive<GLTexture>(desc);
     };
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) override;
     virtual intrusive_ptr<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size = {0, 0}) override;
@@ -42,9 +41,8 @@ public:
         return std::make_unique<GLShaderIntrospector>(shader);
     }
 
-    virtual intrusive_ptr<Material> create_material(UberShader* uber_shader) override{
-        return intrusive_ptr<Material>{new GLMaterial{uber_shader}};
-    }
+    virtual void set_pipeline_state(const PipeLineState &state) const noexcept override;
+
     // ---------------------------------绘制调用-------------------------------------------------------------
     virtual intrusive_ptr<RenderTarget> get_rendertarget_screen() noexcept override {return rendertarget_screen;};
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,

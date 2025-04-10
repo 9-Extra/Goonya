@@ -14,8 +14,8 @@ public:
     MaterialBuilder(const AssetKey &uber_shader_name) { desc.uber_shader_name = uber_shader_name; }
 
     void set_variant_key(const std::string &key) noexcept { varient_keys.emplace(key); }
-    void set_depth_test_mode(Graphics::DepthTestMode mode) noexcept { desc.depth_test = mode; }
-    void set_cull_mode(Graphics::CullFaceMode mode) noexcept { desc.cull_mode = mode; }
+    void set_depth_test_mode(Graphics::DepthTestMode mode) noexcept { desc.pipeline_state.depth_test = mode; }
+    void set_cull_mode(Graphics::CullFaceMode mode) noexcept { desc.pipeline_state.cull_mode = mode; }
 
     template <Meta::meta_type T>
     MaterialBuilder &add_parameter(const std::string &name, const T &vaule) noexcept {

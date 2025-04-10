@@ -79,8 +79,8 @@ intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const MeshDesc &desc) {
     GLuint vao_id;
     glCreateVertexArrays(1, &vao_id);
     // Goonya定义的uv以右上角为原点，而OpenGL的uv使用左下角
-    intrusive_ptr<GLBuffer> vertex_buffer{desc.raw_vertices.as_span<uint8_t>(), BufferType::STATIC};
-    intrusive_ptr<GLBuffer> index_buffer{std::span(desc.indices), BufferType::STATIC};
+    intrusive_ptr<GLBuffer> vertex_buffer = make_intrusive<GLBuffer>(desc.raw_vertices.as_span<uint8_t>(), BufferType::STATIC);
+    intrusive_ptr<GLBuffer> index_buffer = make_intrusive<GLBuffer>(std::span(desc.indices), BufferType::STATIC);
 
     return intrusive_ptr<GLMesh>{new GLMesh{desc.sub_meshes, desc.vertex_layout, vertex_buffer, index_buffer}};
 }
@@ -90,13 +90,91 @@ intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType
 }
 
 intrusive_ptr<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
-    return intrusive_ptr<GLFrameBuffer>(size);
+    return make_intrusive<GLFrameBuffer>(size);
 }
 
 intrusive_ptr<Shader> OpenGLGraphicsAPI::complie_shader_program(const std::string &vs_src,
                                                                 const std::string &ps_src) const {
-    return intrusive_ptr<GLShader>{vs_src, ps_src};
+    return make_intrusive<GLShader>(vs_src, ps_src);
 }
+
+void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noexcept {
+    // 深度测试
+    bool enable_depth_test = true;
+    GLenum depth_func = 0;
+
+    switch (state.depth_test) {
+    case DepthTestMode::LESS: {
+        depth_func = GL_LESS;
+        break;
+    }
+    case DepthTestMode::LESS_EQUAL: {
+        depth_func = GL_LEQUAL;
+        break;
+    }
+    case DepthTestMode::GREATER: {
+        depth_func = GL_GREATER;
+        break;
+    }
+    case DepthTestMode::GREATER_EQUAL: {
+        depth_func = GL_GEQUAL;
+        break;
+    }
+    case DepthTestMode::NEVER: {
+        depth_func = GL_NEVER;
+        break;
+    }
+    case DepthTestMode::ALWAYS: {
+        depth_func = GL_ALWAYS;
+        break;
+    }
+    case DepthTestMode::DISABLE: {
+        enable_depth_test = false;
+        break;
+    }
+    default:
+        std::unreachable();
+    }
+
+    if (enable_depth_test) {
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(depth_func);
+    } else {
+        glDisable(GL_DEPTH_TEST);
+    }
+
+    bool enable_cull_face = true;
+    GLenum gl_cull_mode = 0;
+
+    switch (state.cull_mode) {
+
+    case CullFaceMode::BACK: {
+        gl_cull_mode = GL_BACK;
+        break;
+    }
+    case CullFaceMode::FRONT:{
+        gl_cull_mode = GL_FRONT;
+        break;
+    }
+    case CullFaceMode::FRONT_AND_BACK:{
+        gl_cull_mode = GL_FRONT_AND_BACK;
+        break;
+    }
+    case CullFaceMode::DISABLE:{
+        enable_cull_face = false;
+        break;
+    default:
+        std::unreachable();
+    }
+    }
+
+    if (enable_cull_face){
+        glEnable(GL_CULL_FACE);
+        glCullFace(gl_cull_mode);
+    } else {
+        glDisable(GL_CULL_FACE);
+    }
+};
 
 // ---------------------------------绘制调用-------------------------------------------------------------
 void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::optional<float> depth,

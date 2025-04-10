@@ -47,7 +47,7 @@ public:
                                                          const std::string &ps_src) const = 0;
     virtual std::unique_ptr<ShaderIntrospector> create_shader_introspect(Shader *shader) const = 0;
 
-    virtual intrusive_ptr<Material> create_material(UberShader *uber_shader) = 0;
+    virtual void set_pipeline_state(const PipeLineState& state) const noexcept = 0;
 
     // ---------------------------------绘制调用-------------------------------------------------------------
     virtual intrusive_ptr<RenderTarget> get_rendertarget_screen() noexcept = 0;

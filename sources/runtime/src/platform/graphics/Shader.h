@@ -183,7 +183,7 @@ protected:
 
 class ShaderLib final {
 public:
-    void add_uber_shader(const std::string &name, UberShaderDesc &&desc);
+    void add_uber_shader(const AssetKey &name, UberShaderDesc &&desc);
 
     bool is_global_varient_key_set(const std::string &key) const noexcept {
         return global_variant_key_names.contains(key);
@@ -209,7 +209,7 @@ public:
         }
     }
 
-    UberShader *query_uber_shader(const std::string &uber_shader_name) {
+    UberShader *query_uber_shader(const AssetKey &uber_shader_name) {
         if (!uber_shaders.contains(uber_shader_name)) {
             throw RuntimeError(std::format("元着色器\"{}\"未注册", uber_shader_name));
         }

@@ -68,7 +68,7 @@ void GLFrameBuffer::set_depth_texture_layer(intrusive_ptr<Texture> texture, int3
 }
 void GLFrameBuffer::set_depth_renderbuffer(RenderBufferPixelFormat format) {
     assert(size != std::make_tuple(0, 0));
-    intrusive_ptr<GLRenderBuffer> renderbuffer(size, format);
+    intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;
     
@@ -86,7 +86,7 @@ void GLFrameBuffer::set_stencil_texture_layer(intrusive_ptr<Texture> texture, in
 }
 void GLFrameBuffer::set_stencil_renderbuffer(RenderBufferPixelFormat format) {
     assert(size != std::make_tuple(0, 0));
-    intrusive_ptr<GLRenderBuffer> renderbuffer(size, format);
+    intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     stencil_buffer = renderbuffer;
 }
@@ -106,7 +106,7 @@ void GLFrameBuffer::set_depth_stencil_texture_layer(intrusive_ptr<Texture> textu
 }
 void GLFrameBuffer::set_depth_stencil_renderbuffer(RenderBufferPixelFormat format) {
     assert(size != std::make_tuple(0, 0));
-    intrusive_ptr<GLRenderBuffer> renderbuffer(size, format);
+    intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;
     stencil_buffer = renderbuffer;

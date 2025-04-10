@@ -24,6 +24,11 @@ enum class CullFaceMode {
 
 enum class DepthTestMode { LESS = 0, LESS_EQUAL, GREATER, GREATER_EQUAL, NEVER, ALWAYS, DISABLE };
 
+struct PipeLineState{
+    DepthTestMode depth_test = DepthTestMode::LESS;
+    CullFaceMode cull_mode = CullFaceMode::BACK;
+};
+
 struct MaterialDesc {
     std::unordered_map<std::string, Meta::DynamicData> parameters;
     std::vector<std::tuple<std::string, TextureType, AssetKey>> textures; // (着色器中名称, 纹理类型，资源键)
@@ -31,31 +36,26 @@ struct MaterialDesc {
     AssetKey uber_shader_name;
     std::vector<std::string> variant_keys; // 不区分全局和局部
 
-    DepthTestMode depth_test = DepthTestMode::LESS;
-    CullFaceMode cull_mode = CullFaceMode::BACK;
+    PipeLineState pipeline_state;
 };
 
-class Material : public intrusive_ptr_base<Material> {
+class Material final: public intrusive_ptr_base<Material> {
 public:
-    virtual void bind() = 0;
-    virtual void update() = 0;
+    // Material在创建是就对应特定的UberShader，且之后不能更改
+    explicit Material(UberShader *uber_shader);
+    ~Material() = default;
 
-    virtual ~Material() = default;
-
-    void set_depth_test_mode(DepthTestMode mode) noexcept { depth_test = mode; }
-    void set_cull_mode(CullFaceMode mode) noexcept { cull_mode = mode; }
-
-    void set_param(const std::string &name, const Meta::DynamicData &value) {
-        if (auto iter = parameters.find(name); iter != parameters.end()) {
-            if (iter->second != value) {
-                iter->second = value;
-                is_parameters_dirty = true;
-            }
-        } else {
-            parameters.emplace(name, value);
-            is_parameters_dirty = true;
-        }
+    void bind();
+    void update(){
+        update_shader_variant();
+        update_parameter();
     }
+
+    void set_pipeline_state(const PipeLineState& state) noexcept{
+        pipeline_state = state;
+    } 
+
+    void set_param(const std::string &name, const Meta::DynamicData &value);
 
     void set_texture(const std::string &name, intrusive_ptr<Texture> texture) {
         uint32_t slot = uber_shader->get_texture_units().at(name);
@@ -68,25 +68,15 @@ public:
     }
 
 protected:
-    // Material在创建是就对应特定的UberShader，且之后不能更改
-    Material(UberShader *uber_shader) : uber_shader(uber_shader) {
-        is_parameters_dirty = true;
 
-        depth_test = DepthTestMode::LESS;
-        cull_mode = CullFaceMode::BACK;
-
-        local_variant_code = 0;
-        current_variant_code.global_code = uber_shader->get_global_key_code();
-        current_variant_code.loacl_code = local_variant_code;
-        shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
-    };
+    void update_shader_variant();
+    void update_parameter();
 
     // 着色器设置
     UberShader *const uber_shader;
     VariantCode local_variant_code;
     // 渲染管线设置
-    DepthTestMode depth_test;
-    CullFaceMode cull_mode;
+    PipeLineState pipeline_state;
 
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, Meta::DynamicData> parameters;

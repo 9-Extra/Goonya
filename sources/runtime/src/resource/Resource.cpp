@@ -97,10 +97,8 @@ static Graphics::TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) 
 }
 
 intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::MaterialDesc &desc) const {
-    intrusive_ptr<Graphics::Material> mat{
-        Graphics::graphics_api->create_material(resources.shader_lib->query_uber_shader(desc.uber_shader_name))};
-    mat->set_depth_test_mode(desc.depth_test);
-    mat->set_cull_mode(desc.cull_mode);
+    intrusive_ptr<Graphics::Material> mat = make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
+    mat->set_pipeline_state(desc.pipeline_state);
 
     for (const auto &[name, value] : desc.parameters) {
         mat->set_param(name, value);
