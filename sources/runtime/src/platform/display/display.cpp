@@ -129,12 +129,6 @@ void glfw_window_focus_callback(GLFWwindow* window, int focused)
     }
 }
 
-void create_opengl_context() { glfwMakeContextCurrent(window); }
-
-void drop_opengl_context() {
-    // no need for glfw
-}
-
 void swap() { glfwSwapBuffers(window); }
 
 void create_window(uint32_t width, uint32_t height) {
@@ -145,10 +139,10 @@ void create_window(uint32_t width, uint32_t height) {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_DOUBLEBUFFER, true);
-    glfwWindowHint(GLFW_SRGB_CAPABLE, false);
-    glfwWindowHint(GLFW_AUX_BUFFERS, false);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, true);
+    glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_AUX_BUFFERS, GLFW_FALSE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_FALSE);
     
 #ifdef DEBUG
     glfwWindowHint(GLFW_CONTEXT_DEBUG, GLFW_TRUE);
@@ -173,7 +167,6 @@ void initalize(uint32_t width, uint32_t height) {
     // if (glfwRawMouseMotionSupported()){
     //     glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     // }
-    create_opengl_context();
 
     glfwSetKeyCallback(window, glfw_key_callback);
     glfwSetMouseButtonCallback(window, glfw_mouse_button_callback);
@@ -186,7 +179,6 @@ void initalize(uint32_t width, uint32_t height) {
 }
 
 void drop() {
-    drop_opengl_context();
     glfwDestroyWindow(window);
     glfwTerminate();
 }

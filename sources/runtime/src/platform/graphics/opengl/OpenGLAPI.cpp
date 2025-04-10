@@ -9,11 +9,13 @@
 #include <spdlog/async.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
+#include <GLFW/glfw3.h>
 #include <string>
 
 #include "GLBuffer.h"
 #include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
+#include "platform/display/display.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLMesh.h"
@@ -30,6 +32,8 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
         logger->set_level(spdlog::level::trace);
         spdlog::register_logger(logger);
     }
+    // 创建OpenGL上下文
+    glfwMakeContextCurrent(Display::window);
     
     // 加载OpenGL函数
     {
@@ -72,6 +76,12 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
          */
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     }
+}
+
+OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
+    // 取消消息回调防止logger在销毁后被使用
+    glDebugMessageCallback(nullptr, nullptr); // 文档没写怎么反注册消息回调，猜是这样
+    glfwMakeContextCurrent(nullptr); // 清除OpenGL上下文
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------

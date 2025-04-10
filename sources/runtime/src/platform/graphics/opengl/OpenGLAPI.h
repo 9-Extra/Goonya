@@ -4,6 +4,7 @@
 #include "GLShader.h"
 #include "GLTexture.h"
 #include "GLRenderTarget.h"
+
 #include <memory>
 
 
@@ -13,10 +14,7 @@ namespace Graphics {
 class OpenGLGraphicsAPI final: public GraphicsAPI {
 public:
     OpenGLGraphicsAPI();
-    ~OpenGLGraphicsAPI() {
-        // 取消消息回调防止logger在销毁后被使用
-        glDebugMessageCallback(nullptr, nullptr); // 文档没写怎么反注册消息回调，猜是这样
-    }
+    ~OpenGLGraphicsAPI();
 
     // ---------------------------调试-----------------------------
     virtual void push_debug_group_label(const std::string& label) const noexcept override{
