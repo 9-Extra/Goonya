@@ -122,7 +122,7 @@ private:
 };
 
 template<class T, class S>
-intrusive_ptr<T> static_intrusive_ptr_cast(const intrusive_ptr<S>& source_ptr){
+intrusive_ptr<T> dynamic_intrusive_ptr_cast(const intrusive_ptr<S>& source_ptr){
     T* ptr = dynamic_cast<T*>(source_ptr.get());
     return intrusive_ptr<T>(ptr);
 }

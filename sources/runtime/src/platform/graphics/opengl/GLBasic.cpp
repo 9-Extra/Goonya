@@ -39,39 +39,39 @@ APIENTRY void _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
     std::string_view type_name;
     switch (type) {
     case GL_DEBUG_TYPE_ERROR: {
-        type_name = "Error";
+        type_name = "Error ";
         break;
     }
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: {
-        type_name = "Deprecated Behavior";
+        type_name = "Deprecated Behavior ";
         break;
     }
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR: {
-        type_name = "Undefined Behavior";
+        type_name = "Undefined Behavior ";
         break;
     }
     case GL_DEBUG_TYPE_PORTABILITY: {
-        type_name = "Portabilty Issus";
+        type_name = "Portabilty Issus ";
         break;
     }
     case GL_DEBUG_TYPE_PERFORMANCE: {
-        type_name = "Performance Issus";
+        type_name = "Performance Issus ";
         break;
     }
     case GL_DEBUG_TYPE_MARKER: {
-        type_name = "Marker";
+        type_name = "Marker ";
         break;
     }
     case GL_DEBUG_TYPE_PUSH_GROUP: {
-        type_name = "Push Group";
+        type_name = "Push Group ";
         break;
     }
     case GL_DEBUG_TYPE_POP_GROUP: {
-        type_name = "Pop Group";
+        type_name = "Pop Group ";
         break;
     }
     default: {
-        type_name = "Unknown Type";
+        type_name = "";
         break;
     }
     }
@@ -105,7 +105,7 @@ APIENTRY void _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
         message_string.remove_suffix(1); // 不要重复换行
     }
 
-    graphics_api->logger->log(level, "{}{} {}: {}", source_name, type_name, id, message_string);
+    graphics_api->logger->log(level, "{}{}{}: {}", source_name, type_name, id, message_string);
 }
 
 } // namespace Graphics

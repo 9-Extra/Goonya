@@ -9,14 +9,15 @@
 #include <spdlog/async.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
-#include <GLFW/glfw3.h>
 #include <string>
+
 
 #include "GLBuffer.h"
 #include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
 #include "platform/display/display.h"
 #include "platform/graphics/Buffer.h"
+#include "platform/graphics/Mesh.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLShader.h"
@@ -34,7 +35,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
     }
     // 创建OpenGL上下文
     glfwMakeContextCurrent(Display::window);
-    
+
     // 加载OpenGL函数
     {
         GLenum err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
@@ -75,21 +76,22 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
          * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
          */
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+        glfwSwapInterval(1); // 垂直同步
     }
 }
 
 OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
     // 取消消息回调防止logger在销毁后被使用
     glDebugMessageCallback(nullptr, nullptr); // 文档没写怎么反注册消息回调，猜是这样
-    glfwMakeContextCurrent(nullptr); // 清除OpenGL上下文
+    glfwMakeContextCurrent(nullptr);          // 清除OpenGL上下文
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
 intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const MeshDesc &desc) {
-    GLuint vao_id;
-    glCreateVertexArrays(1, &vao_id);
     // Goonya定义的uv以右上角为原点，而OpenGL的uv使用左下角
-    intrusive_ptr<GLBuffer> vertex_buffer = make_intrusive<GLBuffer>(desc.raw_vertices.as_span<uint8_t>(), BufferType::STATIC);
+    intrusive_ptr<GLBuffer> vertex_buffer =
+        make_intrusive<GLBuffer>(desc.raw_vertices.as_span<uint8_t>(), BufferType::STATIC);
     intrusive_ptr<GLBuffer> index_buffer = make_intrusive<GLBuffer>(std::span(desc.indices), BufferType::STATIC);
 
     return intrusive_ptr<GLMesh>{new GLMesh{desc.sub_meshes, desc.vertex_layout, vertex_buffer, index_buffer}};
@@ -162,15 +164,15 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noe
         gl_cull_mode = GL_BACK;
         break;
     }
-    case CullFaceMode::FRONT:{
+    case CullFaceMode::FRONT: {
         gl_cull_mode = GL_FRONT;
         break;
     }
-    case CullFaceMode::FRONT_AND_BACK:{
+    case CullFaceMode::FRONT_AND_BACK: {
         gl_cull_mode = GL_FRONT_AND_BACK;
         break;
     }
-    case CullFaceMode::DISABLE:{
+    case CullFaceMode::DISABLE: {
         enable_cull_face = false;
         break;
     default:
@@ -178,7 +180,7 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noe
     }
     }
 
-    if (enable_cull_face){
+    if (enable_cull_face) {
         glEnable(GL_CULL_FACE);
         glCullFace(gl_cull_mode);
     } else {
@@ -208,15 +210,21 @@ void OpenGLGraphicsAPI::clear(bool color, bool depth, bool stencil) const noexce
     glClear(bit);
 }
 
-void OpenGLGraphicsAPI::draw(intrusive_ptr<Mesh> mesh) {
-    GLMesh *gl_mesh = dynamic_cast<GLMesh *>(mesh.get());
-    assert(gl_mesh);
-
-    gl_mesh->bind();
-    for (const GLSubMesh &submesh : gl_mesh->submeshes) {
-        glDrawElements(submesh.topology, submesh.index_count, GL_UNSIGNED_SHORT,
-                       reinterpret_cast<void *>(submesh.start_index)); // 绘制
+static GLenum Topology2OpenGL(Topology t) noexcept {
+    switch (t) {
+    case Topology::POINT:
+        return GL_POINTS;
+    case Topology::LINE:
+        return GL_LINES;
+    case Topology::TRIANGLE:
+        return GL_TRIANGLES;
     }
+    return GL_INVALID_VALUE;
+}
+
+void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
+    glDrawElements(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_SHORT,
+                   reinterpret_cast<void *>(submesh.start_index)); // 绘制
 }
 
 // -----------------------bind-------------------------------

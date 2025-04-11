@@ -174,8 +174,6 @@ void initalize(uint32_t width, uint32_t height) {
     glfwSetWindowCloseCallback(window, glfw_window_close_callback);
     glfwSetWindowFocusCallback(window, glfw_window_focus_callback);
     glfwSetCursorPosCallback(window, glfw_cursor_position_callbackc);
-
-    glfwSwapInterval(1); // 垂直同步
 }
 
 void drop() {

@@ -46,7 +46,7 @@ public:
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                                      std::optional<int> stencil = std::nullopt) noexcept override;
     virtual void clear(bool color = true, bool depth = true, bool stencil = true) const noexcept override;
-    virtual void draw(intrusive_ptr<Mesh> mesh) override;
+    virtual void draw_submesh(const SubMesh& submesh) const override;
 
     virtual void set_viewport(const Viewport& view_port) noexcept override;
     

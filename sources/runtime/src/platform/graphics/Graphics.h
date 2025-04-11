@@ -55,7 +55,7 @@ public:
                                      std::optional<int> stencil = std::nullopt) noexcept = 0;
     virtual void clear(bool color = true, bool depth = true,
                        bool stencil = false) const noexcept = 0; // 清理当前绑定的RenderTarget
-    virtual void draw(intrusive_ptr<Mesh> mesh) = 0;
+    virtual void draw_submesh(const SubMesh& submesh) const = 0;
 
     // bind
     virtual void set_viewport(const Viewport &view_port) noexcept = 0;

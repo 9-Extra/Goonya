@@ -8,8 +8,13 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/Mesh.h"
+#include "resource/Resource.h"
 #include <FreeImage.h>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <vector>
 
 namespace Goonya {
 namespace Graphics {
@@ -54,16 +59,26 @@ void LambertianPass::run() {
         // 填充结束
     }
 
+    const intrusive_ptr<Material> default_material = Resource::resources.materials.get("default");
+
     // 遍历所有part，绘制每一个part
     for (const MeshRenderInfo *mesh : renderer.meshes) {
-        mesh->materials[0]->bind(); // 绑定材质
+        mesh->mesh->bind();
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform);
             data->model_matrix = mesh->model_matrix.transpose();   // 变换矩阵
             data->normal_matrix = Matrix4{mesh->normal_matrix}.transpose(); // 法线变换矩阵
         }
-        graphics_api->draw(mesh->mesh);
+
+        const std::vector<SubMesh> submeshes = mesh->mesh->submeshes;
+        // 逐一绘制子网格
+        for(uint32_t i = 0; i < submeshes.size();i++){
+            // 材质未设置时使用默认材质，多出来则无视
+            const intrusive_ptr<Material>& current_material = mesh->materials.size() > i ? mesh->materials[i] : default_material;
+            current_material->bind(); // 绑定材质
+            graphics_api->draw_submesh(submeshes[i]);
+        }
     }
 }
 
@@ -100,7 +115,8 @@ void SkyBoxPass::run() {
         data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
     }
     skybox_uniform->bind_uniform(0);
-    graphics_api->draw(mesh);
+    mesh->bind();
+    graphics_api->draw_submesh(mesh->submeshes.at(0));
 }
 
 } // namespace Graphics

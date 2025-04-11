@@ -1,23 +1,13 @@
 #include "GLMesh.h"
+#include "core/intrusive_ptr.h"
 #include "platform/graphics/Mesh.h"
-#include <cstddef>
+#include "platform/graphics/opengl/GLBuffer.h"
+#include <cassert>
 #include <cstdint>
 #include <vector>
 
 namespace Goonya {
 namespace Graphics {
-
-static GLenum Topology2OpenGL(Topology t) noexcept {
-    switch (t) {
-    case Topology::POINT:
-        return GL_POINTS;
-    case Topology::LINE:
-        return GL_LINES;
-    case Topology::TRIANGLE:
-        return GL_TRIANGLES;
-    }
-    return GL_INVALID_VALUE;
-}
 
 static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldType type) {
     switch (type) {
@@ -49,21 +39,27 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invaild Field Type");
 }
 
-GLMesh::GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<GLBuffer> vertex_buffers,
-               intrusive_ptr<GLBuffer> index_buffer)
+GLMesh::GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
+               intrusive_ptr<Buffer> index_buffer)
     : GLMesh(std::vector<SubMesh>{SubMesh{0, (uint32_t)index_buffer->get_size(), topology}}, layout, vertex_buffers,
-             index_buffer) {}
+           index_buffer) {}
 
-GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout,
-               intrusive_ptr<GLBuffer> vertex_buffers, intrusive_ptr<GLBuffer> index_buffer)
-    : layout(std::move(layout)), vertex_buffer(vertex_buffers), index_buffer(index_buffer) {
+GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
+               intrusive_ptr<Buffer> index_buffer)
+    : Mesh{submeshes, layout, vertex_buffers, index_buffer} {
+    
+    intrusive_ptr<GLBuffer> gl_vertex_buffers = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffers);
+    intrusive_ptr<GLBuffer> gl_indices_buffers = dynamic_intrusive_ptr_cast<GLBuffer>(index_buffer);
+    assert(gl_vertex_buffers && gl_indices_buffers);
+    
     // 使用顶点格式创建VAO
     glCreateVertexArrays(1, &vao_id);
     GLsizei stride = this->layout.size;
     GLuint stream_id = 0; // 一个VAO是可以有多个顶点缓冲区的，目前先只用一个
+
     // 指定顶点缓冲区和索引
-    glVertexArrayVertexBuffer(vao_id, stream_id, vertex_buffers->get_id(), 0, stride);
-    glVertexArrayElementBuffer(vao_id, index_buffer->get_id());
+    glVertexArrayVertexBuffer(vao_id, stream_id, gl_vertex_buffers->get_id(), 0, stride);
+    glVertexArrayElementBuffer(vao_id, gl_indices_buffers->get_id());
     // 指定顶点格式
     for (const auto &[attribute, type, offset] : this->layout.attributes) {
 
@@ -73,13 +69,6 @@ GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout,
         glEnableVertexArrayAttrib(vao_id, index);
         glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);
         glVertexArrayAttribBinding(vao_id, index, stream_id);
-    }
-
-    // 传递SubMesh信息
-    this->submeshes.reserve(submeshes.size());
-    for (size_t i = 0; i < submeshes.size(); i++) {
-        this->submeshes.emplace_back(submeshes[i].start_index, submeshes[i].index_count,
-                                     Topology2OpenGL(submeshes[i].topology));
     }
 }
 

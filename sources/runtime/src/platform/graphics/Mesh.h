@@ -4,6 +4,7 @@
 #include "core/hash_helper.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
+#include "platform/graphics/Buffer.h"
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -79,8 +80,11 @@ struct MeshDesc {
 
 class Mesh : public intrusive_ptr_base<Mesh> {
 public:
-    virtual uint32_t get_submesh_count() const noexcept = 0;
     virtual ~Mesh() = default;
+
+    virtual void bind() const noexcept = 0;
+
+    std::vector<SubMesh> submeshes;
 
     void set_debug_label(const std::string &name) const noexcept {
 #ifdef DEBUG
@@ -89,7 +93,15 @@ public:
     }
 
 protected:
+    Mesh(const std::vector<SubMesh> &submeshes, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
+         intrusive_ptr<Buffer> index_buffer)
+        : submeshes(submeshes), layout(std::move(layout)), vertex_buffer(vertex_buffers), index_buffer(index_buffer) {};
+
     virtual void _set_debug_label(const std::string &name) const noexcept = 0;
+
+    VertexLayout layout;
+    intrusive_ptr<Buffer> vertex_buffer;
+    intrusive_ptr<Buffer> index_buffer;
 };
 
 } // namespace Graphics
