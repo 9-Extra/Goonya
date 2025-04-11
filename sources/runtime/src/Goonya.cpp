@@ -5,17 +5,18 @@
 #include <imgui.h>
 #include <runtime/Goonya.h>
 
-#include "resource/Resource.h"
-#include "function/renderer/Renderer.h"
-#include "platform/display/display.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
-#include "platform/graphics/Graphics.h"
-#include "platform/imgui/imgui_module.h"
 #include "core/input/input.h"
+#include "core/log/Log.h"
 #include "core/timer/timer.h"
 #include "core/world/World.h"
-#include "core/log/Log.h"
+#include "function/renderer/Renderer.h"
+#include "platform/display/display.h"
+#include "platform/graphics/Graphics.h"
+#include "platform/imgui/imgui_module.h"
+#include "resource/Resource.h"
+
 
 namespace Goonya {
 
@@ -45,18 +46,16 @@ void init_engine() {
 
     ImguiMng::init();
 
-    EventBus::subscribe_event<Events::PostTick, void>(0, nullptr, [](void *, Events::PostTick &e) {
+    EventBus::subscribe_event<Events::PostTick>(0, [](Events::PostTick &e) {
         uint32_t fps = calculate_fps(Timer::delta());
         Display::set_title(std::format("Goonya - FPS: {}", fps));
         return false;
     });
 
-    EventBus::subscribe_event<Display::Events::SysWindowClose, void>(0, nullptr,
-        [](void *, Display::Events::SysWindowClose &e) {
-            EventBus::dispatch_event(Events::EngineStop{});
-            return false;
+    EventBus::subscribe_event<Display::Events::SysWindowClose>(0, [](Display::Events::SysWindowClose &e) {
+        EventBus::dispatch_event(Events::EngineStop{});
+        return false;
     });
-    
 }
 
 void logic_tick() {
@@ -78,9 +77,9 @@ void render_frame() {
 
 void main_loop() {
     bool should_continue = true;
-    EventBus::ListenerID id = EventBus::subscribe_event<Events::EngineStop, bool>(
-        10, &should_continue, [](bool *should_continue, Events::EngineStop &e) {
-            *should_continue = false;
+    EventBus::ListenerID id =
+        EventBus::subscribe_event<Events::EngineStop>(10, [&should_continue](Events::EngineStop &e) {
+            should_continue = false;
             return true;
         });
 

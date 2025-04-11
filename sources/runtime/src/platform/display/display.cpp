@@ -76,7 +76,7 @@ static void glfw_key_callback(GLFWwindow *window, int key, int scancode, int act
     if (vkCode == Input::KeyCode::UNKNOWN)
         return;
     
-    EventBus::dispatch_event<true>(Events::SysKeyEvent{vkCode, glfw_action2keystate(action)});
+    EventBus::dispatch_event_no_exception(Events::SysKeyEvent{vkCode, glfw_action2keystate(action)});
     
 }
 
@@ -98,22 +98,22 @@ static void glfw_mouse_button_callback(GLFWwindow* window, int button, int actio
             std::unreachable();
     }
 
-    EventBus::dispatch_event(Events::SysMouseClick{key, glfw_action2keystate(action)});
+    EventBus::dispatch_event_no_exception(Events::SysMouseClick{key, glfw_action2keystate(action)});
     
 }
 
 static void glfw_cursor_position_callbackc(GLFWwindow* window, double xpos, double ypos){
-    EventBus::dispatch_event<true>(Events::SysMousePos{xpos, ypos});
+    EventBus::dispatch_event_no_exception(Events::SysMousePos{xpos, ypos});
 }
 
 static void glfw_window_close_callback(GLFWwindow* window){
     LOG_DEBUG("收到关闭消息");
-    EventBus::dispatch_event<true>(Events::SysWindowClose{});
+    EventBus::dispatch_event_no_exception(Events::SysWindowClose{});
 }
 
 static void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-    EventBus::dispatch_event<true>(Events::SysDisplayResize{{(uint32_t) width, (uint32_t)height}});
+    EventBus::dispatch_event_no_exception(Events::SysDisplayResize{{(uint32_t) width, (uint32_t)height}});
     LOG_DEBUG("客户区改变大小({}, {})", width, height);
 }
 
@@ -125,7 +125,7 @@ void glfw_window_focus_callback(GLFWwindow* window, int focused)
     }
     else
     {
-        EventBus::dispatch_event<true>(Events::SysWindowDeActive{});
+        EventBus::dispatch_event_no_exception(Events::SysWindowDeActive{});
     }
 }
 
