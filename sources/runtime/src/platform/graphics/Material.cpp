@@ -52,8 +52,9 @@ void Material::update_parameter() {
     if (!is_parameters_dirty)
         return;
     const auto &layout = uber_shader->per_frame_block().layout;
-    {
-        auto w = DynamicBufferWriter(per_material, layout);
+    {   
+        // 所有的参数都写一遍
+        auto w = DynamicBufferWriter(per_material, layout, BufferMapOption::WRITE_DISCARD);
         for (const auto &[name, value] : parameters) {
             w.set_field(name, value);
         }

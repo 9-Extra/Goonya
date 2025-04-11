@@ -36,7 +36,7 @@ void LambertianPass::run() {
 
     {
         // 填充per_frame uniform数据
-        StructBufferWriter<PerFrameData> data(per_frame_uniform);
+        StructBufferWriter<PerFrameData> data(per_frame_uniform, BufferMapOption::WRITE_DISCARD);
         // 透视投影矩阵
         data->view_perspective_matrix = camera->get_view_perspective_matrix().transpose();
         // 相机位置
@@ -66,7 +66,7 @@ void LambertianPass::run() {
         mesh->mesh->bind();
         {
             // 填充per_object uniform buffer
-            StructBufferWriter<PerObjectData> data(per_object_uniform);
+            StructBufferWriter<PerObjectData> data(per_object_uniform, BufferMapOption::WRITE_DISCARD);
             data->model_matrix = mesh->model_matrix.transpose();   // 变换矩阵
             data->normal_matrix = Matrix4{mesh->normal_matrix}.transpose(); // 法线变换矩阵
         }
@@ -111,7 +111,7 @@ void SkyBoxPass::run() {
     skybox_material->bind();
     {
         // 填充天空盒需要的参数（透视投影矩阵）
-        StructBufferWriter<SkyBoxData> data(skybox_uniform);
+        StructBufferWriter<SkyBoxData> data(skybox_uniform, BufferMapOption::WRITE_DISCARD);
         data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
     }
     skybox_uniform->bind_uniform(0);

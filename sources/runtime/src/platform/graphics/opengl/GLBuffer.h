@@ -54,15 +54,40 @@ public:
         assert(data.size_bytes() + offset <= get_size());
         glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
     };
-    virtual void *map() const noexcept override {
-        if (size != 0) {
-            void *ptr = glMapNamedBuffer(id, GL_WRITE_ONLY);
-            assert(ptr);
-            return ptr;
-        } else {
-            return nullptr; // 对于大小为0的Buffer返回空指针
+    virtual void *map(BufferMapOption option) const noexcept override { return map_range(option, 0, this->size); };
+    virtual void *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept override {
+        if (size == 0) {
+            return nullptr;
         }
+        GLenum access = 0;
+        switch (option) {
+        case BufferMapOption::WRITE_DISCARD: {
+            access = GL_MAP_WRITE_BIT;
+            if (offset == 0 && size == this->size){
+                access |= GL_MAP_INVALIDATE_BUFFER_BIT; // 包含整个Buffer
+            } else {
+                access |= GL_MAP_INVALIDATE_RANGE_BIT; // 包含部分Buffer
+            }
+            break;
+        }
+        case BufferMapOption::WRITE_MODIFY: {
+            access = GL_MAP_WRITE_BIT;
+            break;
+        }
+        case BufferMapOption::READ_ONLY: {
+            access = GL_MAP_READ_BIT;
+            break;
+        }
+        case BufferMapOption::READ_WRITE: {
+            access = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
+            break;
+        }
+        }
+        void *ptr = glMapNamedBufferRange(id, offset, size, access);
+        assert(ptr);
+        return ptr;
     };
+
     virtual void unmap() const noexcept override {
         if (size != 0) {
             glUnmapNamedBuffer(id);
