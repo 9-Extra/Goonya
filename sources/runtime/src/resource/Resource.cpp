@@ -96,6 +96,27 @@ static Graphics::TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) 
     return TextureStorageFormat::UNKNOWN;
 }
 
+intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc) const {
+    using namespace Graphics;
+    intrusive_ptr<Mesh> mesh = graphics_api->create_mesh();
+    mesh->set_layout(desc.vertex_layout);
+
+    intrusive_ptr<Buffer> vertex_buffer = graphics_api->create_buffer(desc.raw_vertices.get_size(), BufferType::STATIC);
+    vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>());
+    mesh->set_vertex_buffer(vertex_buffer);
+
+    intrusive_ptr<Buffer> indices_buffer =
+        graphics_api->create_buffer(desc.indices.size() * sizeof(uint16_t), BufferType::STATIC);
+    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint16_t)));
+    mesh->set_indices_buffer(indices_buffer);
+
+    mesh->submeshes = desc.sub_meshes;
+
+    mesh->update();
+
+    return mesh;
+}
+
 intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::MaterialDesc &desc) const {
     intrusive_ptr<Graphics::Material> mat = make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
     mat->set_pipeline_state(desc.pipeline_state);
@@ -182,5 +203,6 @@ intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCube
 
     return texture;
 };
+
 } // namespace Resource
 } // namespace Goonya

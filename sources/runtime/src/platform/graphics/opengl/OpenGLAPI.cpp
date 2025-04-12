@@ -11,7 +11,6 @@
 #include <spdlog/spdlog.h>
 #include <string>
 
-
 #include "GLBuffer.h"
 #include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
@@ -88,14 +87,7 @@ OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::load_mesh(const MeshDesc &desc) {
-    // Goonya定义的uv以右上角为原点，而OpenGL的uv使用左下角
-    intrusive_ptr<GLBuffer> vertex_buffer =
-        make_intrusive<GLBuffer>(desc.raw_vertices.as_span<uint8_t>(), BufferType::STATIC);
-    intrusive_ptr<GLBuffer> index_buffer = make_intrusive<GLBuffer>(std::span(desc.indices), BufferType::STATIC);
-
-    return intrusive_ptr<GLMesh>{new GLMesh{desc.sub_meshes, desc.vertex_layout, vertex_buffer, index_buffer}};
-}
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::create_mesh() { return make_intrusive<GLMesh>(); }
 
 intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
     return intrusive_ptr<GLBuffer>(new GLBuffer(size, type));

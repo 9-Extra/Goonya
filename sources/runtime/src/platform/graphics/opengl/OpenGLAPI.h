@@ -25,7 +25,7 @@ public:
     }
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------ 
-    virtual intrusive_ptr<Mesh> load_mesh(const MeshDesc& desc) override;
+    virtual intrusive_ptr<Mesh> create_mesh() override;
     virtual intrusive_ptr<Texture> create_texture(const TextureCreateDesc &desc) const override{
         return make_intrusive<GLTexture>(desc);
     };

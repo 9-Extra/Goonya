@@ -29,7 +29,6 @@ static GLuint GLBufferType(BufferType type) {
 }
 
 class GLBuffer : public Buffer {
-    // 为了防止反复写Buffer的基础实现所以写进了模板里，避免菱形继承（也可以使用组合的方式）
 public:
     GLBuffer(size_t size, BufferType type) : Buffer(size, type) {
         glCreateBuffers(1, &id);
@@ -50,7 +49,7 @@ public:
     GLuint get_id() const noexcept { return id; }
 
     // access
-    virtual void write(const std::span<uint8_t> data, size_t offset = 0) noexcept override {
+    virtual void write(std::span<const uint8_t> data, size_t offset = 0) noexcept override {
         assert(data.size_bytes() + offset <= get_size());
         glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
     };

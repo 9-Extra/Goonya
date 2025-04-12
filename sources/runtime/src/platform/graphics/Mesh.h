@@ -5,6 +5,7 @@
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
+#include <cassert>
 #include <cstdint>
 #include <utility>
 #include <vector>
@@ -42,7 +43,7 @@ enum class VertexAttribute : uint32_t {
 struct VertexLayout {
     // 用途，类型，偏移量
     std::vector<std::tuple<VertexAttribute, Meta::FieldType, size_t>> attributes;
-    size_t size; // 单个顶点大小
+    size_t size = 0; // 单个顶点大小
 
     bool operator==(const VertexLayout &b) const noexcept = default;
     size_t hash() const noexcept {
@@ -83,8 +84,27 @@ public:
     virtual ~Mesh() = default;
 
     virtual void bind() const noexcept = 0;
+    virtual void update() const noexcept = 0;
 
     std::vector<SubMesh> submeshes;
+
+    const VertexLayout get_layout() const noexcept { return layout; }
+    
+    template<typename T> requires std::is_convertible_v<T, VertexLayout>
+    void set_layout(T&& layout) noexcept{
+        this->layout = std::forward<T>(layout);
+        is_dirty = true;
+    }
+    void set_vertex_buffer(const intrusive_ptr<Buffer>& vertex_buffer) noexcept{
+        assert(vertex_buffer);
+        this->vertex_buffer = vertex_buffer;
+        is_dirty = true;
+    }
+    void set_indices_buffer(const intrusive_ptr<Buffer>& indices_buffer) noexcept{
+        assert(indices_buffer);
+        this->indices_buffer = indices_buffer;
+        is_dirty = true;
+    }
 
     void set_debug_label(const std::string &name) const noexcept {
 #ifdef DEBUG
@@ -93,15 +113,13 @@ public:
     }
 
 protected:
-    Mesh(const std::vector<SubMesh> &submeshes, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
-         intrusive_ptr<Buffer> index_buffer)
-        : submeshes(submeshes), layout(std::move(layout)), vertex_buffer(vertex_buffers), index_buffer(index_buffer) {};
-
     virtual void _set_debug_label(const std::string &name) const noexcept = 0;
 
     VertexLayout layout;
     intrusive_ptr<Buffer> vertex_buffer;
-    intrusive_ptr<Buffer> index_buffer;
+    intrusive_ptr<Buffer> indices_buffer;
+
+    mutable bool is_dirty;
 };
 
 } // namespace Graphics

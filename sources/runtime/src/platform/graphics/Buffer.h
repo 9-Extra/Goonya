@@ -26,7 +26,7 @@ public:
     size_t get_size() const noexcept { return size; }
     BufferType get_type() const noexcept { return type; }
 
-    virtual void write(const std::span<uint8_t> data, size_t offset = 0) = 0;
+    virtual void write(std::span<const uint8_t> data, size_t offset = 0) = 0;
     virtual void *map(BufferMapOption option) const noexcept = 0;
     virtual void *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept = 0;
     virtual void unmap() const noexcept = 0;

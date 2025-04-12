@@ -102,7 +102,7 @@ static void glfw_mouse_button_callback(GLFWwindow* window, int button, int actio
     
 }
 
-static void glfw_cursor_position_callbackc(GLFWwindow* window, double xpos, double ypos){
+static void glfw_cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     EventBus::dispatch_event_no_exception(Events::SysMousePos{xpos, ypos});
 }
 
@@ -173,7 +173,7 @@ void initalize(uint32_t width, uint32_t height) {
     glfwSetFramebufferSizeCallback(window, glfw_framebuffer_size_callback);
     glfwSetWindowCloseCallback(window, glfw_window_close_callback);
     glfwSetWindowFocusCallback(window, glfw_window_focus_callback);
-    glfwSetCursorPosCallback(window, glfw_cursor_position_callbackc);
+    glfwSetCursorPosCallback(window, glfw_cursor_position_callback);
 }
 
 void drop() {

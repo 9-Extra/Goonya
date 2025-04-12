@@ -124,7 +124,6 @@ public:
                                                  int32_t level = 0) override;
     virtual void set_depth_stencil_renderbuffer(RenderBufferPixelFormat format) override;
 
-    // 记得额外检查一下深度测试是否可以顺利进行
     virtual bool check_status() const noexcept override;
 
 private:

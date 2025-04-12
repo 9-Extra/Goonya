@@ -35,7 +35,7 @@ public:
     virtual void pop_debug_group_label() const noexcept = 0;
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-    virtual intrusive_ptr<Mesh> load_mesh(const MeshDesc& desc) = 0;
+    virtual intrusive_ptr<Mesh> create_mesh() = 0;
     virtual intrusive_ptr<Texture> create_texture(const TextureCreateDesc &desc) const = 0;
 
     virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) = 0;

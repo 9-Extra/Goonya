@@ -112,7 +112,6 @@ void GLFrameBuffer::set_depth_stencil_renderbuffer(RenderBufferPixelFormat forma
     stencil_buffer = renderbuffer;
 }
 
-// 记得额外检查一下深度测试是否可以顺利进行
 bool GLFrameBuffer::check_status() const noexcept {
     GLenum state = glCheckNamedFramebufferStatus(id, GL_DRAW_FRAMEBUFFER);
     switch (state) {

@@ -11,7 +11,6 @@
 #include "core/asserts.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
-#include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/Shader.h"
@@ -85,9 +84,7 @@ public:
     MeshContainer() : ResourceContainer<Graphics::MeshDesc, Graphics::Mesh>("网格") {}
 
 protected:
-    intrusive_ptr<Graphics::Mesh> load(const Graphics::MeshDesc &desc) const override{
-        return Graphics::graphics_api->load_mesh(desc);
-    }
+    intrusive_ptr<Graphics::Mesh> load(const Graphics::MeshDesc &desc) const override;
 };
 
 class MaterialContainer final: public ResourceContainer<Graphics::MaterialDesc, Graphics::Material> {

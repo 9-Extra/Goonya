@@ -3,8 +3,6 @@
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include <cassert>
-#include <cstdint>
-#include <vector>
 
 namespace Goonya {
 namespace Graphics {
@@ -39,27 +37,23 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invaild Field Type");
 }
 
-GLMesh::GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
-               intrusive_ptr<Buffer> index_buffer)
-    : GLMesh(std::vector<SubMesh>{SubMesh{0, (uint32_t)index_buffer->get_size(), topology}}, layout, vertex_buffers,
-           index_buffer) {}
+// GLMesh::GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
+//                intrusive_ptr<Buffer> index_buffer)
+//     : GLMesh(std::vector<SubMesh>{SubMesh{0, (uint32_t)index_buffer->get_size(), topology}}, layout, vertex_buffers,
+//            index_buffer) {}
 
-GLMesh::GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
-               intrusive_ptr<Buffer> index_buffer)
-    : Mesh{submeshes, layout, vertex_buffers, index_buffer} {
-    
-    intrusive_ptr<GLBuffer> gl_vertex_buffers = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffers);
-    intrusive_ptr<GLBuffer> gl_indices_buffers = dynamic_intrusive_ptr_cast<GLBuffer>(index_buffer);
-    assert(gl_vertex_buffers && gl_indices_buffers);
-    
-    // 使用顶点格式创建VAO
-    glCreateVertexArrays(1, &vao_id);
+void GLMesh::update_VAO() const noexcept {
+    intrusive_ptr<GLBuffer> gl_vertex_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffer);
+    intrusive_ptr<GLBuffer> gl_indices_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(indices_buffer);
+    assert(gl_vertex_buffer && gl_indices_buffer);
+    assert(layout.size != 0); // Layout记得设置
+
     GLsizei stride = this->layout.size;
     GLuint stream_id = 0; // 一个VAO是可以有多个顶点缓冲区的，目前先只用一个
 
     // 指定顶点缓冲区和索引
-    glVertexArrayVertexBuffer(vao_id, stream_id, gl_vertex_buffers->get_id(), 0, stride);
-    glVertexArrayElementBuffer(vao_id, gl_indices_buffers->get_id());
+    glVertexArrayVertexBuffer(vao_id, stream_id, gl_vertex_buffer->get_id(), 0, stride);
+    glVertexArrayElementBuffer(vao_id, gl_indices_buffer->get_id());
     // 指定顶点格式
     for (const auto &[attribute, type, offset] : this->layout.attributes) {
 

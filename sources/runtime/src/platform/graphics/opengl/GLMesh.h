@@ -1,7 +1,6 @@
 #pragma once
 
 #include "platform/graphics/Mesh.h"
-#include <vector>
 
 #include <glad/glad.h>
 
@@ -10,16 +9,24 @@ namespace Graphics {
 
 class GLMesh final : public Mesh {
 public:
-    GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
-           intrusive_ptr<Buffer> index_buffer);
-
-    GLMesh(const std::vector<SubMesh> &submeshes, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
-           intrusive_ptr<Buffer> index_buffer);
+    GLMesh() {
+        glCreateVertexArrays(1, &vao_id); // 创建空的vao
+        is_dirty = true;
+    };
 
     virtual ~GLMesh() { glDeleteVertexArrays(1, &vao_id); }
 
     // ------------------------------------
-    virtual void bind() const noexcept override { glBindVertexArray(vao_id); }
+    virtual void bind() const noexcept override {
+        update(); 
+        glBindVertexArray(vao_id); 
+    }
+    virtual void update() const noexcept override{
+        if (is_dirty){
+            update_VAO();
+            is_dirty = false;
+        }
+    }
 
 protected:
     virtual void _set_debug_label(const std::string &name) const noexcept override {
@@ -28,6 +35,8 @@ protected:
 
 private:
     GLuint vao_id;
+
+    void update_VAO() const noexcept;
 };
 
 } // namespace Graphics
