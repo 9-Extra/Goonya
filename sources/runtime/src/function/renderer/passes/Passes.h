@@ -35,6 +35,7 @@ private:
         alignas(16) Vector3f camera_position;
         alignas(4) float fog_min_distance;
         alignas(4) float fog_density;
+        alignas(4) float time;
         alignas(4) uint32_t pointlight_num;
         PointLightData pointlight_list[POINTLIGNT_MAX];
     };

@@ -34,6 +34,13 @@
                 "vertex_shader": "shaders/skybox/vs.vert",
                 "pixel_shader": "shaders/skybox/ps.frag"
             }
+        },
+        "irradiance": {
+            "sources": {
+                "vertex_shader": "shaders/irradiance/irradiance.vert",
+                "pixel_shader": "shaders/irradiance/irradiance.frag"
+            },
+            "global_variants": [["", "GYA_IBL_ENVIRONMENT_LIGHT"]]
         }
     },
     "texture": {

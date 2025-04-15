@@ -8,6 +8,10 @@ namespace Goonya {
 namespace Graphics {
 
 void VariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_keys) {
+    if (group_keys.size() < 2){
+        throw RuntimeError("每个组至少有2个成员");
+    }
+    
     uint8_t group_index = variants_key_map.size();
     uint8_t index = 0;
     for (const std::string &key : group_keys) {
@@ -115,7 +119,9 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     VariantCodeSet empty{.full_code = 0}; 
     std::vector<std::string> variant_keys;
     this->get_variant_key_names(empty, variant_keys);
+    variant_keys.emplace_back("VERTEX_SHADER");
     std::string mixed_vs = shader_source_inject(this->vs_src, variant_keys);
+    variant_keys.back() = "PIXEL_SHADER";
     std::string mixed_ps = shader_source_inject(this->ps_src, variant_keys);
 
     intrusive_ptr<Shader> shader = graphics_api->complie_shader_program(mixed_vs, mixed_ps);

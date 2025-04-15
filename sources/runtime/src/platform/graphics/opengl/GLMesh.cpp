@@ -37,11 +37,6 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invaild Field Type");
 }
 
-// GLMesh::GLMesh(Topology topology, VertexLayout layout, intrusive_ptr<Buffer> vertex_buffers,
-//                intrusive_ptr<Buffer> index_buffer)
-//     : GLMesh(std::vector<SubMesh>{SubMesh{0, (uint32_t)index_buffer->get_size(), topology}}, layout, vertex_buffers,
-//            index_buffer) {}
-
 void GLMesh::update_VAO() const noexcept {
     intrusive_ptr<GLBuffer> gl_vertex_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffer);
     intrusive_ptr<GLBuffer> gl_indices_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(indices_buffer);

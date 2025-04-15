@@ -4,6 +4,7 @@
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
+#include "core/timer/timer.h"
 #include "function/renderer/RenderAspect.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Material.h"
@@ -45,6 +46,7 @@ void LambertianPass::run() {
         assert(renderer.fog_density >= 0.0f);
         data->fog_density = renderer.fog_density;
         data->fog_min_distance = renderer.fog_min_distance;
+        data->time = Timer::total();
         // 灯光参数
         data->ambient_light = renderer.ambient_light;
         if (renderer.pointlights.size() > POINTLIGNT_MAX) {
