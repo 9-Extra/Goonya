@@ -10,20 +10,17 @@
 #include "core/log/Log.h"
 
 #include <GLFW/glfw3.h>
-#include <glad/glad.h>
 #include <imgui_impl_glfw.h>
 #include <utility>
 
-
-namespace Goonya {
-namespace Display {
+namespace Goonya::Display {
 
 GLFWwindow *window;
 
 static Input::KeyCode glfw_key2goonya_keycode(int key) {
 
-    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z){
-        return Input::KeyCode(key);
+    if (key >= GLFW_KEY_A && key <= GLFW_KEY_Z) {
+        return static_cast<Input::KeyCode>(key);
     }
 
     Input::KeyCode k = Input::KeyCode::UNKNOWN;
@@ -59,12 +56,14 @@ static Input::KeyCode glfw_key2goonya_keycode(int key) {
     case GLFW_KEY_TAB:
         k = Input::KeyCode::TAB;
         break;
+    default:
+        break;
     }
 
     return k;
 }
 
-static Input::KeyState glfw_action2keystate(int action){
+static Input::KeyState glfw_action2keystate(int action) {
     return action == GLFW_RELEASE ? Input::KeyState::UP : Input::KeyState::DOWN;
 }
 
@@ -75,56 +74,49 @@ static void glfw_key_callback(GLFWwindow *window, int key, int scancode, int act
     Input::KeyCode vkCode = glfw_key2goonya_keycode(key); // virtual-key code
     if (vkCode == Input::KeyCode::UNKNOWN)
         return;
-    
+
     EventBus::dispatch_event_no_exception(Events::SysKeyEvent{vkCode, glfw_action2keystate(action)});
-    
 }
 
-
-static void glfw_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
     // The action is one of GLFW_PRESS or GLFW_RELEASE，不会有GLFW_REPEAT
     Input::MouseKey key = Input::MouseKey::LEFT;
     switch (button) {
-        case GLFW_MOUSE_BUTTON_LEFT:
-            key = Input::MouseKey::LEFT;
-            break;
-        case GLFW_MOUSE_BUTTON_MIDDLE:
-            key = Input::MouseKey::MIDDLE;
-            break;
-        case GLFW_MOUSE_BUTTON_RIGHT:
-            key = Input::MouseKey::RIGHT;
-            break;
-        default:
-            std::unreachable();
+    case GLFW_MOUSE_BUTTON_LEFT:
+        key = Input::MouseKey::LEFT;
+        break;
+    case GLFW_MOUSE_BUTTON_MIDDLE:
+        key = Input::MouseKey::MIDDLE;
+        break;
+    case GLFW_MOUSE_BUTTON_RIGHT:
+        key = Input::MouseKey::RIGHT;
+        break;
+    default:
+        std::unreachable();
     }
 
     EventBus::dispatch_event_no_exception(Events::SysMouseClick{key, glfw_action2keystate(action)});
-    
 }
 
-static void glfw_cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
+static void glfw_cursor_position_callback(GLFWwindow *window, double xpos, double ypos) {
     EventBus::dispatch_event_no_exception(Events::SysMousePos{xpos, ypos});
 }
 
-static void glfw_window_close_callback(GLFWwindow* window){
+static void glfw_window_close_callback(GLFWwindow *window) {
     LOG_DEBUG("收到关闭消息");
     EventBus::dispatch_event_no_exception(Events::SysWindowClose{});
 }
 
-static void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    EventBus::dispatch_event_no_exception(Events::SysDisplayResize{{(uint32_t) width, (uint32_t)height}});
+static void glfw_framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+    EventBus::dispatch_event_no_exception(
+        Events::SysDisplayResize{{static_cast<uint32_t>(width), static_cast<uint32_t>(height)}});
     LOG_DEBUG("客户区改变大小({}, {})", width, height);
 }
 
-void glfw_window_focus_callback(GLFWwindow* window, int focused)
-{
-    if (focused)
-    {
+void glfw_window_focus_callback(GLFWwindow *window, int focused) {
+    if (focused) {
         // The window gained input focus
-    }
-    else
-    {
+    } else {
         EventBus::dispatch_event_no_exception(Events::SysWindowDeActive{});
     }
 }
@@ -143,11 +135,11 @@ void create_window(uint32_t width, uint32_t height) {
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_FALSE);
     glfwWindowHint(GLFW_AUX_BUFFERS, GLFW_FALSE);
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_FALSE);
-    
+
 #ifdef DEBUG
     glfwWindowHint(GLFW_CONTEXT_DEBUG, GLFW_TRUE);
 #endif
-    window = glfwCreateWindow(width, height, "GoonyaWindow", NULL, NULL);
+    window = glfwCreateWindow(width, height, "GoonyaWindow", nullptr, nullptr);
     if (!window) {
         throw RuntimeError("创建窗口失败");
     }
@@ -157,7 +149,7 @@ void static glfw_error_callback(int error, const char *description) {
     LOG_ERROR("GLFW Error {}: {}", error, description);
 }
 
-void initalize(uint32_t width, uint32_t height) {
+void initialize(uint32_t width, uint32_t height) {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         throw RuntimeError("GLFW init error");
@@ -183,7 +175,7 @@ void drop() {
 
 void set_title(const std::string &title) { glfwSetWindowTitle(window, title.c_str()); }
 
-std::tuple<uint32_t, uint32_t> get_size() { 
+std::tuple<uint32_t, uint32_t> get_size() {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
     return {w, h};
@@ -191,5 +183,4 @@ std::tuple<uint32_t, uint32_t> get_size() {
 
 void poll_events() { glfwPollEvents(); }
 
-} // namespace Display
-} // namespace Goonya
+} // namespace Goonya::Display

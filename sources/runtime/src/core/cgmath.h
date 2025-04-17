@@ -13,28 +13,28 @@ struct Vector2f {
         struct {
             float x, y;
         };
-        float v[2];
+        float v[2]{};
     };
     constexpr Vector2f() : x(0), y(0) {}
     constexpr Vector2f(float x, float y) : x(x), y(y) {}
 
-    constexpr Vector2f operator+(const Vector2f b) { return Vector2f(x + b.x, y + b.y); }
+    constexpr Vector2f operator+(const Vector2f b) const { return {x + b.x, y + b.y}; }
 
-    constexpr Vector2f operator-(const Vector2f b) { return Vector2f(x - b.x, y - b.y); }
+    constexpr Vector2f operator-(const Vector2f b) const { return {x - b.x, y - b.y}; }
 
-    constexpr Vector2f operator*(const float s) { return Vector2f(x * s, y * s); }
+    constexpr Vector2f operator*(const float s) const { return {x * s, y * s}; }
 
-    constexpr float squared() { return x * x + y * y; }
+    constexpr float squared() const { return x * x + y * y; }
 
-    constexpr float length() { return sqrtf(squared()); }
+    constexpr float length() const { return sqrtf(squared()); }
 
-    constexpr Vector2f normalized() {
+    constexpr Vector2f normalized() const {
         float s = 1.0f / std::sqrt(squared());
-        return Vector2f(x * s, y * s);
+        return {x * s, y * s};
     }
 
-    constexpr Vector2f rotate(float radiam) {
-        return Vector2f(x * cosf(radiam) + y * sinf(radiam), x * -sinf(radiam) + y * cosf(radiam));
+    constexpr Vector2f rotate(float radian) const {
+        return {x * cosf(radian) + y * sinf(radian), x * -sinf(radian) + y * cosf(radian)};
     }
 };
 
@@ -43,11 +43,9 @@ struct Color {
     constexpr Color() : r(0), g(0), b(0), a(0) {}
     constexpr Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
 
-    inline const float *data() const { return (float *)this; }
+    constexpr bool operator==(const Color &ps) const { return r == ps.r && g == ps.g && b == ps.b && a == ps.a; }
 
-    constexpr inline bool operator==(const Color &ps) { return r == ps.r && g == ps.g && b == ps.b && a == ps.a; }
-
-    constexpr inline bool operator!=(const Color &ps) { return !(*this == ps); }
+    constexpr bool operator!=(const Color &ps) const { return !(*this == ps); }
 };
 
 struct Vector3f {
@@ -55,13 +53,13 @@ struct Vector3f {
         struct {
             float x, y, z;
         };
-        float v[3];
+        float v[3]{};
     };
 
     constexpr Vector3f() : x(0), y(0), z(0) {}
     constexpr Vector3f(float x, float y, float z) : x(x), y(y), z(z) {}
 
-    const float *data() const { return (float *)v; }
+    const float *data() const { return v; }
 
     constexpr float operator[](const unsigned int i) const { return v[i]; }
 
@@ -69,18 +67,18 @@ struct Vector3f {
     constexpr Vector3f operator-(const Vector3f b) const { return Vector3f{x - b.x, y - b.y, z - b.z}; }
     constexpr Vector3f operator-() const { return Vector3f{-x, -y, -z}; }
     constexpr Vector3f operator+=(const Vector3f b) { return *this = *this + b; }
-    constexpr Vector3f operator*(const float n) { return {x * n, y * n, z * n}; }
-    constexpr Vector3f operator/(const float n) { return *this * (1.0f / n); }
+    constexpr Vector3f operator*(const float n) const { return {x * n, y * n, z * n}; }
+    constexpr Vector3f operator/(const float n) const { return *this * (1.0f / n); }
 
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }
 
-    inline constexpr Vector3f cross(const Vector3f b) {
+    inline constexpr Vector3f cross(const Vector3f b) const {
         return {this->y * b.z - this->z * b.y, this->z * b.x - this->x * b.z, this->x * b.y - this->y * b.x};
     }
 
     constexpr float square() const { return this->dot(*this); }
     constexpr float length() const { return std::sqrt(square()); }
-    constexpr Vector3f normalize() {
+    constexpr Vector3f normalize() const {
         float inv_sqrt = 1.0f / std::sqrt(this->square());
         return *this * inv_sqrt;
     }
@@ -91,7 +89,7 @@ struct Vector4f {
         struct {
             float x, y, z, w;
         };
-        float v[4];
+        float v[4]{};
     };
 
     constexpr Vector4f() : x(0), y(0), z(0), w(0) {}
@@ -104,7 +102,7 @@ struct Vector4f {
 struct Quaternion {
     float x, y, z, w;
     constexpr Quaternion(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
-    static constexpr Quaternion indentity() { return Quaternion{0.0f, 0.0f, 0.0f, 1.0f}; }
+    static constexpr Quaternion identity() { return Quaternion{0.0f, 0.0f, 0.0f, 1.0f}; }
 
     // 需要axis长度为1，顺时针旋转（沿着轴看过去）
     static constexpr Quaternion from_rotation(Vector3f axis, float angle) {
@@ -159,7 +157,7 @@ struct Matrix3 {
         : m{{m00, m01, m02}, {m10, m11, m12}, {m20, m21, m22}} {}
     static constexpr Matrix3 identity() { return Matrix3{1, 0, 0, 0, 1, 0, 0, 0, 1}; }
     static constexpr Matrix3 zero() { return Matrix3{}; }
-    const float *data() const { return (float *)m; }
+    const float *data() const { return *m; }
 
     constexpr Matrix3 transpose() const {
         return Matrix3{
@@ -201,10 +199,10 @@ struct Matrix3 {
     // ----------------从矩阵中提取缩放，旋转--------------------
     constexpr Vector3f resolve_scale() const noexcept {
         // 乘在右边的缩放矩阵对矩阵的每个列向量进行了缩放
-        Vector3f c1 = Vector3f{m[0][0], m[0][1], m[0][2]};
-        Vector3f c2 = Vector3f{m[1][0], m[1][1], m[1][2]};
-        Vector3f c3 = Vector3f{m[2][0], m[2][1], m[2][2]};
-        return Vector3f{c1.length(), c2.length(), c3.length()};
+        Vector3f c1 = {m[0][0], m[0][1], m[0][2]};
+        Vector3f c2 = {m[1][0], m[1][1], m[1][2]};
+        Vector3f c3 = {m[2][0], m[2][1], m[2][2]};
+        return {c1.length(), c2.length(), c3.length()};
     }
     // 从矩阵中反解出其旋转对应的四元数
     constexpr Quaternion resolve_rotation() const noexcept {
@@ -237,7 +235,7 @@ struct Matrix4 {
             {mat.m[2][0], mat.m[2][1], mat.m[2][2], 0.0},
             {0.0, 0.0, 0.0, m44}} {}
 
-    const float *data() const { return (float *)m; }
+    const float *data() const { return *m; }
 
     constexpr Matrix4 transpose() const {
         return Matrix4{m[0][0], m[1][0], m[2][0], m[3][0], m[0][1], m[1][1], m[2][1], m[3][1],
@@ -304,7 +302,7 @@ struct Transform {
     Quaternion rotation;
     Vector3f scale;
 
-    constexpr Transform(Vector3f position = {0, 0, 0}, Quaternion rotation = Quaternion::indentity(),
+    constexpr explicit Transform(Vector3f position = {0, 0, 0}, Quaternion rotation = Quaternion::identity(),
                         Vector3f scale = {1, 1, 1})
         : position(position), rotation(rotation), scale(scale) {}
     static constexpr Transform from_matrix(const Matrix4 &matrix) {
@@ -331,7 +329,7 @@ struct BoundingBox {
     Vector3f min;
     Vector3f max;
 
-    constexpr BoundingBox() noexcept {}
+    constexpr BoundingBox() noexcept = default;
     constexpr BoundingBox(Vector3f min, Vector3f max) noexcept : min(min), max(max) {
         assert(min.x <= max.x && min.y <= max.y && min.z <= max.z);
     }

@@ -7,23 +7,22 @@
 
 struct FIBITMAP;
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 // ============纹理================
 enum class TextureType {
     UNKNOWN = 0,
 
     TEXTURE_1D,
-    TEXTURE_1D_ARRYA,
+    TEXTURE_1D_ARRAY,
     TEXTURE_2D,
-    TEXTURE_2D_ARRYA,
+    TEXTURE_2D_ARRAY,
     TEXTURE_CUBEMAP,
-    TEXTURE_CUBEMAP_ARRYA,
+    TEXTURE_CUBEMAP_ARRAY,
     TEXTURE_3D,
 };
 
-enum class TextureStorageFormat{
+enum class TextureStorageFormat {
     UNKNOWN = 0,
 
     RGBA_f32,
@@ -55,19 +54,11 @@ enum class TextureStorageFormat{
     R_u8,
 };
 
-enum class TextureWarpMode{
-    REPEAT,
-    ClAMP,
-    MIRROR
-};
+enum class TextureWarpMode { REPEAT, ClAMP, MIRROR };
 
-enum class TextureFilterMode{
-    NEAREST,
-    BILINEAR,
-    TRILINEAR
-};
+enum class TextureFilterMode { NEAREST, BILINEAR, TRILINEAR };
 
-struct TextureCreateDesc{
+struct TextureCreateDesc {
     TextureType type;
     TextureStorageFormat format;
     std::tuple<uint32_t, uint32_t, uint32_t> shape;
@@ -81,20 +72,20 @@ public:
     virtual void set_warp_mode(TextureWarpMode warp_mode) noexcept = 0;
     virtual void generate_mipmaps() noexcept = 0;
 
-    virtual void import_image(FIBITMAP* image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0, uint32_t zoffset = 0) = 0;
-    virtual FIBITMAP* export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const = 0;
+    virtual void import_image(FIBITMAP *image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
+                              uint32_t zoffset = 0) = 0;
+    virtual FIBITMAP *export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const = 0;
 
     TextureType get_type() const noexcept { return type; }
 
     std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
 
 protected:
-    Texture(const TextureCreateDesc& desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
+    explicit Texture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
 
     TextureType type;
     TextureStorageFormat format;
     std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

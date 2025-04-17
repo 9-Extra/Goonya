@@ -4,8 +4,7 @@
 #include "platform/graphics/opengl/GLBuffer.h"
 #include <cassert>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldType type) {
     switch (type) {
@@ -15,11 +14,11 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     case Meta::FieldType::i32:
         return {1, GL_INT};
     case Meta::FieldType::i64:
-        throw RuntimeError("Invaild Type for Vertex Array");
+        throw RuntimeError("Invalid Type for Vertex Array");
     case Meta::FieldType::u32:
         return {1, GL_UNSIGNED_INT};
     case Meta::FieldType::u64:
-        throw RuntimeError("Invaild Type for Vertex Array");
+        throw RuntimeError("Invalid Type for Vertex Array");
     case Meta::FieldType::f32:
         return {1, GL_FLOAT};
     case Meta::FieldType::f64:
@@ -31,15 +30,15 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     case Meta::FieldType::vec4f:
         return {4, GL_FLOAT};
     case Meta::FieldType::mat4f:
-        throw RuntimeError("Invaild Type for Vertex Array");
+        throw RuntimeError("Invalid Type for Vertex Array");
     }
 
-    throw RuntimeError("Invaild Field Type");
+    throw RuntimeError("Invalid Field Type");
 }
 
 void GLMesh::update_VAO() const noexcept {
-    intrusive_ptr<GLBuffer> gl_vertex_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffer);
-    intrusive_ptr<GLBuffer> gl_indices_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(indices_buffer);
+    const intrusive_ptr<GLBuffer> gl_vertex_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffer);
+    const intrusive_ptr<GLBuffer> gl_indices_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(indices_buffer);
     assert(gl_vertex_buffer && gl_indices_buffer);
     assert(layout.size != 0); // Layout记得设置
 
@@ -54,12 +53,11 @@ void GLMesh::update_VAO() const noexcept {
 
         const auto [num_components, gl_type] = FieldType2OpenGLComponentsAndType(type);
 
-        GLuint index = (GLuint)attribute;
+        GLuint index = static_cast<GLuint>(attribute);
         glEnableVertexArrayAttrib(vao_id, index);
         glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);
         glVertexArrayAttribBinding(vao_id, index, stream_id);
     }
 }
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

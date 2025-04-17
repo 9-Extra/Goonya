@@ -7,13 +7,11 @@
 #include <unordered_set>
 #include <vector>
 
-
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
-    const CameraRenderInfo* current_camera;  // 当前正在绘制的相机
+    const CameraRenderInfo *current_camera;         // 当前正在绘制的相机
     std::unordered_set<CameraRenderInfo *> cameras; // 所有需要绘制的相机
 
     Vector3f ambient_light = {0.02f, 0.02f, 0.02f}; // 环境光
@@ -32,11 +30,6 @@ public:
 
     void remove_mesh_info(MeshRenderInfo *info) { meshes.erase(meshes.find(info)); }
 
-    void update_mesh_transform(MeshRenderInfo *info, const Matrix4 &model_matrxi, const Matrix3 &normal_matrix) {
-        info->model_matrix = model_matrxi;
-        info->normal_matrix = normal_matrix;
-    }
-
     void render();
 
     void clear() {
@@ -53,5 +46,4 @@ private:
 };
 
 extern Renderer renderer;
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

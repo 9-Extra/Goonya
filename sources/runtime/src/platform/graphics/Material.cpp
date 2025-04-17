@@ -1,8 +1,7 @@
 #include "Material.h"
 #include "platform/graphics/Graphics.h"
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 void Material::bind() {
     this->update();
@@ -28,20 +27,19 @@ void Material::set_param(const std::string &name, const Meta::DynamicData &value
     }
 }
 
-Material::Material(UberShader *uber_shader) : uber_shader(uber_shader) {
-    
-    local_variant_code = 0;
-    current_variant_code.global_code = uber_shader->get_global_key_code();
-    current_variant_code.loacl_code = local_variant_code;
+Material::Material(UberShader *uber_shader)
+    : uber_shader(uber_shader), local_variant_code(0),
+      current_variant_code({uber_shader->get_global_key_code(), local_variant_code}) {
+
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
-    
+
     // 创建此材质的ConstantBuffer
     per_material = graphics_api->create_buffer(uber_shader->per_material_block().layout.size, BufferType::DYNAMIC);
     is_parameters_dirty = true;
 };
 
 void Material::update_shader_variant() {
-    VariantCodeSet code{.global_code = uber_shader->get_global_key_code(), .loacl_code = local_variant_code};
+    VariantCodeSet code{.global_code = uber_shader->get_global_key_code(), .local_code = local_variant_code};
     if (current_variant_code != code) {
         shader = uber_shader->query_variant(code);
         current_variant_code = code;
@@ -51,8 +49,9 @@ void Material::update_shader_variant() {
 void Material::update_parameter() {
     if (!is_parameters_dirty)
         return;
-    const auto &layout = uber_shader->per_frame_block().layout;
-    {   
+
+    {
+        const auto &layout = uber_shader->per_frame_block().layout;
         // 所有的参数都写一遍
         auto w = DynamicBufferWriter(per_material, layout, BufferMapOption::WRITE_DISCARD);
         for (const auto &[name, value] : parameters) {
@@ -63,5 +62,4 @@ void Material::update_parameter() {
     is_parameters_dirty = false;
 }
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

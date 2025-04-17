@@ -16,6 +16,11 @@
 # vs
 /.vs
 
+# idea
+.idea
 
+# CMake
+CMakeLists.txt
+/cmake-build-debug
 
 

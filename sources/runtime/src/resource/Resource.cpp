@@ -5,13 +5,11 @@
 
 #include <FreeImage.h>
 #include <cassert>
-#include <glad/glad.h>
 #include <nowide/convert.hpp>
 
-namespace Goonya {
-namespace Resource {
+namespace Goonya::Resource {
 
-RenderReousce resources; // Global
+RenderResource resources; // Global
 
 // 利用重载的方式实现对不同路径类型的支持
 [[maybe_unused]] static FIBITMAP *freeimage_open_image(const std::wstring &image_path) {
@@ -102,12 +100,12 @@ intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc
     mesh->set_layout(desc.vertex_layout);
 
     intrusive_ptr<Buffer> vertex_buffer = graphics_api->create_buffer(desc.raw_vertices.get_size(), BufferType::STATIC);
-    vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>());
+    vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>(), 0);
     mesh->set_vertex_buffer(vertex_buffer);
 
     intrusive_ptr<Buffer> indices_buffer =
         graphics_api->create_buffer(desc.indices.size() * sizeof(uint16_t), BufferType::STATIC);
-    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint16_t)));
+    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint16_t)), 0);
     mesh->set_indices_buffer(indices_buffer);
 
     mesh->submeshes = desc.sub_meshes;
@@ -118,7 +116,8 @@ intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc
 }
 
 intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::MaterialDesc &desc) const {
-    intrusive_ptr<Graphics::Material> mat = make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
+    intrusive_ptr<Graphics::Material> mat =
+        make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
     mat->set_pipeline_state(desc.pipeline_state);
 
     for (const auto &[name, value] : desc.parameters) {
@@ -192,7 +191,7 @@ intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCube
 
     // 加载其余方向上的图像
     for (unsigned int i = 1; i < desc.path.size(); i++) {
-        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_color);
+        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_color); // NOLINT
         if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)) {
             throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i].string()));
         }
@@ -204,5 +203,4 @@ intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCube
     return texture;
 };
 
-} // namespace Resource
-} // namespace Goonya
+} // namespace Goonya::Resource

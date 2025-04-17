@@ -11,13 +11,11 @@
 #include "runtime/GoonyaException.h"
 #include <cassert>
 #include <cstddef>
-#include <cstdint>
 #include <fstream>
 #include <json/json.h>
 #include <vector>
 
-namespace Goonya {
-namespace Resource {
+namespace Goonya::Resource {
 
 void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
     std::filesystem::path root = path.parent_path();
@@ -32,12 +30,8 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
     struct Buffer {
         char *ptr = nullptr;
         size_t len;
-        Buffer(size_t len) : ptr(new char[len]), len(len) {}
-        ~Buffer() {
-            if (ptr != nullptr) {
-                delete[] ptr;
-            }
-        }
+        explicit Buffer(size_t len) : ptr(new char[len]), len(len) {}
+        ~Buffer() { delete[] ptr; }
     };
     std::vector<Buffer> buffers;
     if (json.isMember("buffers")) {
@@ -65,8 +59,8 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
 
             uint32_t indices_count = json["accessors"][primitive["indices"].asUInt()]["count"].asUInt();
             assert(indices_count % 3 == 0);
-            uint16_t *indices_ptr = (uint16_t *)((char *)buffers[indices_buffer["buffer"].asUInt()].ptr +
-                                                 indices_buffer["byteOffset"].asUInt());
+            uint16_t *indices_ptr = reinterpret_cast<uint16_t *>(buffers[indices_buffer["buffer"].asUInt()].ptr +
+                                                                 indices_buffer["byteOffset"].asUInt());
 
             uint32_t vertex_count = position_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
@@ -75,14 +69,14 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
             if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
                 throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
-            Vector3f *pos = (Vector3f *)((char *)buffers[position_buffer["buffer"].asUInt()].ptr +
-                                         position_buffer["byteOffset"].asUInt());
-            Vector3f *normal = (Vector3f *)((char *)buffers[normal_buffer["buffer"].asUInt()].ptr +
-                                            normal_buffer["byteOffset"].asUInt());
-            Vector2f *uv =
-                (Vector2f *)((char *)buffers[uv_buffer["buffer"].asUInt()].ptr + uv_buffer["byteOffset"].asInt64());
-            Vector4f *tangent = (Vector4f *)((char *)buffers[tangent_buffer["buffer"].asUInt()].ptr +
-                                             tangent_buffer["byteOffset"].asUInt());
+            Vector3f *pos = reinterpret_cast<Vector3f *>(buffers[position_buffer["buffer"].asUInt()].ptr +
+                                                         position_buffer["byteOffset"].asUInt());
+            Vector3f *normal = reinterpret_cast<Vector3f *>(buffers[normal_buffer["buffer"].asUInt()].ptr +
+                                                            normal_buffer["byteOffset"].asUInt());
+            Vector2f *uv = reinterpret_cast<Vector2f *>(buffers[uv_buffer["buffer"].asUInt()].ptr +
+                                                        uv_buffer["byteOffset"].asInt64());
+            Vector4f *tangent = reinterpret_cast<Vector4f *>(buffers[tangent_buffer["buffer"].asUInt()].ptr +
+                                                             tangent_buffer["byteOffset"].asUInt());
 
             struct Vertex {
                 Vector3f position;
@@ -142,9 +136,7 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
                 desc.filter_mode = Graphics::TextureFilterMode::NEAREST;
             } else if (value == 9729) {
                 desc.filter_mode = Graphics::TextureFilterMode::BILINEAR;
-            } else if (value == 9987) {
-                desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-            } else if (value == 9984 || value == 9985 || value == 9986) {
+            } else if (value == 9987 || value == 9984 || value == 9985 || value == 9986) {
                 desc.filter_mode = Graphics::TextureFilterMode::TRILINEAR; // 不严格
             } else {
                 throw RuntimeError(std::format("无效的sampler.minFilter: {}", value));
@@ -196,5 +188,4 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
     }
 }
 
-} // namespace Resource
-} // namespace Goonya
+} // namespace Goonya::Resource

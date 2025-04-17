@@ -4,10 +4,9 @@
 
 #include <filesystem>
 
-namespace Goonya {
-namespace Resource {
+
+namespace Goonya::Resource {
 
 void load_gltf(const AssetKey &base_key, const std::filesystem::path &path);
 
-}
 }

@@ -1,14 +1,8 @@
-#include <exception>
-#include <json/json.h>
-#include <json/value.h>
-#include <runtime/Goonya.h>
-#include <core/log/Log.h>
 #include <core/world/World.h>
-#include <core/input/input.h>
-#include <core/timer/timer.h>
-#include <core/eventbus/eventbus.h>
+#include <exception>
 #include <function/scene/scene.h>
 #include <nowide/iostream.hpp>
+#include <runtime/Goonya.h>
 
 #include "logic.h"
 
@@ -17,7 +11,8 @@ int main() {
         Goonya::init_engine();
 
         {
-            Goonya::Scene::Scene scene = Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了  
+            Goonya::Scene::Scene scene =
+                Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
             Goonya::world.root = scene.root;
         }
 

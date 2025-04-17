@@ -1,12 +1,11 @@
 #pragma once
 
-#include "resource/Resource.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Graphics.h"
+#include "resource/Resource.h"
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 // Pass 基类
 class Pass {
 public:
@@ -21,10 +20,10 @@ public:
     LambertianPass();
     void reset() {}
 
-    virtual void run() override;
+    void run() override;
 
 private:
-    static constexpr unsigned int POINTLIGNT_MAX = 8;
+    static constexpr unsigned int POINTLIGHT_MAX = 8;
     struct PointLightData final {
         alignas(16) Vector3f position;
         alignas(16) Vector3f intensity;
@@ -37,7 +36,7 @@ private:
         alignas(4) float fog_density;
         alignas(4) float time;
         alignas(4) uint32_t pointlight_num;
-        PointLightData pointlight_list[POINTLIGNT_MAX];
+        PointLightData pointlight_list[POINTLIGHT_MAX];
     };
 
     struct PerObjectData final {
@@ -55,10 +54,10 @@ public:
         : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
           mesh(Resource::resources.meshes.get("skybox_cube")) {}
 
-    virtual void run() override;
+    void run() override;
 
 private:
-    const static unsigned int SKYBOX_TEXTURE_BINDIGN = 5;
+    const static unsigned int SKYBOX_TEXTURE_BINDING = 5;
     struct SkyBoxData final {
         Matrix4 skybox_view_perspective_matrix;
     };
@@ -67,5 +66,4 @@ private:
     intrusive_ptr<Mesh> mesh;
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

@@ -7,8 +7,8 @@
 #include "core/timer/timer.h"
 #include "function/renderer/RenderAspect.h"
 #include "platform/graphics/Buffer.h"
-#include "platform/graphics/Material.h"
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "resource/Resource.h"
 #include <FreeImage.h>
@@ -17,8 +17,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 LambertianPass::LambertianPass() {
     per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
@@ -28,7 +27,7 @@ LambertianPass::LambertianPass() {
 }
 // 一般物体渲染
 void LambertianPass::run() {
-    const CameraRenderInfo* camera = renderer.current_camera;
+    const CameraRenderInfo *camera = renderer.current_camera;
     Vector3f camera_pos = camera->get_position();
 
     // 绑定per_frame和per_object uniform buffer
@@ -49,10 +48,10 @@ void LambertianPass::run() {
         data->time = Timer::total();
         // 灯光参数
         data->ambient_light = renderer.ambient_light;
-        if (renderer.pointlights.size() > POINTLIGNT_MAX) {
-            LOG_WARN("点光源数量({})超出上限({})", renderer.pointlights.size(), POINTLIGNT_MAX);
+        if (renderer.pointlights.size() > POINTLIGHT_MAX) {
+            LOG_WARN("点光源数量({})超出上限({})", renderer.pointlights.size(), POINTLIGHT_MAX);
         }
-        uint32_t count = (uint32_t)std::min<size_t>(renderer.pointlights.size(), POINTLIGNT_MAX);
+        uint32_t count = static_cast<uint32_t>(std::min<size_t>(renderer.pointlights.size(), POINTLIGHT_MAX));
         for (uint32_t i = 0; i < count; ++i) {
             data->pointlight_list[i].position = renderer.pointlights[i].position;
             data->pointlight_list[i].intensity = renderer.pointlights[i].color * renderer.pointlights[i].factor;
@@ -61,7 +60,7 @@ void LambertianPass::run() {
         // 填充结束
     }
 
-    const intrusive_ptr<Material> default_material = Resource::resources.materials.get("default");
+    intrusive_ptr<Material> default_material = Resource::resources.materials.get("default");
 
     // 遍历所有part，绘制每一个part
     for (const MeshRenderInfo *mesh : renderer.meshes) {
@@ -69,15 +68,16 @@ void LambertianPass::run() {
         {
             // 填充per_object uniform buffer
             StructBufferWriter<PerObjectData> data(per_object_uniform, BufferMapOption::WRITE_DISCARD);
-            data->model_matrix = mesh->model_matrix.transpose();   // 变换矩阵
+            data->model_matrix = mesh->model_matrix.transpose();            // 变换矩阵
             data->normal_matrix = Matrix4{mesh->normal_matrix}.transpose(); // 法线变换矩阵
         }
 
         const std::vector<SubMesh> submeshes = mesh->mesh->submeshes;
         // 逐一绘制子网格
-        for(uint32_t i = 0; i < submeshes.size();i++){
+        for (uint32_t i = 0; i < submeshes.size(); i++) {
             // 材质未设置时使用默认材质，多出来则无视
-            const intrusive_ptr<Material>& current_material = mesh->materials.size() > i ? mesh->materials[i] : default_material;
+            intrusive_ptr<Material> current_material =
+                mesh->materials.size() > i ? mesh->materials[i] : default_material;
             current_material->bind(); // 绑定材质
             graphics_api->draw_submesh(submeshes[i]);
         }
@@ -86,13 +86,13 @@ void LambertianPass::run() {
 
 // 渲染天空盒
 void SkyBoxPass::run() {
-    const CameraRenderInfo* camera = renderer.current_camera;
+    const CameraRenderInfo *camera = renderer.current_camera;
     Vector3f camera_pos = camera->get_position();
 
     // 寻找包含且最小，接近中心的天空盒
     Material *skybox_material = nullptr;
     float min_distance = std::numeric_limits<float>::infinity();
-    for (const Skybox &s : renderer.current_skyboxs) {
+    for (Skybox &s : renderer.current_skyboxs) {
         if (!s.ignore_range && !s.bbox.contains(camera_pos)) {
             continue;
         }
@@ -121,5 +121,4 @@ void SkyBoxPass::run() {
     graphics_api->draw_submesh(mesh->submeshes.at(0));
 }
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

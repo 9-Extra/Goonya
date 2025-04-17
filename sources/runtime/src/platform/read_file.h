@@ -1,8 +1,9 @@
-#include <string>
+#pragma once
 #include <filesystem>
+#include <string>
 
 namespace Goonya {
-    
-std::string read_whole_file(const std::filesystem::path& path);
+
+std::string read_whole_file(const std::filesystem::path &path);
 
 }

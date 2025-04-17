@@ -8,9 +8,7 @@
 #include <spdlog/details/circular_q.h>
 #include <variant>
 
-
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 // --------------------------GLRenderTargetScreen------------------------------------
 void GLRenderTargetScreen::bind_draw() const {
@@ -27,7 +25,6 @@ GLFrameBuffer::GLFrameBuffer(std::tuple<uint32_t, uint32_t> size) : FrameBuffer(
 void GLFrameBuffer::bind_read() const {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
     update_drawbuffers();
-    
 }
 // 忽略glDrawBuffers的再次重定向，在绑定时直接将所有关联的颜色缓冲按照attachment用作渲染目标
 void GLFrameBuffer::bind_draw() const {
@@ -35,7 +32,6 @@ void GLFrameBuffer::bind_draw() const {
     glFrontFace(GL_CCW);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
     update_drawbuffers();
-    
 }
 
 // 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
@@ -45,7 +41,7 @@ void GLFrameBuffer::attach_color_texture(uint32_t location, intrusive_ptr<Textur
     attached_color_texture[location] = texture;
 }
 void GLFrameBuffer::attach_color_texture_layer(uint32_t location, intrusive_ptr<Texture> texture, int32_t layer,
-                                                int32_t level) {
+                                               int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level,
                                    layer);
@@ -71,7 +67,6 @@ void GLFrameBuffer::set_depth_renderbuffer(RenderBufferPixelFormat format) {
     intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;
-    
 }
 
 void GLFrameBuffer::set_stencil_texture(intrusive_ptr<Texture> texture, int32_t level) {
@@ -149,5 +144,4 @@ bool GLFrameBuffer::check_status() const noexcept {
     return false;
 }
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

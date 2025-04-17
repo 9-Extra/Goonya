@@ -7,8 +7,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 inline GLsizei max_mipmap_level(size_t width) { return std::log2(width) + 1; }
 inline GLsizei max_mipmap_level(size_t width, size_t height) { return std::log2(std::max(width, height)) + 1; }
@@ -96,7 +95,7 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
         glTextureStorage1D(id, max_mipmap_level(width), gl_format, width);
         break;
     }
-    case TextureType::TEXTURE_1D_ARRYA: {
+    case TextureType::TEXTURE_1D_ARRAY: {
         assert(false);
         break;
     }
@@ -106,7 +105,7 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
         glTextureStorage2D(id, max_mipmap_level(width, height), gl_format, width, height);
         break;
     }
-    case TextureType::TEXTURE_2D_ARRYA: {
+    case TextureType::TEXTURE_2D_ARRAY: {
         assert(false);
         break;
     }
@@ -116,7 +115,7 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
         glTextureStorage2D(id, max_mipmap_level(width, height), gl_format, width, height);
         break;
     }
-    case TextureType::TEXTURE_CUBEMAP_ARRYA: {
+    case TextureType::TEXTURE_CUBEMAP_ARRAY: {
         assert(false);
         break;
     }
@@ -235,31 +234,31 @@ void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xo
     // 对于CUBEMAP纹理，由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
     // 对于其他纹理，由于Goonya定义的纹理坐标uv的原点为左上角（与DX一致），而OpenGL为左下角，解决方法是对纹理进行翻转
     // 结果就是，所有的类型纹理都需要翻转一下
-    FIBITMAP *filp = FreeImage_Clone(image);
-    FreeImage_FlipVertical(filp);
+    FIBITMAP *flip = FreeImage_Clone(image);
+    FreeImage_FlipVertical(flip);
 
-    unsigned int width = FreeImage_GetWidth(filp);
-    unsigned int height = FreeImage_GetHeight(filp);
+    unsigned int width = FreeImage_GetWidth(flip);
+    unsigned int height = FreeImage_GetHeight(flip);
 
-    auto [source_type, source_format] = get_freeimage_gl_format(filp);
+    auto [source_type, source_format] = get_freeimage_gl_format(flip);
     if (source_type == 0 || source_format == 0) {
         throw RuntimeError("不支持的图像像素格式");
     }
 
     switch (type) {
-    case TextureType::TEXTURE_1D_ARRYA:
+    case TextureType::TEXTURE_1D_ARRAY:
     case TextureType::TEXTURE_2D: {
         glTextureSubImage2D(id, mipmap_level, xoffset, yoffset, width, height, source_format, source_type,
-                            FreeImage_GetBits(filp));
+                            FreeImage_GetBits(flip));
         break;
     }
-    case TextureType::TEXTURE_2D_ARRYA:
+    case TextureType::TEXTURE_2D_ARRAY:
     case TextureType::TEXTURE_CUBEMAP:
-    case TextureType::TEXTURE_CUBEMAP_ARRYA:
+    case TextureType::TEXTURE_CUBEMAP_ARRAY:
     case TextureType::TEXTURE_3D: {
         // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
         glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, width, height, 1, source_format, source_type,
-                            FreeImage_GetBits(filp));
+                            FreeImage_GetBits(flip));
         break;
     }
     default:
@@ -288,18 +287,13 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
 
     case TextureType::TEXTURE_CUBEMAP:
     case TextureType::TEXTURE_2D:
-    case TextureType::TEXTURE_2D_ARRYA:
+    case TextureType::TEXTURE_2D_ARRAY:
     case TextureType::TEXTURE_3D: {
         switch (format) {
         case TextureStorageFormat::RGBA_f32:
         case TextureStorageFormat::RGBA_i32:
-        case TextureStorageFormat::RGBA_u32: {
+        case TextureStorageFormat::RGBA_u32:
             // 使用FIT_RGBAF导致了错误
-            target_format = GL_RGBA;
-            target_type = GL_UNSIGNED_SHORT;
-            free_image_format = FIT_RGBA16;
-            break;
-        }
         case TextureStorageFormat::RGBA_f16:
         case TextureStorageFormat::RGBA_i16:
         case TextureStorageFormat::RGBA_u16: {
@@ -319,13 +313,8 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
         }
         case TextureStorageFormat::RGB_f32:
         case TextureStorageFormat::RGB_i32:
-        case TextureStorageFormat::RGB_u32: {
+        case TextureStorageFormat::RGB_u32:
             // 使用FIT_RGBAF导致了错误
-            target_format = GL_RGB;
-            target_type = GL_UNSIGNED_SHORT;
-            free_image_format = FIT_RGB16;
-            break;
-        }
         case TextureStorageFormat::RGB_f16:
         case TextureStorageFormat::RGB_i16:
         case TextureStorageFormat::RGB_u16: {
@@ -384,8 +373,8 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
 
     case TextureType::UNKNOWN:
     case TextureType::TEXTURE_1D:
-    case TextureType::TEXTURE_1D_ARRYA:
-    case TextureType::TEXTURE_CUBEMAP_ARRYA: {
+    case TextureType::TEXTURE_1D_ARRAY:
+    case TextureType::TEXTURE_CUBEMAP_ARRAY: {
         throw RuntimeError("不支持");
     }
     }
@@ -393,5 +382,4 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
     return image;
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

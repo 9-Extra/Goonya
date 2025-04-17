@@ -4,8 +4,7 @@
 #include <spdlog/common.h>
 #include <string_view>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 APIENTRY void _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                      const GLchar *message, const void *userParam) {
@@ -51,7 +50,7 @@ APIENTRY void _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
         break;
     }
     case GL_DEBUG_TYPE_PORTABILITY: {
-        type_name = "Portabilty Issus ";
+        type_name = "Portability Issus ";
         break;
     }
     case GL_DEBUG_TYPE_PERFORMANCE: {
@@ -108,5 +107,4 @@ APIENTRY void _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
     graphics_api->logger->log(level, "{}{}{}: {}", source_name, type_name, id, message_string);
 }
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

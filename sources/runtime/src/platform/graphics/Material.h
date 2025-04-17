@@ -6,14 +6,11 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
-#include <cassert>
-#include <cstdint>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 enum class CullFaceMode {
     BACK = 0,
@@ -24,7 +21,7 @@ enum class CullFaceMode {
 
 enum class DepthTestMode { LESS = 0, LESS_EQUAL, GREATER, GREATER_EQUAL, NEVER, ALWAYS, DISABLE };
 
-struct PipeLineState{
+struct PipeLineState {
     DepthTestMode depth_test = DepthTestMode::LESS;
     CullFaceMode cull_mode = CullFaceMode::BACK;
 };
@@ -39,36 +36,35 @@ struct MaterialDesc {
     PipeLineState pipeline_state;
 };
 
-class Material final: public intrusive_ptr_base<Material> {
+class Material final : public intrusive_ptr_base<Material> {
 public:
     // Material在创建是就对应特定的UberShader，且之后不能更改
     explicit Material(UberShader *uber_shader);
     ~Material() = default;
 
     void bind();
-    void update(){
+    void update() {
         update_shader_variant();
         update_parameter();
     }
 
-    void set_pipeline_state(const PipeLineState& state) noexcept{
-        pipeline_state = state;
-    } 
+    void set_pipeline_state(const PipeLineState &state) noexcept { pipeline_state = state; }
 
     void set_param(const std::string &name, const Meta::DynamicData &value);
 
-    void set_texture(const std::string &name, intrusive_ptr<Texture> texture) {
+    void set_texture(const std::string &name, const intrusive_ptr<Texture> &texture) {
         uint32_t slot = uber_shader->get_texture_units().at(name);
         this->textures[slot] = texture;
     }
 
-    void set_loacl_variant_key(const std::string &key) { uber_shader->set_loacl_variant_key(local_variant_code, key); }
-    void remove_loacl_variant_key(const std::string &key) {
-        uber_shader->reset_loacl_variant_key(local_variant_code, key);
+    void set_local_variant_key(const std::string &key) {
+        local_variant_code = uber_shader->set_local_variant_key(local_variant_code, key);
+    }
+    void remove_local_variant_key(const std::string &key) {
+        local_variant_code = uber_shader->reset_local_variant_key(local_variant_code, key);
     }
 
 protected:
-
     void update_shader_variant();
     void update_parameter();
 
@@ -91,5 +87,4 @@ protected:
     intrusive_ptr<Buffer> per_material; // 显存中的材质参数
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

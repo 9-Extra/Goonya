@@ -1,23 +1,20 @@
 #pragma once
 
-#include "function/renderer/Renderer.h"
 #include "core/world/GObject.h"
+#include "function/renderer/Renderer.h"
 
-
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 // 光源组件
-class CpntPointLight: public Component{
+class CpntPointLight : public Component {
 public:
-    CpntPointLight(Vector3f color, float radius): color(color), radius(radius) {}
+    CpntPointLight(Vector3f color, float radius) : color(color), radius(radius) {}
 
     Vector3f color;
     float radius;
 
-    virtual void on_tick() override {
+    void on_tick() override {
         assert(get_owner() != nullptr);
-        renderer.pointlights.emplace_back() = {get_owner()->get_transform().position, color, radius};   
+        renderer.pointlights.emplace_back() = {get_owner()->get_transform().position, color, radius};
     }
 };
-}
-}
+} // namespace Goonya::Graphics

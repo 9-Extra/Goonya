@@ -2,20 +2,16 @@
 
 #include "core/world/GObject.h"
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 // 雾组件
-class CpntFog: public Component{
+class CpntFog : public Component {
 public:
-    CpntFog(float fog_min_distance = 5.0f, float fog_density = 0.001f): fog_min_distance(fog_min_distance), fog_density(fog_density) {}
+    CpntFog(float fog_min_distance = 5.0f, float fog_density = 0.001f)
+        : fog_min_distance(fog_min_distance), fog_density(fog_density) {}
 
     float fog_min_distance; // 雾开始的距离
-    float fog_density;    // 雾强度
+    float fog_density;      // 雾强度
 
-    virtual void on_tick() override {
-        assert(get_owner() != nullptr);
-        
-    }
+    virtual void on_tick() override { assert(get_owner() != nullptr); }
 };
-}
-}
+} // namespace Goonya::Graphics

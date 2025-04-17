@@ -6,12 +6,10 @@
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include <cassert>
-#include <cstdint>
 #include <utility>
 #include <vector>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 /*
 定义着色器编写规范：每一个Location绑定的数据都是指定的。可少不可多，名字可以改，类型不能变
@@ -76,7 +74,7 @@ struct MeshDesc {
     template <typename T, typename I>
     MeshDesc(T &&vertex_layout, Bytes &&raw_vertices, I &&indices, Topology topology)
         : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
-          indices(std::forward<I>(indices)), sub_meshes({{0, (uint32_t)this->indices.size(), topology}}) {}
+          indices(std::forward<I>(indices)), sub_meshes({{0, static_cast<uint32_t>(this->indices.size()), topology}}) {}
 };
 
 class Mesh : public intrusive_ptr_base<Mesh> {
@@ -88,19 +86,20 @@ public:
 
     std::vector<SubMesh> submeshes;
 
-    const VertexLayout get_layout() const noexcept { return layout; }
-    
-    template<typename T> requires std::is_convertible_v<T, VertexLayout>
-    void set_layout(T&& layout) noexcept{
+    const VertexLayout &get_layout() const noexcept { return layout; }
+
+    template <typename T>
+        requires std::is_convertible_v<T, VertexLayout>
+    void set_layout(T &&layout) noexcept {
         this->layout = std::forward<T>(layout);
         is_dirty = true;
     }
-    void set_vertex_buffer(const intrusive_ptr<Buffer>& vertex_buffer) noexcept{
+    void set_vertex_buffer(const intrusive_ptr<Buffer> &vertex_buffer) noexcept {
         assert(vertex_buffer);
         this->vertex_buffer = vertex_buffer;
         is_dirty = true;
     }
-    void set_indices_buffer(const intrusive_ptr<Buffer>& indices_buffer) noexcept{
+    void set_indices_buffer(const intrusive_ptr<Buffer> &indices_buffer) noexcept {
         assert(indices_buffer);
         this->indices_buffer = indices_buffer;
         is_dirty = true;
@@ -119,8 +118,7 @@ protected:
     intrusive_ptr<Buffer> vertex_buffer;
     intrusive_ptr<Buffer> indices_buffer;
 
-    mutable bool is_dirty;
+    mutable bool is_dirty = true;
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

@@ -1,5 +1,4 @@
 #include <cmath>
-#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <imgui.h>
@@ -21,16 +20,16 @@
 namespace Goonya {
 
 static uint32_t calculate_fps(float delta_time) {
-    const float ratio = 0.05f; // 平滑比例
-    static float avarage_frame_time = std::nanf("");
+    static float average_frame_time = std::nanf("");
 
-    if (std::isnormal(avarage_frame_time)) {
-        avarage_frame_time = avarage_frame_time * (1.0f - ratio) + delta_time * ratio;
+    if (std::isnormal(average_frame_time)) {
+        const float ratio = 0.05f;
+        average_frame_time = average_frame_time * (1.0f - ratio) + delta_time * ratio;
     } else {
-        avarage_frame_time = delta_time;
+        average_frame_time = delta_time;
     }
 
-    return (unsigned int)(1000.0f / avarage_frame_time);
+    return static_cast<unsigned int>(1000.0f / average_frame_time);
 }
 
 void init_engine() {
@@ -40,7 +39,7 @@ void init_engine() {
     EventBus::initalize();
     Input::initalize();
     Timer::initialize();
-    Display::initalize(1080, 720);
+    Display::initialize(1080, 720);
     Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
     Graphics::renderer.init();
 

@@ -7,6 +7,7 @@
 #include <string>
 #include <type_traits>
 #include <unordered_map>
+#include <utility>
 
 #include "core/asserts.h"
 #include "core/intrusive_ptr.h"
@@ -17,8 +18,7 @@
 #include "platform/graphics/Texture.h"
 #include "runtime/GoonyaException.h"
 
-namespace Goonya {
-namespace Resource {
+namespace Goonya::Resource {
 
 struct Texture2DDesc {
     std::filesystem::path path;
@@ -35,19 +35,10 @@ struct TextureCubeMapDesc {
 };
 
 template <class TDesc, class TAsset>
-class ResourceLoader {
-public:
-    const static std::string name;
-    intrusive_ptr<TAsset> load(const TDesc &desc) const {
-        assert(false); // 需要实现
-        return nullptr;
-    }
-};
-
-template <class TDesc, class TAsset>
 class ResourceContainer {
 public:
-    ResourceContainer(const std::string &name) : name(name) {}
+    virtual ~ResourceContainer() = default;
+    explicit ResourceContainer(std::string name) : name(std::move(name)) {}
     template <typename T>
         requires std::is_convertible_v<T, TDesc>
     void add(const AssetKey &key, T &&desc) {
@@ -79,7 +70,7 @@ protected:
     std::unordered_map<AssetKey, std::tuple<intrusive_ptr<TAsset>, TDesc>> container;
 };
 
-class MeshContainer final: public ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
+class MeshContainer final : public ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
 public:
     MeshContainer() : ResourceContainer<Graphics::MeshDesc, Graphics::Mesh>("网格") {}
 
@@ -87,7 +78,7 @@ protected:
     intrusive_ptr<Graphics::Mesh> load(const Graphics::MeshDesc &desc) const override;
 };
 
-class MaterialContainer final: public ResourceContainer<Graphics::MaterialDesc, Graphics::Material> {
+class MaterialContainer final : public ResourceContainer<Graphics::MaterialDesc, Graphics::Material> {
 public:
     MaterialContainer() : ResourceContainer<Graphics::MaterialDesc, Graphics::Material>("材质") {}
 
@@ -95,7 +86,7 @@ protected:
     intrusive_ptr<Graphics::Material> load(const Graphics::MaterialDesc &desc) const override;
 };
 
-class Texture2DContainer final: public ResourceContainer<Texture2DDesc, Graphics::Texture> {
+class Texture2DContainer final : public ResourceContainer<Texture2DDesc, Graphics::Texture> {
 public:
     Texture2DContainer() : ResourceContainer<Texture2DDesc, Graphics::Texture>("纹理") {}
 
@@ -103,7 +94,7 @@ protected:
     intrusive_ptr<Graphics::Texture> load(const Texture2DDesc &desc) const override;
 };
 
-class TextureCubeMapContainer final: public ResourceContainer<TextureCubeMapDesc, Graphics::Texture> {
+class TextureCubeMapContainer final : public ResourceContainer<TextureCubeMapDesc, Graphics::Texture> {
 public:
     TextureCubeMapContainer() : ResourceContainer<TextureCubeMapDesc, Graphics::Texture>("纹理") {}
 
@@ -112,7 +103,7 @@ protected:
 };
 
 // 资源管理器
-class RenderReousce final {
+class RenderResource final {
 public:
     MeshContainer meshes;
     MaterialContainer materials;
@@ -130,13 +121,12 @@ public:
         shader_lib.reset();
     }
 
-    void add_shader(const AssetKey &key, Graphics::UberShaderDesc &&desc) {
+    void add_shader(const AssetKey &key, Graphics::UberShaderDesc &&desc) const {
         LOG_INFO("Loading Shader: {}", key);
         shader_lib->add_uber_shader(key, std::move(desc));
     }
 };
 
-extern RenderReousce resources;
+extern RenderResource resources;
 
-} // namespace Resource
-} // namespace Goonya
+} // namespace Goonya::Resource

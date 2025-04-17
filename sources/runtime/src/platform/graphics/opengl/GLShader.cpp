@@ -2,16 +2,15 @@
 #include "platform/graphics/Shader.h"
 #include <vector>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 // -------------------------编译-------------------------------
 
-unsigned int complie_shader(const std::string &source, unsigned int shader_type) {
+unsigned int compile_shader(const std::string &source, unsigned int shader_type) {
     unsigned int id = glCreateShader(shader_type);
 
     const GLchar *data = source.c_str();
-    GLint length = (GLint)source.length();
+    GLint length = static_cast<GLint>(source.length());
     glShaderSource(id, 1, &data, &length);
     glCompileShader(id);
 
@@ -20,7 +19,7 @@ unsigned int complie_shader(const std::string &source, unsigned int shader_type)
     glGetShaderiv(id, GL_COMPILE_STATUS, &success);
 
     if (!success) {
-        glGetShaderInfoLog(id, 512, NULL, infoLog);
+        glGetShaderInfoLog(id, 512, nullptr, infoLog);
         throw RuntimeError(std::format("着色器编译错误： {}", infoLog));
     }
 
@@ -28,8 +27,8 @@ unsigned int complie_shader(const std::string &source, unsigned int shader_type)
 }
 
 GLShader::GLShader(const std::string &vs_src, const std::string &ps_src) {
-    unsigned int vs = complie_shader(vs_src.c_str(), GL_VERTEX_SHADER);
-    unsigned int ps = complie_shader(ps_src.c_str(), GL_FRAGMENT_SHADER);
+    unsigned int vs = compile_shader(vs_src, GL_VERTEX_SHADER);
+    unsigned int ps = compile_shader(ps_src, GL_FRAGMENT_SHADER);
 
     this->id = glCreateProgram();
 
@@ -42,7 +41,7 @@ GLShader::GLShader(const std::string &vs_src, const std::string &ps_src) {
 
     glGetProgramiv(id, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(id, 512, NULL, infoLog);
+        glGetProgramInfoLog(id, 512, nullptr, infoLog);
         throw RuntimeError(std::format("着色器链接错误： {}", infoLog));
     }
 
@@ -68,6 +67,8 @@ static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
         return Meta::FieldType::mat4f;
     case GL_DOUBLE:
         return Meta::FieldType::f64;
+    default:
+        break;
     }
     return Meta::FieldType::nul;
 }
@@ -87,19 +88,19 @@ GLShaderIntrospector::get_constant_buffer_info() const noexcept {
     for (int i = 0; i < uniform_block_num; ++i) {
         GLint values[property_count];
         // 获取名称长度，总大小，和字段数量
-        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, UNIFORM_BLOCK_PROPERTIES, property_count, NULL,
-                               values);
+        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, UNIFORM_BLOCK_PROPERTIES, property_count,
+                               nullptr, values);
 
         auto [binding, name_len, size, var_num] = values;
         // 获取块名称
         std::string name;
         // OpenGL返回的名称长度包括尾部的'\n'，但c++的不需要，同时后面的bufSize也是假定包括'\n'的。
         name.resize(name_len - 1);
-        glGetProgramResourceName(id, GL_UNIFORM_BLOCK, i, name_len, NULL, name.data());
+        glGetProgramResourceName(id, GL_UNIFORM_BLOCK, i, name_len, nullptr, name.data());
         // 获取内部所有字段id
-        std::vector<GLint> unifrom_ids(var_num);
+        std::vector<GLint> uniform_ids(var_num);
         const GLenum var_property[] = {GL_ACTIVE_VARIABLES};
-        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, 1, var_property, var_num, NULL, unifrom_ids.data());
+        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, 1, var_property, var_num, nullptr, uniform_ids.data());
 
         std::unordered_map<std::string, Meta::FieldInfo> fields;
         for (int i = 0; i < var_num; ++i) {
@@ -107,18 +108,18 @@ GLShaderIntrospector::get_constant_buffer_info() const noexcept {
             const size_t property_count = std::extent_v<decltype(UNIFORM_PROPERTIES)>;
             // 获取内部字段名称长度，类型和偏移量
             GLint values[property_count];
-            glGetProgramResourceiv(id, GL_UNIFORM, unifrom_ids[i], property_count, UNIFORM_PROPERTIES, property_count,
-                                   NULL, values);
+            glGetProgramResourceiv(id, GL_UNIFORM, uniform_ids[i], property_count, UNIFORM_PROPERTIES, property_count,
+                                   nullptr, values);
             auto [name_len, type, offset] = values;
             // 获取字段名称
             std::string field_name;
             field_name.resize(name_len - 1);
-            glGetProgramResourceName(id, GL_UNIFORM, unifrom_ids[i], name_len, NULL, field_name.data());
-            fields.emplace(field_name, Meta::FieldInfo{GLType2FieldType(type), (size_t)offset});
+            glGetProgramResourceName(id, GL_UNIFORM, uniform_ids[i], name_len, nullptr, field_name.data());
+            fields.emplace(field_name, Meta::FieldInfo{GLType2FieldType(type), static_cast<size_t>(offset)});
         }
 
-        result.emplace(name,
-                       ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), (size_t)size}, (GLuint)binding});
+        result.emplace(name, ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), static_cast<size_t>(size)},
+                                                    static_cast<GLuint>(binding)});
     }
 
     return result;
@@ -200,5 +201,4 @@ std::unordered_map<std::string, GLuint> GLShaderIntrospector::get_texture_info()
     return result;
 }
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

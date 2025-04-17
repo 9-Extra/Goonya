@@ -4,8 +4,7 @@
 
 #include <glad/glad.h>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 class GLMesh final : public Mesh {
 public:
@@ -14,31 +13,29 @@ public:
         is_dirty = true;
     };
 
-    virtual ~GLMesh() { glDeleteVertexArrays(1, &vao_id); }
+    ~GLMesh() override { glDeleteVertexArrays(1, &vao_id); }
 
     // ------------------------------------
-    virtual void bind() const noexcept override {
-        update(); 
-        glBindVertexArray(vao_id); 
+    void bind() const noexcept override {
+        update();
+        glBindVertexArray(vao_id);
     }
-    virtual void update() const noexcept override{
-        if (is_dirty){
+    void update() const noexcept override {
+        if (is_dirty) {
             update_VAO();
             is_dirty = false;
         }
     }
 
 protected:
-    virtual void _set_debug_label(const std::string &name) const noexcept override {
+    void _set_debug_label(const std::string &name) const noexcept override {
         glObjectLabel(GL_VERTEX_ARRAY, vao_id, name.size(), name.data());
     }
 
 private:
-    GLuint vao_id;
+    GLuint vao_id{};
 
     void update_VAO() const noexcept;
 };
 
-} // namespace Graphics
-
-} // namespace Goonya
+} // namespace Goonya::Graphics

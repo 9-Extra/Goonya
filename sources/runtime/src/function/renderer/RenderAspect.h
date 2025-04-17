@@ -2,15 +2,14 @@
 
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
+#include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/RenderTarget.h"
-#include "platform/graphics/Graphics.h"
 
 #include <vector>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 struct CameraRenderInfo {
 public:
@@ -18,7 +17,6 @@ public:
         near_z = 1.0f;
         far_z = 1000.0f;
         fov = 1.57f;
-        view_port = {0, 0, 0, 0};
         view_matrix = Matrix4::identity();
     }
 
@@ -29,18 +27,14 @@ public:
     float fov;
     float near_z, far_z;
 
-    Viewport view_port; // 需要手动设置
+    Viewport view_port = {0, 0, 0, 0};         // 需要手动设置
     intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
 
-    Vector3f get_position() const noexcept{
-        return camera_pos;
-    }
+    Vector3f get_position() const noexcept { return camera_pos; }
 
-    Matrix4 get_view_matrix() const noexcept {
-        return view_matrix;
-    }
+    Matrix4 get_view_matrix() const noexcept { return view_matrix; }
     Matrix4 get_perspective_matrix() const noexcept {
-        float aspect = float(view_port.width) / float(view_port.height);
+        float aspect = static_cast<float>(view_port.width) / static_cast<float>(view_port.height);
         return graphics_api->compute_perspective_matrix(aspect, fov, near_z, far_z, !render_target->is_screen());
     }
     Matrix4 get_view_perspective_matrix() const noexcept {
@@ -61,7 +55,7 @@ public:
 struct PointLight {
     Vector3f position;
     Vector3f color;
-    float factor;
+    float factor = 1.0f;
 };
 
 struct DirectionalLight {
@@ -83,5 +77,4 @@ struct MeshRenderInfo {
     std::vector<intrusive_ptr<Material>> materials;
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

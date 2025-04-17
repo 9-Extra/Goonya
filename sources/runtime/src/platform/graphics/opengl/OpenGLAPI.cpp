@@ -21,8 +21,7 @@
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLShader.h"
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
     // 初始化日志
@@ -37,7 +36,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 
     // 加载OpenGL函数
     {
-        GLenum err = gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+        GLenum err = gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress));
         if (err != GL_TRUE) {
             logger->error("gladLoadGL Error: {}", err);
         }
@@ -97,7 +96,7 @@ intrusive_ptr<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uin
     return make_intrusive<GLFrameBuffer>(size);
 }
 
-intrusive_ptr<Shader> OpenGLGraphicsAPI::complie_shader_program(const std::string &vs_src,
+intrusive_ptr<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src,
                                                                 const std::string &ps_src) const {
     return make_intrusive<GLShader>(vs_src, ps_src);
 }
@@ -266,5 +265,4 @@ Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, fl
                        0.0f};
     }
 }
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics

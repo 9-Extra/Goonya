@@ -2,7 +2,7 @@
 
 #include <filesystem>
 
-namespace Goonya{
+namespace Goonya {
 
 std::filesystem::path get_exe_path();
 

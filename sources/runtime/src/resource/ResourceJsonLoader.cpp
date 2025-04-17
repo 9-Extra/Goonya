@@ -14,11 +14,9 @@
 #include "resource/Resource.h"
 #include "runtime/GoonyaException.h"
 
-
 #include "glTFLoader.h"
 
-namespace Goonya {
-namespace Resource {
+namespace Goonya::Resource {
 
 static std::tuple<Graphics::TextureFilterMode, Graphics::TextureWarpMode>
 parse_texture_profile(const Json::Value &texture_desc) {
@@ -64,7 +62,7 @@ void load_json(const std::filesystem::path &path) {
     std::filesystem::path base_dir = std::filesystem::absolute(path.parent_path()); // 包含此json文件的文件夹
 
     // 着色器
-    for (auto iter = json["shader"].begin(); iter != json["shader"].end(); iter++) {
+    for (auto iter = json["shader"].begin(); iter != json["shader"].end(); ++iter) {
         const AssetKey &key = iter.name();
         const Json::Value &shader_desc = *iter;
 
@@ -74,16 +72,16 @@ void load_json(const std::filesystem::path &path) {
 
         for (const auto &group : shader_desc["global_variants"]) {
             std::vector<std::string> desc_group;
-            for (const auto &key : group) {
-                desc_group.emplace_back(key.asString());
+            for (const auto &variant_key : group) {
+                desc_group.emplace_back(variant_key.asString());
             }
             desc.global_variant_keys.emplace_back(std::move(desc_group));
         }
 
         for (const auto &group : shader_desc["local_variants"]) {
             std::vector<std::string> desc_group;
-            for (const auto &key : group) {
-                desc_group.emplace_back(key.asString());
+            for (const auto &variant_key : group) {
+                desc_group.emplace_back(variant_key.asString());
             }
             desc.local_variant_keys.emplace_back(std::move(desc_group));
         }
@@ -92,7 +90,7 @@ void load_json(const std::filesystem::path &path) {
     }
 
     // 贴图
-    for (auto iter = json["texture"].begin(); iter != json["texture"].end(); iter++) {
+    for (auto iter = json["texture"].begin(); iter != json["texture"].end(); ++iter) {
         const AssetKey &key = iter.name();
         const Json::Value &texture_desc = *iter;
 
@@ -107,7 +105,7 @@ void load_json(const std::filesystem::path &path) {
     }
 
     // 立方体贴图
-    for (auto iter = json["cubemap"].begin(); iter != json["cubemap"].end(); iter++) {
+    for (auto iter = json["cubemap"].begin(); iter != json["cubemap"].end(); ++iter) {
         const AssetKey &key = iter.name();
         const Json::Value &cubemap_desc = *iter;
 
@@ -125,7 +123,7 @@ void load_json(const std::filesystem::path &path) {
     }
 
     // 材质
-    for (auto iter = json["materials"].begin(); iter != json["materials"].end(); iter++) {
+    for (auto iter = json["materials"].begin(); iter != json["materials"].end(); ++iter) {
         const AssetKey &key = iter.name();
         const Json::Value &material_desc = *iter;
 
@@ -165,9 +163,10 @@ void load_json(const std::filesystem::path &path) {
             throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", depth_test_mode.asString()));
         }
 
-        for (auto iter = material_desc["parameters"].begin(); iter != material_desc["parameters"].end(); iter++) {
-            const std::string &name = iter.name();
-            const std::string &parameter_string = iter->asString();
+        for (auto param_iter = material_desc["parameters"].begin(); param_iter != material_desc["parameters"].end();
+             ++param_iter) {
+            const std::string &name = param_iter.name();
+            const std::string &parameter_string = param_iter->asString();
             // 解析形如"vec3(1.0, 0, 2.0)"这样的参数
             const std::regex pattern(R"(^\s*(\w+)\s*\((.*)\)$)");
             const std::regex number_pattern(R"(\s*([-+]?\d*\.?\d+\s*))");
@@ -181,31 +180,32 @@ void load_json(const std::filesystem::path &path) {
 
                 if (type_name == "vec2") {
                     Vector2f param;
-                    for (size_t i = 0; i < 2; i++) {
-                        param.v[i] = std::stof(it->str());
-                        it++;
+                    for (float &i : param.v) {
+                        i = std::stof(it->str());
+                        ++it;
                     }
                     assert(it == end);
                     mat_builder.add_parameter(name, param);
                 } else if (type_name == "vec3") {
                     Vector3f param;
-                    for (size_t i = 0; i < 3; i++) {
-                        param.v[i] = std::stof(it->str());
-                        it++;
+                    for (float &i : param.v) {
+                        i = std::stof(it->str());
+                        ++it;
                     }
                     assert(it == end);
                     mat_builder.add_parameter(name, param);
                 } else if (type_name == "vec4") {
                     Vector4f param;
-                    for (size_t i = 0; i < 4; i++) {
-                        param.v[i] = std::stof(it->str());
-                        it++;
+                    for (float &i : param.v) {
+                        i = std::stof(it->str());
+                        ++it;
                     }
                     assert(it == end);
                     mat_builder.add_parameter(name, param);
                 } else if (type_name == "f32") {
                     float param = std::stof(it->str());
-                    assert(++it == end);
+                    ++it;
+                    assert(it == end);
                     mat_builder.add_parameter(name, param);
                 } else if (type_name == "mat4") {
                     Matrix4 param{std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
@@ -226,25 +226,26 @@ void load_json(const std::filesystem::path &path) {
             }
         }
 
-        for (auto iter = material_desc["samplers"].begin(); iter != material_desc["samplers"].end(); iter++) {
-            const std::string &name = iter.name();
-            const std::string& texture = iter->asString();
+        for (auto sampler_iter = material_desc["samplers"].begin(); sampler_iter != material_desc["samplers"].end();
+             ++sampler_iter) {
+            const std::string &name = sampler_iter.name();
+            const std::string &texture = sampler_iter->asString();
             const static std::regex pattern(R"(^\s*(\w+)\s*\((.+)\)$)");
             std::smatch matches;
-            if (std::regex_match(texture, matches, pattern)){
+            if (std::regex_match(texture, matches, pattern)) {
                 Graphics::TextureType type = Graphics::TextureType::UNKNOWN;
                 const auto type_name = matches[1];
 
-                if (type_name.compare("texture2d") == 0){
+                if (type_name.compare("texture2d") == 0) {
                     type = Graphics::TextureType::TEXTURE_2D;
-                } else if (type_name.compare("cubemap") == 0){
+                } else if (type_name.compare("cubemap") == 0) {
                     type = Graphics::TextureType::TEXTURE_CUBEMAP;
                 }
 
-                if (type != Graphics::TextureType::UNKNOWN){
+                if (type != Graphics::TextureType::UNKNOWN) {
                     mat_builder.add_sampler(name, type, matches[2].str());
                 } else {
-                    throw RuntimeError(std::format("未知纹理类型\"{}\"", type_name.str()));    
+                    throw RuntimeError(std::format("未知纹理类型\"{}\"", type_name.str()));
                 }
             } else {
                 throw RuntimeError(std::format("纹理参数格式\"{}\"不正确", texture));
@@ -255,10 +256,9 @@ void load_json(const std::filesystem::path &path) {
     }
 
     // gltf
-    for (auto iter = json["gltf"].begin(); iter != json["gltf"].end(); iter++) {
+    for (auto iter = json["gltf"].begin(); iter != json["gltf"].end(); ++iter) {
         load_gltf(iter.name(), base_dir / (*iter)["path"].asString());
     }
 }
 
-} // namespace Resource
-} // namespace Goonya
+} // namespace Goonya::Resource

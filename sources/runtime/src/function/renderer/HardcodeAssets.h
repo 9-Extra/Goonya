@@ -5,9 +5,7 @@
 #include <vector>
 
 // 硬编码的一些数据
-namespace Goonya {
-namespace Graphics {
-namespace Assets {
+namespace Goonya::Graphics::Assets {
 
 const std::vector<Vector3f> skybox_cube_vertices = {{-1.0, -1.0, -1.0}, {1.0, -1.0, -1.0}, {1.0, 1.0, -1.0},
                                                     {-1.0, 1.0, -1.0},  {-1.0, -1.0, 1.0}, {1.0, -1.0, 1.0},
@@ -41,6 +39,4 @@ const VertexLayout plane_vertices_vertex_layout{
     sizeof(Vertex)};
 
 const std::vector<uint16_t> plane_indices = {0, 1, 2, 2, 3, 0};
-} // namespace Assets
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics::Assets

@@ -1,19 +1,14 @@
 #pragma once
 
-#include <core/cgmath.h>
 #include <core/world/GObject.h>
-#include <core/input/input.h>
-#include <core/eventbus/eventbus.h>
-#include <core/events.h>
-#include <core/timer/timer.h>
 
 class MoveSystem : public Goonya::Component {
 public:
-    void handle_mouse();
-    void handle_keyboard(float delta);
+    void handle_mouse() const;
+    void handle_keyboard(float delta) const;
 
-    virtual void on_register() override;
-    virtual void on_tick() override;
+    void on_register() override;
+    void on_tick() override;
 
 private:
     std::shared_ptr<Goonya::GObject> cube;

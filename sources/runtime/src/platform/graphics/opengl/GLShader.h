@@ -5,36 +5,33 @@
 #include "platform/read_file.h"
 #include <cassert>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
-class GLShader : public Shader {
+class GLShader final : public Shader {
 public:
     GLShader(const std::string &vs_src, const std::string &ps_src);
-    ~GLShader() { glDeleteProgram(id); }
+    ~GLShader() override { glDeleteProgram(id); }
 
-    virtual void bind() override { glUseProgram(id); }
-    GLuint get_id() const {
-        return id;
-    }
+    void bind() override { glUseProgram(id); }
+    GLuint get_id() const { return id; }
 
 protected:
     GLuint id;
 };
 
-class GLShaderIntrospector: public ShaderIntrospector {
+class GLShaderIntrospector final : public ShaderIntrospector {
 public:
-    GLShaderIntrospector(Shader* shader) {
-        GLShader* s = dynamic_cast<GLShader*>(shader);
+    explicit GLShaderIntrospector(Shader *shader) {
+        GLShader *s = dynamic_cast<GLShader *>(shader);
         assert(s);
         id = s->get_id();
     }
 
-    virtual std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept;
-    virtual std::unordered_map<std::string, uint32_t> get_texture_info() const noexcept;
+    std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept override;
+    std::unordered_map<std::string, uint32_t> get_texture_info() const noexcept override;
+
 private:
     GLuint id;
 };
 
-} // namespace Graphics
-} // namespace Goonya
+} // namespace Goonya::Graphics
