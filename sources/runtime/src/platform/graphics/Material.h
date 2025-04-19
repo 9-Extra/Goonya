@@ -48,6 +48,10 @@ public:
         update_parameter();
     }
 
+    UberShader* get_uber_shader() const noexcept{
+        return uber_shader;
+    }
+
     void set_pipeline_state(const PipeLineState &state) noexcept { pipeline_state = state; }
 
     void set_param(const std::string &name, const Meta::DynamicData &value);

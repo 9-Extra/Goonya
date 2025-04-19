@@ -7,8 +7,7 @@
 
 #include <memory>
 
-namespace Goonya {
-namespace Graphics {
+namespace Goonya::Graphics {
 
 class OpenGLGraphicsAPI final : public GraphicsAPI {
 public:
@@ -54,6 +53,4 @@ private:
     intrusive_ptr<RenderTarget> rendertarget_screen;
 };
 
-} // namespace Graphics
-
-} // namespace Goonya
+} // namespace Goonya::Graphics

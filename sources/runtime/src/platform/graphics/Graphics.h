@@ -3,6 +3,7 @@
 #include <memory>
 #include <optional>
 #include <spdlog/logger.h>
+#include <thread>
 
 #include "Buffer.h"
 #include "Material.h"
@@ -82,6 +83,7 @@ public:
 };
 
 extern std::unique_ptr<GraphicsAPI> graphics_api;
+extern std::thread render_thread;
 
 void initialize(GraphicsAPIType api_type);
 

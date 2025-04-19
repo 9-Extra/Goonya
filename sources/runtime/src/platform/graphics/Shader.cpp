@@ -113,7 +113,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
 
     // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用create_variant
-    VariantCodeSet empty{.full_code = 0};
+    VariantCodeSet empty{0};
     std::vector<std::string> variant_keys;
     this->get_variant_key_names(empty, variant_keys);
     variant_keys.emplace_back("VERTEX_SHADER");
@@ -124,11 +124,13 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     intrusive_ptr<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
     this->shaders[empty] = shader; // 既然编译了就加入缓存
 
+    // 反射获取着色器信息
     std::unique_ptr<ShaderIntrospector> introspector = graphics_api->create_shader_introspect(shader.get());
     auto buffer_info = introspector->get_constant_buffer_info();
 
     this->per_material = std::move(buffer_info["per_material"]);
     this->per_frame = std::move(buffer_info.at("per_frame"));
+    this->per_object = std::move(buffer_info["per_object"]);
     this->texture_units = introspector->get_texture_info();
 
     this->global_key_code = 0; // 记得初始化为0！

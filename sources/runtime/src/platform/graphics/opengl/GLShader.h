@@ -2,7 +2,6 @@
 
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/opengl/GLBasic.h"
-#include "platform/read_file.h"
 #include <cassert>
 
 namespace Goonya::Graphics {

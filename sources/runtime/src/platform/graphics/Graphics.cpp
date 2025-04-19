@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "function/renderer/RendererBasic.h"
 #include "opengl/OpenGLAPI.h"
 #include "runtime/GoonyaException.h"
 
@@ -10,6 +11,7 @@ namespace Goonya::Graphics {
 std::unique_ptr<GraphicsAPI> graphics_api;
 
 void initialize(GraphicsAPIType api_type) {
+    ASSERT_RENDER_THREAD();
     switch (api_type) {
     case GraphicsAPIType::NONE:
         throw RuntimeError("不行");

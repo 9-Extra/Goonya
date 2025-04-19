@@ -2,11 +2,12 @@
 
 #include "HardcodeAssets.h"
 #include "core/Bytes.h"
+#include "core/ThreadType.h"
 #include "core/cgmath.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/log/Log.h"
-#include "function/renderer/RenderAspect.h"
+#include "function/renderer/RenderProxy/Camera.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/RenderTarget.h"
@@ -16,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <functional>
 
 namespace Goonya::Graphics {
 Renderer renderer; // global renderer
@@ -31,9 +33,11 @@ void init_resource() {
     Resource::resources.meshes.add("skybox_cube", std::move(skybox_cube));
     // 从json加载大部分的资源
     Resource::load_json("../assets/resources.json");
-    // 通过硬编码加载的部分资源
 }
 void Renderer::init() {
+    current_thread_type = ThreadType::RENDER; // 目前先不拆分线程，资源加载的问题没有解决
+    Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
+
     Resource::resources.init();
     init_resource();
 
@@ -44,8 +48,11 @@ void Renderer::init() {
 void Renderer::render() {
     static size_t frame = 0;
     graphics_api->push_debug_group_label(std::format("Frame {}", frame++));
+
+    run_all_tasks();
+
     bool is_screen_painted = false;
-    for (CameraRenderInfo *camera : cameras) {
+    for (CameraRenderProxy *camera : cameras) {
         if (!camera->render_target)
             continue;
         if (camera->render_target->is_screen()) {

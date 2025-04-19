@@ -14,6 +14,7 @@
 #include "GLBuffer.h"
 #include "GLRenderTarget.h"
 #include "core/intrusive_ptr.h"
+#include "function/renderer/RendererBasic.h"
 #include "platform/display/display.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Mesh.h"
@@ -24,6 +25,8 @@
 namespace Goonya::Graphics {
 
 OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
+    ASSERT_RENDER_THREAD();
+
     // 初始化日志
     {
         const auto sinks = Logger::get_sinks();
@@ -80,28 +83,36 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 }
 
 OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
+    ASSERT_RENDER_THREAD();
     // 取消消息回调防止logger在销毁后被使用
     glDebugMessageCallback(nullptr, nullptr); // 文档没写怎么反注册消息回调，猜是这样
     glfwMakeContextCurrent(nullptr);          // 清除OpenGL上下文
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::create_mesh() { return make_intrusive<GLMesh>(); }
+intrusive_ptr<Mesh> OpenGLGraphicsAPI::create_mesh() {
+    ASSERT_RENDER_THREAD();
+    return make_intrusive<GLMesh>();
+}
 
 intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
+    ASSERT_RENDER_THREAD();
     return intrusive_ptr<GLBuffer>(new GLBuffer(size, type));
 }
 
 intrusive_ptr<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
+    ASSERT_RENDER_THREAD();
     return make_intrusive<GLFrameBuffer>(size);
 }
 
 intrusive_ptr<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src,
                                                                 const std::string &ps_src) const {
+    ASSERT_RENDER_THREAD();
     return make_intrusive<GLShader>(vs_src, ps_src);
 }
 
 void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noexcept {
+    ASSERT_RENDER_THREAD();
     // 深度测试
     bool enable_depth_test = true;
     GLenum depth_func = 0;
@@ -182,6 +193,7 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noe
 // ---------------------------------绘制调用-------------------------------------------------------------
 void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::optional<float> depth,
                                             std::optional<int> stencil) noexcept {
+    ASSERT_RENDER_THREAD();
     if (color) {
         Color c = *color;
         glClearColor(c.r, c.g, c.b, c.a);
@@ -194,6 +206,7 @@ void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::opt
     }
 };
 void OpenGLGraphicsAPI::clear(bool color, bool depth, bool stencil) const noexcept {
+    ASSERT_RENDER_THREAD();
     GLbitfield bit = 0;
     bit |= color ? GL_COLOR_BUFFER_BIT : 0;
     bit |= depth ? GL_DEPTH_BUFFER_BIT : 0;
@@ -214,12 +227,14 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
 }
 
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
+    ASSERT_RENDER_THREAD();
     glDrawElements(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_SHORT,
                    reinterpret_cast<void *>(submesh.start_index)); // 绘制
 }
 
 // -----------------------bind-------------------------------
 void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
+    ASSERT_RENDER_THREAD();
     glViewport(view_port.x, view_port.y, view_port.width, view_port.height);
 }
 

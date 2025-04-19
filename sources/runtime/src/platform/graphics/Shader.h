@@ -39,6 +39,9 @@ union VariantCodeSet {
     };
     uint64_t full_code;
 
+    explicit VariantCodeSet(VariantCode global_code, VariantCode local_code): global_code(global_code), local_code(local_code) {}
+    explicit VariantCodeSet(uint64_t full_code): full_code(full_code) {}
+
     bool operator==(const VariantCodeSet other) const noexcept { return this->full_code == other.full_code; }
 };
 // 检测VariantCodeSet以希望的方式对齐
@@ -122,7 +125,8 @@ public:
 
     VariantCode get_global_key_code() const noexcept { return global_key_code; }
     const ShaderUniformBlockInfo &per_material_block() const noexcept { return per_material; }
-    const ShaderUniformBlockInfo &per_frame_block() const noexcept { return per_material; }
+    const ShaderUniformBlockInfo &per_frame_block() const noexcept { return per_frame; }
+    const ShaderUniformBlockInfo &per_object_block() const noexcept { return per_object; }
     const std::unordered_map<std::string, uint32_t> &get_texture_units() const noexcept { return texture_units; }
     intrusive_ptr<Shader> query_variant(VariantCodeSet variant_code);
 
@@ -154,6 +158,7 @@ private:
     // UniformBuffer内存布局
     ShaderUniformBlockInfo per_material;
     ShaderUniformBlockInfo per_frame;
+    ShaderUniformBlockInfo per_object;
     std::unordered_map<std::string, uint32_t> texture_units; // 纹理名称及对应的纹理单元
 };
 

@@ -33,7 +33,7 @@ protected:
     }
 
 private:
-    GLuint vao_id{};
+    GLuint vao_id = 0;
 
     void update_VAO() const noexcept;
 };

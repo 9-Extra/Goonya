@@ -114,7 +114,7 @@ void MoveSystem::on_register() {
     camera = get_owner()->get_child_by_name("相机");
     assert(camera);
     teapot = get_owner()->get_child_by_name("teapot");
-    assert(camera);
+    assert(teapot);
 }
 void MoveSystem::on_tick() {
     handle_keyboard(Goonya::Timer::delta());

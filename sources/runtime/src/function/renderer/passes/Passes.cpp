@@ -6,6 +6,8 @@
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
 #include "function/renderer/RenderAspect.h"
+#include "function/renderer/RenderProxy/Camera.h"
+#include "function/renderer/RenderProxy/StaticMesh.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
@@ -22,17 +24,14 @@ namespace Goonya::Graphics {
 LambertianPass::LambertianPass() {
     per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
     per_frame_uniform->set_debug_label("Lambert Per Frame");
-    per_object_uniform = graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM);
-    per_object_uniform->set_debug_label("Lambert Per Object");
 }
 // 一般物体渲染
 void LambertianPass::run() {
-    const CameraRenderInfo *camera = renderer.current_camera;
+    const CameraRenderProxy *camera = renderer.current_camera;
     Vector3f camera_pos = camera->get_position();
 
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
-    per_object_uniform->bind_uniform(1);
 
     {
         // 填充per_frame uniform数据
@@ -63,14 +62,10 @@ void LambertianPass::run() {
     intrusive_ptr<Material> default_material = Resource::resources.materials.get("default");
 
     // 遍历所有part，绘制每一个part
-    for (const MeshRenderInfo *mesh : renderer.meshes) {
+    for (const MeshRenderProxy *mesh : renderer.meshes) {
         mesh->mesh->bind();
-        {
-            // 填充per_object uniform buffer
-            StructBufferWriter<PerObjectData> data(per_object_uniform, BufferMapOption::WRITE_DISCARD);
-            data->model_matrix = mesh->model_matrix.transpose();            // 变换矩阵
-            data->normal_matrix = Matrix4{mesh->normal_matrix}.transpose(); // 法线变换矩阵
-        }
+        
+        mesh->per_object->bind_uniform(1);
 
         const std::vector<SubMesh> submeshes = mesh->mesh->submeshes;
         // 逐一绘制子网格
@@ -86,7 +81,7 @@ void LambertianPass::run() {
 
 // 渲染天空盒
 void SkyBoxPass::run() {
-    const CameraRenderInfo *camera = renderer.current_camera;
+    const CameraRenderProxy *camera = renderer.current_camera;
     Vector3f camera_pos = camera->get_position();
 
     // 寻找包含且最小，接近中心的天空盒

@@ -1,5 +1,6 @@
 #include "Material.h"
 #include "platform/graphics/Graphics.h"
+#include <cassert>
 
 namespace Goonya::Graphics {
 
@@ -16,6 +17,7 @@ void Material::bind() {
     }
 }
 void Material::set_param(const std::string &name, const Meta::DynamicData &value) {
+    assert(uber_shader->per_material_block().layout.fields.contains(name));
     if (auto iter = parameters.find(name); iter != parameters.end()) {
         if (iter->second != value) {
             iter->second = value;
@@ -29,7 +31,7 @@ void Material::set_param(const std::string &name, const Meta::DynamicData &value
 
 Material::Material(UberShader *uber_shader)
     : uber_shader(uber_shader), local_variant_code(0),
-      current_variant_code({uber_shader->get_global_key_code(), local_variant_code}) {
+      current_variant_code(uber_shader->get_global_key_code(), local_variant_code) {
 
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
@@ -39,7 +41,7 @@ Material::Material(UberShader *uber_shader)
 };
 
 void Material::update_shader_variant() {
-    VariantCodeSet code{.global_code = uber_shader->get_global_key_code(), .local_code = local_variant_code};
+    VariantCodeSet code{uber_shader->get_global_key_code(), local_variant_code};
     if (current_variant_code != code) {
         shader = uber_shader->query_variant(code);
         current_variant_code = code;
@@ -51,7 +53,7 @@ void Material::update_parameter() {
         return;
 
     {
-        const auto &layout = uber_shader->per_frame_block().layout;
+        const auto &layout = uber_shader->per_material_block().layout;
         // 所有的参数都写一遍
         auto w = DynamicBufferWriter(per_material, layout, BufferMapOption::WRITE_DISCARD);
         for (const auto &[name, value] : parameters) {

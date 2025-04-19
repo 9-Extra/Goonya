@@ -12,9 +12,9 @@
 #include <fstream>
 #include <json/json.h>
 #include <memory>
+#include <vector>
 
-namespace Goonya {
-namespace Scene {
+namespace Goonya::Scene {
 // 从json加载一个Vector3f
 Vector3f load_vec3(const Json::Value &json) {
     assert(json.isArray());
@@ -48,12 +48,14 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
             if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->mesh = Resource::resources.meshes.get(cpnt_desc["mesh"].asString());
+                cpnt_ptr->set_mesh(Resource::resources.meshes.get(cpnt_desc["mesh"].asString()));
             }
             if (cpnt_desc.isMember("material")) {
+                std::vector<intrusive_ptr<Graphics::Material>> materials;
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    cpnt_ptr->materials.emplace_back(Resource::resources.materials.get(material_name.asString()));
+                    materials.emplace_back(Resource::resources.materials.get(material_name.asString()));
                 }
+                cpnt_ptr->set_materials(std::span(materials));
             }
             obj->add_component(std::move(cpnt_ptr));
         } else if (cpnt_name == "point_light") {
@@ -118,5 +120,4 @@ Scene load_scene_from_json(const std::string &path) {
     return scene;
 }
 
-} // namespace Scene
-} // namespace Goonya
+} // namespace Goonya::Scene

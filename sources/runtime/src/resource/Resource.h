@@ -29,7 +29,7 @@ struct Texture2DDesc {
 
 struct TextureCubeMapDesc {
     std::array<std::filesystem::path, 6> path;
-    bool is_color;
+    bool is_color = false;
     Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
     Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };

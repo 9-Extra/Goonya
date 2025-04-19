@@ -8,21 +8,20 @@ class World {
 public:
     std::shared_ptr<GObject> root;
     
-    World() {
-        reset();
-    }
-
     void reset() {
+        if (root){
+            root->set_world(false);
+        }
         root = nullptr;
         tick_count = 0;
     }
 
-    uint64_t get_tick_count() { return tick_count; }
+    uint64_t get_tick_count() const { return tick_count; }
 
     void tick();
 
 private:
-    uint64_t tick_count;
+    uint64_t tick_count = 0;
 };
 
 extern World world;

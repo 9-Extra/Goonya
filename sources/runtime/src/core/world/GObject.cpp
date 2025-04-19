@@ -1,6 +1,5 @@
 #include "GObject.h"
 
-
 namespace Goonya {
 void GObject::tick(DirtyFlag parent_flag) {
     if (is_disabled())
@@ -32,4 +31,44 @@ void GObject::tick(DirtyFlag parent_flag) {
 
     dirty_flag.clear(); // 清理标记
 }
+bool GObject::remove_component(const std::type_info &t_info) {
+    for (auto it = components.begin(); it != components.end(); ++it) {
+        auto &c = **it; // 比较其内容而非智能指针
+        if (_is_in_world) {
+            c.on_unregister();
+        }
+        c.set_owner(nullptr);
+        if (typeid(c) == t_info) {
+            components.erase(it);
+            return true;
+        }
+    }
+    return false;
 }
+
+void GObject::set_world(bool is_in_world) noexcept {
+    if (_is_in_world == is_in_world) {
+        return;
+    } else {
+        _is_in_world = is_in_world;
+        for (auto &child : children) {
+            child->set_world(is_in_world);
+        }
+        if (is_in_world) {
+            // enter world
+            if (!is_disabled()) {
+                for (auto &component : components) {
+                    component->on_register();
+                }
+            }
+        } else {
+            // exit world
+            if (!is_disabled()) {
+                for (auto &component : components) {
+                    component->on_unregister();
+                }
+            }
+        }
+    }
+}
+} // namespace Goonya

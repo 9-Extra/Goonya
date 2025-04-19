@@ -2,7 +2,7 @@
 
 #include "core/cgmath.h"
 #include "core/world/GObject.h"
-#include "function/renderer/RenderAspect.h"
+#include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/Renderer.h"
 #include "platform/graphics/Graphics.h"
 
@@ -11,20 +11,20 @@ namespace Goonya::Graphics {
 class CpntCamera : public Component {
 public:
     explicit CpntCamera(bool bind_to_screen = false, float near_z = 1.0f, float far_z = 1000.0f, float fov = 1.57) {
-        camera.near_z = near_z;
-        camera.far_z = far_z;
-        camera.fov = fov;
+        camera_proxy.near_z = near_z;
+        camera_proxy.far_z = far_z;
+        camera_proxy.fov = fov;
 
         if (bind_to_screen) {
-            camera.render_target = graphics_api->get_rendertarget_screen();
+            camera_proxy.render_target = graphics_api->get_rendertarget_screen();
         }
     }
 
     bool should_be_main = false;
 
-    void on_register() override { renderer.cameras.emplace(&camera); }
+    void on_register() override { renderer.cameras.emplace(&camera_proxy); }
 
-    void on_unregister() override { renderer.cameras.erase(&camera); }
+    void on_unregister() override { renderer.cameras.erase(&camera_proxy); }
 
     void on_tick() override {
         assert(get_owner() != nullptr);
@@ -37,12 +37,12 @@ public:
                 Matrix4 parent_view_matrix = Matrix4::translate(-t.position) * Matrix4::rotate(t.rotation.conjugate());
                 view_matrix = parent_view_matrix * view_matrix;
             }
-            camera.view_matrix = view_matrix;
-            camera.camera_pos = get_owner()->get_world_model_matrix().resolve_translate();
+            camera_proxy.view_matrix = view_matrix;
+            camera_proxy.camera_pos = get_owner()->get_world_model_matrix().resolve_translate();
         }
     }
 
 protected:
-    CameraRenderInfo camera;
+    CameraRenderProxy camera_proxy;
 };
 } // namespace Goonya::Graphics

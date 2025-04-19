@@ -12,7 +12,6 @@
 #include "core/world/World.h"
 #include "function/renderer/Renderer.h"
 #include "platform/display/display.h"
-#include "platform/graphics/Graphics.h"
 #include "platform/imgui/imgui_module.h"
 #include "resource/Resource.h"
 
@@ -40,7 +39,7 @@ void init_engine() {
     Input::initalize();
     Timer::initialize();
     Display::initialize(1080, 720);
-    Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
+    
     Graphics::renderer.init();
 
     ImguiMng::init();
@@ -108,7 +107,6 @@ void drop_engine() {
     Resource::resources.clear(); // 在设备drop之前清理资源
     ImguiMng::drop();
 
-    Graphics::drop();
     Display::drop();
     Timer::drop();
 

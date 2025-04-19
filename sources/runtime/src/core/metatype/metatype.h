@@ -6,13 +6,12 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#include <format>
 #include <initializer_list>
 #include <string>
 #include <unordered_map>
-#include <format>
 
-namespace Goonya {
-namespace Meta {
+namespace Goonya::Meta {
 
 enum class FieldType : uint32_t { nul, i32, i64, u32, u64, f32, f64, vec2f, vec3f, vec4f, mat4f };
 
@@ -85,13 +84,13 @@ struct DynamicData {
     DynamicData() : type(FieldType::nul) {}
 
     template <meta_type T>
-    DynamicData(const T& value) {
+    DynamicData(const T &value) {
         type = CType2FieldType<T>::Type;
         if (is_internal()) {
-            *(T*)&storage.value = value;
+            *(T *)&storage.value = value;
         } else {
             storage.ptr = malloc(size_bytes());
-            *(T*)storage.ptr = value;
+            *(T *)storage.ptr = value;
         }
     }
 
@@ -104,16 +103,14 @@ struct DynamicData {
         }
     }
 
-    DynamicData(DynamicData &&other) : type(other.type) {
+    DynamicData(DynamicData &&other) noexcept : type(other.type) {
         storage = other.storage;
         other.type = FieldType::nul;
     }
 
     ~DynamicData() { reset(); }
-    
-    FieldType get_type() const noexcept{
-        return this->type;
-    }
+
+    FieldType get_type() const noexcept { return this->type; }
     size_t size_bytes() const noexcept { return sizeof_field_type(type); }
     bool is_empty() const noexcept { return type == FieldType::nul; }
     void reset() noexcept {
@@ -127,7 +124,7 @@ struct DynamicData {
         reset();
         type = CType2FieldType<T>::Type;
         if (is_internal()) {
-            *(T*)&storage.value = value;
+            *(T *)&storage.value = value;
         } else {
             storage.ptr = malloc(size_bytes());
             memcpy(storage.ptr, &value, size_bytes());
@@ -146,7 +143,7 @@ struct DynamicData {
         }
         return *this;
     }
-    
+
     DynamicData &operator=(DynamicData &&other) noexcept {
         reset();
         type = other.type;
@@ -155,11 +152,11 @@ struct DynamicData {
         return *this;
     }
 
-    bool operator==(const DynamicData& other) const noexcept{
-        if (this->type != other.type){
+    bool operator==(const DynamicData &other) const noexcept {
+        if (this->type != other.type) {
             return false;
         }
-        if (is_internal()){
+        if (is_internal()) {
             return this->storage.value == other.storage.value; // 不考虑vaule所占位数问题
         } else {
             return memcmp(this->storage.ptr, this->storage.ptr, size_bytes());
@@ -167,19 +164,19 @@ struct DynamicData {
     }
 
     template <meta_type T>
-    T& get_value() const {
-        if (type != CType2FieldType<T>::Type){
+    T &get_value() const {
+        if (type != CType2FieldType<T>::Type) {
             throw RuntimeError(std::format("类型不匹配：{} 与 {}", type, CType2FieldType<T>::Type));
         }
         if (is_internal()) {
             return reinterpret_cast<T>(storage.value);
         } else {
-            return *(T*)storage.ptr;
+            return *(T *)storage.ptr;
         }
     }
 
-    void copy_to(void* dest) const noexcept {
-        const void* ptr = is_internal() ? &storage.value : storage.ptr;
+    void copy_to(void *dest) const noexcept {
+        const void *ptr = is_internal() ? &storage.value : storage.ptr;
         memcpy(dest, ptr, size_bytes());
     }
 
@@ -192,7 +189,7 @@ private:
     union Storage {
         void *ptr;
         void *value;
-    } storage;
+    } storage{};
 
     FieldType type;
 };
@@ -204,7 +201,7 @@ struct FieldInfo {
 
 struct LayoutInfo {
     std::unordered_map<std::string, FieldInfo> fields;
-    size_t size;
+    size_t size = 0;
 
     static LayoutInfo init(size_t size, std::initializer_list<std::tuple<std::string, FieldType, size_t>> fields) {
         LayoutInfo layout;
@@ -218,45 +215,43 @@ struct LayoutInfo {
 
 class DynamicStructWriter {
 public:
-    DynamicStructWriter(const LayoutInfo& layout_info, void* ptr = nullptr): layout_info(layout_info), ptr((uint8_t*)ptr) {}
-    void set_base_ptr(void* ptr) noexcept {this->ptr = (uint8_t*)ptr;}
+    explicit DynamicStructWriter(const LayoutInfo &layout_info, void *ptr = nullptr)
+        : layout_info(layout_info), ptr((uint8_t *)ptr) {}
+    void set_base_ptr(void *ptr) noexcept { this->ptr = (uint8_t *)ptr; }
 
-    size_t get_size() const noexcept{
-        return layout_info.size;
-    }
+    size_t get_size() const noexcept { return layout_info.size; }
     uint8_t *get_ptr(const std::string &name) noexcept { return ptr + layout_info.fields.at(name).offset; }
-    uint8_t *const get_ptr(const std::string &name) const noexcept { return ptr + layout_info.fields.at(name).offset; }
+    const uint8_t *get_ptr(const std::string &name) const noexcept { return ptr + layout_info.fields.at(name).offset; }
 
     template <Meta::meta_type T>
-    void set_field(const std::string &name, const T& value) noexcept{
+    void set_field(const std::string &name, const T &value) noexcept {
         auto field_info = layout_info.fields.at(name);
         assert(Meta::CType2FieldType<T>::Type == field_info.type); // 检测类型一致
         *(T *)(ptr + field_info.offset) = value;
     }
 
-    void set_field(const std::string &name, const Meta::DynamicData& value) noexcept{
+    void set_field(const std::string &name, const Meta::DynamicData &value) noexcept {
         auto field_info = layout_info.fields.at(name);
         assert(value.get_type() == field_info.type); // 检测类型一致
         value.copy_to(ptr + field_info.offset);
     }
 
     template <Meta::meta_type T>
-    void set_if_exist(const std::string &name, const T& value) noexcept{
-        if (auto iter = layout_info.fields.find(name);iter != layout_info.fields.end()){
+    void set_if_exist(const std::string &name, const T &value) noexcept {
+        if (auto iter = layout_info.fields.find(name); iter != layout_info.fields.end()) {
             auto field_info = iter->second;
             assert(Meta::CType2FieldType<T>::Type == field_info.type); // 检测类型一致
             *(T *)(ptr + field_info.offset) = value;
         }
     }
 
-    void set_if_exist(const std::string &name, const Meta::DynamicData& value) noexcept{
-        if (auto iter = layout_info.fields.find(name);iter != layout_info.fields.end()){
+    void set_if_exist(const std::string &name, const Meta::DynamicData &value) noexcept {
+        if (auto iter = layout_info.fields.find(name); iter != layout_info.fields.end()) {
             auto field_info = iter->second;
             assert(value.get_type() == field_info.type); // 检测类型一致
             value.copy_to(ptr + field_info.offset);
         }
     }
-
 
     template <Meta::meta_type T>
     T &operator[](const std::string &name) noexcept {
@@ -273,13 +268,11 @@ public:
     bool contains(const std::string &name) const noexcept { return layout_info.fields.contains(name); }
 
 private:
-    const LayoutInfo& layout_info;
+    const LayoutInfo &layout_info;
     uint8_t *ptr;
 };
 
-
-} // namespace Meta
-} // namespace Goonya
+} // namespace Goonya::Meta
 
 template <>
 struct std::formatter<Goonya::Meta::FieldType> {
