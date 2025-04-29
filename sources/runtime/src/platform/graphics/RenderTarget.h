@@ -64,6 +64,8 @@ protected:
 };
 
 class FrameBuffer : public RenderTarget {
+protected:
+    std::tuple<uint32_t, uint32_t> size;
 public:
     std::tuple<uint32_t, uint32_t> get_size() const noexcept override { return size; };
     bool is_screen() const noexcept override { return false; }
@@ -94,8 +96,6 @@ public:
 
 protected:
     explicit FrameBuffer(std::tuple<uint32_t, uint32_t> size) noexcept : size(size) {} // NOLINT
-
-    std::tuple<uint32_t, uint32_t> size;
 };
 
 } // namespace Goonya::Graphics

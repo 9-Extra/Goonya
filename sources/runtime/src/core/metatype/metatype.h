@@ -25,7 +25,7 @@ struct CType2FieldType {
     const static FieldType Type = FieldType::nul;
 };
 
-#define _GOONYA_DEFINE_FIELDTYPE2CTYPE(field_type, ctype)                                                              \
+#define GOONYA_DEFINE_FIELDTYPE2CTYPE(field_type, ctype)                                                             \
     template <>                                                                                                        \
     struct FieldType2CType<FieldType::field_type> {                                                                    \
         using Type = ctype;                                                                                            \
@@ -35,16 +35,16 @@ struct CType2FieldType {
         const static FieldType Type = FieldType::field_type;                                                           \
     };
 
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(i32, int32_t)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(i64, int64_t)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(u32, uint32_t)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(u64, uint64_t)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(f32, float)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(f64, double)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(vec2f, Vector2f)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(vec3f, Vector3f)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(vec4f, Vector4f)
-_GOONYA_DEFINE_FIELDTYPE2CTYPE(mat4f, Matrix4)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(i32, int32_t)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(i64, int64_t)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(u32, uint32_t)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(u64, uint64_t)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(f32, float)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(f64, double)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(vec2f, Vector2f)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(vec3f, Vector3f)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(vec4f, Vector4f)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(mat4f, Matrix4)
 
 template <typename T>
 concept meta_type = CType2FieldType<T>::Type != FieldType::nul;
@@ -84,7 +84,7 @@ struct DynamicData {
     DynamicData() : type(FieldType::nul) {}
 
     template <meta_type T>
-    DynamicData(const T &value) {
+    explicit DynamicData(const T &value) {
         type = CType2FieldType<T>::Type;
         if (is_internal()) {
             *(T *)&storage.value = value;
@@ -214,6 +214,10 @@ struct LayoutInfo {
 };
 
 class DynamicStructWriter {
+private:
+    const LayoutInfo &layout_info;
+    uint8_t *ptr;
+
 public:
     explicit DynamicStructWriter(const LayoutInfo &layout_info, void *ptr = nullptr)
         : layout_info(layout_info), ptr((uint8_t *)ptr) {}
@@ -266,10 +270,6 @@ public:
     }
 
     bool contains(const std::string &name) const noexcept { return layout_info.fields.contains(name); }
-
-private:
-    const LayoutInfo &layout_info;
-    uint8_t *ptr;
 };
 
 } // namespace Goonya::Meta

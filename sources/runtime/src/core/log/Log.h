@@ -7,16 +7,15 @@
 namespace Goonya {
 
 class Logger {
+private:
+    static std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
 public:
     Logger() = delete;
 
     static void inititalize();
     static void drop();
 
-    static const std::vector<std::shared_ptr<spdlog::sinks::sink>> get_sinks() noexcept { return sinks; }
-
-private:
-    static std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
+    static const std::vector<std::shared_ptr<spdlog::sinks::sink>>& get_sinks() noexcept { return sinks; }
 };
 
 extern std::shared_ptr<spdlog::logger> core_logger;

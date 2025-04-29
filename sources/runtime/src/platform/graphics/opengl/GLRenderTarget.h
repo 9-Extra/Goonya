@@ -86,6 +86,17 @@ private:
 
 class GLFrameBuffer final : public FrameBuffer {
 public:
+    static const size_t MAX_ATTACH_COLOR = 8;
+
+private:
+    GLuint id = 0;
+
+    std::array<intrusive_ptr<Texture>, MAX_ATTACH_COLOR> attached_color_texture; // 至少支持8个，那就只最多支持8个
+    std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>>
+        depth_buffer; // 可能是空的，也可能和stencil_buffer是同一个
+    std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>> stencil_buffer;
+
+public:
     explicit GLFrameBuffer(std::tuple<uint32_t, uint32_t> size);
     ~GLFrameBuffer() override { glDeleteFramebuffers(1, &id); }
 
@@ -122,16 +133,8 @@ public:
     bool check_status() const noexcept override;
 
 private:
-    static constexpr size_t MAX_ATTACH_COLOR = 8;
-    GLuint id{};
-
-    std::array<intrusive_ptr<Texture>, MAX_ATTACH_COLOR> attached_color_texture; // 至少支持8个，那就只最多支持8个
-    std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>>
-        depth_buffer; // 可能是空的，也可能和stencil_buffer是同一个
-    std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>> stencil_buffer;
-
     void update_drawbuffers() const noexcept {
-        std::array<GLenum, MAX_ATTACH_COLOR> attachment;
+        std::array<GLenum, MAX_ATTACH_COLOR> attachment; // NOLINT：后面会初始化
         for (size_t i = 0; i < MAX_ATTACH_COLOR; i++) {
             attachment[i] = attached_color_texture[i] ? GL_COLOR_ATTACHMENT0 + i : GL_NONE;
         }

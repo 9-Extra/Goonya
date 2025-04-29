@@ -6,7 +6,6 @@
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RendererBasic.h"
 #include "passes/Passes.h"
-#include "platform/graphics/Graphics.h"
 
 #include <cassert>
 #include <functional>
@@ -32,6 +31,14 @@ public:
 
     std::unordered_set<MeshRenderProxy *> meshes; // 要渲染的网格
 
+private:
+    // passes
+    std::unique_ptr<LambertianPass> lambertian_pass;
+    std::unique_ptr<SkyBoxPass> skybox_pass;
+
+    std::queue<std::function<void()>> render_tasks;
+
+public:
     void init();
 
     void add_mesh_proxy(MeshRenderProxy *proxy) {
@@ -48,34 +55,10 @@ public:
         render_tasks.push(std::forward<T>(task));
     }
 
+    void run_all_tasks();
     void render();
-    void run_all_tasks() {
-        // 运行所有推入的Task
-        while (!render_tasks.empty()) {
-            std::invoke(std::move(render_tasks.front()));
-            render_tasks.pop();
-        }
-    }
 
-    void clear() {
-        run_all_tasks();
-        
-        assert(meshes.empty());
-
-        current_skyboxs.clear();
-
-        lambertian_pass.reset();
-        skybox_pass.reset();
-
-        Graphics::drop();
-    }
-
-private:
-    // passes
-    std::unique_ptr<LambertianPass> lambertian_pass;
-    std::unique_ptr<SkyBoxPass> skybox_pass;
-
-    std::queue<std::function<void()>> render_tasks;
+    void clear();
 };
 
 extern Renderer renderer;

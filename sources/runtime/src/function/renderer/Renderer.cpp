@@ -45,6 +45,14 @@ void Renderer::init() {
     skybox_pass = std::make_unique<SkyBoxPass>();
 }
 
+void Renderer::run_all_tasks() {
+    // 运行所有推入的Task
+    while (!render_tasks.empty()) {
+        std::invoke(std::move(render_tasks.front()));
+        render_tasks.pop();
+    }
+}
+
 void Renderer::render() {
     static size_t frame = 0;
     graphics_api->push_debug_group_label(std::format("Frame {}", frame++));
@@ -109,4 +117,18 @@ void Renderer::render() {
 
     graphics_api->pop_debug_group_label();
 }
+
+void Renderer::clear() {
+    run_all_tasks();
+
+    assert(meshes.empty());
+
+    current_skyboxs.clear();
+
+    lambertian_pass.reset();
+    skybox_pass.reset();
+
+    Graphics::drop();
+}
+
 } // namespace Goonya::Graphics

@@ -6,7 +6,6 @@
 #include <string>
 #include <vector>
 
-
 #include "Component.h"
 #include "core/cgmath.h"
 
@@ -15,14 +14,6 @@ namespace Goonya {
 // 一个物体，单独的物体没有功能，也不可见，需要挂上组件来实现具体的功能
 class GObject final : public std::enable_shared_from_this<GObject> {
 public:
-    explicit GObject(std::string name = "") noexcept : name(std::move(name)) {};
-    explicit GObject(const Transform &transform, std::string name = "") noexcept
-        : name(std::move(name)), transform(transform) {};
-
-    ~GObject() {
-        assert(!parent.lock()); // 必须没有父节点
-    };
-
     struct DirtyFlag {
         using FlagType = uint32_t;
 
@@ -43,6 +34,31 @@ public:
         void remove(FlagType f) noexcept { this->value &= f; }
 
         void clear() noexcept { value = DEFAULT; }
+    };
+
+private:
+    std::string name;
+    bool disabled = false;
+    bool _is_in_world = false;
+
+    Transform transform; // 相对父节点的变换
+
+    Matrix4 world_model_matrix;  // 世界根节点的变换
+    Matrix3 world_normal_matrix; // 世界根节点的法线变换
+
+    std::vector<std::unique_ptr<Component>> components;
+    std::weak_ptr<GObject> parent;
+    std::vector<std::shared_ptr<GObject>> children;
+
+    DirtyFlag dirty_flag{DirtyFlag::TRANSFORM_DIRTY};
+
+public:
+    explicit GObject(std::string name = "") noexcept : name(std::move(name)) {};
+    explicit GObject(const Transform &transform, std::string name = "") noexcept
+        : name(std::move(name)), transform(transform) {};
+
+    ~GObject() {
+        assert(!parent.lock()); // 必须没有父节点
     };
 
     bool is_in_world() const noexcept { return _is_in_world; }
@@ -200,9 +216,9 @@ public:
             new_parent->attach_child(shared_from_this());
         } else {
             // 新父节点为空指针
-            if (has_parent()){
+            if (has_parent()) {
                 parent.lock()->remove_child(this);
-            } 
+            }
         }
     }
 
@@ -210,21 +226,6 @@ public:
 
 private:
     friend class World;
-    std::string name;
-    bool disabled = false;
-    bool _is_in_world = false;
-
-    Transform transform; // 相对父节点的变换
-
-    Matrix4 world_model_matrix;  // 世界根节点的变换
-    Matrix3 world_normal_matrix; // 世界根节点的法线变换
-
-    std::vector<std::unique_ptr<Component>> components;
-    std::weak_ptr<GObject> parent;
-    std::vector<std::shared_ptr<GObject>> children;
-
-    DirtyFlag dirty_flag{DirtyFlag::TRANSFORM_DIRTY};
-
     void tick(DirtyFlag parent_flag);
 };
 } // namespace Goonya

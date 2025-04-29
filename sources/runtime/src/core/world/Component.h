@@ -11,6 +11,8 @@ class GObject;
  * 组件挂在GObject上，在每个tick时会被调用，不同的组件通过重载tick实现其功能
  */
 class Component{
+private:
+    GObject* owner; // Weak reference
 public:
     Component() : owner(nullptr) {}
     GObject* get_owner() const{
@@ -41,7 +43,6 @@ protected:
      */
     virtual void on_tick() = 0;
 private:    
-    GObject* owner; // Weak reference
     friend class GObject;
     void set_owner(GObject* owner){
         this->owner = owner;

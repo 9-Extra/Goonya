@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "core/asserts.h"
+#include "core/assets.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Material.h"
@@ -36,6 +36,10 @@ struct TextureCubeMapDesc {
 
 template <class TDesc, class TAsset>
 class ResourceContainer {
+protected:
+    std::string name;
+    std::unordered_map<AssetKey, std::tuple<intrusive_ptr<TAsset>, TDesc>> container;
+
 public:
     virtual ~ResourceContainer() = default;
     explicit ResourceContainer(std::string name) : name(std::move(name)) {}
@@ -65,9 +69,6 @@ public:
 
 protected:
     virtual intrusive_ptr<TAsset> load(const TDesc &desc) const = 0;
-
-    std::string name;
-    std::unordered_map<AssetKey, std::tuple<intrusive_ptr<TAsset>, TDesc>> container;
 };
 
 class MeshContainer final : public ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
@@ -112,6 +113,7 @@ public:
 
     std::unique_ptr<Graphics::ShaderLib> shader_lib;
 
+public:
     void init() { shader_lib = std::make_unique<Graphics::ShaderLib>(); }
 
     void clear() {

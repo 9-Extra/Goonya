@@ -7,6 +7,8 @@
 namespace Goonya::Graphics {
 
 class GLMesh final : public Mesh {
+private:
+    GLuint vao_id = 0;
 public:
     GLMesh() {
         glCreateVertexArrays(1, &vao_id); // 创建空的vao
@@ -33,8 +35,6 @@ protected:
     }
 
 private:
-    GLuint vao_id = 0;
-
     void update_VAO() const noexcept;
 };
 

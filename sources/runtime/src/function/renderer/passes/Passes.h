@@ -16,19 +16,13 @@ public:
 };
 
 class LambertianPass : public Pass {
-public:
-    LambertianPass();
-    void reset() {}
-
-    void run() override;
-
 private:
     static constexpr unsigned int POINTLIGHT_MAX = 8;
     struct PointLightData final {
         alignas(16) Vector3f position;
         alignas(16) Vector3f intensity;
     };
-    struct PerFrameData final {
+    struct PerFrameData final { // NOLINT：不需要初始化
         Matrix4 view_perspective_matrix;
         alignas(16) Vector3f ambient_light;
         alignas(16) Vector3f camera_position;
@@ -44,17 +38,15 @@ private:
         Matrix4 normal_matrix;
     };
 
-    intrusive_ptr<Buffer> per_frame_uniform;  // 用于一般渲染每帧变化的数据
+    intrusive_ptr<Buffer> per_frame_uniform; // 用于一般渲染每帧变化的数据
+public:
+    LambertianPass();
+    void reset() {}
+
+    void run() override;
 };
 
 class SkyBoxPass : public Pass {
-public:
-    SkyBoxPass()
-        : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
-          mesh(Resource::resources.meshes.get("skybox_cube")) {}
-
-    void run() override;
-
 private:
     const static unsigned int SKYBOX_TEXTURE_BINDING = 5;
     struct SkyBoxData final {
@@ -63,6 +55,12 @@ private:
 
     intrusive_ptr<Buffer> skybox_uniform;
     intrusive_ptr<Mesh> mesh;
+public:
+    SkyBoxPass()
+        : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
+          mesh(Resource::resources.meshes.get("skybox_cube")) {}
+
+    void run() override;
 };
 
 } // namespace Goonya::Graphics

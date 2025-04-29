@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/asserts.h"
+#include "core/assets.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "runtime/GoonyaException.h"
@@ -39,8 +39,9 @@ union VariantCodeSet {
     };
     uint64_t full_code;
 
-    explicit VariantCodeSet(VariantCode global_code, VariantCode local_code): global_code(global_code), local_code(local_code) {}
-    explicit VariantCodeSet(uint64_t full_code): full_code(full_code) {}
+    explicit VariantCodeSet(VariantCode global_code, VariantCode local_code)
+        : global_code(global_code), local_code(local_code) {}
+    explicit VariantCodeSet(uint64_t full_code) : full_code(full_code) {}
 
     bool operator==(const VariantCodeSet other) const noexcept { return this->full_code == other.full_code; }
 };
@@ -57,6 +58,13 @@ struct std::hash<Goonya::Graphics::VariantCodeSet> {
 namespace Goonya::Graphics {
 
 class VariantKeyCollect final {
+private:
+    // 着色器组及其组的基
+    std::vector<std::tuple<uint32_t, std::vector<std::string>>> variants_key_groups;
+    // 变体所在组号及其在组中的序号
+    std::unordered_map<std::string, std::tuple<uint8_t, uint8_t>> variants_key_map;
+    uint32_t variant_count = 1;
+
 public:
     VariantKeyCollect() = default;
     explicit VariantKeyCollect(std::vector<std::vector<std::string>> &&group_keys) {
@@ -81,13 +89,6 @@ public:
      */
     bool reset_variant_code(VariantCode &code, const std::string &variant_key) const noexcept;
     bool is_key_defined(VariantCode code, const std::string &key) const noexcept;
-
-private:
-    // 着色器组及其组的基
-    std::vector<std::tuple<uint32_t, std::vector<std::string>>> variants_key_groups;
-    // 变体所在组号及其在组中的序号
-    std::unordered_map<std::string, std::tuple<uint8_t, uint8_t>> variants_key_map;
-    uint32_t variant_count = 1;
 };
 
 struct ShaderDesc final {
@@ -117,8 +118,22 @@ struct ShaderUniformBlockInfo final {
 
 class Shader;
 class UberShader final {
-    friend class ShaderLib;
+protected:
+    // 创建后会变的
+    VariantCode global_key_code;                                       // 当前元着色器的全局变体定义编码
+    std::unordered_map<VariantCodeSet, intrusive_ptr<Shader>> shaders; // 此元着色器的变体缓存
+    // 不会变的
+    std::string vs_src;
+    std::string ps_src;
 
+    VariantKeyCollect global_variant_key_collect; // 全局变体编码器
+    VariantKeyCollect local_variant_key_collect;
+
+    // UniformBuffer内存布局
+    ShaderUniformBlockInfo per_material;
+    ShaderUniformBlockInfo per_frame;
+    ShaderUniformBlockInfo per_object;
+    std::unordered_map<std::string, uint32_t> texture_units; // 纹理名称及对应的纹理单元
 public:
     UberShader(const UberShader &) = delete;
     UberShader(UberShader &&) = delete;
@@ -143,23 +158,8 @@ public:
     }
 
 private:
+    friend class ShaderLib;
     explicit UberShader(UberShaderDesc &&desc);
-
-    // 创建后会变的
-    VariantCode global_key_code;                                       // 当前元着色器的全局变体定义编码
-    std::unordered_map<VariantCodeSet, intrusive_ptr<Shader>> shaders; // 此元着色器的变体缓存
-    // 不会变的
-    std::string vs_src;
-    std::string ps_src;
-
-    VariantKeyCollect global_variant_key_collect; // 全局变体编码器
-    VariantKeyCollect local_variant_key_collect;
-
-    // UniformBuffer内存布局
-    ShaderUniformBlockInfo per_material;
-    ShaderUniformBlockInfo per_frame;
-    ShaderUniformBlockInfo per_object;
-    std::unordered_map<std::string, uint32_t> texture_units; // 纹理名称及对应的纹理单元
 };
 
 class Shader : public intrusive_ptr_base<Shader> {
@@ -186,6 +186,9 @@ protected:
 };
 
 class ShaderLib final {
+protected:
+    std::unordered_set<std::string> global_variant_key_names;               // 全局着色器变体定义
+    std::unordered_map<AssetKey, std::unique_ptr<UberShader>> uber_shaders; // 从名称到UberShader
 public:
     void add_uber_shader(const AssetKey &name, UberShaderDesc &&desc);
 
@@ -217,14 +220,6 @@ public:
         }
         return uber_shaders.at(uber_shader_name).get();
     }
-
-protected:
-    std::unordered_set<std::string> global_variant_key_names; // 全局着色器变体定义
-
-    std::unordered_map<AssetKey, std::unique_ptr<UberShader>> uber_shaders; // 从名称到UberShader
-
-    // 从全局定义到此定义影响的UberShader
-    // std::unordered_map<std::string, UberShader *> global_key_relat_uber_shader;
 };
 
 } // namespace Goonya::Graphics

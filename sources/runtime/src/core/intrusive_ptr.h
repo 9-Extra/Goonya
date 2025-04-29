@@ -8,10 +8,13 @@
 
 template <class T>
 class intrusive_ptr {
+private:
+    T *px;
+
 public:
     intrusive_ptr() noexcept : px(nullptr) {}
 
-    intrusive_ptr(T *p, bool add_ref = true) noexcept : px(p) {
+    intrusive_ptr(T *p, bool add_ref = true) noexcept : px(p) { // NOLINT：从指针构造挺好
         if (px != nullptr && add_ref) {
             intrusive_ptr_add_ref(px);
         }
@@ -24,7 +27,7 @@ public:
         }
     }
 
-    intrusive_ptr<T> &operator=(const intrusive_ptr<T> &other) noexcept {
+    intrusive_ptr<T> &operator=(const intrusive_ptr<T> &other) noexcept { // NOLINT：已经正确处理了自赋值的情况
         if (other.px != nullptr) {
             intrusive_ptr_add_ref(other.px);
         }
@@ -50,7 +53,7 @@ public:
 
     template <class D>
         requires std::derived_from<D, T>
-    intrusive_ptr(intrusive_ptr<D> p) noexcept : px(p.get()) {
+    intrusive_ptr(intrusive_ptr<D> p) noexcept : px(p.get()) { // NOLINT：自动转换挺好
         intrusive_ptr_add_ref(p.get());
     }
 
@@ -73,9 +76,6 @@ public:
             intrusive_ptr_release(px);
         }
     }
-
-private:
-    T *px;
 };
 
 template <typename T, class... Args>
@@ -86,6 +86,8 @@ intrusive_ptr<T> make_intrusive(Args... args) noexcept {
 
 template <class T>
 class intrusive_ptr_base {
+private:
+    mutable uint32_t ref_count;
 public:
     intrusive_ptr_base() : ref_count(0) {}
 
@@ -99,9 +101,6 @@ public:
     }
 
     intrusive_ptr<T> self() noexcept { return intrusive_ptr<T>(static_cast<T *>(this)); }
-
-private:
-    mutable uint32_t ref_count;
 };
 
 template <class T, class S>

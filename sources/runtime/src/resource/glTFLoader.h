@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/asserts.h"
+#include "core/assets.h"
 
 #include <filesystem>
 

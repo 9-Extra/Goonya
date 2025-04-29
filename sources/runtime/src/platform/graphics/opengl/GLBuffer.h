@@ -26,6 +26,8 @@ static GLuint GLBufferType(BufferType type) {
 }
 
 class GLBuffer final : public Buffer {
+private:
+    GLuint id = 0;
 public:
     GLBuffer(size_t size, BufferType type) : Buffer(size, type) {
         glCreateBuffers(1, &id);
@@ -96,8 +98,6 @@ public:
     ~GLBuffer() override { glDeleteBuffers(1, &id); }
 
 protected:
-    GLuint id{};
-
     void _set_debug_label(const std::string &name) const noexcept override {
         glObjectLabel(GL_BUFFER, id, name.size(), name.data());
     }

@@ -78,13 +78,22 @@ struct MeshDesc {
 };
 
 class Mesh : public intrusive_ptr_base<Mesh> {
+    /* 类内容的大致声明顺序是：公开内部类，公开字段，私有字段，公开方法，私有方法 */
 public:
+    std::vector<SubMesh> submeshes;
+protected:
+    VertexLayout layout;
+    intrusive_ptr<Buffer> vertex_buffer;
+    intrusive_ptr<Buffer> indices_buffer;
+
+    mutable bool is_dirty = true;
+public:
+    
     virtual ~Mesh() = default;
 
     virtual void bind() const noexcept = 0;
     virtual void update() const noexcept = 0;
 
-    std::vector<SubMesh> submeshes;
 
     const VertexLayout &get_layout() const noexcept { return layout; }
 
@@ -113,12 +122,6 @@ public:
 
 protected:
     virtual void _set_debug_label(const std::string &name) const noexcept = 0;
-
-    VertexLayout layout;
-    intrusive_ptr<Buffer> vertex_buffer;
-    intrusive_ptr<Buffer> indices_buffer;
-
-    mutable bool is_dirty = true;
 };
 
 } // namespace Goonya::Graphics

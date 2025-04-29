@@ -7,18 +7,20 @@
 namespace Goonya::Graphics {
 
 class GLShader final : public Shader {
+protected:
+    GLuint id = 0;
+
 public:
     GLShader(const std::string &vs_src, const std::string &ps_src);
     ~GLShader() override { glDeleteProgram(id); }
 
     void bind() override { glUseProgram(id); }
     GLuint get_id() const { return id; }
-
-protected:
-    GLuint id;
 };
 
 class GLShaderIntrospector final : public ShaderIntrospector {
+private:
+    GLuint id;
 public:
     explicit GLShaderIntrospector(Shader *shader) {
         GLShader *s = dynamic_cast<GLShader *>(shader);
@@ -28,9 +30,6 @@ public:
 
     std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept override;
     std::unordered_map<std::string, uint32_t> get_texture_info() const noexcept override;
-
-private:
-    GLuint id;
 };
 
 } // namespace Goonya::Graphics

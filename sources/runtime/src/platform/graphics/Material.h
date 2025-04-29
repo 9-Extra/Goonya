@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/asserts.h"
+#include "core/assets.h"
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
@@ -37,6 +37,25 @@ struct MaterialDesc {
 };
 
 class Material final : public intrusive_ptr_base<Material> {
+protected:
+    // 着色器设置
+    UberShader *const uber_shader;
+    VariantCode local_variant_code;
+    // 渲染管线设置
+    PipeLineState pipeline_state;
+
+    // 所有参数在内存中保存一份
+    std::unordered_map<std::string, Meta::DynamicData> parameters;
+    std::unordered_map<uint32_t, intrusive_ptr<Texture>> textures; // slot -> texture
+
+    // 脏标记
+    mutable bool is_parameters_dirty;
+
+    // 设备侧
+    VariantCodeSet current_variant_code; // 当前绑定的着色器的变体码
+    intrusive_ptr<Shader> shader;
+    intrusive_ptr<Buffer> per_material; // 显存中的材质参数
+
 public:
     // Material在创建是就对应特定的UberShader，且之后不能更改
     explicit Material(UberShader *uber_shader);
@@ -71,24 +90,6 @@ public:
 protected:
     void update_shader_variant();
     void update_parameter();
-
-    // 着色器设置
-    UberShader *const uber_shader;
-    VariantCode local_variant_code;
-    // 渲染管线设置
-    PipeLineState pipeline_state;
-
-    // 所有参数在内存中保存一份
-    std::unordered_map<std::string, Meta::DynamicData> parameters;
-    std::unordered_map<uint32_t, intrusive_ptr<Texture>> textures; // slot -> texture
-
-    // 脏标记
-    mutable bool is_parameters_dirty;
-
-    // 设备侧
-    VariantCodeSet current_variant_code; // 当前绑定的着色器的变体码
-    intrusive_ptr<Shader> shader;
-    intrusive_ptr<Buffer> per_material; // 显存中的材质参数
 };
 
 } // namespace Goonya::Graphics

@@ -65,6 +65,10 @@ struct TextureCreateDesc {
 };
 
 class Texture : public intrusive_ptr_base<Texture> {
+protected:
+    TextureType type;
+    TextureStorageFormat format;
+    std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
 public:
     virtual ~Texture() = default;
     virtual void bind(uint32_t binding) const noexcept = 0;
@@ -82,10 +86,6 @@ public:
 
 protected:
     explicit Texture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
-
-    TextureType type;
-    TextureStorageFormat format;
-    std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
 };
 
 } // namespace Goonya::Graphics

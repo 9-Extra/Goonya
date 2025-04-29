@@ -16,9 +16,15 @@ enum class BufferMapOption {
 };
 
 class Buffer : public intrusive_ptr_base<Buffer> {
-public:
-    virtual ~Buffer() = default;
+protected:
+    Buffer(size_t size, BufferType type) : size(size), type(type) {}
 
+    virtual void _set_debug_label(const std::string &name) const noexcept = 0;
+
+    size_t size;
+    BufferType type;
+
+public:
     size_t get_size() const noexcept { return size; }
     BufferType get_type() const noexcept { return type; }
 
@@ -34,19 +40,16 @@ public:
         _set_debug_label(name);
 #endif
     }
-
-protected:
-    Buffer(size_t size, BufferType type) : size(size), type(type) {}
-
-    virtual void _set_debug_label(const std::string &name) const noexcept = 0;
-
-    size_t size;
-    BufferType type;
+    virtual ~Buffer() = default;
 };
 
 // 使用c++定义的结构体内存布局进行写入
 template <class T>
 class StructBufferWriter {
+private:
+    Buffer *buffer;
+    T *ptr;
+
 public:
     StructBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option)
         : buffer(buffer.get()), ptr(static_cast<T *>(buffer->map(option))) {
@@ -61,13 +64,12 @@ public:
     T *operator->() noexcept { return ptr; }
 
     ~StructBufferWriter() noexcept { buffer->unmap(); }
-
-private:
-    Buffer *buffer;
-    T *ptr;
 };
 
 class DynamicBufferWriter : public Meta::DynamicStructWriter {
+private:
+    Buffer *buffer;
+
 public:
     DynamicBufferWriter(intrusive_ptr<Buffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option)
         : Meta::DynamicStructWriter(layout, buffer->map(option)), buffer(buffer.get()) {
@@ -81,9 +83,6 @@ public:
     DynamicBufferWriter(DynamicBufferWriter &other) = delete;
 
     ~DynamicBufferWriter() { buffer->unmap(); }
-
-private:
-    Buffer *buffer;
 };
 
 } // namespace Goonya::Graphics

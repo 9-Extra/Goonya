@@ -19,7 +19,6 @@ public:
     intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
 
 public:
-
     CameraRenderProxy() {
         near_z = 1.0f;
         far_z = 1000.0f;

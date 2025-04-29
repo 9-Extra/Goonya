@@ -5,8 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace Goonya {
-namespace Input {
+namespace Goonya::Input {
 
 namespace Detail {
 
@@ -105,5 +104,4 @@ bool is_mouse_release(MouseKey key) {
     return Detail::mouse_key_state[key] == KeyState::DOWN && Detail::mouse_key_state_last_tick[key] == KeyState::UP;
 }
 
-} // namespace Input
-} // namespace Goonya
+} // namespace Goonya::Input

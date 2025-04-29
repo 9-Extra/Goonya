@@ -11,10 +11,24 @@ namespace Goonya {
 
 class EventBus {
 public:
-    EventBus() = delete;
-
     using ListenerID = uint32_t;
 
+private:
+    template <typename E>
+    struct Listener {
+        ListenerID id;
+        int priority;
+        std::function<bool(E &)> trigger;
+    };
+
+    template <typename E>
+    struct EventListeners {
+        inline static std::vector<Listener<E>> listeners;
+    };
+    inline static ListenerID uid;
+
+public:
+    EventBus() = delete;
     static void initalize() noexcept { uid = 0; }
 
     template <typename E>
@@ -70,20 +84,6 @@ public:
         }
         return false;
     }
-
-private:
-    template <typename E>
-    struct Listener {
-        ListenerID id;
-        int priority;
-        std::function<bool(E &)> trigger;
-    };
-
-    template <typename E>
-    struct EventListeners {
-        inline static std::vector<Listener<E>> listeners;
-    };
-    inline static ListenerID uid;
 };
 
 } // namespace Goonya

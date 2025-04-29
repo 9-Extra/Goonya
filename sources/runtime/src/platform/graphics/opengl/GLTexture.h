@@ -6,12 +6,13 @@
 #include <cstdint>
 #include <glad/glad.h>
 
-
 namespace Goonya::Graphics {
 
 class GLTexture final : public Texture {
+protected:
+    GLuint id = 0;
 public:
-    explicit GLTexture(const TextureCreateDesc& desc);
+    explicit GLTexture(const TextureCreateDesc &desc);
     ~GLTexture() override { glDeleteTextures(1, &id); }
     void bind(uint32_t binding) const noexcept override { glBindTextureUnit(binding, id); }
 
@@ -21,11 +22,9 @@ public:
     void set_warp_mode(TextureWarpMode warp_mode) noexcept override;
     void generate_mipmaps() noexcept override { glGenerateTextureMipmap(id); }
 
-    void import_image(FIBITMAP* image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0, uint32_t zoffset = 0) override;
+    void import_image(FIBITMAP *image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
+                      uint32_t zoffset = 0) override;
     FIBITMAP *export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const override;
-
-protected:
-    GLuint id{};
 };
 
 } // namespace Goonya::Graphics
