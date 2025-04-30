@@ -9,6 +9,7 @@
 namespace Goonya::Graphics {
 
 std::unique_ptr<GraphicsAPI> graphics_api;
+std::queue<std::function<void()>> render_tasks;
 
 void initialize(GraphicsAPIType api_type) {
     ASSERT_RENDER_THREAD();
@@ -21,6 +22,15 @@ void initialize(GraphicsAPIType api_type) {
     };
     default:
         throw RuntimeError("不支持的API类型");
+    }
+}
+
+void run_all_tasks() {
+    ASSERT_RENDER_THREAD();
+    // 运行所有推入的Task
+    while (!render_tasks.empty()) {
+        std::invoke(std::move(render_tasks.front()));
+        render_tasks.pop();
     }
 }
 

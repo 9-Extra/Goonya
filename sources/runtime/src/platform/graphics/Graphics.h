@@ -1,7 +1,10 @@
 #pragma once
 
+#include <cassert>
+#include <functional>
 #include <memory>
 #include <optional>
+#include <queue>
 #include <spdlog/logger.h>
 #include <thread>
 
@@ -21,6 +24,8 @@ enum class GraphicsAPIType {
     OPENGL,
 };
 
+// todo: 使GraphicsAPI的所有接口都是线程安全的，这样所有的资源都可以在任意线程上创建
+// todo: 是所有资源的接口都是线程安全的，可以在任意线程加载资源
 class GraphicsAPI {
 public:
     GraphicsAPI() = default;
@@ -84,6 +89,19 @@ public:
 
 extern std::unique_ptr<GraphicsAPI> graphics_api;
 extern std::thread render_thread;
+
+extern std::queue<std::function<void()>> render_tasks;
+
+template <typename T, bool IS_RHI_THREAD = false>
+void enqueue_render_task(T &&task) {
+    if constexpr (IS_RHI_THREAD){
+        std::invoke(std::forward<T>(task));
+    } else {
+        render_tasks.push(std::forward<T>(task));
+    }
+}
+
+void run_all_tasks();
 
 void initialize(GraphicsAPIType api_type);
 

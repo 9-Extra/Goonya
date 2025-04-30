@@ -24,6 +24,8 @@ namespace Goonya::Graphics {
 LambertianPass::LambertianPass() {
     per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
     per_frame_uniform->set_debug_label("Lambert Per Frame");
+    per_object_uniform = graphics_api->create_buffer(sizeof(PerObjectData), BufferType::STREAM);
+    per_object_uniform->set_debug_label("Lambert Per Object");
 }
 // 一般物体渲染
 void LambertianPass::run() {
@@ -32,6 +34,7 @@ void LambertianPass::run() {
 
     // 绑定per_frame和per_object uniform buffer
     per_frame_uniform->bind_uniform(0);
+    per_object_uniform->bind_uniform(1);
 
     {
         // 填充per_frame uniform数据
@@ -65,8 +68,12 @@ void LambertianPass::run() {
     for (const MeshRenderProxy *mesh : renderer.meshes) {
         mesh->mesh->bind();
         
-        mesh->per_object->bind_uniform(1);
-
+        // 填充PerObject参数
+        {
+            StructBufferWriter<PerObjectData> writer(per_object_uniform, BufferMapOption::WRITE_DISCARD);
+            writer->model_matrix = mesh->model_matrix;
+            writer->normal_matrix = mesh->normal_matrix;
+        }
         const std::vector<SubMesh> submeshes = mesh->mesh->submeshes;
         // 逐一绘制子网格
         for (uint32_t i = 0; i < submeshes.size(); i++) {

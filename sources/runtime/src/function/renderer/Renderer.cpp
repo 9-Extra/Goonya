@@ -17,7 +17,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
-#include <functional>
 
 namespace Goonya::Graphics {
 Renderer renderer; // global renderer
@@ -43,14 +42,6 @@ void Renderer::init() {
 
     lambertian_pass = std::make_unique<LambertianPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();
-}
-
-void Renderer::run_all_tasks() {
-    // 运行所有推入的Task
-    while (!render_tasks.empty()) {
-        std::invoke(std::move(render_tasks.front()));
-        render_tasks.pop();
-    }
 }
 
 void Renderer::render() {

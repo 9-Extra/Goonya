@@ -8,9 +8,7 @@
 #include "passes/Passes.h"
 
 #include <cassert>
-#include <functional>
 #include <memory>
-#include <queue>
 #include <unordered_set>
 #include <vector>
 
@@ -36,8 +34,6 @@ private:
     std::unique_ptr<LambertianPass> lambertian_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
 
-    std::queue<std::function<void()>> render_tasks;
-
 public:
     void init();
 
@@ -50,12 +46,6 @@ public:
         meshes.erase(meshes.find(proxy));
     }
 
-    template <typename T>
-    void enqueue_render_task(T &&task) {
-        render_tasks.push(std::forward<T>(task));
-    }
-
-    void run_all_tasks();
     void render();
 
     void clear();

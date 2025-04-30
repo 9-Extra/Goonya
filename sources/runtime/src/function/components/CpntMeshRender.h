@@ -3,11 +3,9 @@
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "core/world/GObject.h"
-#include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/Renderer.h"
 #include "function/renderer/RendererBasic.h"
-#include "platform/graphics/Buffer.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include <cstdint>
@@ -23,19 +21,15 @@ public:
         // 初始化时更新所有数据
         is_mesh_dirty = false;
         is_materials_dirty = false;
-        renderer.enqueue_render_task([=, proxy = &mesh_proxy, copy_mesh = mesh, copy_materials = materials,
+        enqueue_render_task([=, proxy = &mesh_proxy, copy_mesh = mesh, copy_materials = materials,
                                       model_matrix = owner.get_world_model_matrix(),
                                       normal_matrix = owner.get_world_normal_matrix()] mutable {
             ASSERT_RENDER_THREAD();
             {
                 proxy->mesh = copy_mesh;
                 proxy->materials = copy_materials;
-            }
-            {
-                proxy->per_object = graphics_api->create_buffer(sizeof(PerObjectBuffer), BufferType::STREAM);
-                StructBufferWriter<PerObjectBuffer> writer(proxy->per_object, BufferMapOption::WRITE_DISCARD);
-                writer->model_matrix = model_matrix.transpose();
-                writer->normal_matrix = Matrix4{normal_matrix.transpose()};
+                proxy->model_matrix = model_matrix.transpose();
+                proxy->normal_matrix = Matrix4{normal_matrix.transpose()};
             }
             renderer.add_mesh_proxy(proxy);
         });
@@ -64,7 +58,9 @@ public:
 
     void on_unregister() override {
         assert(get_owner() != nullptr);
-        renderer.remove_mesh_proxy(&mesh_proxy);
+        enqueue_render_task([proxy = &mesh_proxy]{
+            renderer.remove_mesh_proxy(proxy);
+        });
     }
 
     void on_tick() override {
@@ -75,26 +71,25 @@ public:
 
         MeshRenderProxy *proxy = &mesh_proxy;
         if (is_materials_dirty) {
-            renderer.enqueue_render_task([=, copy_materials = materials] mutable {
+            enqueue_render_task([=, copy_materials = materials] mutable {
                 ASSERT_RENDER_THREAD();
                 proxy->materials = std::move(copy_materials);
             });
             is_materials_dirty = false;
         }
         if (is_mesh_dirty) {
-            renderer.enqueue_render_task([=, copy_mesh = mesh] mutable {
+            enqueue_render_task([=, copy_mesh = mesh] mutable {
                 ASSERT_RENDER_THREAD();
                 proxy->mesh = copy_mesh;
             });
             is_mesh_dirty = false;
         }
         if (is_transform_dirty) {
-            renderer.enqueue_render_task([=, model_matrix = owner.get_world_model_matrix(),
+            enqueue_render_task([=, model_matrix = owner.get_world_model_matrix(),
                                           normal_matrix = owner.get_world_normal_matrix()] mutable {
                 ASSERT_RENDER_THREAD();
-                StructBufferWriter<PerObjectBuffer> writer(proxy->per_object, BufferMapOption::WRITE_DISCARD);
-                writer->model_matrix = model_matrix.transpose();
-                writer->normal_matrix = Matrix4{normal_matrix.transpose()};
+                proxy->model_matrix = model_matrix.transpose();
+                proxy->normal_matrix = Matrix4{normal_matrix.transpose()};
             });
             is_transform_dirty = false;
         }

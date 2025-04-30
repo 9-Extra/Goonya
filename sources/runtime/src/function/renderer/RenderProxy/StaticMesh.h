@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/cgmath.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 
@@ -22,6 +23,8 @@ namespace Goonya::Graphics {
 struct MeshRenderProxy {
     intrusive_ptr<Mesh> mesh;
     std::vector<intrusive_ptr<Material>> materials;
-    intrusive_ptr<Buffer> per_object;
+    
+    Matrix4 model_matrix;
+    Matrix4 normal_matrix;
 };
 } // namespace Goonya::Graphics

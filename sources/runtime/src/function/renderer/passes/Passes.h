@@ -39,6 +39,7 @@ private:
     };
 
     intrusive_ptr<Buffer> per_frame_uniform; // 用于一般渲染每帧变化的数据
+    intrusive_ptr<Buffer> per_object_uniform; // 用于一般渲染每帧变化的数据
 public:
     LambertianPass();
     void reset() {}
