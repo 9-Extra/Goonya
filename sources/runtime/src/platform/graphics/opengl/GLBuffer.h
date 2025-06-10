@@ -99,7 +99,7 @@ public:
 
 protected:
     void _set_debug_label(const std::string &name) const noexcept override {
-        glObjectLabel(GL_BUFFER, id, name.size(), name.data());
+        glObjectLabel(GL_BUFFER, id, (GLsizei)name.size(), name.data());
     }
 };
 

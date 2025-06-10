@@ -6,6 +6,7 @@
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include <cassert>
+#include <cstdint>
 #include <utility>
 #include <vector>
 
@@ -40,8 +41,8 @@ enum class VertexAttribute : uint32_t {
 
 struct VertexLayout {
     // 用途，类型，偏移量
-    std::vector<std::tuple<VertexAttribute, Meta::FieldType, size_t>> attributes;
-    size_t size = 0; // 单个顶点大小
+    std::vector<std::tuple<VertexAttribute, Meta::FieldType, uint32_t>> attributes;
+    uint32_t size = 0; // 单个顶点大小
 
     bool operator==(const VertexLayout &b) const noexcept = default;
     size_t hash() const noexcept {

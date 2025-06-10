@@ -1,5 +1,6 @@
 #include "GLShader.h"
 #include "platform/graphics/Shader.h"
+#include <cstdint>
 #include <vector>
 
 namespace Goonya::Graphics {
@@ -115,10 +116,10 @@ GLShaderIntrospector::get_constant_buffer_info() const noexcept {
             std::string field_name;
             field_name.resize(name_len - 1);
             glGetProgramResourceName(id, GL_UNIFORM, uniform_ids[i], name_len, nullptr, field_name.data());
-            fields.emplace(field_name, Meta::FieldInfo{GLType2FieldType(type), static_cast<size_t>(offset)});
+            fields.emplace(field_name, Meta::FieldInfo{GLType2FieldType(type), static_cast<uint32_t>(offset)});
         }
 
-        result.emplace(name, ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), static_cast<size_t>(size)},
+        result.emplace(name, ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), static_cast<uint32_t>(size)},
                                                     static_cast<GLuint>(binding)});
     }
 

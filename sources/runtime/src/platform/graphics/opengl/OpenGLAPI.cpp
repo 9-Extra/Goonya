@@ -3,6 +3,7 @@
 #include <FreeImage.h> // FreeImage不知为何定义了_WINDOWS_，导致spdlog包含的Windows.h头文件不完整，所以先包含spdlog
 #include <GLFW/glfw3.h>
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
 #include <nowide/convert.hpp>
@@ -229,7 +230,7 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
     ASSERT_RENDER_THREAD();
     glDrawElements(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_SHORT,
-                   reinterpret_cast<void *>(submesh.start_index)); // 绘制
+                   reinterpret_cast<void *>((size_t)submesh.start_index)); // 绘制
 }
 
 // -----------------------bind-------------------------------

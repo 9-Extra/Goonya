@@ -26,9 +26,9 @@ struct Vector2f {
 
     constexpr float squared() const { return x * x + y * y; }
 
-    constexpr float length() const { return sqrtf(squared()); }
+    float length() const { return sqrtf(squared()); }
 
-    constexpr Vector2f normalized() const {
+    Vector2f normalized() const {
         float s = 1.0f / std::sqrt(squared());
         return {x * s, y * s};
     }
@@ -77,8 +77,8 @@ struct Vector3f {
     }
 
     constexpr float square() const { return this->dot(*this); }
-    constexpr float length() const { return std::sqrt(square()); }
-    constexpr Vector3f normalize() const {
+    float length() const { return std::sqrt(square()); }
+    Vector3f normalize() const {
         float inv_sqrt = 1.0f / std::sqrt(this->square());
         return *this * inv_sqrt;
     }
@@ -105,42 +105,42 @@ struct Quaternion {
     static constexpr Quaternion identity() { return Quaternion{0.0f, 0.0f, 0.0f, 1.0f}; }
 
     // 需要axis长度为1，顺时针旋转（沿着轴看过去）
-    static constexpr Quaternion from_rotation(Vector3f axis, float angle) {
+    static Quaternion from_rotation(Vector3f axis, float angle) {
         angle = angle * 0.5f;
         float sin_theta = sinf(angle), cos_theta = cosf(angle);
         return Quaternion{sin_theta * axis.x, sin_theta * axis.y, sin_theta * axis.z, cos_theta};
     }
 
     // 按XYZ顺序顺时针，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度。实际计算顺序和逻辑上的应用顺序相反
-    static constexpr Quaternion from_eular(Vector3f rotate) {
+    static Quaternion from_eular(Vector3f rotate) {
         return Quaternion::from_rotation({1, 0, 0}, rotate.x) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
                Quaternion::from_rotation({0, 0, 1}, rotate.z);
     }
 
-    constexpr Vector3f rotate_direction(Vector3f src) const {
+    Vector3f rotate_direction(Vector3f src) const {
         const Quaternion &q = *this;
         Quaternion p{src.x, src.y, src.z, 0.0f};
         Quaternion rotated = q * p * q.conjugate();
         return Vector3f{rotated.x, rotated.y, rotated.z}.normalize();
     }
 
-    constexpr float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
+    float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
 
-    constexpr Quaternion normalize() const noexcept {
+    Quaternion normalize() const noexcept {
         float s = 1.0f / length();
         return Quaternion{x * s, y * s, z * s, w * s};
     }
 
     constexpr Quaternion conjugate() const { return Quaternion{-x, -y, -z, w}; }
 
-    constexpr Quaternion operator*(const Quaternion r) const noexcept {
+    Quaternion operator*(const Quaternion r) const noexcept {
         Vector3f qv{x, y, z}, rv{r.x, r.y, r.z};
         Vector3f v = qv.cross(rv) + qv * r.w + rv * w;
         // 每次计算后归一化防止浮点误差累积
         return Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)}.normalize();
     }
 
-    constexpr Quaternion operator*=(const Quaternion r) noexcept {
+    Quaternion operator*=(const Quaternion r) noexcept {
         Vector3f qv{x, y, z}, rv{r.x, r.y, r.z};
         Vector3f v = qv.cross(rv) + qv * r.w + rv * w;
         // 每次计算后归一化防止浮点误差累积
@@ -205,7 +205,7 @@ struct Matrix3 {
         return {c1.length(), c2.length(), c3.length()};
     }
     // 从矩阵中反解出其旋转对应的四元数
-    constexpr Quaternion resolve_rotation() const noexcept {
+    Quaternion resolve_rotation() const noexcept {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
         float qx = 0.5f * std::sqrt(m[0][0] - m[1][1] - m[2][2]);
@@ -286,7 +286,7 @@ struct Matrix4 {
     constexpr Vector3f resolve_translate() const noexcept { return Vector3f{m[3][0], m[3][1], m[3][2]} / m[3][3]; }
 
     // 从矩阵中反解出其旋转对应的四元数
-    constexpr Quaternion resolve_rotation() const noexcept {
+    Quaternion resolve_rotation() const noexcept {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
         float qx = 0.5f * std::sqrt(m[0][0] - m[1][1] - m[2][2] + m[3][3]);
@@ -312,9 +312,9 @@ struct Transform {
         return Transform{{}, matrix.resolve_rotation(), matrix.resolve_scale()};
     }
 
-    constexpr Vector3f get_forward_direction() const { return rotation.rotate_direction({0, 0, -1}); }
+    Vector3f get_forward_direction() const { return rotation.rotate_direction({0, 0, -1}); }
 
-    constexpr Vector3f get_up_direction() const { return rotation.rotate_direction({0, 1, 0}); }
+    Vector3f get_up_direction() const { return rotation.rotate_direction({0, 1, 0}); }
 
     constexpr Matrix4 model_matrix() const {
         return Matrix4{Matrix3::scale(scale) * Matrix3::rotate(rotation)} * Matrix4::translate(position);

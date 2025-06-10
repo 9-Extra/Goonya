@@ -16,7 +16,7 @@ public:
 
     // ---------------------------调试-----------------------------
     void push_debug_group_label(const std::string &label) const noexcept override {
-        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, label.size(), label.data());
+        glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, (GLsizei)label.size(), label.data());
     };
     void pop_debug_group_label() const noexcept override { glPopDebugGroup(); }
 

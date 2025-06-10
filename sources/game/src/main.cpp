@@ -22,7 +22,7 @@ int main() {
 
         Goonya::drop_engine();
     } catch (const std::exception &e) {
-        nowide::cerr << "抛出异常：" << e.what() << std::endl;
+        nowide::cerr << "抛出异常：" << typeid(e).name() << "：" << e.what() << std::endl;
     }
 
     nowide::cerr << "正常关闭" << std::endl;

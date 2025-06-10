@@ -2,6 +2,8 @@
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
 #include "resource/Resource.h"
+#include <cstdint>
+#include <limits>
 #include <memory>
 
 namespace Goonya::Graphics {
@@ -11,7 +13,11 @@ void VariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_k
         throw RuntimeError("每个组至少有2个成员");
     }
 
-    uint8_t group_index = variants_key_map.size();
+    if (variants_key_map.size() > std::numeric_limits<uint8_t>::max()){
+        throw RuntimeError("变体组太多");
+    }
+
+    uint8_t group_index = (uint8_t)variants_key_map.size();
     uint8_t index = 0;
     for (const std::string &key : group_keys) {
         if (!key.empty()) { // 略过空定义
@@ -23,7 +29,7 @@ void VariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_k
         index++;
     }
 
-    uint32_t group_key_count = group_keys.size();
+    uint32_t group_key_count = (uint32_t)group_keys.size();
     uint32_t next_group_base = variant_count;
     variants_key_groups.emplace_back(next_group_base, std::move(group_keys));
     variant_count *= group_key_count;

@@ -16,6 +16,8 @@
 
 #include "glTFLoader.h"
 
+#include <print>
+
 namespace Goonya::Resource {
 
 static std::tuple<Graphics::TextureFilterMode, Graphics::TextureWarpMode>

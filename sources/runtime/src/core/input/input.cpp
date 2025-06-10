@@ -41,10 +41,10 @@ void initalize() {
         return false;
     });
     EventBus::subscribe_event<Display::Events::SysMousePos>(0, [](Display::Events::SysMousePos &e) {
-        mouse_delta_x = e.x - mouse_pos_x;
-        mouse_delta_y = e.y - mouse_pos_y;
-        mouse_pos_x = e.x;
-        mouse_pos_y = e.y;
+        mouse_delta_x = (int32_t)e.x - mouse_pos_x;
+        mouse_delta_y = (int32_t)e.y - mouse_pos_y;
+        mouse_pos_x = (int32_t)e.x;
+        mouse_pos_y = (int32_t)e.y;
         return false;
     });
     EventBus::subscribe_event<Display::Events::SysMouseClick>(0, [](Display::Events::SysMouseClick &e) {

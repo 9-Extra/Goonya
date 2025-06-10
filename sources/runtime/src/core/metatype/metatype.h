@@ -4,6 +4,7 @@
 #include "runtime/GoonyaException.h"
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <format>
@@ -196,14 +197,14 @@ private:
 
 struct FieldInfo {
     FieldType type;
-    size_t offset;
+    uint32_t offset;
 };
 
 struct LayoutInfo {
     std::unordered_map<std::string, FieldInfo> fields;
-    size_t size = 0;
+    uint32_t size = 0;
 
-    static LayoutInfo init(size_t size, std::initializer_list<std::tuple<std::string, FieldType, size_t>> fields) {
+    static LayoutInfo init(uint32_t size, std::initializer_list<std::tuple<std::string, FieldType, uint32_t>> fields) {
         LayoutInfo layout;
         layout.size = size;
         for (const auto &[name, type, offset] : fields) {

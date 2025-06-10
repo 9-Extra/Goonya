@@ -9,10 +9,10 @@
 
 namespace Goonya::Graphics {
 
-inline GLsizei max_mipmap_level(size_t width) { return std::log2(width) + 1; }
-inline GLsizei max_mipmap_level(size_t width, size_t height) { return std::log2(std::max(width, height)) + 1; }
+inline GLsizei max_mipmap_level(size_t width) { return static_cast<GLsizei>(std::log2(width)) + 1; }
+inline GLsizei max_mipmap_level(size_t width, size_t height) { return static_cast<GLsizei>(std::log2(std::max(width, height))) + 1; }
 inline GLsizei max_mipmap_level(size_t width, size_t height, size_t depth) {
-    return std::log2(std::max(std::max(width, height), depth)) + 1;
+    return static_cast<GLsizei>(std::log2(std::max(std::max(width, height), depth))) + 1;
 }
 
 static GLenum texture_format_to_gl_format(TextureStorageFormat format) {

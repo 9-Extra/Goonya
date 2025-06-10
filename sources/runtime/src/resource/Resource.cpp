@@ -5,6 +5,7 @@
 
 #include <FreeImage.h>
 #include <cassert>
+#include <cstdint>
 #include <nowide/convert.hpp>
 
 namespace Goonya::Resource {
@@ -99,12 +100,12 @@ intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc
     intrusive_ptr<Mesh> mesh = graphics_api->create_mesh();
     mesh->set_layout(desc.vertex_layout);
 
-    intrusive_ptr<Buffer> vertex_buffer = graphics_api->create_buffer(desc.raw_vertices.get_size(), BufferType::STATIC);
+    intrusive_ptr<Buffer> vertex_buffer = graphics_api->create_buffer((uint32_t)desc.raw_vertices.get_size(), BufferType::STATIC);
     vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>(), 0);
     mesh->set_vertex_buffer(vertex_buffer);
 
     intrusive_ptr<Buffer> indices_buffer =
-        graphics_api->create_buffer(desc.indices.size() * sizeof(uint16_t), BufferType::STATIC);
+        graphics_api->create_buffer(uint32_t(desc.indices.size() * sizeof(uint16_t)), BufferType::STATIC);
     indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint16_t)), 0);
     mesh->set_indices_buffer(indices_buffer);
 

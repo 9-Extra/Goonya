@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <format>
 #include <imgui.h>
+#include <print>
 #include <runtime/Goonya.h>
 
 #include "core/eventbus/eventbus.h"
@@ -32,6 +33,8 @@ static uint32_t calculate_fps(float delta_time) {
 }
 
 void init_engine() {
+    std::setlocale(LC_ALL, "en_US.UTF-8"); // 会影响Windows上std::filesystem::path对字符串编码的假设
+    
     Logger::inititalize();
     LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
 

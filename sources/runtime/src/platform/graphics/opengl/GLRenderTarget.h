@@ -135,7 +135,7 @@ public:
 private:
     void update_drawbuffers() const noexcept {
         std::array<GLenum, MAX_ATTACH_COLOR> attachment; // NOLINT：后面会初始化
-        for (size_t i = 0; i < MAX_ATTACH_COLOR; i++) {
+        for (GLenum i = 0; i < MAX_ATTACH_COLOR; i++) {
             attachment[i] = attached_color_texture[i] ? GL_COLOR_ATTACHMENT0 + i : GL_NONE;
         }
         glNamedFramebufferDrawBuffers(id, MAX_ATTACH_COLOR, attachment.data());

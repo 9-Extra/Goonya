@@ -51,11 +51,11 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
         for (const Json::Value &mesh : json["meshes"]) {
             const std::string &key = base_key + '.' + mesh["name"].asString();
             const Json::Value &primitive = mesh["primitives"][0];
-            const Json::Value &indices_buffer = get_buffer(primitive["indices"].asInt64());
-            const Json::Value &position_buffer = get_buffer(primitive["attributes"]["POSITION"].asInt64());
-            const Json::Value &normal_buffer = get_buffer(primitive["attributes"]["NORMAL"].asInt64());
-            const Json::Value &uv_buffer = get_buffer(primitive["attributes"]["TEXCOORD_0"].asInt64());
-            const Json::Value &tangent_buffer = get_buffer(primitive["attributes"]["TANGENT"].asInt64());
+            const Json::Value &indices_buffer = get_buffer(primitive["indices"].asUInt());
+            const Json::Value &position_buffer = get_buffer(primitive["attributes"]["POSITION"].asUInt());
+            const Json::Value &normal_buffer = get_buffer(primitive["attributes"]["NORMAL"].asUInt());
+            const Json::Value &uv_buffer = get_buffer(primitive["attributes"]["TEXCOORD_0"].asUInt());
+            const Json::Value &tangent_buffer = get_buffer(primitive["attributes"]["TANGENT"].asUInt());
 
             uint32_t indices_count = json["accessors"][primitive["indices"].asUInt()]["count"].asUInt();
             assert(indices_count % 3 == 0);
@@ -154,14 +154,14 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
 
             std::string normal_texture = "default_normal";
             if (material.isMember("normalTexture")) {
-                normal_texture = load_texture(material["normalTexture"]["index"].asInt64(), false);
+                normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
             }
             const std::string basecolor_texture =
-                load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asInt64(), true);
+                load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
             std::string metallic_roughness_texture = "black";
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
                 metallic_roughness_texture = load_texture(
-                    material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asInt64(), false);
+                    material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
             }
 
             float metallicFactor = 1.0f;
