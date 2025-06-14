@@ -1,0 +1,2 @@
+# 所有的git识别为文本文件的文件在git中使用LF作为换行符
+* text=auto eof=lf

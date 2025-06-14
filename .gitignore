@@ -11,7 +11,10 @@
 /.vscode
 
 /.cache/
-/bin/
+
+# 保留bin作为空文件夹
+/bin/*
+!/bin/.gitkeep
 
 # vs
 /.vs
