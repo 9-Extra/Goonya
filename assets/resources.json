@@ -51,6 +51,10 @@
             "is_color": true,
             "image": "textures/white.jpg"
         },
+        "black": {
+            "is_color": true,
+            "image": "textures/black.jpg"
+        },
         "wood_diffusion": {
             "is_color": true,
             "image": "materials/wood_flat/basecolor.jpg"
@@ -128,6 +132,9 @@
         },
         "crafting_table": {
             "path": "materials/crafting_table/crafting_table.gltf"
+        },
+        "科拉莉": {
+            "path": "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf"
         }
     }
 }

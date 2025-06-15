@@ -105,8 +105,8 @@ intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc
     mesh->set_vertex_buffer(vertex_buffer);
 
     intrusive_ptr<Buffer> indices_buffer =
-        graphics_api->create_buffer(uint32_t(desc.indices.size() * sizeof(uint16_t)), BufferType::STATIC);
-    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint16_t)), 0);
+        graphics_api->create_buffer(uint32_t(desc.indices.size() * sizeof(uint32_t)), BufferType::STATIC);
+    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint32_t)), 0);
     mesh->set_indices_buffer(indices_buffer);
 
     mesh->submeshes = desc.sub_meshes;

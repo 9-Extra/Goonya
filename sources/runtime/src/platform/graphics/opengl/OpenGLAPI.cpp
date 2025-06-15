@@ -229,8 +229,8 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
 
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
     ASSERT_RENDER_THREAD();
-    glDrawElements(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_SHORT,
-                   reinterpret_cast<void *>((size_t)submesh.start_index)); // 绘制
+    glDrawElements(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_INT,
+                   reinterpret_cast<void *>((size_t)submesh.start_index * sizeof(uint32_t))); // 绘制
 }
 
 // -----------------------bind-------------------------------

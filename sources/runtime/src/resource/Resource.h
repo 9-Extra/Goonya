@@ -51,6 +51,9 @@ public:
             throw RuntimeError(std::format("资源\"{}\"重复注册", key));
         }
     }
+    bool contains(const AssetKey &key) const {
+        return container.contains(key);
+    }
 
     intrusive_ptr<TAsset> get(const AssetKey &key) {
         if (auto iter = container.find(key); iter != container.end()) {

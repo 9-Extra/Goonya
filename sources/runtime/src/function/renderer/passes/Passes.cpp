@@ -79,7 +79,7 @@ void LambertianPass::run() {
         for (uint32_t i = 0; i < submeshes.size(); i++) {
             // 材质未设置时使用默认材质，多出来则无视
             intrusive_ptr<Material> current_material =
-                mesh->materials.size() > i ? mesh->materials[i] : default_material;
+                i < mesh->materials.size() ? mesh->materials[i] : default_material;
             current_material->bind(); // 绑定材质
             graphics_api->draw_submesh(submeshes[i]);
         }

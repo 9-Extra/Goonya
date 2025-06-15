@@ -65,7 +65,7 @@ struct SubMesh {
 struct MeshDesc {
     VertexLayout vertex_layout;
     Bytes raw_vertices;
-    std::vector<uint16_t> indices;
+    std::vector<uint32_t> indices;
     std::vector<SubMesh> sub_meshes;
 
     template <typename T, typename I, typename M>
