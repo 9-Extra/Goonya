@@ -1,10 +1,13 @@
 #include <core/world/World.h>
 #include <exception>
-#include <function/scene/scene.h>
+#include <memory>
+#include <resource/scene/scene.h>
 #include <nowide/iostream.hpp>
 #include <runtime/Goonya.h>
 
+#include "core/world/GObject.h"
 #include "logic.h"
+#include "resource/Resource.h"
 
 int main() {
     try {
@@ -13,7 +16,10 @@ int main() {
         {
             Goonya::Scene::Scene scene =
                 Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
-            Goonya::world.root = scene.root;
+            std::shared_ptr<Goonya::GObject> k = Goonya::Resource::resources.scenes.at("科拉莉.Scene").root;
+            k->set_position({2, 0, 0});
+            scene.root->attach_child(k);
+            Goonya::world.root = std::move(scene.root);
         }
 
         Goonya::world.root->add_component(std::make_unique<MoveSystem>());

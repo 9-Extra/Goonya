@@ -1,20 +1,30 @@
 #include "glTFLoader.h"
 
 #include "core/Bytes.h"
+#include "core/assets.h"
 #include "core/cgmath.h"
+#include "core/intrusive_ptr.h"
+#include "core/log/Log.h"
+#include "core/world/Component.h"
+#include "core/world/GObject.h"
+#include "function/components/CpntMeshRender.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/Texture.h"
 #include "resource/GraphicsResourceBuilder.h"
 #include "resource/Resource.h"
+#include "resource/scene/scene.h"
 
 #include "runtime/GoonyaException.h"
+#include "json/value.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <fstream>
 #include <json/json.h>
-#include <sys/types.h>
+#include <memory>
+#include <ranges>
 #include <vector>
 
 namespace Goonya::Resource {
@@ -39,15 +49,8 @@ static std::string url_decode(const std::string &url) {
     return output.str();
 }
 
-void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
+static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path &path, const Json::Value &json) {
     std::filesystem::path root = path.parent_path();
-
-    Json::Value json;
-    {
-        Json::Reader reader;
-        std::ifstream file(path);
-        reader.parse(file, json, false);
-    }
 
     struct Buffer {
         char *ptr = nullptr;
@@ -74,114 +77,116 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
         return buffer_view;
     };
     // 加载网格
-    if (json.isMember("meshes")) {
-        // 固定使用此顶点格式
-        struct Vertex {
-            Vector3f position;
-            Vector3f normal;
-            Vector3f tangent;
-            Vector2f uv;
+    // 固定使用此顶点格式
+    struct Vertex {
+        Vector3f position;
+        Vector3f normal;
+        Vector3f tangent;
+        Vector2f uv;
+    };
+
+    const static Graphics::VertexLayout vertex_layout{
+        {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Vertex, position)},
+         {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Vertex, normal)},
+         {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Vertex, tangent)},
+         {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
+        sizeof(Vertex)};
+
+    for (const Json::Value &mesh : json["meshes"]) {
+        const std::string &key = base_key + '.' + mesh["name"].asString();
+        // 把mesh内部的primitives看作submesh，把所有primitive拼成一个大mesh
+        struct PrimitiveInfo {
+            Vector3f *pos;
+            Vector3f *normal;
+            Vector2f *uv;
+            Vector4f *tangent;
+            uint32_t vertex_count;
+
+            uint16_t *indices_ptr;
+            uint32_t indices_count;
         };
+        std::vector<PrimitiveInfo> primitive_info; // 收集所有Primitive信息并存在这里
+        primitive_info.reserve(mesh["primitives"].size());
+        uint32_t total_vertex_count = 0; // 同时计算总顶点数和总索引数
+        uint32_t total_indices_count = 0;
 
-        const static Graphics::VertexLayout vertex_layout{
-            {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Vertex, position)},
-             {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Vertex, normal)},
-             {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Vertex, tangent)},
-             {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
-            sizeof(Vertex)};
+        for (const Json::Value &primitive : mesh["primitives"]) {
+            const Json::Value &indices_buffer = get_buffer(primitive["indices"].asUInt());
+            const Json::Value &position_buffer = get_buffer(primitive["attributes"]["POSITION"].asUInt());
+            const Json::Value &normal_buffer = get_buffer(primitive["attributes"]["NORMAL"].asUInt());
+            const Json::Value &uv_buffer = get_buffer(primitive["attributes"]["TEXCOORD_0"].asUInt());
+            const Json::Value &tangent_buffer = get_buffer(primitive["attributes"]["TANGENT"].asUInt());
 
-        for (const Json::Value &mesh : json["meshes"]) {
-            const std::string &key = base_key + '.' + mesh["name"].asString();
-            // 把mesh内部的primitives看作submesh，把所有primitive拼成一个大mesh
-            struct PrimitiveInfo {
-                Vector3f *pos;
-                Vector3f *normal;
-                Vector2f *uv;
-                Vector4f *tangent;
-                uint32_t vertex_count;
+            const Json::Value &indices_accessor = json["accessors"][primitive["indices"].asUInt()];
+            uint32_t indices_count = indices_accessor["count"].asUInt();
+            assert(indices_count % 3 == 0);
+            assert(indices_accessor["componentType"].asUInt() == 5123); // 保证索引类型是uint16_t
+            uint16_t *indices_ptr = reinterpret_cast<uint16_t *>(buffers[indices_buffer["buffer"].asUInt()].ptr +
+                                                                 indices_buffer["byteOffset"].asUInt());
 
-                uint16_t *indices_ptr;
-                uint32_t indices_count;
-            };
-            std::vector<PrimitiveInfo> primitive_info;
-            primitive_info.reserve(mesh["primitives"].size());
-            uint32_t total_vertex_count = 0;
-            uint32_t total_indices_count = 0;
-
-            for (const Json::Value &primitive : mesh["primitives"]) {
-                const Json::Value &indices_buffer = get_buffer(primitive["indices"].asUInt());
-                const Json::Value &position_buffer = get_buffer(primitive["attributes"]["POSITION"].asUInt());
-                const Json::Value &normal_buffer = get_buffer(primitive["attributes"]["NORMAL"].asUInt());
-                const Json::Value &uv_buffer = get_buffer(primitive["attributes"]["TEXCOORD_0"].asUInt());
-                const Json::Value &tangent_buffer = get_buffer(primitive["attributes"]["TANGENT"].asUInt());
-                
-                const Json::Value &indices_accessor = json["accessors"][primitive["indices"].asUInt()];
-                uint32_t indices_count = indices_accessor["count"].asUInt();
-                assert(indices_count % 3 == 0);
-                assert(indices_accessor["componentType"].asUInt() == 5123); // 保证索引类型是uint16_t
-                uint16_t *indices_ptr = reinterpret_cast<uint16_t *>(buffers[indices_buffer["buffer"].asUInt()].ptr +
-                                                                     indices_buffer["byteOffset"].asUInt());
-
-                uint32_t vertex_count = position_buffer["byteLength"].asUInt() / sizeof(Vector3f);
-                uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
-                uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
-                uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
-                if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
-                    throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
-                }
-                Vector3f *pos = reinterpret_cast<Vector3f *>(buffers[position_buffer["buffer"].asUInt()].ptr +
-                                                             position_buffer["byteOffset"].asUInt());
-                Vector3f *normal = reinterpret_cast<Vector3f *>(buffers[normal_buffer["buffer"].asUInt()].ptr +
-                                                                normal_buffer["byteOffset"].asUInt());
-                Vector2f *uv = reinterpret_cast<Vector2f *>(buffers[uv_buffer["buffer"].asUInt()].ptr +
-                                                            uv_buffer["byteOffset"].asInt64());
-                Vector4f *tangent = reinterpret_cast<Vector4f *>(buffers[tangent_buffer["buffer"].asUInt()].ptr +
-                                                                 tangent_buffer["byteOffset"].asUInt());
-
-                // Collect
-                primitive_info.emplace_back(
-                    PrimitiveInfo{pos, normal, uv, tangent, vertex_count, indices_ptr, indices_count});
-
-                total_vertex_count += vertex_count;
-                total_indices_count += indices_count;
+            uint32_t vertex_count = position_buffer["byteLength"].asUInt() / sizeof(Vector3f);
+            uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
+            uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
+            uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
+            if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
+                throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
+            Vector3f *pos = reinterpret_cast<Vector3f *>(buffers[position_buffer["buffer"].asUInt()].ptr +
+                                                         position_buffer["byteOffset"].asUInt());
+            Vector3f *normal = reinterpret_cast<Vector3f *>(buffers[normal_buffer["buffer"].asUInt()].ptr +
+                                                            normal_buffer["byteOffset"].asUInt());
+            Vector2f *uv = reinterpret_cast<Vector2f *>(buffers[uv_buffer["buffer"].asUInt()].ptr +
+                                                        uv_buffer["byteOffset"].asInt64());
+            Vector4f *tangent = reinterpret_cast<Vector4f *>(buffers[tangent_buffer["buffer"].asUInt()].ptr +
+                                                             tangent_buffer["byteOffset"].asUInt());
 
-            Bytes raw_vertices(total_vertex_count * sizeof(Vertex));
-            std::vector<uint32_t> indices(total_indices_count);
-            std::vector<Graphics::SubMesh> sub_meshes;
-            sub_meshes.reserve(primitive_info.size());
+            // Collect
+            primitive_info.emplace_back(
+                PrimitiveInfo{pos, normal, uv, tangent, vertex_count, indices_ptr, indices_count});
 
-            std::span<Vertex> vertices = raw_vertices.as_span<Vertex>();
-            uint32_t vertex_offset = 0;
-            uint32_t index_offset = 0;
-            for (const PrimitiveInfo &info : primitive_info) {
-                for (uint32_t i = 0; i < info.vertex_count; i++) {
-                    // tangent的第四个分量是用来根据平台决定手性的，在opengl中始终应该取1，所以忽略
-                    Vector3f tang = Vector3f(info.tangent[i].x, info.tangent[i].y, info.tangent[i].z);
-                    vertices[vertex_offset + i] = {info.pos[i], info.normal[i], tang, info.uv[i]};
-                }
-
-                for (uint32_t i = 0; i < info.indices_count; i += 3) {
-                    // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
-                    // 并且加上偏移
-                    indices[index_offset + i + 0] = vertex_offset + info.indices_ptr[i + 2];
-                    indices[index_offset + i + 1] = vertex_offset + info.indices_ptr[i + 1];
-                    indices[index_offset + i + 2] = vertex_offset + info.indices_ptr[i + 0];
-                }
-
-                sub_meshes.emplace_back(
-                    Graphics::SubMesh{index_offset, info.indices_count, Graphics::Topology::TRIANGLE});
-
-                vertex_offset += info.vertex_count;
-                index_offset += info.indices_count;
-            }
-
-            assert(vertex_offset == total_vertex_count && index_offset == total_indices_count);
-
-            resources.meshes.add(key, Graphics::MeshDesc{vertex_layout, std::move(raw_vertices), std::move(indices),
-                                                         std::move(sub_meshes)});
+            total_vertex_count += vertex_count;
+            total_indices_count += indices_count;
         }
+
+        Bytes raw_vertices(total_vertex_count * sizeof(Vertex));
+        std::vector<uint32_t> indices(total_indices_count);
+        std::vector<Graphics::SubMesh> sub_meshes;
+        sub_meshes.reserve(primitive_info.size());
+
+        std::span<Vertex> vertices = raw_vertices.as_span<Vertex>();
+        uint32_t vertex_offset = 0;
+        uint32_t index_offset = 0;
+        for (const PrimitiveInfo &info : primitive_info) {
+            for (uint32_t i = 0; i < info.vertex_count; i++) {
+                // tangent的第四个分量是用来根据平台决定手性的，在opengl中始终应该取1，所以忽略
+                Vector3f tang = Vector3f(info.tangent[i].x, info.tangent[i].y, info.tangent[i].z);
+                vertices[vertex_offset + i] = {info.pos[i], info.normal[i], tang, info.uv[i]};
+            }
+
+            for (uint32_t i = 0; i < info.indices_count; i += 3) {
+                // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
+                // 并且加上偏移
+                indices[index_offset + i + 0] = vertex_offset + info.indices_ptr[i + 2];
+                indices[index_offset + i + 1] = vertex_offset + info.indices_ptr[i + 1];
+                indices[index_offset + i + 2] = vertex_offset + info.indices_ptr[i + 0];
+            }
+
+            sub_meshes.emplace_back(Graphics::SubMesh{index_offset, info.indices_count, Graphics::Topology::TRIANGLE});
+
+            vertex_offset += info.vertex_count;
+            index_offset += info.indices_count;
+        }
+
+        assert(vertex_offset == total_vertex_count && index_offset == total_indices_count);
+
+        resources.meshes.add(
+            key, Graphics::MeshDesc{vertex_layout, std::move(raw_vertices), std::move(indices), std::move(sub_meshes)});
     }
+}
+
+static void load_gltf_material(const AssetKey &base_key, const std::filesystem::path &path, const Json::Value &json) {
+    std::filesystem::path root = path.parent_path();
+
     // 加载纹理（在加载材质时加载需要的纹理）
     auto load_texture = [&](uint32_t index, bool is_color) -> std::string {
         const Json::Value &texture_info = json["textures"][index];
@@ -224,38 +229,125 @@ void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
     };
 
     // 加载材质
-    if (json.isMember("materials")) {
-        for (const Json::Value &material : json["materials"]) {
-            const std::string &key = base_key + '.' + material["name"].asString();
 
-            std::string normal_texture = "default_normal";
-            if (material.isMember("normalTexture")) {
-                normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
-            }
-            const std::string basecolor_texture =
-                load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
-            std::string metallic_roughness_texture = "white";
-            if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
-                metallic_roughness_texture =
-                    load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
-            }
+    for (const Json::Value &material : json["materials"]) {
+        const std::string &key = base_key + '.' + material["name"].asString();
 
-            float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();
-            float roughnessFactor = material["pbrMetallicRoughness"].get("roughnessFactor", 1.0).asFloat();
-
-            Resource::MaterialBuilder mat_builder("pbr");
-            Graphics::MaterialDesc desc =
-                mat_builder.add_parameter("metallic_factor", metallicFactor)
-                    .add_parameter("roughness_factor", roughnessFactor)
-                    .add_sampler("basecolor_texture", Graphics::TextureType::TEXTURE_2D, basecolor_texture)
-                    .add_sampler("normal_texture", Graphics::TextureType::TEXTURE_2D, normal_texture)
-                    .add_sampler("metallic_roughness_texture", Graphics::TextureType::TEXTURE_2D,
-                                 metallic_roughness_texture)
-                    .build();
-
-            resources.materials.add(key, std::move(desc));
+        std::string normal_texture = "default_normal";
+        if (material.isMember("normalTexture")) {
+            normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
         }
+        const std::string basecolor_texture =
+            load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
+        std::string metallic_roughness_texture = "white";
+        if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
+            metallic_roughness_texture =
+                load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
+        }
+
+        float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();
+        float roughnessFactor = material["pbrMetallicRoughness"].get("roughnessFactor", 1.0).asFloat();
+
+        MaterialBuilder mat_builder("pbr");
+        Graphics::MaterialDesc desc =
+            mat_builder.add_parameter("metallic_factor", metallicFactor)
+                .add_parameter("roughness_factor", roughnessFactor)
+                .add_sampler("basecolor_texture", Graphics::TextureType::TEXTURE_2D, basecolor_texture)
+                .add_sampler("normal_texture", Graphics::TextureType::TEXTURE_2D, normal_texture)
+                .add_sampler("metallic_roughness_texture", Graphics::TextureType::TEXTURE_2D,
+                             metallic_roughness_texture)
+                .build();
+
+        resources.materials.add(key, std::move(desc));
     }
+}
+
+static std::shared_ptr<GObject> load_gltf_node(const AssetKey& base_key, const Json::Value &json, uint32_t index){
+    const Json::Value &node_json = json["nodes"][index];
+    // 先加载名称和变换
+    std::string name = node_json.get("name", "").asString();
+    Transform transform;
+    if (node_json.isMember("translation")){
+        transform.position = Vector3f{node_json["translation"][0].asFloat(), node_json["translation"][1].asFloat(), node_json["translation"][2].asFloat()};
+    }
+    if (node_json.isMember("rotation")){
+        transform.rotation = Quaternion{node_json["rotation"][0].asFloat(), node_json["rotation"][1].asFloat(), node_json["rotation"][2].asFloat(), node_json["rotation"][3].asFloat()};
+    }
+    if (node_json.isMember("scale")){
+        transform.scale = Vector3f{node_json["scale"][0].asFloat(), node_json["scale"][1].asFloat(), node_json["scale"][2].asFloat()};
+    }
+    // 构造GObject对象
+    std::shared_ptr<GObject> node = std::make_shared<GObject>(transform, name);
+
+    // 加载额外属性
+    if (node_json.isMember("mesh")){
+        
+        std::unique_ptr<Graphics::CpntMeshRender> mesh_render = std::make_unique<Graphics::CpntMeshRender>();
+        
+        // 加载Mesh
+        uint32_t mesh_id = node_json["mesh"].asUInt();
+        const Json::Value& mesh_json = json["meshes"][mesh_id];
+        AssetKey mesh_key = std::format("{}.{}", base_key, mesh_json["name"].asString());
+        intrusive_ptr<Graphics::Mesh> mesh = resources.meshes.get(mesh_key);
+        mesh_render->set_mesh(mesh);
+
+        /*
+        在GTLF中mesh属性中包含了其绑定的每一个材质，但是在Goonya中的mesh并不记录材质，而是在CpntMeshRender中记录材质
+        因此我们在这里加载并绑定材质
+        */
+        for(const auto& [id, primetive_json]: std::ranges::enumerate_view(mesh_json["primitives"])){
+            if (primetive_json.isMember("material")){
+                uint32_t material_id = primetive_json["material"].asUInt();
+                AssetKey material_key = std::format("{}.{}", base_key, json["materials"][material_id]["name"].asString());
+                mesh_render->set_material(id, resources.materials.get(material_key));
+            }
+        }
+        
+        node->add_component(std::move(mesh_render));
+    }
+    if (node_json.isMember("skin")){
+        // todo
+    }
+    
+    // 加载子节点
+    for(const Json::Value &node_index : node_json["children"]){
+        node->attach_child(load_gltf_node(base_key, json, node_index.asUInt()));
+    }
+    
+    return node;
+}
+
+static void load_gltf_scene(const AssetKey &base_key, const std::filesystem::path &path, const Json::Value &json){
+    for(const auto& [id, scene_json] : std::ranges::enumerate_view(json["scenes"])){
+        Scene::Scene scene;
+        // 默认使用其自定义的名称，否则使用下标生成名称，重名会导致错误
+        if (scene_json.isMember("name")){
+            scene.name = scene_json["name"].asString();
+        } else {
+            scene.name = std::format("scene_{}", id);
+        }
+        AssetKey res_name = std::format("{}.{}", base_key, scene.name);
+        LOG_TRACE("正在加载场景：\"{}\"", res_name);
+
+        scene.root = std::make_shared<GObject>("scene_root"); // gltf的scene中可能有不止一个根节点，因此另外创建一个根节点
+        for(const Json::Value &node_index: scene_json["nodes"]){
+            scene.root->attach_child(load_gltf_node(base_key, json, node_index.asUInt()));
+        }
+        resources.scenes.emplace(std::move(res_name), std::move(scene));
+    }
+}
+
+void load_gltf(const AssetKey &base_key, const std::filesystem::path &path) {
+    Json::Value json;
+    {
+        Json::Reader reader;
+        std::ifstream file(path);
+        reader.parse(file, json, false);
+    }
+
+    load_gltf_mesh(base_key, path, json);
+    load_gltf_material(base_key, path, json);
+    load_gltf_scene(base_key, path, json);
 }
 
 } // namespace Goonya::Resource

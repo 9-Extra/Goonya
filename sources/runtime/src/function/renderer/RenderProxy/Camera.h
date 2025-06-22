@@ -41,9 +41,9 @@ public:
     Matrix4 get_skybox_view_perspective_matrix() const noexcept {
         // 用于天空盒的透视投影矩阵（移除位移）
         Matrix4 view = get_view_matrix();
-        view.m[3][0] = 0;
-        view.m[3][1] = 0;
-        view.m[3][2] = 0;
+        view[3, 0] = 0;
+        view[3, 1] = 0;
+        view[3, 2] = 0;
         return view * get_perspective_matrix();
     }
 };

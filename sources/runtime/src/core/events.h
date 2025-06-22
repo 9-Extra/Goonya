@@ -1,10 +1,8 @@
 #pragma once
 
-namespace Goonya {
-namespace Events {
+namespace Goonya::Events {
 
 struct PostTick{};
 struct EngineStop{};
 
-}
 }

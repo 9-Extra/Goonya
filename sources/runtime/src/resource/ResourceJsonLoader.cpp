@@ -129,7 +129,7 @@ void load_json(const std::filesystem::path &path) {
         const AssetKey &key = iter.name();
         const Json::Value &material_desc = *iter;
 
-        Resource::MaterialBuilder mat_builder(material_desc["uber_shader"].asString());
+        MaterialBuilder mat_builder(material_desc["uber_shader"].asString());
 
         for (const auto &variant_key : material_desc["variant_keys"]) {
             mat_builder.set_variant_key(variant_key.asString());

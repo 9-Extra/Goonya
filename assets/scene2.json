@@ -1,417 +1,421 @@
 {
-    "root": [
-        {
-            "name": "天空盒",
-            "components": {
-                "sky_box": {
-                    "ignore_range": true,
-                    "material": "skybox_valley"
-                }
-            }
-        },
-        {
-            "name": "方块",
-            "transform": {
-                "position": [
-                    0,
-                    0,
-                    -10
-                ],
-                "rotation": [
-                    0,
-                    0,
-                    0
-                ],
-                "scale": [
-                    3,
-                    3,
-                    3
-                ]
-            },
-            "children": [
-                {
-                    "name": "front",
-                    "transform": {
-                        "position": [
-                            0,
-                            0,
-                            1
-                        ],
-                        "rotation": [
-                            0,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "plane",
-                            "material": [
-                                "crafting_table.front"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "side",
-                    "transform": {
-                        "position": [
-                            0,
-                            0,
-                            -1
-                        ],
-                        "rotation": [
-                            0,
-                            -3.1415926535,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "plane",
-                            "material": [
-                                "crafting_table.side"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "top",
-                    "transform": {
-                        "position": [
-                            0,
-                            1,
-                            0
-                        ],
-                        "rotation": [
-                            -1.57079632675,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "plane",
-                            "material": [
-                                "crafting_table.top"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "down",
-                    "transform": {
-                        "position": [
-                            0,
-                            -1,
-                            0
-                        ],
-                        "rotation": [
-                            1.57079632675,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "plane",
-                            "material": [
-                                "gold.gold"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "side",
-                    "transform": {
-                        "position": [
-                            1,
-                            0,
-                            0
-                        ],
-                        "rotation": [
-                            0,
-                            1.57079632675,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "plane",
-                            "material": [
-                                "crafting_table.side"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "side",
-                    "transform": {
-                        "position": [
-                            -1,
-                            0,
-                            0
-                        ],
-                        "rotation": [
-                            0,
-                            -1.57079632675,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "plane",
-                            "material": [
-                                "crafting_table.side"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "子球",
-                    "transform": {
-                        "position": [
-                            0,
-                            10,
-                            -10
-                        ],
-                        "rotation": [
-                            0,
-                            0,
-                            0
-                        ],
-                        "scale": [
-                            3,
-                            3,
-                            3
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "wood_floor.Sphere",
-                            "material": [
-                                "wood_floor.wood_floor_deck"
-                            ]
-                        },
-                        "camera": {
-                            "near_z": 1.0,
-                            "far_z": 1000,
-                            "fov": 1.57,
-                            "is_main": false
-                        }
+    "name": "test_scene",
+    "root": {
+        "name": "root",
+        "children": [
+            {
+                "name": "天空盒",
+                "components": {
+                    "sky_box": {
+                        "ignore_range": true,
+                        "material": "skybox_valley"
                     }
                 }
-            ]
-        },
-        {
-            "name": "teapot",
-            "transform": {
-                "position": [
-                    0,
-                    5,
-                    -10
-                ],
-                "rotation": [
-                    1.57,
-                    0,
-                    0
-                ]
             },
-            "components": {
-                "mesh_render": {
-                    "mesh": "teapot.teapot",
-                    "material": [
-                        "wood_floor.wood_floor_deck"
+            {
+                "name": "方块",
+                "transform": {
+                    "position": [
+                        0,
+                        0,
+                        -10
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        3,
+                        3,
+                        3
                     ]
-                }
-            }
-        },
-        {
-            "name": "科拉莉",
-            "transform": {
-                "position": [
-                    0,
-                    5,
-                    10
-                ],
-                "rotation": [
-                    0,
-                    3.14,
-                    0
-                ],
-                "scale": [
-                    10,
-                    10,
-                    10
-                ]
-            },
-            "components": {
-                "mesh_render": {
-                    "mesh": "科拉莉.不朽龙裔科拉莉",
-                    "material": [
-                        "科拉莉.面",
-                        "科拉莉.眉",
-                        "科拉莉.睫",
-                        "科拉莉.目白",
-                        "科拉莉.目",
-                        "科拉莉.目影",
-                        "科拉莉.口",
-                        "科拉莉.舌",
-                        "科拉莉.齿",
-                        "科拉莉.唇线",
-                        "科拉莉.首",
-                        "科拉莉.肌",
-                        "科拉莉.前发",
-                        "科拉莉.发",
-                        "科拉莉.龙角",
-                        "科拉莉.耳饰",
-                        "科拉莉.体甲",
-                        "科拉莉.里衣",
-                        "科拉莉.披风",
-                        "科拉莉.披风2",
-                        "科拉莉.手甲",
-                        "科拉莉.腿甲",
-                        "科拉莉.翅膀",
-                        "科拉莉.翅膀骨",
-                        "科拉莉.尾巴",
-                        "科拉莉.肌+",
-                        "科拉莉.黑发+"
-                    ]
-                }
-            }
-        },
-        {
-            "name": "测试片",
-            "transform": {
-                "position": [
-                    0,
-                    0,
-                    -20
-                ],
-                "rotation": [
-                    0,
-                    0,
-                    0
-                ],
-                "scale": [
-                    10,
-                    10,
-                    10
-                ]
-            },
-            "components": {
-                "mesh_render": {
-                    "mesh": "plane",
-                    "material": [
-                        "test_material"
-                    ]
-                }
-            }
-        },
-        {
-            "transform": {
-                "position": [
-                    0,
-                    -10,
-                    0
-                ],
-                "rotation": [
-                    -1.57,
-                    0,
-                    0
-                ],
-                "scale": [
-                    40,
-                    40,
-                    40
-                ]
-            },
-            "components": {
-                "mesh_render": {
-                    "mesh": "plane",
-                    "material": [
-                        "stone.stone"
-                    ]
-                }
-            }
-        },
-        {
-            "transform": {
-                "position": [
-                    10,
-                    -5,
-                    -5
-                ],
-                "scale": [
-                    2,
-                    2,
-                    2
-                ]
-            },
-            "components": {
-                "mesh_render": {
-                    "mesh": "gold.\u7acb\u65b9\u4f53",
-                    "material": [
-                        "gold.gold"
-                    ]
-                }
-            }
-        },
-        {
-            "name": "lights",
-            "children": [
-                {
-                    "name": "light1",
-                    "transform": {
-                        "position": [
-                            0,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "point_light": {
-                            "color": [
-                                1,
-                                1,
+                },
+                "children": [
+                    {
+                        "name": "front",
+                        "transform": {
+                            "position": [
+                                0,
+                                0,
                                 1
                             ],
-                            "factor": 500
+                            "rotation": [
+                                0,
+                                0,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "plane",
+                                "material": [
+                                    "crafting_table.front"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "side",
+                        "transform": {
+                            "position": [
+                                0,
+                                0,
+                                -1
+                            ],
+                            "rotation": [
+                                0,
+                                -3.1415926535,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "plane",
+                                "material": [
+                                    "crafting_table.side"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "top",
+                        "transform": {
+                            "position": [
+                                0,
+                                1,
+                                0
+                            ],
+                            "rotation": [
+                                -1.57079632675,
+                                0,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "plane",
+                                "material": [
+                                    "crafting_table.top"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "down",
+                        "transform": {
+                            "position": [
+                                0,
+                                -1,
+                                0
+                            ],
+                            "rotation": [
+                                1.57079632675,
+                                0,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "plane",
+                                "material": [
+                                    "gold.gold"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "side",
+                        "transform": {
+                            "position": [
+                                1,
+                                0,
+                                0
+                            ],
+                            "rotation": [
+                                0,
+                                1.57079632675,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "plane",
+                                "material": [
+                                    "crafting_table.side"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "side",
+                        "transform": {
+                            "position": [
+                                -1,
+                                0,
+                                0
+                            ],
+                            "rotation": [
+                                0,
+                                -1.57079632675,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "plane",
+                                "material": [
+                                    "crafting_table.side"
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        "name": "子球",
+                        "transform": {
+                            "position": [
+                                0,
+                                10,
+                                -10
+                            ],
+                            "rotation": [
+                                0,
+                                0,
+                                0
+                            ],
+                            "scale": [
+                                3,
+                                3,
+                                3
+                            ]
+                        },
+                        "components": {
+                            "mesh_render": {
+                                "mesh": "wood_floor.Sphere",
+                                "material": [
+                                    "wood_floor.wood_floor_deck"
+                                ]
+                            },
+                            "camera": {
+                                "near_z": 1.0,
+                                "far_z": 1000,
+                                "fov": 1.57,
+                                "is_main": false
+                            }
                         }
                     }
+                ]
+            },
+            {
+                "name": "teapot",
+                "transform": {
+                    "position": [
+                        0,
+                        5,
+                        -10
+                    ],
+                    "rotation": [
+                        1.57,
+                        0,
+                        0
+                    ]
                 },
-                {
-                    "name": "light2",
-                    "transform": {
-                        "position": [
-                            0,
-                            5,
-                            -20
+                "components": {
+                    "mesh_render": {
+                        "mesh": "teapot.teapot",
+                        "material": [
+                            "wood_floor.wood_floor_deck"
                         ]
-                    },
-                    "components": {
-                        "point_light": {
-                            "color": [
-                                1,
-                                0.6,
-                                0.6
-                            ],
-                            "factor": 1000
-                        }
                     }
                 }
-            ]
-        },
-        {
-            "name": "相机",
-            "components": {
-                "camera": {
-                    "near_z": 1.0,
-                    "far_z": 1000,
-                    "fov": 1.57,
-                    "is_main": true
+            },
+            {
+                "name": "科拉莉",
+                "transform": {
+                    "position": [
+                        0,
+                        5,
+                        10
+                    ],
+                    "rotation": [
+                        0,
+                        3.14,
+                        0
+                    ],
+                    "scale": [
+                        1,
+                        1,
+                        1
+                    ]
+                },
+                "components": {
+                    "mesh_render": {
+                        "mesh": "科拉莉.不朽龙裔科拉莉",
+                        "material": [
+                            "科拉莉.面",
+                            "科拉莉.眉",
+                            "科拉莉.睫",
+                            "科拉莉.目白",
+                            "科拉莉.目",
+                            "科拉莉.目影",
+                            "科拉莉.口",
+                            "科拉莉.舌",
+                            "科拉莉.齿",
+                            "科拉莉.唇线",
+                            "科拉莉.首",
+                            "科拉莉.肌",
+                            "科拉莉.前发",
+                            "科拉莉.发",
+                            "科拉莉.龙角",
+                            "科拉莉.耳饰",
+                            "科拉莉.体甲",
+                            "科拉莉.里衣",
+                            "科拉莉.披风",
+                            "科拉莉.披风2",
+                            "科拉莉.手甲",
+                            "科拉莉.腿甲",
+                            "科拉莉.翅膀",
+                            "科拉莉.翅膀骨",
+                            "科拉莉.尾巴",
+                            "科拉莉.肌+",
+                            "科拉莉.黑发+"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "测试片",
+                "transform": {
+                    "position": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        0.5,
+                        0.5,
+                        0.5
+                    ]
+                },
+                "components": {
+                    "mesh_render": {
+                        "mesh": "plane",
+                        "material": [
+                            "test_material"
+                        ]
+                    }
+                }
+            },
+            {
+                "transform": {
+                    "position": [
+                        0,
+                        -10,
+                        0
+                    ],
+                    "rotation": [
+                        -1.57,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        40,
+                        40,
+                        40
+                    ]
+                },
+                "components": {
+                    "mesh_render": {
+                        "mesh": "plane",
+                        "material": [
+                            "stone.stone"
+                        ]
+                    }
+                }
+            },
+            {
+                "transform": {
+                    "position": [
+                        10,
+                        -5,
+                        -5
+                    ],
+                    "scale": [
+                        2,
+                        2,
+                        2
+                    ]
+                },
+                "components": {
+                    "mesh_render": {
+                        "mesh": "gold.\u7acb\u65b9\u4f53",
+                        "material": [
+                            "gold.gold"
+                        ]
+                    }
+                }
+            },
+            {
+                "name": "lights",
+                "children": [
+                    {
+                        "name": "light1",
+                        "transform": {
+                            "position": [
+                                0,
+                                0,
+                                0
+                            ]
+                        },
+                        "components": {
+                            "point_light": {
+                                "color": [
+                                    1,
+                                    1,
+                                    1
+                                ],
+                                "factor": 500
+                            }
+                        }
+                    },
+                    {
+                        "name": "light2",
+                        "transform": {
+                            "position": [
+                                0,
+                                5,
+                                -20
+                            ]
+                        },
+                        "components": {
+                            "point_light": {
+                                "color": [
+                                    1,
+                                    0.6,
+                                    0.6
+                                ],
+                                "factor": 1000
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "相机",
+                "components": {
+                    "camera": {
+                        "near_z": 1.0,
+                        "far_z": 1000,
+                        "fov": 1.57,
+                        "is_main": true
+                    }
                 }
             }
-        }
-    ]
+        ]
+    }
 }

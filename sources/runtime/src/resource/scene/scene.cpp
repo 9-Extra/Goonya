@@ -88,19 +88,17 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
 }
 
 // 从json递归加载节点
-void load_node_from_json(const Json::Value &node, GObject *root) {
-    for (const Json::Value &object_desc : node) {
-        const std::string &name = object_desc.isMember("name") ? object_desc["name"].asString() : "";
-        auto gobject = std::make_shared<GObject>(load_transform(object_desc), name);
-        if (object_desc.isMember("components")) {
-            load_conponents_from_json(gobject.get(), object_desc["components"]);
-        }
+std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
+    const std::string &name = json.get("name", "").asString();
+    std::shared_ptr<GObject> node = std::make_shared<GObject>(load_transform(json), name);
 
-        root->attach_child(gobject);
-        if (object_desc.isMember("children")) {
-            load_node_from_json(object_desc["children"], root->get_children().back().get());
-        }
+    load_conponents_from_json(node.get(), json["components"]);
+
+    for (const Json::Value &child_desc : json["children"]) {
+        node->attach_child(load_node_from_json(child_desc));
     }
+
+    return node;
 }
 
 // 从json文件加载场景
@@ -112,10 +110,10 @@ Scene load_scene_from_json(const std::string &path) {
         std::ifstream file(path);
         reader.parse(file, json, false);
     }
+    
+    scene.name = json.get("name", "未命名").asString();
     // 加载物体
-    if (json.isMember("root")) {
-        load_node_from_json(json["root"], scene.root.get());
-    }
+    scene.root = load_node_from_json(json["root"]);
 
     return scene;
 }

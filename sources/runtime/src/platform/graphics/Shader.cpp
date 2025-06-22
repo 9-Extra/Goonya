@@ -102,7 +102,7 @@ static std::string shader_source_inject(const std::string &src, const std::vecto
     ss << "//------Combined Definitions---------: \n";
 
     for (const std::string &key : variant_key) {
-        ss << std::format("#ifdef {0}\n#undef {0}\n#endif\n#define {0}\n", key);
+        ss << std::format("#define {}\n", key);
     }
 
     ss << "//------Combined Definition End------: \n";
@@ -118,13 +118,11 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->global_variant_key_collect = VariantKeyCollect(std::move(desc.global_variant_keys));
     this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
 
-    // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用create_variant
+    // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用query_variant
     VariantCodeSet empty{0};
     std::vector<std::string> variant_keys;
     this->get_variant_key_names(empty, variant_keys);
-    variant_keys.emplace_back("VERTEX_SHADER");
     std::string mixed_vs = shader_source_inject(this->vs_src, variant_keys);
-    variant_keys.back() = "PIXEL_SHADER";
     std::string mixed_ps = shader_source_inject(this->ps_src, variant_keys);
 
     intrusive_ptr<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);

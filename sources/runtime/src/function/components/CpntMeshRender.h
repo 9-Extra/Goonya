@@ -43,7 +43,7 @@ public:
         is_mesh_dirty = true;
     }
 
-    void set_material(const intrusive_ptr<Material> &material, uint32_t slot = 0) noexcept {
+    void set_material(uint32_t slot, const intrusive_ptr<Material> &material) noexcept {
         if (materials.size() <= slot) {
             materials.resize(slot + 1, nullptr);
         }

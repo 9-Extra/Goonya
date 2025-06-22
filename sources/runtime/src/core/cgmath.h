@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstddef>
 #include <format>
 
 namespace Goonya {
@@ -242,6 +243,11 @@ struct Matrix4 {
                        m[0][2], m[1][2], m[2][2], m[3][2], m[0][3], m[1][3], m[2][3], m[3][3]};
     }
 
+    constexpr float& operator[](size_t i, size_t j) {
+        assert(i < 4 && j < 4);
+        return m[i][j];
+    }
+
     constexpr Matrix4 operator*(const Matrix4 &m) const {
         Matrix4 r;
         for (unsigned int i = 0; i < 4; i++) {
@@ -252,6 +258,8 @@ struct Matrix4 {
         }
         return r;
     }
+
+
 
     constexpr Vector4f operator*(const Vector4f &right) const {
         Vector4f r;
