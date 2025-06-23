@@ -100,7 +100,7 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float roughness, float m
 {
     // Precalculate vectors and dot products
     vec3  H     = normalize(V + L);
-    float dotNV = clamp(dot(N, V), 0.0, 1.0);
+    float dotNV = clamp(dot(N, V), 0.0001, 1.0); // 修复法线表面“不可见”处黑色的问题，参考Godot
     float dotNL = clamp(dot(N, L), 0.0, 1.0);
     float dotLH = clamp(dot(L, H), 0.0, 1.0);
     float dotNH = clamp(dot(N, H), 0.0, 1.0);
@@ -112,7 +112,7 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float roughness, float m
     // F = Fresnel factor (Reflectance depending on angle of incidence)
     vec3 F = F_Schlick(dotNV, F0);
 
-    vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.001); // 高光BRDF
+    vec3 spec = D * F * G / (4.0 * dotNL * dotNV + 0.00001); // 高光BRDF
     
     // 计算漫反射
     vec3 diff = albedo / PI; // lambert diffuse
@@ -122,7 +122,8 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float roughness, float m
 }
 
 // 爱来自虚幻4，https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
-// 输入二维(0, 1)随机数Xi（可用低差异序列），粗糙度Roughness和法线方向N, 采样一个方向向量
+// 输入二维(0, 1)随机数Xi（可用低差异序列），粗糙度Roughness和法线方向N
+// 使用D(H)H*N作为提议分布，采样服从此分布一个球极坐标，最后转换为世界空间方向向量
 vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
 {
     float a = Roughness * Roughness;
@@ -134,7 +135,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
     H.y = SinTheta * sin(Phi);
     H.z = CosTheta;
 
-    // 使用法线方向N随便构造一组基以转换到世界坐标系，即随便找两个和N垂直的方向向量
+    // 使用法线方向N随便构造一组基以转换到世界坐标系，即随便找两个和N垂直的方向向量（法线分布各向同性，与切线方向无关）
     // 理论上随便找个向量和N叉乘就能找到与N垂直的向量，为了数值精度这个向量不能和N太相近
     vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);
     vec3 TangentX = normalize(cross(UpVector, N)); // 找一个和N垂直的方向
@@ -148,20 +149,20 @@ vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
 vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
 {
     vec3 SpecularLighting = vec3(0);
-    const uint NumSamples = 64;
+    const uint NumSamples = 16;
+    float NoV = max(dot(N, V), 0);
     for(uint i = 0; i < NumSamples; i++)
     {
         vec2 Xi = hammersley2d(i, NumSamples);
-        vec3 H = ImportanceSampleGGX(Xi, Roughness, N);
-        vec3 L = 2 * dot(V, H) * H - V;
-        float NoV = max(dot(N, V), 0);
+        vec3 H = ImportanceSampleGGX(Xi, Roughness, N); // 采样得到世界空间半角向量
+        vec3 L = 2 * dot(V, H) * H - V; // 反向计算入射光方向
         float NoL = max(dot(N, L), 0);
         float NoH = max(dot(N, H), 0);
         float VoH = max(dot(V, H), 0);
         
         if (NoL > 0)
         {
-            vec3 SampleColor = textureLod(skybox_specular_texture, L, 0).xyz;
+            vec3 light = textureLod(skybox_specular_texture, L, 0).xyz;
             float G = G_SchlicksmithGGX(NoL, NoV, Roughness);
             vec3 F = F_Schlick(VoH, SpecularColor); // VoH == LoH
             
@@ -171,12 +172,12 @@ vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
             入射光 light = SampleColor * NoL
             高光brdf = D * G * F / (4 * NoL * NoV)
             
-            化简后得到下面实际计算用的式子，连GGX都不用算了
+            化简后得到下面实际计算用的式子，GGX在重要性采样中被约去不用计算
             */
-            SpecularLighting += SampleColor * F * G * VoH / (NoH * NoV + 0.001);
+            SpecularLighting += light * F * G * VoH / (NoH + 0.000001);
         }
     }
-    return SpecularLighting / NumSamples;
+    return SpecularLighting / (NoV + 0.000001) / NumSamples;
 }
 
 vec3 caculate_normal(){
