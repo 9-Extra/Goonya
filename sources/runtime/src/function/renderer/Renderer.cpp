@@ -11,7 +11,6 @@
 #include "platform/graphics/RenderTarget.h"
 #include "resource/Resource.h"
 #include "resource/ResourceJsonLoader.h"
-#include <FreeImage.h>
 #include <cstdint>
 
 namespace Goonya::Graphics {

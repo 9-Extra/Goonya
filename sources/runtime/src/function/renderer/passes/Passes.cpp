@@ -13,7 +13,6 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "resource/Resource.h"
-#include <FreeImage.h>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>

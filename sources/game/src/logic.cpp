@@ -10,8 +10,6 @@
 #include <platform/graphics/Shader.h>
 #include <resource/Resource.h>
 
-#include <FreeImage.h>
-
 void MoveSystem::handle_mouse() const {
     using namespace Goonya;
     if (Goonya::Input::is_mouse_click(Input::LEFT)) {
@@ -49,12 +47,8 @@ void MoveSystem::handle_keyboard(float delta) const {
     if (Input::is_key_click('P')) {
         LOG_DEBUG("正在进行图像导出");
         intrusive_ptr<Graphics::Texture> skybox = Resource::resources.cubemaps.get("skybox_valley_color");
-        FIBITMAP *image = skybox->export_image(0);
-        FreeImage_AdjustGamma(image, 2.2);
-        if (!FreeImage_Save(FIF_BMP, image, "output.bmp")) {
-            LOG_ERROR("图像导出失败");
-        };
-        FreeImage_Unload(image);
+        stb::Image image = skybox->export_image(0);
+        image.save("output.hdr");
     }
 
     if (Goonya::Input::is_key_click(Input::KeyCode::ESCAPE)) {

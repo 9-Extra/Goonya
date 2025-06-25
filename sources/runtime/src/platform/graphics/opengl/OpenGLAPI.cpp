@@ -1,6 +1,5 @@
 #include "OpenGLAPI.h"
 #include "core/log/Log.h"
-#include <FreeImage.h> // FreeImage不知为何定义了_WINDOWS_，导致spdlog包含的Windows.h头文件不完整，所以先包含spdlog
 #include <GLFW/glfw3.h>
 #include <cassert>
 #include <cstddef>

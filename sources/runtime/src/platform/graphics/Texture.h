@@ -1,11 +1,10 @@
 #pragma once
 
 #include "core/intrusive_ptr.h"
+#include "platform/image/image.h"
 #include <cstdint>
 
 #include <tuple>
-
-struct FIBITMAP;
 
 namespace Goonya::Graphics {
 
@@ -76,9 +75,9 @@ public:
     virtual void set_warp_mode(TextureWarpMode warp_mode) noexcept = 0;
     virtual void generate_mipmaps() noexcept = 0;
 
-    virtual void import_image(FIBITMAP *image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
+    virtual void import_image(const stb::Image& image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
                               uint32_t zoffset = 0) = 0;
-    virtual FIBITMAP *export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const = 0;
+    virtual stb::Image export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const = 0;
 
     TextureType get_type() const noexcept { return type; }
 

@@ -1,8 +1,9 @@
 #include "GLTexture.h"
+
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
-#include <FreeImage.h>
+
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -10,7 +11,9 @@
 namespace Goonya::Graphics {
 
 inline GLsizei max_mipmap_level(size_t width) { return static_cast<GLsizei>(std::log2(width)) + 1; }
-inline GLsizei max_mipmap_level(size_t width, size_t height) { return static_cast<GLsizei>(std::log2(std::max(width, height))) + 1; }
+inline GLsizei max_mipmap_level(size_t width, size_t height) {
+    return static_cast<GLsizei>(std::log2(std::max(width, height))) + 1;
+}
 inline GLsizei max_mipmap_level(size_t width, size_t height, size_t depth) {
     return static_cast<GLsizei>(std::log2(std::max(std::max(width, height), depth))) + 1;
 }
@@ -163,84 +166,39 @@ void GLTexture::set_filter_mode(TextureFilterMode filter_mode) noexcept {
     glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, mag_filter);
 }
 
-static std::tuple<GLenum, GLenum> get_freeimage_gl_format(FIBITMAP *image) noexcept {
-    GLenum source_type = 0, source_format = 0;
-    switch (FreeImage_GetImageType(image)) {
-    case FIT_UINT16: {
-        source_type = GL_UNSIGNED_SHORT;
-        source_format = GL_RED;
-        break;
-    }
-    case FIT_INT16: {
-        source_type = GL_SHORT;
-        source_format = GL_RED;
-        break;
-    }
-    case FIT_UINT32: {
-        source_type = GL_UNSIGNED_INT;
-        source_format = GL_RED;
-        break;
-    }
-    case FIT_INT32: {
-        source_type = GL_INT;
-        source_format = GL_RED;
-        break;
-    }
-    case FIT_FLOAT: {
-        source_type = GL_FLOAT;
-        source_format = GL_RED;
-        break;
-    }
-    case FIT_RGB16: {
-        source_type = GL_UNSIGNED_SHORT;
-        source_format = GL_RGB;
-        break;
-    }
-    case FIT_RGBA16: {
-        source_type = GL_UNSIGNED_SHORT;
-        source_format = GL_RGBA;
-        break;
-    }
-    case FIT_RGBF: {
-        source_type = GL_FLOAT;
-        source_format = GL_RGB;
-        break;
-    }
-    case FIT_RGBAF: {
-        source_type = GL_FLOAT;
-        source_format = GL_RGBA;
-        break;
-    }
-    case FIT_BITMAP: {
-        unsigned int bpp = FreeImage_GetBPP(image);
-        source_type = GL_UNSIGNED_BYTE;
-        if (bpp == 24) {
-            source_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
-        } else if (bpp == 32) {
-            source_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGRA : GL_RGBA;
-        }
-        break;
-    }
-    default: {
-        break;
-    }
-    }
-    return {source_type, source_format};
-}
-
-void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
+void GLTexture::import_image(const stb::Image &image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
                              uint32_t zoffset) {
 
     // 对于CUBEMAP纹理，由于OpenGL中CUBEMAP的“别出心裁”的构思设定，为了使得可以正确使用方向采样CUBEMAP纹理，进行一个上下翻转
     // 对于其他纹理，由于Goonya定义的纹理坐标uv的原点为左上角（与DX一致），而OpenGL为左下角，解决方法是对纹理进行翻转
     // 结果就是，所有的类型纹理都需要翻转一下
-    FIBITMAP *flip = FreeImage_Clone(image);
-    FreeImage_FlipVertical(flip);
 
-    unsigned int width = FreeImage_GetWidth(flip);
-    unsigned int height = FreeImage_GetHeight(flip);
+    // 而在加载纹理时glTextureSubImage2D将内存中的第一行数据视为纹理的最底部行（左下角），而stb::Image中第一行数据为图像数据的最顶部行
+    // 这意味这stb加载的图像对与OpenGL来说本来就是翻转的
+    // 所以结果就是不需要翻转了
+    unsigned int width = image.get_width();
+    unsigned int height = image.get_height();
 
-    auto [source_type, source_format] = get_freeimage_gl_format(flip);
+    GLenum source_type = image.is_float() ? GL_FLOAT : GL_UNSIGNED_BYTE;
+    GLenum source_format = 0;
+    switch (image.get_channel()) {
+    case 1: {
+        source_format = GL_RED;
+        break;
+    }
+    case 2: {
+        source_format = GL_RG;
+        break;
+    }
+    case 3: {
+        source_format = GL_RGB;
+        break;
+    }
+    case 4: {
+        source_format = GL_RGBA;
+        break;
+    }
+    }
     if (source_type == 0 || source_format == 0) {
         throw RuntimeError("不支持的图像像素格式");
     }
@@ -249,7 +207,7 @@ void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xo
     case TextureType::TEXTURE_1D_ARRAY:
     case TextureType::TEXTURE_2D: {
         glTextureSubImage2D(id, mipmap_level, xoffset, yoffset, width, height, source_format, source_type,
-                            FreeImage_GetBits(flip));
+                            image.get_data());
         break;
     }
     case TextureType::TEXTURE_2D_ARRAY:
@@ -258,7 +216,7 @@ void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xo
     case TextureType::TEXTURE_3D: {
         // CubeMap可以使用3D纹理的加载函数进行加载，使用zoffset参数制定加载的图像的方向
         glTextureSubImage3D(id, mipmap_level, xoffset, yoffset, zoffset, width, height, 1, source_format, source_type,
-                            FreeImage_GetBits(flip));
+                            image.get_data());
         break;
     }
     default:
@@ -266,7 +224,7 @@ void GLTexture::import_image(FIBITMAP *image, uint32_t mipmap_level, uint32_t xo
     }
 }
 
-FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const {
+stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const {
     GLuint level;
     glGetTextureParameterIuiv(id, GL_TEXTURE_MAX_LEVEL, &level);
     if (mipmap_level > level) {
@@ -277,12 +235,10 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
     glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &width);
     glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_HEIGHT, &height);
 
-    FIBITMAP *image = nullptr;
+    GLenum target_format = 0;
+    int channel = 0;
+    bool is_float = false;
 
-    GLenum target_type = 0, target_format = 0;
-    FREE_IMAGE_TYPE free_image_format;
-
-    unsigned int bpp = 0;
     switch (type) {
 
     case TextureType::TEXTURE_CUBEMAP:
@@ -293,80 +249,64 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
         case TextureStorageFormat::RGBA_f32:
         case TextureStorageFormat::RGBA_i32:
         case TextureStorageFormat::RGBA_u32:
-            // 使用FIT_RGBAF导致了错误
         case TextureStorageFormat::RGBA_f16:
         case TextureStorageFormat::RGBA_i16:
         case TextureStorageFormat::RGBA_u16: {
             target_format = GL_RGBA;
-            target_type = GL_UNSIGNED_SHORT;
-            free_image_format = FIT_RGBA16;
+            channel = 4;
+            is_float = true;
             break;
         }
         case TextureStorageFormat::RGBA_f8:
         case TextureStorageFormat::RGBA_i8:
         case TextureStorageFormat::RGBA_u8: {
-            target_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGRA : GL_RGBA;
-            target_type = GL_UNSIGNED_BYTE;
-            free_image_format = FIT_BITMAP;
-            bpp = 32;
+            target_format = GL_RGBA;
+            channel = 4;
+            is_float = false;
             break;
         }
         case TextureStorageFormat::RGB_f32:
         case TextureStorageFormat::RGB_i32:
         case TextureStorageFormat::RGB_u32:
-            // 使用FIT_RGBAF导致了错误
         case TextureStorageFormat::RGB_f16:
         case TextureStorageFormat::RGB_i16:
         case TextureStorageFormat::RGB_u16: {
             target_format = GL_RGB;
-            target_type = GL_UNSIGNED_SHORT;
-            free_image_format = FIT_RGB16;
+            channel = 3;
+            is_float = true;
             break;
         }
         case TextureStorageFormat::RGB_f8:
         case TextureStorageFormat::RGB_i8:
         case TextureStorageFormat::RGB_u8: {
-            target_format = FREEIMAGE_COLORORDER == FREEIMAGE_COLORORDER_BGR ? GL_BGR : GL_RGB;
-            target_type = GL_UNSIGNED_BYTE;
-            free_image_format = FIT_BITMAP;
-            bpp = 24;
+            target_format = GL_RGB;
+            channel = 3;
+            is_float = false;
             break;
         }
         case TextureStorageFormat::R_f32:
         case TextureStorageFormat::R_i32:
-        case TextureStorageFormat::R_u32: {
-            target_format = GL_RED;
-            target_type = GL_FLOAT;
-            free_image_format = FIT_FLOAT;
-            break;
-        }
+        case TextureStorageFormat::R_u32:
         case TextureStorageFormat::R_f16:
         case TextureStorageFormat::R_i16:
         case TextureStorageFormat::R_u16: {
             target_format = GL_RED;
-            target_type = GL_UNSIGNED_SHORT;
-            free_image_format = FIT_UINT16;
+            channel = 1;
+            is_float = true;
             break;
         }
         case TextureStorageFormat::R_f8:
         case TextureStorageFormat::R_i8:
         case TextureStorageFormat::R_u8: {
             target_format = GL_RED;
-            target_type = GL_UNSIGNED_BYTE;
-            free_image_format = FIT_BITMAP;
-            bpp = 8;
+            channel = 1;
+            is_float = false;
             break;
         }
         default: {
             throw RuntimeError("不支持的格式");
         }
         }
-        image = FreeImage_AllocateT(free_image_format, width, height, bpp);
-        unsigned int buf_size = FreeImage_GetMemorySize(image);
-        glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
-                             FreeImage_GetBits(image));
-        // 因为所有的类型纹理在加载是都进行了翻转，读取时就重新翻转回来
-        FreeImage_FlipVertical(image);
 
         break;
     }
@@ -379,6 +319,11 @@ FIBITMAP *GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const
     }
     }
 
+    stb::Image image = stb::Image::create_empty(width, height, channel, is_float);
+    unsigned int buf_size = image.get_size_byte();
+    GLenum target_type = is_float ? GL_FLOAT : GL_UNSIGNED_BYTE;
+    glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
+                            image.get_data());
     return image;
 };
 

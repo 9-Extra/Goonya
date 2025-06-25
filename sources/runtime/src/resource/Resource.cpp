@@ -3,7 +3,6 @@
 #include "platform/graphics/Texture.h"
 #include "runtime/GoonyaException.h"
 
-#include <FreeImage.h>
 #include <cassert>
 #include <cstdint>
 #include <nowide/convert.hpp>
@@ -12,95 +11,13 @@ namespace Goonya::Resource {
 
 RenderResource resources; // Global
 
-// 利用重载的方式实现对不同路径类型的支持
-[[maybe_unused]] static FIBITMAP *freeimage_open_image(const std::wstring &image_path) {
-    FREE_IMAGE_FORMAT format = FreeImage_GetFileTypeU(image_path.c_str(), 0);
-    if (format == FIF_UNKNOWN) {
-        format = FreeImage_GetFIFFromFilenameU(image_path.c_str());
-    }
-    if (format != FIF_UNKNOWN) {
-        return FreeImage_LoadU(FreeImage_GetFileTypeU(image_path.c_str(), 0), image_path.c_str());
-    } else {
-        throw RuntimeError(std::format("无法确定图像\"{}\"的格式", nowide::narrow(image_path)));
-    }
-}
-[[maybe_unused]] static FIBITMAP *freeimage_open_image(const std::string &image_path) {
-    FREE_IMAGE_FORMAT format = FreeImage_GetFileType(image_path.c_str(), 0);
-    if (format == FIF_UNKNOWN) {
-        format = FreeImage_GetFIFFromFilename(image_path.c_str());
-    }
-    if (format != FIF_UNKNOWN) {
-        return FreeImage_Load(FreeImage_GetFileType(image_path.c_str(), 0), image_path.c_str());
-    } else {
-        throw RuntimeError(std::format("无法确定图像\"{}\"的格式", image_path));
-    }
-}
-
-static FIBITMAP *freeimage_load_and_convert_image(const std::filesystem::path &image_path, bool need_gammar_correct) {
-    FIBITMAP *pImage = freeimage_open_image(image_path.native());
-    if (pImage == nullptr) {
-        throw RuntimeError(std::format("加载图像失败: {}", image_path.string()));
-    }
-
-    if (need_gammar_correct) {
-        // 对于颜色贴图，进行矫正
-        FreeImage_AdjustGamma(pImage, 1 / 2.2); // FreeImage的实现中用1/gamme，所以这里的1/2.2是对的
-    }
-    return pImage;
-}
-
-static Graphics::TextureStorageFormat get_proper_storage_type(FIBITMAP *pImage) {
-    using Graphics::TextureStorageFormat;
-    switch (FreeImage_GetImageType(pImage)) {
-    case FIT_UINT16: {
-        return TextureStorageFormat::R_u16;
-    }
-    case FIT_INT16: {
-        return TextureStorageFormat::R_i16;
-    }
-    case FIT_UINT32: {
-        return TextureStorageFormat::R_u32;
-    }
-    case FIT_INT32: {
-        return TextureStorageFormat::R_i32;
-    }
-    case FIT_FLOAT: {
-        return TextureStorageFormat::R_f32;
-    }
-    case FIT_RGB16: {
-        return TextureStorageFormat::RGB_f16;
-    }
-    case FIT_RGBA16: {
-        return TextureStorageFormat::RGBA_f16;
-    }
-    case FIT_RGBF: {
-        return TextureStorageFormat::RGB_f32;
-    }
-    case FIT_RGBAF: {
-        return TextureStorageFormat::RGBA_f32;
-    }
-    case FIT_BITMAP: {
-        unsigned int bpp = FreeImage_GetBPP(pImage);
-        if (bpp == 24) {
-            return TextureStorageFormat::RGB_f8;
-        } else if (bpp == 32) {
-            return TextureStorageFormat::RGBA_f8;
-        }
-    }
-    case FIT_DOUBLE:
-    case FIT_COMPLEX:
-    case FIT_UNKNOWN:
-        break;
-    }
-    return TextureStorageFormat::UNKNOWN;
-}
-
 intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc) const {
     using namespace Graphics;
     intrusive_ptr<Mesh> mesh = graphics_api->create_mesh();
     mesh->set_layout(desc.vertex_layout);
 
-    intrusive_ptr<Buffer> vertex_buffer = graphics_api->create_buffer((uint32_t)desc.raw_vertices.get_size(), BufferType::STATIC);
+    intrusive_ptr<Buffer> vertex_buffer =
+        graphics_api->create_buffer((uint32_t)desc.raw_vertices.get_size(), BufferType::STATIC);
     vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>(), 0);
     mesh->set_vertex_buffer(vertex_buffer);
 
@@ -146,26 +63,50 @@ intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::Materi
     return mat;
 }
 
+static Graphics::TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept {
+    Graphics::TextureStorageFormat storage_type = Graphics::TextureStorageFormat::UNKNOWN;
+    switch (image.get_channel()) {
+    case 1: {
+        storage_type = image.is_float() ? Graphics::TextureStorageFormat::R_f32 : Graphics::TextureStorageFormat::R_f8;
+        break;
+    }
+    case 2:
+    case 3: {
+        storage_type =
+            image.is_float() ? Graphics::TextureStorageFormat::RGB_f32 : Graphics::TextureStorageFormat::RGB_f8;
+        break;
+    }
+    case 4: {
+        storage_type =
+            image.is_float() ? Graphics::TextureStorageFormat::RGBA_f32 : Graphics::TextureStorageFormat::RGBA_f8;
+        break;
+    }
+    }
+    return storage_type;
+}
+
 intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &desc) const {
-    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path, desc.is_color);
+    stb::Image image = stb::Image::load(desc.path, desc.is_color);
+    if (!image) {
+        throw RuntimeError(std::format("图像{}加载失败", desc.path.string()));
+    }
 
-    unsigned int nWidth = FreeImage_GetWidth(pImage);
-    unsigned int nHeight = FreeImage_GetHeight(pImage);
+    uint32_t width = image.get_width();
+    uint32_t height = image.get_height();
 
-    Graphics::TextureStorageFormat storage_type = get_proper_storage_type(pImage);
+    Graphics::TextureStorageFormat storage_type = get_proper_storage_type(image);
+
     if (storage_type == Graphics::TextureStorageFormat::UNKNOWN) {
         throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", desc.path.string()));
     }
-    Graphics::TextureCreateDesc texture_desc{Graphics::TextureType::TEXTURE_2D, storage_type, {nWidth, nHeight, 0}};
+    Graphics::TextureCreateDesc texture_desc{Graphics::TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
 
     intrusive_ptr<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
     texture->set_warp_mode(desc.warp_mode);
 
-    texture->import_image(pImage, 0);
+    texture->import_image(image, 0);
     texture->generate_mipmaps();
-
-    FreeImage_Unload(pImage);
 
     return texture;
 };
@@ -173,31 +114,35 @@ intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &d
 intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCubeMapDesc &desc) const {
     using Graphics::TextureStorageFormat;
     // 使用第一张图像的宽高信息分配纹理空间
-    FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[0], desc.is_color);
+    stb::Image image = stb::Image::load(desc.path[0], desc.is_color);
+    if (!image) {
+        throw RuntimeError(std::format("图像{}加载失败", desc.path[0].string()));
+    }
 
-    unsigned int nWidth = FreeImage_GetWidth(pImage);
-    unsigned int nHeight = FreeImage_GetHeight(pImage);
+    int width = image.get_width();
+    int height = image.get_height();
 
-    TextureStorageFormat storage_type = get_proper_storage_type(pImage);
+    TextureStorageFormat storage_type = get_proper_storage_type(image);
     if (storage_type == TextureStorageFormat::UNKNOWN) {
         throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", desc.path[0].string()));
     }
     Graphics::TextureCreateDesc texture_desc{
-        Graphics::TextureType::TEXTURE_CUBEMAP, storage_type, {nWidth, nHeight, 0}};
+        Graphics::TextureType::TEXTURE_CUBEMAP, storage_type, {(uint32_t)width, (uint32_t)height, 0}};
     intrusive_ptr<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
 
-    texture->import_image(pImage, 0, 0, 0, 0);
-    FreeImage_Unload(pImage);
+    texture->import_image(image, 0, 0, 0, 0);
 
     // 加载其余方向上的图像
     for (unsigned int i = 1; i < desc.path.size(); i++) {
-        FIBITMAP *pImage = freeimage_load_and_convert_image(desc.path[i], desc.is_color); // NOLINT
-        if (nWidth != FreeImage_GetWidth(pImage) || nHeight != FreeImage_GetHeight(pImage)) {
+        stb::Image image = stb::Image::load(desc.path[i], desc.is_color);
+        if (!image) {
+            throw RuntimeError(std::format("图像{}加载失败", desc.path[i].string()));
+        }
+        if (width != image.get_width() || height != image.get_height()) {
             throw RuntimeError(std::format("CubeMap{}的大小不一致", desc.path[i].string()));
         }
-        texture->import_image(pImage, 0, 0, 0, i);
-        FreeImage_Unload(pImage);
+        texture->import_image(image, 0, 0, 0, i);
     }
     texture->generate_mipmaps();
 
