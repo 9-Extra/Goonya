@@ -1,8 +1,9 @@
 #include <core/world/World.h>
 #include <exception>
+#include <iostream>
 #include <memory>
+#include <print>
 #include <resource/scene/scene.h>
-#include <nowide/iostream.hpp>
 #include <runtime/Goonya.h>
 
 #include "core/world/GObject.h"
@@ -28,10 +29,10 @@ int main() {
 
         Goonya::drop_engine();
     } catch (const std::exception &e) {
-        nowide::cerr << "抛出异常：" << typeid(e).name() << "：" << e.what() << std::endl;
+        std::println(std::cerr, "抛出异常{}: {}", typeid(e).name(), e.what());
     }
 
-    nowide::cerr << "正常关闭" << std::endl;
+    std::println(std::cerr, "正常关闭");
 
     return 0;
 }

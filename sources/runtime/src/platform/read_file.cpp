@@ -2,13 +2,14 @@
 #include "runtime/GoonyaException.h"
 
 #include <format>
-#include <fstream>
+#include <fstream> // IWYU pragma: keep
 
 namespace Goonya {
 
 std::string read_whole_file(const std::filesystem::path &path) {
-    std::ifstream f(path, std::ios::in | std::ios::binary);
-    if (!f) {
+    std::filebuf fb;
+    fb.open(path, std::ios::in | std::ios::binary);
+    if (!fb.is_open()) {
         throw RuntimeError(std::format("Fail to open file {}", path.string()));
     }
 
@@ -19,7 +20,7 @@ std::string read_whole_file(const std::filesystem::path &path) {
     std::string result(sz, '\0');
 
     // Read the whole file into the buffer.
-    f.read(result.data(), sz);
+    fb.sgetn(result.data(), sz);
 
     return result;
 }

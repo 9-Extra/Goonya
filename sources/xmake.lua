@@ -1,4 +1,3 @@
-add_requires("nowide_standalone")
 add_requires("imgui", {configs = {glfw_opengl3 = true}})
 add_requires("glfw")
 -- 在Windows上，spdlog需要SPDLOG_UTF8_TO_WCHAR_CONSOLE以将输出到命令行的日志转换为wchar以避免乱码，此设置还需要开启wchar支持

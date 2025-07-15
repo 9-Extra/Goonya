@@ -5,7 +5,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
-#include <nowide/convert.hpp>
 #include <spdlog/async.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>

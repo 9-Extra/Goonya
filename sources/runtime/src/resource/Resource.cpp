@@ -5,7 +5,6 @@
 
 #include <cassert>
 #include <cstdint>
-#include <nowide/convert.hpp>
 
 namespace Goonya::Resource {
 
