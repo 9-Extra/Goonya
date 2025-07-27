@@ -6,6 +6,7 @@
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
+#include "platform/graphics/UberShader.h"
 #include <string>
 #include <unordered_map>
 #include <vector>

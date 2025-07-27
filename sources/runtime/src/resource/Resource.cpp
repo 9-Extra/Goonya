@@ -27,8 +27,6 @@ intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc
 
     mesh->submeshes = desc.sub_meshes;
 
-    mesh->update();
-
     return mesh;
 }
 
@@ -84,7 +82,7 @@ static Graphics::TextureStorageFormat get_proper_storage_type(const stb::Image &
     return storage_type;
 }
 
-intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &desc) const {
+intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Graphics::Texture2DDesc &desc) const {
     stb::Image image = stb::Image::load(desc.path, desc.is_color);
     if (!image) {
         throw RuntimeError(std::format("图像{}加载失败", desc.path.string()));
@@ -110,7 +108,7 @@ intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Texture2DDesc &d
     return texture;
 };
 
-intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const TextureCubeMapDesc &desc) const {
+intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const Graphics::TextureCubeMapDesc &desc) const {
     using Graphics::TextureStorageFormat;
     // 使用第一张图像的宽高信息分配纹理空间
     stb::Image image = stb::Image::load(desc.path[0], desc.is_color);

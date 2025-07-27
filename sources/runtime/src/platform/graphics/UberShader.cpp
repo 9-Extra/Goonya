@@ -1,4 +1,5 @@
-#include "Shader.h"
+#include "UberShader.h"
+
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
 #include "resource/Resource.h"
@@ -137,7 +138,6 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->per_object = std::move(buffer_info["per_object"]);
     this->texture_units = introspector->get_texture_info();
 
-    this->global_key_code = 0; // 记得初始化为0！
     // 设置现有的全局变体键
     for (const std::string &key : Resource::resources.shader_lib->get_global_variant_keys()) {
         this->global_variant_key_collect.set_variant_code(this->global_key_code, key);

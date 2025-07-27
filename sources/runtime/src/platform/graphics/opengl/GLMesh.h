@@ -22,7 +22,7 @@ public:
         update();
         glBindVertexArray(vao_id);
     }
-    void update() const noexcept override {
+    void update() const noexcept {
         if (is_dirty) {
             update_VAO();
             is_dirty = false;

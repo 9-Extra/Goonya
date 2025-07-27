@@ -198,7 +198,7 @@ static void load_gltf_material(const AssetKey &base_key, const std::filesystem::
         }
 
         const Json::Value &sampler_info = json["samplers"][texture_info["sampler"].asUInt()];
-        Texture2DDesc desc = {.path = root / url_decode(image_info["uri"].asString()), .is_color = is_color};
+        Graphics::Texture2DDesc desc = {.path = root / url_decode(image_info["uri"].asString()), .is_color = is_color};
         // 不严格支持glTF标准
         if (sampler_info.isMember("magFilter")) {
             uint32_t value = sampler_info["magFilter"].asUInt();

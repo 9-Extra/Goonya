@@ -4,6 +4,7 @@
 #include "platform/image/image.h"
 #include <cstdint>
 
+#include <filesystem>
 #include <tuple>
 
 namespace Goonya::Graphics {
@@ -61,6 +62,20 @@ struct TextureCreateDesc {
     TextureType type;
     TextureStorageFormat format;
     std::tuple<uint32_t, uint32_t, uint32_t> shape;
+};
+
+struct Texture2DDesc {
+    std::filesystem::path path;
+    bool is_color;
+    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
+};
+
+struct TextureCubeMapDesc {
+    std::array<std::filesystem::path, 6> path;
+    bool is_color = false;
+    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
 };
 
 class Texture : public intrusive_ptr_base<Texture> {

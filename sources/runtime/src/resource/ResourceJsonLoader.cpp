@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "GraphicsResourceBuilder.h"
-#include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
 #include "platform/read_file.h"
 #include "resource/Resource.h"
@@ -96,7 +95,7 @@ void load_json(const std::filesystem::path &path) {
         const AssetKey &key = iter.name();
         const Json::Value &texture_desc = *iter;
 
-        Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
+        Graphics::Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
 
         desc.is_color = texture_desc.get("is_color", false).asBool();
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
@@ -111,7 +110,7 @@ void load_json(const std::filesystem::path &path) {
         const AssetKey &key = iter.name();
         const Json::Value &cubemap_desc = *iter;
 
-        TextureCubeMapDesc desc{
+        Graphics::TextureCubeMapDesc desc{
             .path = {base_dir / cubemap_desc["px"].asString(), base_dir / cubemap_desc["nx"].asString(),
                      base_dir / cubemap_desc["py"].asString(), base_dir / cubemap_desc["ny"].asString(),
                      base_dir / cubemap_desc["pz"].asString(), base_dir / cubemap_desc["nz"].asString()}};

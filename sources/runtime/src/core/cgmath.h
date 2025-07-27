@@ -112,7 +112,7 @@ struct Quaternion {
         return Quaternion{sin_theta * axis.x, sin_theta * axis.y, sin_theta * axis.z, cos_theta};
     }
 
-    // 按XYZ顺序顺时针，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度。实际计算顺序和逻辑上的应用顺序相反
+    // 按XYZ顺序顺时针，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度
     static Quaternion from_eular(Vector3f rotate) {
         return Quaternion::from_rotation({1, 0, 0}, rotate.x) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
                Quaternion::from_rotation({0, 0, 1}, rotate.z);

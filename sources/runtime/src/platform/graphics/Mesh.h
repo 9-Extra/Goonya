@@ -93,8 +93,6 @@ public:
     virtual ~Mesh() = default;
 
     virtual void bind() const noexcept = 0;
-    virtual void update() const noexcept = 0;
-
 
     const VertexLayout &get_layout() const noexcept { return layout; }
 
