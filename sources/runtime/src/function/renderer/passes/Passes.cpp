@@ -12,7 +12,6 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
-#include "resource/Resource.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -61,7 +60,7 @@ void LambertianPass::run() {
         // 填充结束
     }
 
-    intrusive_ptr<Material> default_material = Resource::resources.materials.get("default");
+    intrusive_ptr<Material> default_material = resources.materials.get("default");
 
     // 遍历所有part，绘制每一个part
     for (const MeshRenderProxy *mesh : renderer.meshes) {

@@ -2,6 +2,7 @@
 
 #include "core/intrusive_ptr.h"
 #include "platform/image/image.h"
+#include "resource/Resource.h"
 #include <cstdint>
 
 #include <filesystem>
@@ -67,15 +68,15 @@ struct TextureCreateDesc {
 struct Texture2DDesc {
     std::filesystem::path path;
     bool is_color;
-    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
+    TextureFilterMode filter_mode = TextureFilterMode::TRILINEAR;
+    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
 };
 
 struct TextureCubeMapDesc {
     std::array<std::filesystem::path, 6> path;
     bool is_color = false;
-    Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::TRILINEAR;
-    Graphics::TextureWarpMode warp_mode = Graphics::TextureWarpMode::REPEAT;
+    TextureFilterMode filter_mode = TextureFilterMode::TRILINEAR;
+    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
 };
 
 class Texture : public intrusive_ptr_base<Texture> {
@@ -101,5 +102,22 @@ public:
 protected:
     explicit Texture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
 };
+
+class Texture2DContainer final : public Resource::ResourceContainer<Texture2DDesc, Texture> {
+public:
+    Texture2DContainer() : ResourceContainer<Texture2DDesc, Texture>("纹理") {}
+
+protected:
+    intrusive_ptr<Texture> load(const Texture2DDesc &desc) const override;
+};
+
+class TextureCubeMapContainer final : public Resource::ResourceContainer<TextureCubeMapDesc, Texture> {
+public:
+    TextureCubeMapContainer() : ResourceContainer<TextureCubeMapDesc, Texture>("纹理") {}
+
+protected:
+    intrusive_ptr<Texture> load(const TextureCubeMapDesc &desc) const override;
+};
+
 
 } // namespace Goonya::Graphics

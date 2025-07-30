@@ -12,7 +12,7 @@
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/Texture.h"
 #include "resource/GraphicsResourceBuilder.h"
-#include "resource/Resource.h"
+#include "resource/ResMng.h"
 #include "resource/scene/scene.h"
 
 #include "runtime/GoonyaException.h"

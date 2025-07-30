@@ -1,0 +1,24 @@
+#include "Mesh.h"
+#include "platform/graphics/Graphics.h"
+
+namespace Goonya::Graphics {
+
+intrusive_ptr<Mesh> MeshContainer::load(const MeshDesc &desc) const {
+    intrusive_ptr<Mesh> mesh = graphics_api->create_mesh();
+    mesh->set_layout(desc.vertex_layout);
+
+    intrusive_ptr<Buffer> vertex_buffer =
+        graphics_api->create_buffer((uint32_t)desc.raw_vertices.get_size(), BufferType::STATIC);
+    vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>(), 0);
+    mesh->set_vertex_buffer(vertex_buffer);
+
+    intrusive_ptr<Buffer> indices_buffer =
+        graphics_api->create_buffer(uint32_t(desc.indices.size() * sizeof(uint32_t)), BufferType::STATIC);
+    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint32_t)), 0);
+    mesh->set_indices_buffer(indices_buffer);
+
+    mesh->submeshes = desc.sub_meshes;
+
+    return mesh;
+}
+} // namespace Goonya::Graphics

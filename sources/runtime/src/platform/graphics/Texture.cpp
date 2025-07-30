@@ -1,64 +1,7 @@
-#include "Resource.h"
+#include "Texture.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/Texture.h"
-#include "runtime/GoonyaException.h"
 
-#include <cassert>
-#include <cstdint>
-
-namespace Goonya::Resource {
-
-RenderResource resources; // Global
-
-intrusive_ptr<Graphics::Mesh> MeshContainer::load(const Graphics::MeshDesc &desc) const {
-    using namespace Graphics;
-    intrusive_ptr<Mesh> mesh = graphics_api->create_mesh();
-    mesh->set_layout(desc.vertex_layout);
-
-    intrusive_ptr<Buffer> vertex_buffer =
-        graphics_api->create_buffer((uint32_t)desc.raw_vertices.get_size(), BufferType::STATIC);
-    vertex_buffer->write(desc.raw_vertices.as_span<uint8_t>(), 0);
-    mesh->set_vertex_buffer(vertex_buffer);
-
-    intrusive_ptr<Buffer> indices_buffer =
-        graphics_api->create_buffer(uint32_t(desc.indices.size() * sizeof(uint32_t)), BufferType::STATIC);
-    indices_buffer->write(std::span((uint8_t *)desc.indices.data(), desc.indices.size() * sizeof(uint32_t)), 0);
-    mesh->set_indices_buffer(indices_buffer);
-
-    mesh->submeshes = desc.sub_meshes;
-
-    return mesh;
-}
-
-intrusive_ptr<Graphics::Material> MaterialContainer::load(const Graphics::MaterialDesc &desc) const {
-    intrusive_ptr<Graphics::Material> mat =
-        make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
-    mat->set_pipeline_state(desc.pipeline_state);
-
-    for (const auto &[name, value] : desc.parameters) {
-        mat->set_param(name, value);
-    }
-    for (const auto &[name, texture_type, texture_key] : desc.textures) {
-        switch (texture_type) {
-
-        case Graphics::TextureType::UNKNOWN: {
-            throw RuntimeError(std::format("纹理资源\"{}\"类型未指定", texture_key));
-        }
-        case Graphics::TextureType::TEXTURE_2D: {
-            mat->set_texture(name, resources.texture2ds.get(texture_key));
-            break;
-        }
-        case Graphics::TextureType::TEXTURE_CUBEMAP: {
-            mat->set_texture(name, resources.cubemaps.get(texture_key));
-            break;
-        }
-        default: {
-            assert(false); // todo
-        }
-        }
-    }
-    return mat;
-}
+namespace Goonya::Graphics {
 
 static Graphics::TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept {
     Graphics::TextureStorageFormat storage_type = Graphics::TextureStorageFormat::UNKNOWN;
@@ -146,4 +89,4 @@ intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const Graphics::T
     return texture;
 };
 
-} // namespace Goonya::Resource
+} // namespace Goonya::Graphics

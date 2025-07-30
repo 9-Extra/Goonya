@@ -7,6 +7,7 @@
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/UberShader.h"
+#include "resource/Resource.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -32,7 +33,7 @@ struct MaterialDesc {
     std::vector<std::tuple<std::string, TextureType, AssetKey>> textures; // (着色器中名称, 纹理类型，资源键)
 
     AssetKey uber_shader_name;
-    std::vector<std::string> variant_keys; // 不区分全局和局部
+    std::vector<std::string> local_variant_keys;
 
     PipeLineState pipeline_state;
 };
@@ -68,9 +69,7 @@ public:
         update_parameter();
     }
 
-    UberShader* get_uber_shader() const noexcept{
-        return uber_shader;
-    }
+    UberShader *get_uber_shader() const noexcept { return uber_shader; }
 
     void set_pipeline_state(const PipeLineState &state) noexcept { pipeline_state = state; }
 
@@ -91,6 +90,14 @@ public:
 protected:
     void update_shader_variant();
     void update_parameter();
+};
+
+class MaterialContainer final : public Resource::ResourceContainer<MaterialDesc, Material> {
+public:
+    MaterialContainer() : ResourceContainer<MaterialDesc, Material>("材质") {}
+
+protected:
+    intrusive_ptr<Material> load(const MaterialDesc &desc) const override;
 };
 
 } // namespace Goonya::Graphics

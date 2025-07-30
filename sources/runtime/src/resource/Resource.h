@@ -4,7 +4,6 @@
 #include <json/config.h>
 #include <json/json.h>
 #include <json/value.h>
-#include <memory>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -13,11 +12,6 @@
 #include "core/assets.h"
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
-#include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
-#include "platform/graphics/UberShader.h"
-#include "platform/graphics/Texture.h"
-#include "resource/scene/scene.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya::Resource {
@@ -106,68 +100,5 @@ public:
 protected:
     virtual intrusive_ptr<TAsset> load(const TDesc &desc) const = 0;
 };
-
-class MeshContainer final : public ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
-public:
-    MeshContainer() : ResourceContainer<Graphics::MeshDesc, Graphics::Mesh>("网格") {}
-
-protected:
-    intrusive_ptr<Graphics::Mesh> load(const Graphics::MeshDesc &desc) const override;
-};
-
-class MaterialContainer final : public ResourceContainer<Graphics::MaterialDesc, Graphics::Material> {
-public:
-    MaterialContainer() : ResourceContainer<Graphics::MaterialDesc, Graphics::Material>("材质") {}
-
-protected:
-    intrusive_ptr<Graphics::Material> load(const Graphics::MaterialDesc &desc) const override;
-};
-
-class Texture2DContainer final : public ResourceContainer<Graphics::Texture2DDesc, Graphics::Texture> {
-public:
-    Texture2DContainer() : ResourceContainer<Graphics::Texture2DDesc, Graphics::Texture>("纹理") {}
-
-protected:
-    intrusive_ptr<Graphics::Texture> load(const Graphics::Texture2DDesc &desc) const override;
-};
-
-class TextureCubeMapContainer final : public ResourceContainer<Graphics::TextureCubeMapDesc, Graphics::Texture> {
-public:
-    TextureCubeMapContainer() : ResourceContainer<Graphics::TextureCubeMapDesc, Graphics::Texture>("纹理") {}
-
-protected:
-    intrusive_ptr<Graphics::Texture> load(const Graphics::TextureCubeMapDesc &desc) const override;
-};
-
-// 资源管理器
-class RenderResource final {
-public:
-    MeshContainer meshes;
-    MaterialContainer materials;
-    Texture2DContainer texture2ds;
-    TextureCubeMapContainer cubemaps;
-    std::unordered_map<AssetKey, Scene::Scene> scenes;
-
-    std::unique_ptr<Graphics::ShaderLib> shader_lib;
-
-    std::unordered_map<AssetKey, Resource *> resource_cache;
-
-public:
-    void init() { shader_lib = std::make_unique<Graphics::ShaderLib>(); }
-
-    void clear() {
-        meshes.clear();
-        materials.clear();
-        texture2ds.clear();
-        shader_lib.reset();
-    }
-
-    void add_shader(const AssetKey &key, Graphics::UberShaderDesc &&desc) const {
-        LOG_INFO("Loading Shader: {}", key);
-        shader_lib->add_uber_shader(key, std::move(desc));
-    }
-};
-
-extern RenderResource resources;
 
 } // namespace Goonya::Resource

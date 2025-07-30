@@ -29,7 +29,7 @@ public:
     }
 
     Graphics::MaterialDesc build() {
-        desc.variant_keys = std::vector<std::string>{std::make_move_iterator(variant_keys.begin()),
+        desc.local_variant_keys = std::vector<std::string>{std::make_move_iterator(variant_keys.begin()),
                                                      std::make_move_iterator(variant_keys.end())};
         return desc;
     }

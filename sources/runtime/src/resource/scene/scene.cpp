@@ -7,7 +7,6 @@
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntSkybox.h"
 #include "platform/graphics/Material.h"
-#include "resource/Resource.h"
 #include "runtime/GoonyaException.h"
 #include <fstream>
 #include <json/json.h>
@@ -48,12 +47,12 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
             if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->set_mesh(Resource::resources.meshes.get(cpnt_desc["mesh"].asString()));
+                cpnt_ptr->set_mesh(resources.meshes.get(cpnt_desc["mesh"].asString()));
             }
             if (cpnt_desc.isMember("material")) {
                 std::vector<intrusive_ptr<Graphics::Material>> materials;
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    materials.emplace_back(Resource::resources.materials.get(material_name.asString()));
+                    materials.emplace_back(resources.materials.get(material_name.asString()));
                 }
                 cpnt_ptr->set_materials(std::span(materials));
             }
@@ -72,7 +71,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
             intrusive_ptr<Graphics::Material> material =
-                Resource::resources.materials.get(cpnt_desc["material"].asString());
+                resources.materials.get(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
             if (cpnt_desc.isMember("bbox")) {

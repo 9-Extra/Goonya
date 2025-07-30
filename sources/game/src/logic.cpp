@@ -6,6 +6,7 @@
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
+#include "resource/ResMng.h"
 
 #include <platform/graphics/Shader.h>
 #include <resource/Resource.h>
@@ -36,7 +37,7 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('F')) {
         static const std::string key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
-        Graphics::ShaderLib *shader_lib = Resource::resources.shader_lib.get();
+        Graphics::ShaderLib *shader_lib = resources.shader_lib.get();
         if (!shader_lib->is_global_variant_key_set(key_name)) {
             shader_lib->set_global_variant_key(key_name);
         } else {
@@ -46,7 +47,7 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('P')) {
         LOG_DEBUG("正在进行图像导出");
-        intrusive_ptr<Graphics::Texture> skybox = Resource::resources.cubemaps.get("skybox_valley_color");
+        intrusive_ptr<Graphics::Texture> skybox = resources.cubemaps.get("skybox_valley_color");
         stb::Image image = skybox->export_image(0);
         image.save("output.hdr");
     }

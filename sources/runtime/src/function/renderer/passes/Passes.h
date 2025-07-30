@@ -3,7 +3,7 @@
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Graphics.h"
-#include "resource/Resource.h"
+#include "resource/ResMng.h"
 
 namespace Goonya::Graphics {
 // Pass 基类
@@ -59,7 +59,7 @@ private:
 public:
     SkyBoxPass()
         : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
-          mesh(Resource::resources.meshes.get("skybox_cube")) {}
+          mesh(resources.meshes.get("skybox_cube")) {}
 
     void run() override;
 };

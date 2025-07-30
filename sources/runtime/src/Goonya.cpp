@@ -14,7 +14,6 @@
 #include "function/renderer/Renderer.h"
 #include "platform/display/display.h"
 #include "platform/imgui/imgui_module.h"
-#include "resource/Resource.h"
 
 
 namespace Goonya {
@@ -107,7 +106,7 @@ void drop_engine() {
 
     world.reset();
     Graphics::renderer.clear();
-    Resource::resources.clear(); // 在设备drop之前清理资源
+    resources.clear(); // 在设备drop之前清理资源
     ImguiMng::drop();
 
     Display::drop();

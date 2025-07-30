@@ -5,6 +5,7 @@
 #include "core/intrusive_ptr.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
+#include "resource/Resource.h"
 #include <cassert>
 #include <cstdint>
 #include <utility>
@@ -82,14 +83,15 @@ class Mesh : public intrusive_ptr_base<Mesh> {
     /* 类内容的大致声明顺序是：公开内部类，公开字段，私有字段，公开方法，私有方法 */
 public:
     std::vector<SubMesh> submeshes;
+
 protected:
     VertexLayout layout;
     intrusive_ptr<Buffer> vertex_buffer;
     intrusive_ptr<Buffer> indices_buffer;
 
     mutable bool is_dirty = true;
+
 public:
-    
     virtual ~Mesh() = default;
 
     virtual void bind() const noexcept = 0;
@@ -121,6 +123,14 @@ public:
 
 protected:
     virtual void _set_debug_label(const std::string &name) const noexcept = 0;
+};
+
+class MeshContainer final : public Resource::ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
+public:
+    MeshContainer() : ResourceContainer<MeshDesc, Mesh>("网格") {}
+
+protected:
+    intrusive_ptr<Mesh> load(const MeshDesc &desc) const override;
 };
 
 } // namespace Goonya::Graphics

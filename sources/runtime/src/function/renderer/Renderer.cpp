@@ -9,7 +9,6 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/RenderTarget.h"
-#include "resource/Resource.h"
 #include "resource/ResourceJsonLoader.h"
 #include <cstdint>
 
@@ -20,11 +19,11 @@ void init_resource() {
     // 部分硬编码的mesh
     MeshDesc plane{Assets::plane_vertices_vertex_layout, Bytes::from_span(std::span(Assets::plane_vertices)),
                    Assets::plane_indices, Topology::TRIANGLE};
-    Resource::resources.meshes.add("plane", std::move(plane));
+    resources.meshes.add("plane", std::move(plane));
     // 添加天空盒的mesh，因为格式不一样所以单独处理
     MeshDesc skybox_cube{Assets::skybox_cube_vertex_layout, Bytes::from_span(std::span(Assets::skybox_cube_vertices)),
                          Assets::skybox_cube_indices, Topology::TRIANGLE};
-    Resource::resources.meshes.add("skybox_cube", std::move(skybox_cube));
+    resources.meshes.add("skybox_cube", std::move(skybox_cube));
     // 从json加载大部分的资源
     Resource::load_json("../assets/resources.json");
 }
@@ -32,7 +31,7 @@ void Renderer::init() {
     current_thread_type = ThreadType::RENDER; // 目前先不拆分线程，资源加载的问题没有解决
     Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
 
-    Resource::resources.init();
+    resources.init();
     init_resource();
 
     lambertian_pass = std::make_unique<LambertianPass>();

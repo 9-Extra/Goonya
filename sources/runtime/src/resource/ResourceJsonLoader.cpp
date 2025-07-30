@@ -10,7 +10,7 @@
 #include "GraphicsResourceBuilder.h"
 #include "platform/graphics/Texture.h"
 #include "platform/read_file.h"
-#include "resource/Resource.h"
+#include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
 
 #include "glTFLoader.h"

@@ -1,5 +1,6 @@
 #include "Material.h"
 #include "platform/graphics/Graphics.h"
+#include "resource/ResMng.h"
 #include <cassert>
 
 namespace Goonya::Graphics {
@@ -64,4 +65,33 @@ void Material::update_parameter() {
     is_parameters_dirty = false;
 }
 
+intrusive_ptr<Material> MaterialContainer::load(const MaterialDesc &desc) const {
+    intrusive_ptr<Graphics::Material> mat =
+        make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
+    mat->set_pipeline_state(desc.pipeline_state);
+
+    for (const auto &[name, value] : desc.parameters) {
+        mat->set_param(name, value);
+    }
+    for (const auto &[name, texture_type, texture_key] : desc.textures) {
+        switch (texture_type) {
+
+        case Graphics::TextureType::UNKNOWN: {
+            throw RuntimeError(std::format("纹理资源\"{}\"类型未指定", texture_key));
+        }
+        case Graphics::TextureType::TEXTURE_2D: {
+            mat->set_texture(name, resources.texture2ds.get(texture_key));
+            break;
+        }
+        case Graphics::TextureType::TEXTURE_CUBEMAP: {
+            mat->set_texture(name, resources.cubemaps.get(texture_key));
+            break;
+        }
+        default: {
+            assert(false); // todo
+        }
+        }
+    }
+    return mat;
+};
 } // namespace Goonya::Graphics

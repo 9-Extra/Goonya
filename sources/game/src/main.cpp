@@ -8,7 +8,7 @@
 
 #include "core/world/GObject.h"
 #include "logic.h"
-#include "resource/Resource.h"
+#include "resource/ResMng.h"
 
 int main() {
     try {
@@ -17,7 +17,7 @@ int main() {
         {
             Goonya::Scene::Scene scene =
                 Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
-            std::shared_ptr<Goonya::GObject> k = Goonya::Resource::resources.scenes.at("科拉莉.Scene").root;
+            std::shared_ptr<Goonya::GObject> k = Goonya::resources.scenes.at("科拉莉.Scene").root;
             k->set_position({2, 0, 0});
             scene.root->attach_child(k);
             Goonya::world.root = std::move(scene.root);

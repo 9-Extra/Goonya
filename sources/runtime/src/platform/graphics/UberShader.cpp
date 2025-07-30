@@ -2,7 +2,7 @@
 
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
-#include "resource/Resource.h"
+#include "resource/ResMng.h"
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -139,7 +139,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->texture_units = introspector->get_texture_info();
 
     // 设置现有的全局变体键
-    for (const std::string &key : Resource::resources.shader_lib->get_global_variant_keys()) {
+    for (const std::string &key : resources.shader_lib->get_global_variant_keys()) {
         this->global_variant_key_collect.set_variant_code(this->global_key_code, key);
     }
 }
