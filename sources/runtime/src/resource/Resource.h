@@ -91,7 +91,7 @@ public:
             }
             return asset;
         } else {
-            throw RuntimeError(std::format("资源\"{}\"未注册", key));
+            throw RuntimeError(std::format("{}\"{}\"未注册", name, key));
         }
     }
 

@@ -93,7 +93,7 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
         sizeof(Vertex)};
 
     for (const Json::Value &mesh : json["meshes"]) {
-        const std::string &key = base_key + '.' + mesh["name"].asString();
+        const std::string &key = std::format("{}:{}", base_key, mesh["name"].asString());
         // 把mesh内部的primitives看作submesh，把所有primitive拼成一个大mesh
         struct PrimitiveInfo {
             Vector3f *pos;
@@ -191,7 +191,7 @@ static void load_gltf_material(const AssetKey &base_key, const std::filesystem::
     auto load_texture = [&](uint32_t index, bool is_color) -> std::string {
         const Json::Value &texture_info = json["textures"][index];
         const Json::Value &image_info = json["images"][texture_info["source"].asUInt()];
-        const std::string key = base_key + '.' + image_info["name"].asString();
+        const std::string key = std::format("{}:{}", base_key, image_info["name"].asString());
 
         if (resources.texture2ds.contains(key)) {
             return key; // 已注册，直接返回
@@ -231,7 +231,7 @@ static void load_gltf_material(const AssetKey &base_key, const std::filesystem::
     // 加载材质
 
     for (const Json::Value &material : json["materials"]) {
-        const std::string &key = base_key + '.' + material["name"].asString();
+        const std::string &key = std::format("{}:{}", base_key, material["name"].asString());
 
         std::string normal_texture = "default_normal";
         if (material.isMember("normalTexture")) {
@@ -262,32 +262,35 @@ static void load_gltf_material(const AssetKey &base_key, const std::filesystem::
     }
 }
 
-static std::shared_ptr<GObject> load_gltf_node(const AssetKey& base_key, const Json::Value &json, uint32_t index){
+static std::shared_ptr<GObject> load_gltf_node(const AssetKey &base_key, const Json::Value &json, uint32_t index) {
     const Json::Value &node_json = json["nodes"][index];
     // 先加载名称和变换
     std::string name = node_json.get("name", "").asString();
     Transform transform;
-    if (node_json.isMember("translation")){
-        transform.position = Vector3f{node_json["translation"][0].asFloat(), node_json["translation"][1].asFloat(), node_json["translation"][2].asFloat()};
+    if (node_json.isMember("translation")) {
+        transform.position = Vector3f{node_json["translation"][0].asFloat(), node_json["translation"][1].asFloat(),
+                                      node_json["translation"][2].asFloat()};
     }
-    if (node_json.isMember("rotation")){
-        transform.rotation = Quaternion{node_json["rotation"][0].asFloat(), node_json["rotation"][1].asFloat(), node_json["rotation"][2].asFloat(), node_json["rotation"][3].asFloat()};
+    if (node_json.isMember("rotation")) {
+        transform.rotation = Quaternion{node_json["rotation"][0].asFloat(), node_json["rotation"][1].asFloat(),
+                                        node_json["rotation"][2].asFloat(), node_json["rotation"][3].asFloat()};
     }
-    if (node_json.isMember("scale")){
-        transform.scale = Vector3f{node_json["scale"][0].asFloat(), node_json["scale"][1].asFloat(), node_json["scale"][2].asFloat()};
+    if (node_json.isMember("scale")) {
+        transform.scale =
+            Vector3f{node_json["scale"][0].asFloat(), node_json["scale"][1].asFloat(), node_json["scale"][2].asFloat()};
     }
     // 构造GObject对象
     std::shared_ptr<GObject> node = std::make_shared<GObject>(transform, name);
 
     // 加载额外属性
-    if (node_json.isMember("mesh")){
-        
+    if (node_json.isMember("mesh")) {
+
         std::unique_ptr<Graphics::CpntMeshRender> mesh_render = std::make_unique<Graphics::CpntMeshRender>();
-        
+
         // 加载Mesh
         uint32_t mesh_id = node_json["mesh"].asUInt();
-        const Json::Value& mesh_json = json["meshes"][mesh_id];
-        AssetKey mesh_key = std::format("{}.{}", base_key, mesh_json["name"].asString());
+        const Json::Value &mesh_json = json["meshes"][mesh_id];
+        AssetKey mesh_key = std::format("{}:{}", base_key, mesh_json["name"].asString());
         intrusive_ptr<Graphics::Mesh> mesh = resources.meshes.get(mesh_key);
         mesh_render->set_mesh(mesh);
 
@@ -295,45 +298,48 @@ static std::shared_ptr<GObject> load_gltf_node(const AssetKey& base_key, const J
         在GTLF中mesh属性中包含了其绑定的每一个材质，但是在Goonya中的mesh并不记录材质，而是在CpntMeshRender中记录材质
         因此我们在这里加载并绑定材质
         */
-        for(const auto& [id, primetive_json]: std::ranges::enumerate_view(mesh_json["primitives"])){
-            if (primetive_json.isMember("material")){
+        for (const auto &[id, primetive_json] : std::ranges::enumerate_view(mesh_json["primitives"])) {
+            if (primetive_json.isMember("material")) {
                 uint32_t material_id = primetive_json["material"].asUInt();
-                AssetKey material_key = std::format("{}.{}", base_key, json["materials"][material_id]["name"].asString());
+                AssetKey material_key =
+                    std::format("{}:{}", base_key, json["materials"][material_id]["name"].asString());
                 mesh_render->set_material(id, resources.materials.get(material_key));
             }
         }
-        
+
         node->add_component(std::move(mesh_render));
     }
-    if (node_json.isMember("skin")){
+    if (node_json.isMember("skin")) {
         // todo
     }
-    
+
     // 加载子节点
-    for(const Json::Value &node_index : node_json["children"]){
+    for (const Json::Value &node_index : node_json["children"]) {
         node->attach_child(load_gltf_node(base_key, json, node_index.asUInt()));
     }
-    
+
     return node;
 }
 
-static void load_gltf_scene(const AssetKey &base_key, const std::filesystem::path &path, const Json::Value &json){
-    for(const auto& [id, scene_json] : std::ranges::enumerate_view(json["scenes"])){
+static void load_gltf_scene(const AssetKey &base_key, const std::filesystem::path &path, const Json::Value &json) {
+    for (const auto &[id, scene_json] : std::ranges::enumerate_view(json["scenes"])) {
         Scene::Scene scene;
         // 默认使用其自定义的名称，否则使用下标生成名称，重名会导致错误
-        if (scene_json.isMember("name")){
+        if (scene_json.isMember("name")) {
             scene.name = scene_json["name"].asString();
         } else {
             scene.name = std::format("scene_{}", id);
         }
-        AssetKey res_name = std::format("{}.{}", base_key, scene.name);
+        AssetKey res_name = std::format("{}:{}", base_key, scene.name);
         LOG_TRACE("正在加载场景：\"{}\"", res_name);
 
-        scene.root = std::make_shared<GObject>("scene_root"); // gltf的scene中可能有不止一个根节点，因此另外创建一个根节点
-        for(const Json::Value &node_index: scene_json["nodes"]){
-            scene.root->attach_child(load_gltf_node(base_key, json, node_index.asUInt()));
-        }
-        resources.scenes.emplace(std::move(res_name), std::move(scene));
+        // scene.root =
+        //     std::make_shared<GObject>("scene_root"); // gltf的scene中可能有不止一个根节点，因此另外创建一个根节点
+        // for (const Json::Value &node_index : scene_json["nodes"]) {
+        //     scene.root->attach_child(load_gltf_node(base_key, json, node_index.asUInt()));
+        // }
+        // resources.scenes.emplace(std::move(res_name), std::move(scene));
+        resources.scenes.emplace(std::move(res_name), Scene::Scene());
     }
 }
 

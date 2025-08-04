@@ -1,0 +1,8 @@
+{
+    "type": "Texture",
+    "name": "black",
+    "content": {
+        "is_color": true,
+        "image": "black.jpg"
+    }
+}

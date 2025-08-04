@@ -1,0 +1,7 @@
+{
+    "type": "Texture",
+    "name": "default_normal",
+    "content": {
+        "image": "normal.jpg"
+    }
+}

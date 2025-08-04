@@ -1,0 +1,8 @@
+{
+    "type": "Texture",
+    "name": "white",
+    "content": {
+        "is_color": true,
+        "image": "white.jpg"
+    }
+}

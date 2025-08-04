@@ -50,7 +50,7 @@
                             "mesh_render": {
                                 "mesh": "plane",
                                 "material": [
-                                    "crafting_table.front"
+                                    "models/crafting_table/crafting_table.gltf:front"
                                 ]
                             }
                         }
@@ -73,7 +73,7 @@
                             "mesh_render": {
                                 "mesh": "plane",
                                 "material": [
-                                    "crafting_table.side"
+                                    "models/crafting_table/crafting_table.gltf:side"
                                 ]
                             }
                         }
@@ -96,7 +96,7 @@
                             "mesh_render": {
                                 "mesh": "plane",
                                 "material": [
-                                    "crafting_table.top"
+                                    "models/crafting_table/crafting_table.gltf:top"
                                 ]
                             }
                         }
@@ -119,7 +119,7 @@
                             "mesh_render": {
                                 "mesh": "plane",
                                 "material": [
-                                    "gold.gold"
+                                    "models/gold/gold.gltf:gold"
                                 ]
                             }
                         }
@@ -142,7 +142,7 @@
                             "mesh_render": {
                                 "mesh": "plane",
                                 "material": [
-                                    "crafting_table.side"
+                                    "models/crafting_table/crafting_table.gltf:side"
                                 ]
                             }
                         }
@@ -165,7 +165,7 @@
                             "mesh_render": {
                                 "mesh": "plane",
                                 "material": [
-                                    "crafting_table.side"
+                                    "models/crafting_table/crafting_table.gltf:side"
                                 ]
                             }
                         }
@@ -191,9 +191,9 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "wood_floor.Sphere",
+                                "mesh": "models/wood_floor_deck/wood_floor_deck_1k.gltf:Sphere",
                                 "material": [
-                                    "wood_floor.wood_floor_deck"
+                                    "models/wood_floor_deck/wood_floor_deck_1k.gltf:wood_floor_deck"
                                 ]
                             },
                             "camera": {
@@ -222,9 +222,9 @@
                 },
                 "components": {
                     "mesh_render": {
-                        "mesh": "teapot.teapot",
+                        "mesh": "models/teapot/teapot.gltf:teapot",
                         "material": [
-                            "wood_floor.wood_floor_deck"
+                            "models/wood_floor_deck/wood_floor_deck_1k.gltf:wood_floor_deck"
                         ]
                     }
                 }
@@ -250,35 +250,35 @@
                 },
                 "components": {
                     "mesh_render": {
-                        "mesh": "科拉莉.不朽龙裔科拉莉",
+                        "mesh": "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:不朽龙裔科拉莉",
                         "material": [
-                            "科拉莉.面",
-                            "科拉莉.眉",
-                            "科拉莉.睫",
-                            "科拉莉.目白",
-                            "科拉莉.目",
-                            "科拉莉.目影",
-                            "科拉莉.口",
-                            "科拉莉.舌",
-                            "科拉莉.齿",
-                            "科拉莉.唇线",
-                            "科拉莉.首",
-                            "科拉莉.肌",
-                            "科拉莉.前发",
-                            "科拉莉.发",
-                            "科拉莉.龙角",
-                            "科拉莉.耳饰",
-                            "科拉莉.体甲",
-                            "科拉莉.里衣",
-                            "科拉莉.披风",
-                            "科拉莉.披风2",
-                            "科拉莉.手甲",
-                            "科拉莉.腿甲",
-                            "科拉莉.翅膀",
-                            "科拉莉.翅膀骨",
-                            "科拉莉.尾巴",
-                            "科拉莉.肌+",
-                            "科拉莉.黑发+"
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:面",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:眉",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:睫",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:目白",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:目",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:目影",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:口",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:舌",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:齿",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:唇线",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:首",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:肌",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:前发",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:发",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:龙角",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:耳饰",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:体甲",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:里衣",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:披风",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:披风2",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:手甲",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:腿甲",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:翅膀",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:翅膀骨",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:尾巴",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:肌+",
+                            "禁止二次配布/不朽龙裔科拉莉gltf/科拉莉.gltf:黑发+"
                         ]
                     }
                 }
@@ -333,7 +333,7 @@
                     "mesh_render": {
                         "mesh": "plane",
                         "material": [
-                            "stone.stone"
+                            "models/stone/stone.gltf:stone"
                         ]
                     }
                 }
@@ -353,9 +353,9 @@
                 },
                 "components": {
                     "mesh_render": {
-                        "mesh": "gold.\u7acb\u65b9\u4f53",
+                        "mesh": "models/gold/gold.gltf:立方体",
                         "material": [
-                            "gold.gold"
+                            "models/gold/gold.gltf:gold"
                         ]
                     }
                 }

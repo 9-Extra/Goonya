@@ -1,0 +1,8 @@
+{
+    "type": "Texture",
+    "name": "wood_diffusion",
+    "content": {
+        "is_color": true,
+        "image": "wood.jpg"
+    }
+}

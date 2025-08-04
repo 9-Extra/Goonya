@@ -1,0 +1,8 @@
+{
+    "type": "Texture",
+    "name": "正",
+    "content": {
+        "is_color": true,
+        "image": "正.png"
+    }
+}

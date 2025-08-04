@@ -1,0 +1,16 @@
+{
+    "type": "UberShader",
+    "name": "irradiance",
+    "content": {
+        "sources": {
+            "vertex_shader": "irradiance.vert",
+            "pixel_shader": "irradiance.frag"
+        },
+        "global_variants": [
+            [
+                "",
+                "GYA_IBL_ENVIRONMENT_LIGHT"
+            ]
+        ]
+    }
+}

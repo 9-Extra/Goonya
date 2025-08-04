@@ -1,0 +1,10 @@
+{
+    "type": "Material",
+    "name": "default",
+    "content": {
+        "uber_shader": "single_color",
+        "parameters": {
+            "color": "vec3(0, 1, 0)"
+        }
+    }
+}

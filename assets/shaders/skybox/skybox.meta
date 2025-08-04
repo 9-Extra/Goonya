@@ -1,0 +1,10 @@
+{
+    "type": "UberShader",
+    "name": "skybox",
+    "content": {
+        "sources": {
+            "vertex_shader": "vs.vert",
+            "pixel_shader": "ps.frag"
+        }
+    }
+}

@@ -1,0 +1,13 @@
+{
+    "type": "Material",
+    "name": "wood_flat",
+    "content": {
+        "uber_shader": "unlit",
+        "parameters": {
+            "emissive": "vec3(1, 1, 1)"
+        },
+        "samplers": {
+            "emissive_texture": "texture2d(wood_diffusion)"
+        }
+    }
+}
