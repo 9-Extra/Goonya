@@ -60,7 +60,7 @@ void LambertianPass::run() {
         // 填充结束
     }
 
-    intrusive_ptr<Material> default_material = resources.materials.get("default");
+    intrusive_ptr<Material> default_material = resources.materials.get("materials/default");
 
     // 遍历所有part，绘制每一个part
     for (const MeshRenderProxy *mesh : renderer.meshes) {

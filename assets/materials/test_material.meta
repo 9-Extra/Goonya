@@ -2,12 +2,12 @@
     "type": "Material",
     "name": "test_material",
     "content": {
-        "uber_shader": "unlit",
+        "uber_shader": "shaders/unlit/unlit",
         "parameters": {
             "emissive": "vec3(1, 1, 1)"
         },
         "samplers": {
-            "emissive_texture": "texture2d(正)"
+            "emissive_texture": "texture2d(textures/正)"
         }
     }
 }

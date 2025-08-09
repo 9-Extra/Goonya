@@ -8,7 +8,7 @@
                 "components": {
                     "sky_box": {
                         "ignore_range": true,
-                        "material": "skybox_valley"
+                        "material": "materials/skybox_valley"
                     }
                 }
             },
@@ -306,7 +306,7 @@
                     "mesh_render": {
                         "mesh": "plane",
                         "material": [
-                            "test_material"
+                            "materials/test_material"
                         ]
                     }
                 }

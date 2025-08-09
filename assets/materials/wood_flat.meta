@@ -2,7 +2,7 @@
     "type": "Material",
     "name": "wood_flat",
     "content": {
-        "uber_shader": "unlit",
+        "uber_shader": "shaders/unlit/unlit",
         "parameters": {
             "emissive": "vec3(1, 1, 1)"
         },

@@ -153,19 +153,22 @@ static void parse_material_paramter(Resource::MaterialBuilder &mat_builder, cons
 }
 
 void RenderResource::try_load(const std::filesystem::path &path) {
-    LOG_INFO("{}", path_to_key(path));
-
+    
     std::ifstream file(path, std::ios::binary | std::ios::in);
     if (!file) {
         throw RuntimeError("打开文件失败");
     }
-
+    
     Json::Value meta;
     if (!Json::parseFromStream(Json::CharReaderBuilder(), file, &meta, nullptr)) {
         throw RuntimeError("解析Json出错");
     }
+    const AssetKey &key = path_to_key(path);
+    if (key.empty()){
+        throw RuntimeError("键未能正常生成");
+    }
+
     std::filesystem::path base_dir = path.parent_path();
-    const AssetKey &key = meta["name"].asString();
     const std::string &res_type = meta["type"].asString();
     const Json::Value &content = meta["content"];
     if (res_type == "Texture") {

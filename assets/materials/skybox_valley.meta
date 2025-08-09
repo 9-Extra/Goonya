@@ -2,14 +2,14 @@
     "type": "Material",
     "name": "skybox_valley",
     "content": {
-        "uber_shader": "skybox",
+        "uber_shader": "shaders/skybox/skybox",
         "config": {
             "depth_func": "less_equal"
         },
         "variant_keys": [],
         "parameters": {},
         "samplers": {
-            "skybox_specular_texture": "cubemap(skybox_valley_color)"
+            "skybox_specular_texture": "cubemap(skybox/valley/valley)"
         }
     }
 }

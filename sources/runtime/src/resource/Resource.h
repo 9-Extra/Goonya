@@ -16,53 +16,6 @@
 
 namespace Goonya::Resource {
 
-class Resource;
-
-struct ResourceClassInfo {
-    Resource *(*creator)(); // 无参构造函数，调用后返回Resource*
-};
-
-// 抄Godot的ClassDB，但现在只管Resource
-// 所有成员都是静态的
-class ResourceClassDB final {
-private:
-    static std::unordered_map<std::string, ResourceClassInfo> class_infos;
-
-public:
-    template <class T>
-    static void register_class() noexcept {
-        class_infos.emplace(T::get_class_name_static(), ResourceClassInfo{[]() { return T::T(); }});
-    }
-
-    static bool is_class_registered(const std::string &class_name) noexcept { return class_infos.contains(class_name); }
-
-    static const std::unordered_map<std::string, ResourceClassInfo> &get_class_info() noexcept { return class_infos; }
-};
-
-#define DEFINE_CLASS(class_name, desc_type)                                                                            \
-    friend class ::Goonya::Resource::ResourceClassDB;                                                                  \
-    static const std::string_view get_class_name_static() noexcept { return #class_name; }                             \
-    virtual std::string_view get_class_name() const noexcept { return #class_name; }                                   \
-    using DescType = desc_type;                                                                                                             \
-private:
-
-// 所有资源继承此类
-class Resource : public intrusive_ptr_base<Resource> {
-    DEFINE_CLASS(Resource, int);
-
-private:
-    std::string name; // 单纯为了看，没有查找等用途
-
-public:
-    Resource() = default;
-    virtual ~Resource() = default;
-
-    const std::string &get_name() const noexcept { return name; }
-    void set_name(std::string name) noexcept { this->name = std::move(name); }
-
-
-};
-
 template <class TDesc, class TAsset>
 class ResourceContainer {
 protected:

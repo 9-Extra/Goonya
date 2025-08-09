@@ -18,8 +18,6 @@ public:
 
     std::unique_ptr<Graphics::ShaderLib> shader_lib;
 
-    std::unordered_map<AssetKey, Resource::Resource *> resource_cache;
-
 private:
     std::filesystem::path resource_dir;
 
@@ -41,7 +39,11 @@ public:
     }
 
     AssetKey path_to_key(const std::filesystem::path& path){
-        return std::filesystem::relative(path, resource_dir).string();
+        std::string relative_path = std::filesystem::relative(path, resource_dir).string();
+        if (relative_path.ends_with(".meta")){
+            relative_path.resize(relative_path.size() - 5);
+        } 
+        return relative_path;
     }
 
     void add_shader(const AssetKey &key, Graphics::UberShaderDesc &&desc) const {

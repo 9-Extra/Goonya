@@ -233,13 +233,13 @@ static void load_gltf_material(const AssetKey &base_key, const std::filesystem::
     for (const Json::Value &material : json["materials"]) {
         const std::string &key = std::format("{}:{}", base_key, material["name"].asString());
 
-        std::string normal_texture = "default_normal";
+        std::string normal_texture = "textures/normal";
         if (material.isMember("normalTexture")) {
             normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
         }
         const std::string basecolor_texture =
             load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
-        std::string metallic_roughness_texture = "white";
+        std::string metallic_roughness_texture = "textures/white";
         if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
             metallic_roughness_texture =
                 load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
@@ -248,7 +248,7 @@ static void load_gltf_material(const AssetKey &base_key, const std::filesystem::
         float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();
         float roughnessFactor = material["pbrMetallicRoughness"].get("roughnessFactor", 1.0).asFloat();
 
-        MaterialBuilder mat_builder("pbr");
+        MaterialBuilder mat_builder("shaders/pbr/pbr");
         Graphics::MaterialDesc desc =
             mat_builder.add_parameter("metallic_factor", metallicFactor)
                 .add_parameter("roughness_factor", roughnessFactor)
