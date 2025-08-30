@@ -1,6 +1,6 @@
 #include "Renderer.h"
 
-#include "core/ThreadType.h"
+#include "core/ThreadUtils.h"
 #include "core/cgmath.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderProxy/Camera.h"

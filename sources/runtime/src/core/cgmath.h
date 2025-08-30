@@ -98,6 +98,11 @@ struct Vector4f {
     constexpr Vector4f(Vector3f vec3, float w) : x(vec3.x), y(vec3.y), z(vec3.z), w(w) {}
 
     constexpr Vector3f get_xyz() const noexcept { return Vector3f{x, y, z}; }
+
+    constexpr float &operator[](size_t i) noexcept { return v[i]; }
+    constexpr const float &operator[](size_t i) const noexcept { return v[i]; }
+    constexpr Vector4f operator*(const float n) const { return {x * n, y * n, z * n, w * n}; }
+    constexpr Vector4f operator/(const float n) const { return *this * (1.0f / n); }
 };
 
 struct Quaternion {
@@ -147,6 +152,10 @@ struct Quaternion {
         // 每次计算后归一化防止浮点误差累积
         *this = Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)}.normalize();
         return *this;
+    }
+
+    bool operator==(this const Quaternion &self, const Quaternion r) noexcept {
+        return self.x == r.x && self.y == r.y && self.z == r.z && self.w == r.w;
     }
 };
 
@@ -243,7 +252,7 @@ struct Matrix4 {
                        m[0][2], m[1][2], m[2][2], m[3][2], m[0][3], m[1][3], m[2][3], m[3][3]};
     }
 
-    constexpr float& operator[](size_t i, size_t j) {
+    constexpr float &operator[](size_t i, size_t j) {
         assert(i < 4 && j < 4);
         return m[i][j];
     }
@@ -258,8 +267,6 @@ struct Matrix4 {
         }
         return r;
     }
-
-
 
     constexpr Vector4f operator*(const Vector4f &right) const {
         Vector4f r;
@@ -311,7 +318,7 @@ struct Transform {
     Vector3f scale;
 
     constexpr explicit Transform(Vector3f position = {0, 0, 0}, Quaternion rotation = Quaternion::identity(),
-                        Vector3f scale = {1, 1, 1})
+                                 Vector3f scale = {1, 1, 1})
         : position(position), rotation(rotation), scale(scale) {}
     static constexpr Transform from_matrix(const Matrix4 &matrix) {
         return Transform{matrix.resolve_translate(), matrix.resolve_rotation(), matrix.resolve_scale()};

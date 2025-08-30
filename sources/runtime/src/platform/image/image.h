@@ -82,7 +82,8 @@ public:
     Image resize(int target_width, int target_height, ResizeMethod method) const noexcept;
 
     int save(const std::string& path) const;
-    static Image load(const std::string& path, bool is_color);
+    static Image load(const std::string& path, bool to_srgb_linear);
+    static Image loadf(const std::string& path, bool to_srgb_linear);
     static Image create_empty(int width, int height, int channel, bool _is_float);
 
     ~Image();

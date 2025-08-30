@@ -109,7 +109,9 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
         break;
     }
     case TextureType::TEXTURE_2D_ARRAY: {
-        assert(false);
+        assert(width != 0 && height != 0 && depth != 0);
+        glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
+        glTextureStorage3D(id, max_mipmap_level(width, height), gl_format, width, height, depth);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP: {

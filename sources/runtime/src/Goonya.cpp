@@ -2,9 +2,9 @@
 #include <filesystem>
 #include <format>
 #include <imgui.h>
-#include <print>
 #include <runtime/Goonya.h>
 
+#include "core/ThreadUtils.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/input/input.h"
@@ -36,6 +36,7 @@ void init_engine() {
     
     Logger::inititalize();
     LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
+    set_current_thread_name("game");
 
     EventBus::initalize();
     Input::initalize();

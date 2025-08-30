@@ -7,11 +7,13 @@
 #include <runtime/Goonya.h>
 
 #include "core/world/GObject.h"
+#include "craft.h"
 #include "logic.h"
 
 int main() {
     try {
         Goonya::init_engine();
+        Craft::initalize();
 
         {
             Goonya::Scene::Scene scene =

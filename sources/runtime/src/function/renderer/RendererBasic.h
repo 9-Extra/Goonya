@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/ThreadType.h" // IWYU pragma: keep
+#include "core/ThreadUtils.h" // IWYU pragma: keep
 
 #include <cassert>
 

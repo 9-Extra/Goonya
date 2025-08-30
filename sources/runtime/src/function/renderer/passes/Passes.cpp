@@ -15,6 +15,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <unordered_map>
 #include <vector>
 
 namespace Goonya::Graphics {
@@ -61,26 +62,39 @@ void LambertianPass::run() {
     }
 
     intrusive_ptr<Material> default_material = resources.materials.get("materials/default");
-
+    struct Batch{ // NOLINT
+        const Mesh* mesh;
+        SubMesh sub_mesh;
+        Matrix4 model_matrix;
+        Matrix4 normal_matrix;
+    };
+    std::unordered_map<Material*, std::vector<Batch>> batcher;
     // 遍历所有part，绘制每一个part
-    for (const MeshRenderProxy *mesh : renderer.meshes) {
-        mesh->mesh->bind();
-        
-        // 填充PerObject参数
-        {
-            StructBufferWriter<PerObjectData> writer(per_object_uniform, BufferMapOption::WRITE_DISCARD);
-            writer->model_matrix = mesh->model_matrix;
-            writer->normal_matrix = mesh->normal_matrix;
-        }
-        const std::vector<SubMesh> submeshes = mesh->mesh->submeshes;
-        // 逐一绘制子网格
-        for (uint32_t i = 0; i < submeshes.size(); i++) {
+    for (const MeshRenderProxy *mesh : renderer.meshes){
+        const Mesh* m = mesh->mesh.get();
+        for (uint32_t i = 0; i < m->submeshes.size(); i++) {
             // 材质未设置时使用默认材质，多出来则无视
             intrusive_ptr<Material> current_material =
                 i < mesh->materials.size() ? mesh->materials[i] : default_material;
-            current_material->bind(); // 绑定材质
-            graphics_api->draw_submesh(submeshes[i]);
+          
+            batcher[current_material.get()].emplace_back(m, m->submeshes[i], mesh->model_matrix, mesh->normal_matrix);
         }
+    }
+
+    for (auto& [material, batch] : batcher) {
+        material->bind();
+
+        for(Batch& item: batch){
+            // 填充PerObject参数
+            {
+                StructBufferWriter<PerObjectData> writer(per_object_uniform, BufferMapOption::WRITE_DISCARD);
+                writer->model_matrix = item.model_matrix;
+                writer->normal_matrix = item.normal_matrix;
+            }
+            item.mesh->bind();
+            graphics_api->draw_submesh(item.sub_mesh);
+        }
+    
     }
 }
 
