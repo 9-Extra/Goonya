@@ -8,9 +8,12 @@
 
 namespace Goonya {
 
-std::shared_ptr<spdlog::logger> core_logger;
+std::shared_ptr<spdlog::logger> core_logger; 
 
-void Logger::inititalize() {
+static Logger logger; // main 函数执行前就初始化
+std::vector<std::shared_ptr<spdlog::sinks::sink>> Logger::sinks;
+
+Logger::Logger() {
     auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
     console_sink->set_level(spdlog::level::trace);
     console_sink->set_pattern("%^[%T][%n][%l] %v%$");
@@ -25,11 +28,9 @@ void Logger::inititalize() {
     spdlog::register_logger(core_logger);
 };
 
-void Logger::drop() {
+Logger::~Logger() {
     core_logger.reset();
     spdlog::drop_all();
 }
-
-std::vector<std::shared_ptr<spdlog::sinks::sink>> Logger::sinks;
 
 } // namespace Goonya

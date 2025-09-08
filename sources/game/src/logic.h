@@ -1,5 +1,6 @@
 #pragma once
 
+#include "craft/level/level.h"
 #include <core/world/GObject.h>
 
 class MoveSystem : public Goonya::Component {
@@ -16,4 +17,6 @@ private:
     std::shared_ptr<Goonya::GObject> light1;
     std::shared_ptr<Goonya::GObject> camera;
     std::shared_ptr<Goonya::GObject> teapot;
+
+    Craft::Level level;
 };

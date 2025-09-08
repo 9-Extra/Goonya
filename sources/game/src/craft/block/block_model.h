@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core.h"
+#include "craft/core/core.h"
 #include "core/cgmath.h"
 
 #include <array>

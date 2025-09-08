@@ -1,8 +1,8 @@
 #pragma once
 
 #include "TextureArrayAllocator.h"
-#include "block_model.h"
-#include "blockstate.h"
+#include "block/block_model.h"
+#include "block/blockstate.h"
 #include "platform/graphics/Texture.h"
 
 #include <cassert>

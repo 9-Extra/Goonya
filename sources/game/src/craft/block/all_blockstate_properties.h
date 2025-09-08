@@ -1,7 +1,8 @@
 #pragma once
 
 #include "blockstate.h"
-#include "core.h"
+#include "craft/core/core.h"
+
 #include <cassert>
 #include <memory>
 #include <optional>

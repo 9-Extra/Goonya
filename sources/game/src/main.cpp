@@ -6,8 +6,10 @@
 #include <resource/scene/scene.h>
 #include <runtime/Goonya.h>
 
+#include "core/log/Log.h"
+#include "core/format_exception.h"
 #include "core/world/GObject.h"
-#include "craft.h"
+#include "craft/craft.h"
 #include "logic.h"
 
 int main() {
@@ -30,7 +32,8 @@ int main() {
 
         Goonya::drop_engine();
     } catch (const std::exception &e) {
-        std::println(std::cerr, "抛出异常{}: {}", typeid(e).name(), e.what());
+        LOG_ERROR(Goonya::format_exception(e));
+        Goonya::core_logger->flush();
     }
 
     std::println(std::cerr, "正常关闭");

@@ -5,7 +5,8 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Texture.h"
 #include "platform/image/image.h"
-#include "resource.h"
+#include "craft/core/resource.h"
+
 #include <cstddef>
 #include <cstdint>
 

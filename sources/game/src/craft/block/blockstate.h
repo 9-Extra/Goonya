@@ -2,7 +2,7 @@
 
 #include "core/hash_helper.h"
 #include "core/log/Log.h"
-#include "registry.h"
+#include "craft/core/registry.h"
 
 #include <algorithm>
 #include <cassert>

@@ -1,6 +1,7 @@
 #include "glTFLoader.h"
 
 #include "core/Bytes.h"
+#include "core/as_u8string.h"
 #include "core/assets.h"
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
@@ -25,6 +26,7 @@
 #include <json/json.h>
 #include <memory>
 #include <ranges>
+#include <string>
 #include <vector>
 
 namespace Goonya::Resource {
@@ -61,7 +63,7 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
     std::vector<Buffer> buffers;
     if (json.isMember("buffers")) {
         for (const Json::Value &buffer : json["buffers"]) {
-            std::filesystem::path bin_path = root / url_decode(buffer["uri"].asString());
+            std::filesystem::path bin_path = root / as_u8string_view(url_decode(buffer["uri"].asString()));
             std::fstream file(bin_path, std::ios_base::in | std::ios_base::binary);
             if (!file) {
                 throw RuntimeError(

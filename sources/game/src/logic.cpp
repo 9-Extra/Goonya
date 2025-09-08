@@ -110,6 +110,8 @@ void MoveSystem::on_register() {
     assert(camera);
     teapot = get_owner()->get_child_by_name("teapot");
     assert(teapot);
+
+    level.prepare_start();
 }
 void MoveSystem::on_tick() {
     handle_keyboard(Goonya::Timer::delta());
@@ -120,4 +122,6 @@ void MoveSystem::on_tick() {
         Goonya::Quaternion::from_eular({Goonya::Timer::delta() * 0.001f, Goonya::Timer::delta() * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
     light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
+
+    level.tick();
 }

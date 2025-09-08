@@ -6,19 +6,17 @@
 
 namespace Goonya {
 
-class Logger {
+class Logger final {
 private:
     static std::vector<std::shared_ptr<spdlog::sinks::sink>> sinks;
 public:
-    Logger() = delete;
-
-    static void inititalize();
-    static void drop();
+    Logger(); // 主要是初始化core_logger
+    ~Logger();
 
     static const std::vector<std::shared_ptr<spdlog::sinks::sink>>& get_sinks() noexcept { return sinks; }
 };
 
-extern std::shared_ptr<spdlog::logger> core_logger;
+extern std::shared_ptr<spdlog::logger> core_logger; // 其实应该放在Logger里面，但这样看起来不错
 
 } // namespace Goonya
 

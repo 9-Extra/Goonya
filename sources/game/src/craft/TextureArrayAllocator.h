@@ -3,8 +3,8 @@
 #include "core/hash_helper.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Texture.h"
-
 #include "platform/image/image.h"
+
 #include <cstdint>
 #include <filesystem>
 #include <string>

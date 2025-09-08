@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include "core/format_exception.h"
 #include "core/log/Log.h"
 
 namespace Goonya {
@@ -49,7 +50,7 @@ public:
                     break;
             }
         } catch (const std::exception &e) {
-            LOG_ERROR("在处理事件 {} 时发生异常：{}", typeid(E).name(), e.what());
+            LOG_ERROR("在处理事件 {} 时发生异常：{}", typeid(E).name(), Goonya::format_exception(e));
         }
     }
 

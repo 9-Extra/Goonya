@@ -1,14 +1,14 @@
 #include "model_manager.h"
 
-#include "block.h"
-#include "block_model.h"
-#include "blockstate.h"
-#include "blockstates.h"
-#include "core.h"
+#include "block/block.h"
+#include "block/block_model.h"
+#include "block/blockstate.h"
+#include "block/blockstates.h"
+#include "craft/core/core.h"
 #include "core/cgmath.h"
 #include "core/log/Log.h"
-#include "registry.h"
-#include "resource.h"
+#include "craft/core/registry.h"
+#include "craft/core/resource.h"
 #include "json/config.h"
 #include "json/value.h"
 
@@ -359,9 +359,9 @@ void ModelManager::load_all_models() {
 
                         BlockModel& m = model.value();
 
-                        bool uvlock = variant_content.get("uvlock", false).asBool();
-                        int32_t rotation_x = variant_content.get("x", 0).asInt();
-                        int32_t rotation_y = variant_content.get("y", 0).asInt();
+                        //bool uvlock = variant_content.get("uvlock", false).asBool();
+                        //int32_t rotation_x = variant_content.get("x", 0).asInt();
+                        //int32_t rotation_y = variant_content.get("y", 0).asInt();
                         
                         blockstate_model_map.emplace(state, bake_model(m, texture_allocator));
                     }

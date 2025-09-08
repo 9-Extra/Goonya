@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <format>
 #include <imgui.h>
+#include <locale>
 #include <runtime/Goonya.h>
 
 #include "core/ThreadUtils.h"
@@ -32,11 +33,10 @@ static uint32_t calculate_fps(float delta_time) {
 }
 
 void init_engine() {
-    std::setlocale(LC_ALL, "en_US.UTF-8"); // 会影响Windows上std::filesystem::path对字符串编码的假设
-    
-    Logger::inititalize();
-    LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
+    std::locale::global(std::locale("")); // 使用系统指定的本地化
     set_current_thread_name("game");
+
+    LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
 
     EventBus::initalize();
     Input::initalize();
@@ -113,6 +113,6 @@ void drop_engine() {
     Display::drop();
     Timer::drop();
 
-    Logger::drop();
+    core_logger->flush();
 }
 } // namespace Goonya

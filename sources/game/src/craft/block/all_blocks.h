@@ -1,8 +1,8 @@
 #pragma once
 
-#include "all_blockstate_properties.h"
 #include "block.h"
-#include "registry.h"
+#include "craft/core/registry.h"
+
 #include <cassert>
 #include <optional>
 

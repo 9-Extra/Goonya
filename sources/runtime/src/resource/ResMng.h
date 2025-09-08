@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/as_u8string.h"
 #include "core/assets.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
@@ -39,7 +40,7 @@ public:
     }
 
     AssetKey path_to_key(const std::filesystem::path& path){
-        std::string relative_path = std::filesystem::relative(path, resource_dir).string();
+        std::string relative_path{as_string_view(std::filesystem::relative(path, resource_dir).u8string())};
         if (relative_path.ends_with(".meta")){
             relative_path.resize(relative_path.size() - 5);
         } 

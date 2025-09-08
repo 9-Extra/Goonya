@@ -1,7 +1,7 @@
 #pragma once
 
 #include "blockstate.h"
-#include "registry.h"
+#include "craft/core/registry.h"
 
 #include <cassert>
 #include <initializer_list>
@@ -35,6 +35,9 @@ public:
 
     std::string_view get_display_name() const noexcept { return display_name; }
     const std::vector<std::unique_ptr<BlockState>> &get_possible_states() const noexcept { return possible_states; }
+    BlockState* get_default_blockstate() const noexcept{
+        return default_blockstate;
+    }
 
 private:
     void build_blockstates();

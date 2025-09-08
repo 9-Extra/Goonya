@@ -1,8 +1,8 @@
 #pragma once
 
-#include "all_blockstate_properties.h"
-#include "all_blocks.h"
-#include "blockstates.h"
+#include "block/all_blockstate_properties.h"
+#include "block/all_blocks.h"
+#include "block/blockstates.h"
 #include "model_manager.h"
 
 namespace Craft{

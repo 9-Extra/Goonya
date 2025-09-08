@@ -15,7 +15,7 @@ void Renderer::init() {
     current_thread_type = ThreadType::RENDER; // 目前先不拆分线程，资源加载的问题没有解决
     Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
 
-    resources.init("../assets/");
+    resources.init(u8"../assets/");
 
     lambertian_pass = std::make_unique<LambertianPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();

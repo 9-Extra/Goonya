@@ -11,6 +11,7 @@
 
 #include "GraphicsResourceBuilder.h"
 #include "HardcodeAssets.h"
+#include "core/format_exception.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/read_file.h"
@@ -41,14 +42,14 @@ void RenderResource::scan() {
          fs::recursive_directory_iterator(resource_dir, fs::directory_options::follow_directory_symlink)) {
         if (dir_entry.is_regular_file()) {
             const fs::path &path = dir_entry.path();
-            std::string ext = path.extension();
-            if (ext == ".meta") {
+            std::u8string ext = path.extension().u8string();
+            if (ext == u8".meta") {
                 try {
                     try_load(path);
                 } catch (const std::exception &e) {
-                    LOG_WARN("加载资源{}时遇到错误：{}", path.generic_string(), e.what());
+                    LOG_WARN("加载资源{}时遇到错误：{}\n{}", path.generic_string(), e.what(), format_exception(e));
                 }
-            } else if (ext == ".gltf") {
+            } else if (ext == u8".gltf") {
                 Resource::load_gltf(path_to_key(path), path);
             }
         }
