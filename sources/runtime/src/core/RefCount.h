@@ -13,10 +13,14 @@ private:
 
 public:
     RefCount() noexcept {
-        ref_count.store(0, std::memory_order::release);
+        // 对象尚未构建，没有多线程会读这个值
+        ref_count.store(0, std::memory_order::relaxed);
     };
     virtual ~RefCount() = default;
-    uint32_t get_ref_count() const noexcept { return ref_count.load(std::memory_order::consume); }
+    uint32_t get_ref_count() const noexcept { 
+        // 这个函数其实没有什么意义，因为引用计数可能下一个瞬间就被改动了，仅用于调试
+        return ref_count.load(std::memory_order::relaxed);
+    }
 
 private:
     template <typename T>
@@ -84,6 +88,9 @@ public:
     T *operator->() noexcept { return ptr; }
 
     explicit operator bool() const noexcept { return ptr != nullptr; }
+    void swap(Ref<T>& other) noexcept {
+        std::swap(ptr, other.ptr);
+    }
 
     void reset() noexcept {
         if (ptr != nullptr) {
@@ -99,6 +106,11 @@ public:
         return Ref<T>{dynamic_cast<T*>(const_cast<U*>(src.get()))};
     }
 };
+
+template<std::derived_from<RefCount> T>
+void swap(Ref<T>& a, Ref<T>& b) noexcept {
+    a.swap(b);
+}
 
 template <std::derived_from<RefCount> T, typename... Args>
     requires std::is_constructible_v<T, Args...>
