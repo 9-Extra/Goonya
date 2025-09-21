@@ -8,9 +8,15 @@
 
 namespace Goonya::Graphics {
 
+enum class BufferBindingType {
+    UNIFORM,
+    SHADER_STORAGE
+};
+
 struct ShaderUniformBlockInfo final {
     Meta::LayoutInfo layout;
-    uint32_t binding{};
+    uint32_t binding = 0;
+    BufferBindingType binding_type = BufferBindingType::UNIFORM;
 };
 
 class Shader : public intrusive_ptr_base<Shader> {

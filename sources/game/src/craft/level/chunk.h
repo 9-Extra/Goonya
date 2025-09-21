@@ -51,18 +51,22 @@ public:
     ChunkState current_state = ChunkState::EMPTY;
     const ChunkPos chunk_pos;
 
-    std::array<BlockState *, CHUNK_BLOCK_COUNT> block_state_data{};
-    std::unordered_map<BlockInnerPos, int, BlockInnerPos::Hasher> block_entity_data;
+    std::array<BlockState *, CHUNK_BLOCK_COUNT> block_states;
+    std::unordered_map<BlockInnerPos, int, BlockInnerPos::Hasher> block_entities;
 
 public:
-    explicit Chunk(ChunkPos chunk_pos) : chunk_pos(chunk_pos) {};
+    explicit Chunk(ChunkPos chunk_pos) : chunk_pos(chunk_pos), block_states() {};
     Chunk(Chunk &) = delete;
 
-    BlockState *get_block_state(BlockInnerPos pos) { return block_state_data[pos.as_index()]; }
-    BlockState *set_block_state(BlockInnerPos pos, BlockState *state, SetBlockOption option) {
-        BlockState *old = block_state_data[pos.as_index()];
-        block_state_data[pos.as_index()] = state;
+    BlockState *get_block_state(BlockInnerPos pos) const noexcept { return block_states[pos.as_index()]; }
+    BlockState *get_block_state(BlockPos pos)  const noexcept { return get_block_state(BlockInnerPos(pos)); }
+    BlockState *set_block_state(BlockInnerPos pos, BlockState *state, SetBlockOption option) noexcept {
+        BlockState *old = block_states[pos.as_index()];
+        block_states[pos.as_index()] = state;
         return old;
+    }
+    BlockState *set_block_state(BlockPos pos, BlockState *state, SetBlockOption option) noexcept {
+        return set_block_state(BlockInnerPos(pos), state, option);
     }
 
 private:

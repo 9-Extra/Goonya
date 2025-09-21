@@ -2,9 +2,12 @@
 
 #include "RenderAspect.h"
 #include "core/cgmath.h"
+#include "core/hash_helper.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RendererBasic.h"
+#include "function/renderer/passes/GeometryPass.h"
+#include "function/renderer/passes/SkyboxPass.h"
 #include "passes/Passes.h"
 
 #include <cassert>
@@ -27,23 +30,23 @@ public:
 
     std::vector<Skybox> current_skyboxs; // 天空盒
 
-    std::unordered_set<MeshRenderProxy *> meshes; // 要渲染的网格
+    std::unordered_set<std::unique_ptr<MeshRenderProxy>, PointerHash, PointerEqual> mesh_proxys; // 要渲染的网格
 
 private:
     // passes
-    std::unique_ptr<LambertianPass> lambertian_pass;
+    std::unique_ptr<GeometryPass> geometry_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
 
 public:
     void init();
 
-    void add_mesh_proxy(MeshRenderProxy *proxy) {
+    void add_mesh_proxy(std::unique_ptr<MeshRenderProxy>&& proxy) {
         ASSERT_RENDER_THREAD();
-        meshes.emplace(proxy);
+        mesh_proxys.emplace(std::move(proxy));
     }
     void remove_mesh_proxy(MeshRenderProxy *proxy) {
         ASSERT_RENDER_THREAD();
-        meshes.erase(meshes.find(proxy));
+        mesh_proxys.erase(mesh_proxys.find(proxy));
     }
 
     void render();

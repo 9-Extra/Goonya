@@ -1,0 +1,12 @@
+{
+    "type": "UberShader",
+    "name": "Terrain",
+    "content": {
+        "sources": {
+            "vertex_shader": "terrain.vert",
+            "pixel_shader": "terrain.frag"
+        },
+        "global_variants": [],
+        "local_variants": []
+    }
+}

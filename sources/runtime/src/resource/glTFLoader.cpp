@@ -1,6 +1,5 @@
 #include "glTFLoader.h"
 
-#include "core/Bytes.h"
 #include "core/as_u8string.h"
 #include "core/assets.h"
 #include "core/cgmath.h"
@@ -150,12 +149,12 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
             total_indices_count += indices_count;
         }
 
-        Bytes raw_vertices(total_vertex_count * sizeof(Vertex));
+        std::vector<std::byte> raw_vertices(total_vertex_count * sizeof(Vertex));
         std::vector<uint32_t> indices(total_indices_count);
         std::vector<Graphics::SubMesh> sub_meshes;
         sub_meshes.reserve(primitive_info.size());
 
-        std::span<Vertex> vertices = raw_vertices.as_span<Vertex>();
+        std::span<Vertex> vertices = std::span((Vertex*)raw_vertices.data(), total_vertex_count);
         uint32_t vertex_offset = 0;
         uint32_t index_offset = 0;
         for (const PrimitiveInfo &info : primitive_info) {

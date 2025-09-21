@@ -3,7 +3,6 @@
 #include "core/ThreadPool.h"
 #include "chunk.h"
 #include "craft/block/all_blocks.h"
-#include "craft/core/LockQueue.h"
 
 #include <future>
 
@@ -11,41 +10,20 @@ namespace Craft {
 
 class ChunkGenerator {
 private:
-    std::vector<std::future<void>> chunks_processing;
-    std::mutex mutex;
-
-    int32_t air_layer = 60;
+    int32_t air_layer = 128;
 
 public:
     ChunkGenerator() noexcept = default;
-    ~ChunkGenerator() {
-        chunks_processing.clear(); // 优先析构，futurn会阻塞
-    }
+    ~ChunkGenerator() = default;
 
-    void process_chunk_async(const Ref<Chunk> &chunk, LockQueue<Ref<Chunk>>& receiver) {
-        std::lock_guard lock(mutex);
-        chunks_processing.push_back(Goonya::THREAD_POOL.enqueue([this, chunk, &receiver] { 
-             do_process_chunk(chunk); 
-             receiver.push_back(chunk);
-        }));
-    }
-
-    void tick() {
-        size_t j = 0;
-        std::lock_guard lock(mutex);
-        for (std::future<void> &task : chunks_processing) {
-            if (task.valid()) {
-                // nothing to do?
-            } else {
-                chunks_processing[j] = std::move(task);
-                j++;
-            }
-        }
-        chunks_processing.resize(j);
+    std::future<Ref<Chunk>> process_chunk_async(const Ref<Chunk> &chunk) {
+        return Goonya::THREAD_POOL.enqueue([this, chunk] { 
+            return do_process_chunk(chunk); 
+        });
     }
 
 private:
-    void do_process_chunk(Ref<Chunk> chunk) const {
+    Ref<Chunk> do_process_chunk(Ref<Chunk> chunk) const {
         assert(chunk->current_state == ChunkState::EMPTY);
 
         // LOG_TRACE("正在生成{}处的区块", chunk->chunk_pos);
@@ -54,7 +32,7 @@ private:
             BlockInnerPos inner_pos{i};
             BlockPos world_pos = BlockPos(chunk->chunk_pos.get_start_pos() + inner_pos.as_offset());
             BlockState *state;
-            if (world_pos.y < air_layer) {
+            if (inner_pos.as_offset().y < 8) {
                 state = Blocks::get().STONE->get_default_blockstate();
             } else {
                 state = Blocks::get().AIR->get_default_blockstate();
@@ -63,6 +41,8 @@ private:
         }
 
         chunk->current_state = ChunkState::GENERATED;
+
+        return chunk;
     }
 };
 

@@ -8,6 +8,8 @@
 #include <fstream>
 #include <ios>
 #include <regex>
+#include <span>
+#include <vector>
 
 #include "GraphicsResourceBuilder.h"
 #include "HardcodeAssets.h"
@@ -26,12 +28,15 @@ namespace fs = std::filesystem;
 
 void RenderResource::init_buildin_resources() {
     // 部分硬编码的mesh
-    Graphics::MeshDesc plane{Assets::plane_vertices_vertex_layout, Bytes::from_span(std::span(Assets::plane_vertices)),
-                             Assets::plane_indices, Graphics::Topology::TRIANGLE};
+    std::span<const std::byte> plane_vertex_span = std::as_bytes(std::span(Assets::plane_vertices));
+    Graphics::MeshDesc plane{Assets::plane_vertices_vertex_layout,
+                             std::vector(plane_vertex_span.begin(), plane_vertex_span.end()), Assets::plane_indices,
+                             Graphics::Topology::TRIANGLE};
     meshes.add("plane", std::move(plane));
     // 添加天空盒的mesh，因为格式不一样所以单独处理
+    std::span<const std::byte> skybox_cube_vertex_span = std::as_bytes(std::span(Assets::skybox_cube_vertices));
     Graphics::MeshDesc skybox_cube{Assets::skybox_cube_vertex_layout,
-                                   Bytes::from_span(std::span(Assets::skybox_cube_vertices)),
+                                   std::vector(skybox_cube_vertex_span.begin(), skybox_cube_vertex_span.end()),
                                    Assets::skybox_cube_indices, Graphics::Topology::TRIANGLE};
     meshes.add("skybox_cube", std::move(skybox_cube));
 }
@@ -154,18 +159,18 @@ static void parse_material_paramter(Resource::MaterialBuilder &mat_builder, cons
 }
 
 void RenderResource::try_load(const std::filesystem::path &path) {
-    
+
     std::ifstream file(path, std::ios::binary | std::ios::in);
     if (!file) {
         throw RuntimeError("打开文件失败");
     }
-    
+
     Json::Value meta;
     if (!Json::parseFromStream(Json::CharReaderBuilder(), file, &meta, nullptr)) {
         throw RuntimeError("解析Json出错");
     }
     const AssetKey &key = path_to_key(path);
-    if (key.empty()){
+    if (key.empty()) {
         throw RuntimeError("键未能正常生成");
     }
 

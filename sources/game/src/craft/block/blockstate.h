@@ -2,6 +2,7 @@
 
 #include "core/hash_helper.h"
 #include "core/log/Log.h"
+#include "craft/core/core.h"
 #include "craft/core/registry.h"
 
 #include <algorithm>
@@ -17,6 +18,7 @@
 #include <type_traits>
 #include <typeindex>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace Craft {
@@ -123,6 +125,8 @@ private:
 
     // 将当前的一个BlockStateProperty *改成BlockStatePropertyValue后变成的BlockState*，用于“修改”BlockState
     std::unordered_map<std::tuple<BlockStateProperty *, BlockStatePropertyValue>, BlockState *, Hasher> neighbors;
+
+    bool can_occlude = true;
 public:
     explicit operator bool() const noexcept { return block != nullptr; }
 
@@ -182,6 +186,10 @@ public:
     template <typename T> requires std::is_scoped_enum_v<T> || std::is_same_v<T, bool>
     BlockState* set_property(BlockStateProperty* property, T value) const noexcept{
         return set_property(property, (BlockStatePropertyValue)value);
+    }
+
+    bool can_hide_face(Direction direction) const noexcept{
+        return can_occlude;
     }
 
 private:

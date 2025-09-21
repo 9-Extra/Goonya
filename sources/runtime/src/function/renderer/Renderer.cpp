@@ -4,9 +4,13 @@
 #include "core/cgmath.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderProxy/Camera.h"
+#include "function/renderer/passes/GeometryPass.h"
+#include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/RenderTarget.h"
+#include "resource/ResMng.h"
 #include <cstdint>
+#include <memory>
 
 namespace Goonya::Graphics {
 Renderer renderer; // global renderer
@@ -17,7 +21,7 @@ void Renderer::init() {
 
     resources.init(u8"../assets/");
 
-    lambertian_pass = std::make_unique<LambertianPass>();
+    geometry_pass = std::make_unique<GeometryPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();
 }
 
@@ -59,11 +63,9 @@ void Renderer::render() {
         graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         graphics_api->clear(true, true, true);
 
-        lambertian_pass->run();
+        geometry_pass->run();
         skybox_pass->run();
-        // pickup_pass->run();
-
-        lambertian_pass->reset();
+ 
         pointlights.clear();
 
         // FIBITMAP *image = render_texture->export_image();
@@ -85,11 +87,11 @@ void Renderer::render() {
 void Renderer::clear() {
     run_all_tasks();
 
-    assert(meshes.empty());
+    assert(mesh_proxys.empty());
 
     current_skyboxs.clear();
 
-    lambertian_pass.reset();
+    geometry_pass.reset();
     skybox_pass.reset();
 
     Graphics::drop();

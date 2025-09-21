@@ -15,6 +15,8 @@ extern Registry<Block> REGISTRY_BLOCK; // at all_blocks.cpp
 class Block {
 private:
     std::string display_name;
+
+    bool can_occlude; 
     std::vector<BlockStateProperty *> valied_properties;
 
     // 现在初始化时生成
@@ -26,8 +28,8 @@ private:
 public:
     Block(Block &) = delete;
     Block(Block &&) = delete;
-    explicit Block(std::string display_name, std::initializer_list<BlockStateProperty *> valied_properties = {})
-        : display_name(std::move(display_name)), valied_properties(valied_properties) {
+    explicit Block(std::string display_name, bool can_occlude = true, std::initializer_list<BlockStateProperty *> valied_properties = {})
+        : display_name(std::move(display_name)), can_occlude(can_occlude), valied_properties(valied_properties) {
         build_blockstates();
         this->default_blockstate = possible_states[0].get();
     }

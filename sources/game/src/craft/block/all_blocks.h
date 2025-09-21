@@ -10,7 +10,7 @@ namespace Craft {
 
 class Blocks {
 public:
-    Block *const AIR = _register("air", new Block("空气"));
+    Block *const AIR = _register("air", new Block("空气", false));
     Block *const STONE = _register("stone", new Block("石头"));
     Block *const DIRT = _register("granite", new Block("花岗岩"));
     Block *const GRASS = _register("polished_granite", new Block("平滑花岗岩"));

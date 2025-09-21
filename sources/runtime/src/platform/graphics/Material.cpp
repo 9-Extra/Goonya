@@ -1,7 +1,10 @@
 #include "Material.h"
+#include "core/intrusive_ptr.h"
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/Shader.h"
 #include "resource/ResMng.h"
 #include <cassert>
+#include <utility>
 
 namespace Goonya::Graphics {
 
@@ -11,10 +14,23 @@ void Material::bind() {
     graphics_api->set_pipeline_state(pipeline_state);
     shader->bind(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
-    per_material->bind_uniform(uber_shader->per_material_block().binding);
+    if (per_material->get_size() != 0){
+        per_material->bind_uniform(uber_shader->per_material_block().binding);
+    }
     // 绑定所有纹理
     for (const auto &[unit, t] : textures) {
         t->bind(unit);
+    }
+    // 绑定其他buffer
+    for (const auto &[binding, buffer_with_type] : external_buffer) {
+        const auto& [buffer, type] = buffer_with_type;
+        if (type == BufferBindingType::UNIFORM){
+            buffer->bind_uniform(binding);
+        } else if (type == BufferBindingType::SHADER_STORAGE){
+            buffer->bind_storage(binding);
+        } else {
+            std::unreachable();
+        }
     }
 }
 void Material::set_param(const std::string &name, const Meta::DynamicData &value) {
@@ -40,6 +56,18 @@ Material::Material(UberShader *uber_shader)
     per_material = graphics_api->create_buffer(uber_shader->per_material_block().layout.size, BufferType::DYNAMIC);
     is_parameters_dirty = true;
 };
+
+intrusive_ptr<Material> Material::clone() const noexcept{
+    intrusive_ptr<Material> c = make_intrusive<Material>(uber_shader);
+    c->local_variant_code = local_variant_code;
+    c->pipeline_state = pipeline_state;
+
+    c->parameters = parameters;
+    c->textures = textures;
+    c->external_buffer = external_buffer;
+
+    return c;
+}
 
 void Material::update_shader_variant() {
     VariantCodeSet code{uber_shader->get_global_key_code(), local_variant_code};

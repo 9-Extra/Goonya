@@ -16,6 +16,7 @@ void Block::build_blockstates() {
         // 捷径，对没有属性的block只有一个blockstate
         BlockState *s = new BlockState();
         s->block = this;
+        s->can_occlude = can_occlude;
         // 填充此block的默认值
         possible_states.emplace_back(s);
         return;
@@ -38,7 +39,10 @@ void Block::build_blockstates() {
     const size_t state_count = strides.back();
     possible_states.reserve(state_count);
     for (size_t i = 0; i < state_count; i++) {
-        possible_states.emplace_back(new BlockState())->block = this; // 只能一个一个new出来
+        BlockState *s = new BlockState(); // 只能一个一个new出来
+        s->block = this;
+        s->can_occlude = can_occlude;
+        possible_states.emplace_back(s); 
     }
 
     for (size_t i = 0; i < state_count; i++) {

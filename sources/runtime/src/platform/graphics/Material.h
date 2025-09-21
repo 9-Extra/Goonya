@@ -9,6 +9,7 @@
 #include "platform/graphics/UberShader.h"
 #include "resource/Resource.h"
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <vector>
 
@@ -49,6 +50,7 @@ protected:
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, Meta::DynamicData> parameters;
     std::unordered_map<uint32_t, intrusive_ptr<Texture>> textures; // slot -> texture
+    std::unordered_map<uint32_t, std::tuple<intrusive_ptr<Buffer>, BufferBindingType>> external_buffer; // slot -> (buffer, bindingtype) 
 
     // 脏标记
     mutable bool is_parameters_dirty;
@@ -74,10 +76,16 @@ public:
     void set_pipeline_state(const PipeLineState &state) noexcept { pipeline_state = state; }
 
     void set_param(const std::string &name, const Meta::DynamicData &value);
+    void set_external_buffer(const std::string &name, const intrusive_ptr<Buffer> &buffer){
+        auto& info = uber_shader->get_uniform_info().at(name);
+        external_buffer[info.binding] = {buffer, info.binding_type};
+    }
 
     void set_texture(const std::string &name, const intrusive_ptr<Texture> &texture) {
-        uint32_t slot = uber_shader->get_texture_units().at(name);
-        this->textures[slot] = texture;
+        // texture slot可能被优化掉了
+        if (auto iter = uber_shader->get_texture_units().find(name);iter != uber_shader->get_texture_units().end()){
+            this->textures[iter->second] = texture;
+        }
     }
 
     void set_local_variant_key(const std::string &key) {
@@ -86,6 +94,8 @@ public:
     void remove_local_variant_key(const std::string &key) {
         local_variant_code = uber_shader->reset_local_variant_key(local_variant_code, key);
     }
+    // 复制材质
+    intrusive_ptr<Material> clone() const noexcept;
 
 protected:
     void update_shader_variant();

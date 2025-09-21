@@ -71,6 +71,8 @@ intrusive_ptr<Goonya::Graphics::Texture> TextureArrayAllocator::generate_texture
         texture_array->import_image(texture_storage[i], 0, 0, 0, i);
     }
 
+    texture_array->set_filter_mode(TextureFilterMode::NEAREST);
+
     return texture_array;
 }
 

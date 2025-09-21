@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/assets.h"
+#include "core/hash_helper.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/Shader.h"
 #include "runtime/GoonyaException.h"
@@ -124,10 +125,11 @@ protected:
     VariantKeyCollect global_variant_key_collect; // 全局变体编码器
     VariantKeyCollect local_variant_key_collect;
 
-    // UniformBuffer内存布局
+    // 几个特殊的UniformBuffer内存布局
     ShaderUniformBlockInfo per_material;
     ShaderUniformBlockInfo per_frame;
     ShaderUniformBlockInfo per_object;
+    std::unordered_map<std::string, ShaderUniformBlockInfo> uniform_info; // 全部uniform的内存布局和绑定点
     std::unordered_map<std::string, uint32_t> texture_units; // 纹理名称及对应的纹理单元
 public:
     UberShader(const UberShader &) = delete;
@@ -138,6 +140,7 @@ public:
     const ShaderUniformBlockInfo &per_frame_block() const noexcept { return per_frame; }
     const ShaderUniformBlockInfo &per_object_block() const noexcept { return per_object; }
     const std::unordered_map<std::string, uint32_t> &get_texture_units() const noexcept { return texture_units; }
+    const std::unordered_map<std::string, ShaderUniformBlockInfo> &get_uniform_info() const noexcept { return uniform_info; }
     intrusive_ptr<Shader> query_variant(VariantCodeSet variant_code);
 
     void get_variant_key_names(VariantCodeSet code, std::vector<std::string> &out_names) const noexcept {
@@ -160,7 +163,7 @@ private:
 class ShaderLib final {
 protected:
     std::unordered_set<std::string> global_variant_key_names;               // 全局着色器变体定义
-    std::unordered_map<AssetKey, std::unique_ptr<UberShader>> uber_shaders; // 从名称到UberShader
+    std::unordered_map<AssetKey, std::unique_ptr<UberShader>, StringHash, StringEqual> uber_shaders; // 从名称到UberShader
 public:
     void add_uber_shader(const AssetKey &name, UberShaderDesc &&desc);
 
@@ -186,11 +189,12 @@ public:
         }
     }
 
-    UberShader *query_uber_shader(const AssetKey &uber_shader_name) const {
-        if (!uber_shaders.contains(uber_shader_name)) {
+    UberShader *query_uber_shader(std::string_view uber_shader_name) const {
+        if (auto iter = uber_shaders.find(uber_shader_name);iter != uber_shaders.end()){
+            return iter->second.get();
+        } else {
             throw RuntimeError(std::format("元着色器\"{}\"未注册", uber_shader_name));
         }
-        return uber_shaders.at(uber_shader_name).get();
     }
 };
 

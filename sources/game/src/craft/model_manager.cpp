@@ -21,6 +21,7 @@
 #include <regex>
 #include <unordered_map>
 #include <fstream>
+#include <utility>
 #include <vector>
 
 namespace Craft {
@@ -69,7 +70,7 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, TextureArr
                 quad.vertices[1] = {Vector3f{min.x, max.y, max.z}, Vector2f{uv0.x, uv0.y}};
                 quad.vertices[2] = {Vector3f{max.x, max.y, max.z}, Vector2f{uv1.x, uv0.y}};
                 quad.vertices[3] = {Vector3f{max.x, max.y, min.z}, Vector2f{uv1.x, uv1.y}};
-                is_cullface = max.y == 0;
+                is_cullface = max.y == 1;
                 break;
             }
             case Direction::NORTH: {
@@ -85,7 +86,7 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, TextureArr
                 quad.vertices[1] = {Vector3f{max.x, min.y, max.z}, Vector2f{uv1.x, uv1.y}};
                 quad.vertices[2] = {Vector3f{max.x, max.y, max.z}, Vector2f{uv1.x, uv0.y}};
                 quad.vertices[3] = {Vector3f{min.x, max.y, max.z}, Vector2f{uv0.x, uv0.y}};
-                is_cullface = max.z == 0;
+                is_cullface = max.z == 1;
                 break;
             }
             case Direction::WEST: {
@@ -101,13 +102,13 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, TextureArr
                 quad.vertices[1] = {Vector3f{max.x, max.y, min.z}, Vector2f{uv0.x, uv0.y}};
                 quad.vertices[2] = {Vector3f{max.x, max.y, max.z}, Vector2f{uv1.x, uv0.y}};
                 quad.vertices[3] = {Vector3f{max.x, min.y, max.z}, Vector2f{uv1.x, uv1.y}};
-                is_cullface = max.z == 0;
+                is_cullface = max.x == 1;
                 break;
             }
             }
 
             if (is_cullface) {
-                baked_model.culled_quads[i].emplace_back(quad);
+                baked_model.culled_quads[std::to_underlying(face.direction)].emplace_back(quad);
             } else {
                 baked_model.unculled_quads.emplace_back(quad);
             }

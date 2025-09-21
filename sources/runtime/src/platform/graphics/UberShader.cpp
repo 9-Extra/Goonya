@@ -133,9 +133,10 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     std::unique_ptr<ShaderIntrospector> introspector = graphics_api->create_shader_introspect(shader.get());
     auto buffer_info = introspector->get_constant_buffer_info();
 
-    this->per_material = std::move(buffer_info["per_material"]);
-    this->per_frame = std::move(buffer_info.at("per_frame"));
-    this->per_object = std::move(buffer_info["per_object"]);
+    this->per_material = buffer_info["per_material"];
+    this->per_frame = buffer_info.at("per_frame");
+    this->per_object = buffer_info["per_object"];
+    this->uniform_info = buffer_info;
     this->texture_units = introspector->get_texture_info();
 
     // 设置现有的全局变体键

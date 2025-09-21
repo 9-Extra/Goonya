@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <span>
 
 #include "../Buffer.h"
@@ -28,6 +30,7 @@ static GLuint GLBufferType(BufferType type) {
 class GLBuffer final : public Buffer {
 private:
     GLuint id = 0;
+
 public:
     GLBuffer(size_t size, BufferType type) : Buffer(size, type) {
         glCreateBuffers(1, &id);
@@ -48,7 +51,7 @@ public:
     GLuint get_id() const noexcept { return id; }
 
     // access
-    void write(std::span<const uint8_t> data, size_t offset = 0) noexcept override {
+    void write(std::span<const std::byte> data, size_t offset = 0) noexcept override {
         assert(data.size_bytes() + offset <= get_size());
         glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
     };
@@ -92,8 +95,22 @@ public:
         }
     };
 
+    void invalidate() noexcept override{
+        glNamedBufferData(id, size, nullptr, GLBufferType(type));
+    }
+
     // bind
     void bind_uniform(uint32_t binding) const noexcept override { glBindBufferBase(GL_UNIFORM_BUFFER, binding, id); }
+    void bind_uniform_ranged(uint32_t binding, size_t offset, size_t size) const noexcept override {
+        glBindBufferRange(GL_UNIFORM_BUFFER, binding, id, offset, size);
+    }
+
+    void bind_storage(uint32_t binding) const noexcept override {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, id);
+    };
+    void bind_storage_ranged(uint32_t binding, size_t offset, size_t size) const noexcept override {
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding, id, offset, size);
+    };
 
     ~GLBuffer() override { glDeleteBuffers(1, &id); }
 

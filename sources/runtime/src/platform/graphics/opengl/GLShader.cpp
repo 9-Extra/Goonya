@@ -1,4 +1,5 @@
 #include "GLShader.h"
+#include "core/log/Log.h"
 #include "platform/graphics/Shader.h"
 #include <cstdint>
 #include <vector>
@@ -77,19 +78,25 @@ static Meta::FieldType GLType2FieldType(GLint gl_type) noexcept {
 std::unordered_map<std::string, ShaderUniformBlockInfo>
 GLShaderIntrospector::get_constant_buffer_info() const noexcept {
     // 获取所有uniform_block内部所有字段和偏移量
-    GLint uniform_block_num;
+    GLint uniform_block_num, shader_storage_num;
     glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
-    const GLenum UNIFORM_BLOCK_PROPERTIES[] = {GL_BUFFER_BINDING, GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE,
+    glGetProgramInterfaceiv(id, GL_SHADER_STORAGE_BLOCK, GL_ACTIVE_RESOURCES, &shader_storage_num);
+    
+    const GLenum QUREY_PROPERTIES[] = {GL_BUFFER_BINDING, GL_NAME_LENGTH, GL_BUFFER_DATA_SIZE,
                                                GL_NUM_ACTIVE_VARIABLES};
-    const size_t property_count = std::extent_v<decltype(UNIFORM_BLOCK_PROPERTIES)>;
+    const size_t property_count = std::extent_v<decltype(QUREY_PROPERTIES)>;
 
     std::unordered_map<std::string, ShaderUniformBlockInfo> result;
-    result.reserve(uniform_block_num);
+    result.reserve(uniform_block_num + shader_storage_num);
 
-    for (int i = 0; i < uniform_block_num; ++i) {
+    for (int index = 0; index < uniform_block_num + shader_storage_num; ++index) {
+        GLenum interface = index < uniform_block_num ? GL_UNIFORM_BLOCK : GL_SHADER_STORAGE_BLOCK;
+        BufferBindingType binding_type = index < uniform_block_num ? BufferBindingType::UNIFORM : BufferBindingType::SHADER_STORAGE;
+        int i = index < uniform_block_num ? index : index - uniform_block_num;
+
         GLint values[property_count];
         // 获取名称长度，总大小，和字段数量
-        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, property_count, UNIFORM_BLOCK_PROPERTIES, property_count,
+        glGetProgramResourceiv(id, interface, i, property_count, QUREY_PROPERTIES, property_count,
                                nullptr, values);
 
         auto [binding, name_len, size, var_num] = values;
@@ -97,11 +104,11 @@ GLShaderIntrospector::get_constant_buffer_info() const noexcept {
         std::string name;
         // OpenGL返回的名称长度包括尾部的'\n'，但c++的不需要，同时后面的bufSize也是假定包括'\n'的。
         name.resize(name_len - 1);
-        glGetProgramResourceName(id, GL_UNIFORM_BLOCK, i, name_len, nullptr, name.data());
+        glGetProgramResourceName(id, interface, i, name_len, nullptr, name.data());
         // 获取内部所有字段id
         std::vector<GLint> uniform_ids(var_num);
         const GLenum var_property[] = {GL_ACTIVE_VARIABLES};
-        glGetProgramResourceiv(id, GL_UNIFORM_BLOCK, i, 1, var_property, var_num, nullptr, uniform_ids.data());
+        glGetProgramResourceiv(id, interface, i, 1, var_property, var_num, nullptr, uniform_ids.data());
 
         std::unordered_map<std::string, Meta::FieldInfo> fields;
         for (int i = 0; i < var_num; ++i) {
@@ -120,7 +127,7 @@ GLShaderIntrospector::get_constant_buffer_info() const noexcept {
         }
 
         result.emplace(name, ShaderUniformBlockInfo{Meta::LayoutInfo{std::move(fields), static_cast<uint32_t>(size)},
-                                                    static_cast<GLuint>(binding)});
+                                                    static_cast<uint32_t>(binding), binding_type});
     }
 
     return result;
@@ -193,10 +200,10 @@ std::unordered_map<std::string, GLuint> GLShaderIntrospector::get_texture_info()
         std::string name_buffer;
         name_buffer.resize(name_len - 1);
         glGetProgramResourceName(id, GL_UNIFORM, i, name_len, nullptr, name_buffer.data());
-
+        LOG_WARN(name_buffer);
         GLuint texture_unit;
         glGetUniformuiv(id, location, &texture_unit); // 绑定的纹理单元视为对应location中存储的值
-        result.emplace(name_buffer, texture_unit);
+        result.emplace(std::move(name_buffer), texture_unit);
     }
 
     return result;

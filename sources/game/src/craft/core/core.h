@@ -11,6 +11,25 @@
 namespace Craft {
 
 enum class Direction { DOWN = 0, UP = 1, NORTH = 2, SOUTH = 3, WEST = 4, EAST = 5 };
+constexpr std::array<Direction, 6> DIRECTION_VALUES{Direction::DOWN, Direction::UP, Direction::NORTH, Direction::SOUTH, Direction::WEST, Direction::EAST};
+
+inline constexpr Direction direction_opposite(Direction d) noexcept {
+    switch (d) {
+    case Direction::DOWN:
+        return Direction::UP;
+    case Direction::UP:
+        return Direction::DOWN;
+    case Direction::NORTH:
+        return Direction::SOUTH; // 我们认为-1为南方，即摄像机初始方向是面向南方的
+    case Direction::SOUTH:
+        return Direction::NORTH;
+    case Direction::WEST:
+        return Direction::EAST;
+    case Direction::EAST:
+        return Direction::WEST;
+    }
+    std::unreachable();
+}
 
 inline constexpr Goonya::Vector3f get_direction_vector(Direction d) noexcept {
     switch (d) {
@@ -30,49 +49,75 @@ inline constexpr Goonya::Vector3f get_direction_vector(Direction d) noexcept {
     std::unreachable();
 }
 
-struct Vector3i{
+struct Vector3i {
     int32_t x = 0;
     int32_t y = 0;
     int32_t z = 0;
 
     Vector3i() noexcept = default;
-    Vector3i(int32_t x, int32_t y, int32_t z): x(x), y(y), z(z) {}
-    explicit Vector3i(Goonya::Vector3f vec_pos): x((int32_t)vec_pos.x), y((int32_t)vec_pos.y), z((int32_t)vec_pos.z) {}
+    constexpr Vector3i(int32_t x, int32_t y, int32_t z) noexcept : x(x), y(y), z(z) {}
+    constexpr explicit Vector3i(Goonya::Vector3f vec_pos) noexcept
+        : x((int32_t)vec_pos.x), y((int32_t)vec_pos.y), z((int32_t)vec_pos.z) {}
 
     constexpr bool operator==(const Vector3i &pos) const noexcept = default;
- 
-    constexpr Vector3i operator+(Vector3i offset) const noexcept { return {x + offset.x, y + offset.y, z + offset.z}; }
 
-    int32_t distance_manhattan(Vector3i vec) const noexcept{
+    constexpr Vector3i operator+(Vector3i offset) const noexcept { return {x + offset.x, y + offset.y, z + offset.z}; }
+    constexpr Vector3i operator-(Vector3i offset) const noexcept { return {x - offset.x, y - offset.y, z - offset.z}; }
+
+    int32_t distance_manhattan(Vector3i vec) const noexcept {
         return std::abs(x - vec.x) + std::abs(y - vec.y) + std::abs(z - vec.z);
     }
 
+    constexpr Vector3i move(Direction direction, int32_t step = 1) const noexcept {
+        switch (direction) {
+        case Direction::DOWN:
+            return *this + Vector3i{0, -step, 0};
+        case Direction::UP:
+            return *this + Vector3i{0, step, 0};
+        case Direction::NORTH:
+            return *this + Vector3i{0, 0, -step};
+        case Direction::SOUTH:
+            return *this + Vector3i{0, 0, step};
+        case Direction::WEST:
+            return *this + Vector3i{-step, 0, 0};
+        case Direction::EAST:
+            return *this + Vector3i{step, 0, 0};
+        }
+        std::unreachable();
+    }
 };
 
-struct BlockPos: public Vector3i {
+struct BlockPos : public Vector3i {
     using Vector3i::Vector3i;
-    explicit BlockPos(Vector3i vec): Vector3i(vec) {}
+    constexpr explicit BlockPos(Vector3i vec) noexcept : Vector3i(vec) {}
 
-    constexpr Goonya::Vector3f get_center() const noexcept { return {x + 0.5f, y + 0.5f, z + 0.5f}; }    
+    constexpr Goonya::Vector3f get_center() const noexcept { return {x + 0.5f, y + 0.5f, z + 0.5f}; }
 };
 
 constexpr uint32_t CHUNK_WIDTH_OFFSET = 5;
 constexpr uint32_t CHUNK_WIDTH = 1 << CHUNK_WIDTH_OFFSET; // 长宽高都是这个
 constexpr uint32_t CHUNK_BLOCK_COUNT = CHUNK_WIDTH * CHUNK_WIDTH * CHUNK_WIDTH;
 
-struct ChunkPos: public Vector3i {
+struct ChunkPos : public Vector3i {
     using Vector3i::Vector3i;
-    explicit ChunkPos(Vector3i vec): Vector3i(vec) {}
+    constexpr explicit ChunkPos(Vector3i vec) noexcept : Vector3i(vec) {}
 
-    constexpr BlockPos get_start_pos() const noexcept{
+    constexpr BlockPos get_start_pos() const noexcept {
         return {x << CHUNK_WIDTH_OFFSET, y << CHUNK_WIDTH_OFFSET, z << CHUNK_WIDTH_OFFSET};
     }
+    // end_pos不在本Chunk内部
+    constexpr BlockPos get_end_pos() const noexcept {
+        return BlockPos{get_start_pos() + BlockPos{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH}};
+    }
 
-    constexpr explicit ChunkPos(BlockPos pos) noexcept : ChunkPos(pos.x >> CHUNK_WIDTH_OFFSET, pos.y >> CHUNK_WIDTH_OFFSET, pos.z >> CHUNK_WIDTH_OFFSET) {
+    constexpr explicit ChunkPos(BlockPos pos) noexcept
+        : ChunkPos(pos.x >> CHUNK_WIDTH_OFFSET, pos.y >> CHUNK_WIDTH_OFFSET, pos.z >> CHUNK_WIDTH_OFFSET) {
         // 需要右移的语义为算术右移
         static_assert(-1 >> 1 == -1, ">> operator must on int32_t be arithmetic shift");
     }
 };
+
+using GameTime = uint64_t;
 
 } // namespace Craft
 
@@ -114,16 +159,12 @@ struct std::hash<Craft::Vector3i> {
 
 template <>
 struct std::hash<Craft::BlockPos> {
-    size_t operator()(Craft::BlockPos pos) const noexcept {
-        return std::hash<Craft::Vector3i>{}(pos);
-    }
+    size_t operator()(Craft::BlockPos pos) const noexcept { return std::hash<Craft::Vector3i>{}(pos); }
 };
 
 template <>
 struct std::hash<Craft::ChunkPos> {
-    size_t operator()(Craft::ChunkPos pos) const noexcept {
-        return std::hash<Craft::Vector3i>{}(pos);
-    }
+    size_t operator()(Craft::ChunkPos pos) const noexcept { return std::hash<Craft::Vector3i>{}(pos); }
 };
 
 template <>
@@ -152,5 +193,3 @@ struct std::formatter<Craft::ChunkPos> {
         return std::format_to(ctx.out(), "({}, {}, {})", pos.x, pos.y, pos.z);
     }
 };
-
-

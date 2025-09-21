@@ -39,7 +39,7 @@ struct BlockVertex{ // NOLINT
 
 // 一个四边形渲染数据，尽可能预计算需要传入GPU的顶点数据（不是所有）
 struct BakedQuad{ // NOLINT
-    std::array<BlockVertex, 4> vertices;
+    std::array<BlockVertex, 4> vertices; // 从左上角开始顺时针旋转
     Direction normal;
     uint32_t color_texture_index = 0; // 颜色纹理在对应纹理数组中的下标
 };

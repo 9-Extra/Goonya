@@ -28,12 +28,18 @@ public:
     size_t get_size() const noexcept { return size; }
     BufferType get_type() const noexcept { return type; }
 
-    virtual void write(std::span<const uint8_t> data, size_t offset) = 0;
+    virtual void write(std::span<const std::byte> data, size_t offset) = 0;
     virtual void *map(BufferMapOption option) const noexcept = 0;
     virtual void *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept = 0;
     virtual void unmap() const noexcept = 0;
 
+    virtual void invalidate() noexcept = 0;
+
     virtual void bind_uniform(uint32_t binding) const noexcept = 0;
+    virtual void bind_uniform_ranged(uint32_t binding, size_t offset, size_t size) const noexcept = 0;
+
+    virtual void bind_storage(uint32_t binding) const noexcept = 0;
+    virtual void bind_storage_ranged(uint32_t binding, size_t offset, size_t size) const noexcept = 0;
 
     void set_debug_label(const std::string &name) const noexcept {
 #ifdef DEBUG
@@ -64,6 +70,49 @@ public:
     T *operator->() noexcept { return ptr; }
 
     ~StructBufferWriter() noexcept { buffer->unmap(); }
+};
+
+// 同上，但支持一个元素类型为T的动态大小的数组
+template <class T>
+class ArrayBufferWriter {
+private:
+    Buffer *buffer;
+    T *ptr;
+    size_t element_count;
+public:
+    // 映射整个缓冲区
+    ArrayBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option)
+        : buffer(buffer.get()), element_count(buffer->get_size() / sizeof(T)) {
+        assert(buffer);
+        ptr = static_cast<T *>(buffer->map(option));
+    }
+
+    // 映射指定范围的缓冲区
+    ArrayBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option, size_t start_index, size_t element_count)
+        : buffer(buffer.get()), element_count(element_count) {
+        assert(buffer);
+        size_t offset = start_index * sizeof(T);
+        size_t size = element_count * sizeof(T);
+        ptr = static_cast<T *>(buffer->map_range(option, offset, size));
+    }
+
+    // 禁止拷贝
+    ArrayBufferWriter(const ArrayBufferWriter &) = delete;
+    ArrayBufferWriter &operator=(const ArrayBufferWriter &) = delete;
+
+    // 通过索引访问元素
+    T *operator[](size_t index) noexcept {
+        assert(index < element_count);
+        return ptr + index;
+    }
+
+    // 获取元素数量
+    size_t size() const noexcept { return element_count; }
+
+    // 获取原始指针
+    T *data() noexcept { return ptr; }
+
+    ~ArrayBufferWriter() noexcept { buffer->unmap(); }
 };
 
 class DynamicBufferWriter : public Meta::DynamicStructWriter {

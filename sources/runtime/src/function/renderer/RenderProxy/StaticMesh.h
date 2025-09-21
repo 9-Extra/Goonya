@@ -12,8 +12,7 @@ namespace Goonya::Graphics {
  * 信息包括：网格对象，材质列表，物体的UniformBuffer，其中包括变换矩阵和可能附加的逐物体数据
  * UE5中附加自定义数据的方法是在物体的UniformBuffer末尾加上一个float数组用作用户自定义数据
  * Unity使用着色器数据块对象提供任意物体数据（还能覆盖其他Uniform的数据比如材质参数）
- * Godot使用per instance uniforms在着色器中标记一些数据为per
- * instance，之后可以在物体中设置它，在物体有多个材质时第一个材质的会覆盖后面的
+ * Godot使用per instance uniforms在着色器中标记一些数据为per instance，之后可以在物体中设置它，在物体有多个材质时第一个材质的会覆盖后面的
  *
  * Goonya暂时先不支持
  *
@@ -25,6 +24,6 @@ struct MeshRenderProxy {
     std::vector<intrusive_ptr<Material>> materials;
     
     Matrix4 model_matrix;
-    Matrix4 normal_matrix;
+    Matrix3 normal_matrix;
 };
 } // namespace Goonya::Graphics

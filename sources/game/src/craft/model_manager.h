@@ -32,6 +32,10 @@ public:
         }
     }
 
+    intrusive_ptr<Goonya::Graphics::Texture> get_textures() const noexcept {
+        return block_texture_array;
+    }
+
     static ModelManager &get() noexcept {
         assert(instance.has_value());
         return instance.value();
