@@ -43,10 +43,66 @@ in VS_OUT
 
 out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类型必须是vec4
 
+// ----------------------------------------------------------------------
+
+const vec3 sh_coeffs[9] = vec3[9](
+    vec3(0.5f, 0.5f, 0.5f),
+    vec3(-0.8f, -0.8f, -0.8f),
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.1f, 0.1f, 0.15f),
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.05f, 0.05f, 0.1f),
+    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.08f, 0.08f, 0.12f)
+);
+
+// 三阶球谐基函数
+vec3 spherical_harmonics3(vec3 direction)
+{
+    // 确保方向归一化
+    vec3 n = normalize(direction);
+    float x = n.x;
+    float y = n.y;
+    float z = n.z;
+    
+    // 三阶球谐基函数 (l=0 到 l=2)
+    float basis[9];
+    
+    // l = 0
+    basis[0] = 0.2820947918; // Y00 = 1/(2√π)
+    
+    // l = 1
+    basis[1] = 0.4886025119 * y; // Y1-1
+    basis[2] = 0.4886025119 * z; // Y10
+    basis[3] = 0.4886025119 * x; // Y11
+    
+    // l = 2
+    basis[4] = 1.0925484306 * x * y; // Y2-2
+    basis[5] = 1.0925484306 * y * z; // Y2-1
+    basis[6] = 0.3153915652 * (3.0 * z * z - 1.0); // Y20
+    basis[7] = 1.0925484306 * x * z; // Y21
+    basis[8] = 0.5462742153 * (x * x - y * y); // Y22
+    
+    // 计算球谐光照
+    vec3 result = vec3(0.0);
+    for (int i = 0; i < 9; i++)
+    {
+        result += sh_coeffs[i].rgb * basis[i];
+    }
+    
+    return max(result, vec3(0.0));
+}
+
+
 void main()
 {
     PerSurface surface = surfaces[vs_out.object_id];
     vec4 color = texture(basecolor_texture, vec3(vs_out.tex_coords, surface.basecolor_id));
-    out_color = vec4(pow(color.xyz, vec3(1 / 2.2)), 1.0f);
-    // out_color = vec4(1, 0, 0, 1);
+    vec3 light = spherical_harmonics3(surface.normal);
+
+    vec3 linear_color = color.rgb * light;
+
+    out_color = vec4(pow(linear_color, vec3(1 / 2.2)), 1.0f);
+    // out_color = vec4(abs(surface.normal), 1);
 }

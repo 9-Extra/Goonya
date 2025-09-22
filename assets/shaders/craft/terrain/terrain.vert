@@ -39,7 +39,7 @@ out VS_OUT
 
 void main()
 {
-    uint object_id = gl_VertexID / 6;
+    uint object_id = gl_VertexID / 4;
     vs_out.world_position = position;
     vs_out.tex_coords = uv;
     vs_out.object_id = object_id;

@@ -28,7 +28,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 
     // 初始化日志
     {
-        const auto sinks = Logger::get_sinks();
+        const auto& sinks = Logger::get_sinks();
         logger = std::make_shared<spdlog::async_logger>("OpenGL", sinks.begin(), sinks.end(), spdlog::thread_pool());
         logger->set_level(spdlog::level::trace);
         spdlog::register_logger(logger);

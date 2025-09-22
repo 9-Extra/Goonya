@@ -18,10 +18,10 @@
 
 namespace Craft {
 
-constexpr std::array<Vector3i, 7> pos_in_region{
-    {{0, 0, 0}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}}};
-
 RenderChunkRegion RenderRegionCache::create_region(ChunkPos section_pos) {
+    constexpr std::array<Vector3i, 7> pos_in_region{
+        {{0, 0, 0}, {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}}};
+
     RenderChunkRegion region;
     region.center_chunk_pos = section_pos;
 
@@ -64,7 +64,8 @@ void RenderSection::ComplieTask::do_complie(
                                                      .index_count = (uint32_t)result.indices.size(),
                                                      .topology = Goonya::Graphics::Topology::TRIANGLE});
 
-        intrusive_ptr<Buffer> vertex_buffer = graphics_api->create_buffer(result.vertices.size() * sizeof(TerrainMeshVertex), BufferType::STATIC);
+        intrusive_ptr<Buffer> vertex_buffer =
+            graphics_api->create_buffer(result.vertices.size() * sizeof(TerrainMeshVertex), BufferType::STATIC);
         vertex_buffer->write(std::as_bytes(std::span(result.vertices)), 0);
         updated_mesh->set_vertex_buffer(vertex_buffer);
 
@@ -107,16 +108,17 @@ void RenderSection::ComplieTask::do_complie(
     });
 }
 
-void RenderSection::ComplieTask::compiler_push_quad(ComplieResult &result, BlockPos pos, const BakedQuad &quad) noexcept {
+void RenderSection::ComplieTask::compiler_push_quad(ComplieResult &result, BlockPos pos,
+                                                    const BakedQuad &quad) noexcept {
     Goonya::Vector3f normal = get_direction_vector(quad.normal);
+
+    result.per_surface.emplace_back(quad.color_texture_index, normal);
 
     for (const auto &v : quad.vertices) {
         uint32_t base_index = result.vertices.size() * 4;
 
         Goonya::Vector3f world_pos = Goonya::Vector3f(pos.x, pos.y, pos.z) + v.position;
         result.vertices.emplace_back(world_pos, v.uv);
-
-        result.per_surface.emplace_back(quad.color_texture_index, normal);
 
         result.indices.push_back(base_index + 0);
         result.indices.push_back(base_index + 1);
@@ -141,7 +143,7 @@ RenderSection::ComplieTask::ComplieResult RenderSection::ComplieTask::compile_me
                 const BakedBlockModel &model = ModelManager::get().get_baked_model(state);
                 // 在每个方向上根据是否被遮挡计算未被遮挡的面
                 for (Direction direction : DIRECTION_VALUES) {
-                    BlockState* opposite = region.get_block_state(BlockPos{pos.move(direction)});
+                    BlockState *opposite = region.get_block_state(BlockPos{pos.move(direction)});
                     bool hide = opposite->can_hide_face(direction_opposite(direction));
                     if (hide)
                         continue;
@@ -157,7 +159,6 @@ RenderSection::ComplieTask::ComplieResult RenderSection::ComplieTask::compile_me
             }
         }
     }
-    LOG_WARN("Count = {}", result.indices.size());
     return result;
 }
 

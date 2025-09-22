@@ -1,5 +1,4 @@
 #include "GLShader.h"
-#include "core/log/Log.h"
 #include "platform/graphics/Shader.h"
 #include <cstdint>
 #include <vector>
@@ -200,7 +199,6 @@ std::unordered_map<std::string, GLuint> GLShaderIntrospector::get_texture_info()
         std::string name_buffer;
         name_buffer.resize(name_len - 1);
         glGetProgramResourceName(id, GL_UNIFORM, i, name_len, nullptr, name_buffer.data());
-        LOG_WARN(name_buffer);
         GLuint texture_unit;
         glGetUniformuiv(id, location, &texture_unit); // 绑定的纹理单元视为对应location中存储的值
         result.emplace(std::move(name_buffer), texture_unit);
