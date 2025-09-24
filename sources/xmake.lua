@@ -8,14 +8,6 @@ add_requires("spdlog", {system = false, configs = {wchar = true, std_format = tr
 add_requires("jsoncpp")
 add_requires("reflect-cpp")
 
-check_macros("IS_GCC", "__GNUC__") -- 通过__GNUC__检测编译器
-
-option("__IS_GCC") -- 当编译器是GCC时
-    set_default(false)
-    set_showmenu(false)
-    add_syslinks("stdc++exp") -- 用于支持stackstrace
-option_end()
-
 target("GRuntime")
     set_kind("static")
     add_files("runtime/src/**.cpp")
@@ -25,6 +17,7 @@ target("GRuntime")
 
     add_packages("glfw")
     add_packages("imgui", "spdlog", "jsoncpp", "nowide_standalone", "reflect-cpp", {public=true})
+    add_syslinks("stdc++exp", {tools = {"gcc", "gxx"}}) -- 用于支持stackstrace
     add_includedirs("runtime/include", {public = true})
 
 target("GDemo")
