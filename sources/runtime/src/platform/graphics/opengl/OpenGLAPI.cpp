@@ -12,7 +12,7 @@
 
 #include "GLBuffer.h"
 #include "GLRenderTarget.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "function/renderer/RendererBasic.h"
 #include "platform/display/display.h"
 #include "platform/graphics/Buffer.h"
@@ -89,25 +89,25 @@ OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-intrusive_ptr<Mesh> OpenGLGraphicsAPI::create_mesh() {
+Ref<Mesh> OpenGLGraphicsAPI::create_mesh() {
     ASSERT_RENDER_THREAD();
-    return make_intrusive<GLMesh>();
+    return create_ref<GLMesh>();
 }
 
-intrusive_ptr<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
+Ref<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
     ASSERT_RENDER_THREAD();
-    return intrusive_ptr<GLBuffer>(new GLBuffer(size, type));
+    return Ref<GLBuffer>(new GLBuffer(size, type));
 }
 
-intrusive_ptr<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
+Ref<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
     ASSERT_RENDER_THREAD();
-    return make_intrusive<GLFrameBuffer>(size);
+    return create_ref<GLFrameBuffer>(size);
 }
 
-intrusive_ptr<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src,
+Ref<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src,
                                                                 const std::string &ps_src) const {
     ASSERT_RENDER_THREAD();
-    return make_intrusive<GLShader>(vs_src, ps_src);
+    return create_ref<GLShader>(vs_src, ps_src);
 }
 
 void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noexcept {

@@ -58,7 +58,7 @@ uint32_t TextureArrayAllocator::alloc_texture(std::string_view texture_location)
     return id;
 }
 
-intrusive_ptr<Goonya::Graphics::Texture> TextureArrayAllocator::generate_texture_array(){
+Ref<Goonya::Graphics::Texture> TextureArrayAllocator::generate_texture_array(){
     using namespace Goonya::Graphics;
     size_t texture_count = texture_storage.size();
     TextureCreateDesc desc{
@@ -66,7 +66,7 @@ intrusive_ptr<Goonya::Graphics::Texture> TextureArrayAllocator::generate_texture
         .format = TextureStorageFormat::RGBA_f16,
         .shape = {this->width, this->height, (uint32_t)texture_count}
     };
-    intrusive_ptr<Goonya::Graphics::Texture> texture_array = Goonya::Graphics::graphics_api->create_texture(desc);
+    Ref<Goonya::Graphics::Texture> texture_array = Goonya::Graphics::graphics_api->create_texture(desc);
     for(size_t i = 0;i < texture_count;i++){
         texture_array->import_image(texture_storage[i], 0, 0, 0, i);
     }

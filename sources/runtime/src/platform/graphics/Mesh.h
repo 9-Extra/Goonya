@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/hash_helper.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "resource/Resource.h"
@@ -79,15 +79,15 @@ struct MeshDesc {
           indices(std::forward<I>(indices)), sub_meshes({{0, static_cast<uint32_t>(this->indices.size()), topology}}) {}
 };
 
-class Mesh : public intrusive_ptr_base<Mesh> {
+class Mesh : public RefCount {
     /* 类内容的大致声明顺序是：公开内部类，公开字段，私有字段，公开方法，私有方法 */
 public:
     std::vector<SubMesh> submeshes;
 
 protected:
     VertexLayout layout;
-    intrusive_ptr<Buffer> vertex_buffer;
-    intrusive_ptr<Buffer> indices_buffer;
+    Ref<Buffer> vertex_buffer;
+    Ref<Buffer> indices_buffer;
 
     mutable bool is_dirty = true;
 
@@ -104,12 +104,12 @@ public:
         this->layout = std::forward<T>(layout);
         is_dirty = true;
     }
-    void set_vertex_buffer(const intrusive_ptr<Buffer> &vertex_buffer) noexcept {
+    void set_vertex_buffer(const Ref<Buffer> &vertex_buffer) noexcept {
         assert(vertex_buffer);
         this->vertex_buffer = vertex_buffer;
         is_dirty = true;
     }
-    void set_indices_buffer(const intrusive_ptr<Buffer> &indices_buffer) noexcept {
+    void set_indices_buffer(const Ref<Buffer> &indices_buffer) noexcept {
         assert(indices_buffer);
         this->indices_buffer = indices_buffer;
         is_dirty = true;
@@ -130,7 +130,7 @@ public:
     MeshContainer() : ResourceContainer<MeshDesc, Mesh>("网格") {}
 
 protected:
-    intrusive_ptr<Mesh> load(const MeshDesc &desc) const override;
+    Ref<Mesh> load(const MeshDesc &desc) const override;
 };
 
 } // namespace Goonya::Graphics

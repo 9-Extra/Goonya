@@ -1,5 +1,5 @@
 #include "Material.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Shader.h"
 #include "resource/ResMng.h"
@@ -57,8 +57,8 @@ Material::Material(UberShader *uber_shader)
     is_parameters_dirty = true;
 };
 
-intrusive_ptr<Material> Material::clone() const noexcept{
-    intrusive_ptr<Material> c = make_intrusive<Material>(uber_shader);
+Ref<Material> Material::clone() const noexcept{
+    Ref<Material> c = create_ref<Material>(uber_shader);
     c->local_variant_code = local_variant_code;
     c->pipeline_state = pipeline_state;
 
@@ -93,9 +93,9 @@ void Material::update_parameter() {
     is_parameters_dirty = false;
 }
 
-intrusive_ptr<Material> MaterialContainer::load(const MaterialDesc &desc) const {
-    intrusive_ptr<Graphics::Material> mat =
-        make_intrusive<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
+Ref<Material> MaterialContainer::load(const MaterialDesc &desc) const {
+    Ref<Graphics::Material> mat =
+        create_ref<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
     mat->set_pipeline_state(desc.pipeline_state);
 
     for (const auto &[name, value] : desc.parameters) {

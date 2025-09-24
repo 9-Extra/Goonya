@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/display/display.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/Texture.h"
@@ -91,10 +91,10 @@ public:
 private:
     GLuint id = 0;
 
-    std::array<intrusive_ptr<Texture>, MAX_ATTACH_COLOR> attached_color_texture; // 至少支持8个，那就只最多支持8个
-    std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>>
+    std::array<Ref<Texture>, MAX_ATTACH_COLOR> attached_color_texture; // 至少支持8个，那就只最多支持8个
+    std::variant<std::monostate, Ref<Texture>, Ref<RenderBuffer>>
         depth_buffer; // 可能是空的，也可能和stencil_buffer是同一个
-    std::variant<std::monostate, intrusive_ptr<Texture>, intrusive_ptr<RenderBuffer>> stencil_buffer;
+    std::variant<std::monostate, Ref<Texture>, Ref<RenderBuffer>> stencil_buffer;
 
 public:
     explicit GLFrameBuffer(std::tuple<uint32_t, uint32_t> size);
@@ -104,30 +104,30 @@ public:
     // 忽略glDrawBuffers的再次重定向，在绑定时直接将所有关联的颜色缓冲按照attachment用作渲染目标
     void bind_draw() const override;
 
-    void attach_color_texture(uint32_t location, intrusive_ptr<Texture> texture, int32_t level = 0) override;
-    void attach_color_texture_layer(uint32_t location, intrusive_ptr<Texture> texture, int32_t layer,
+    void attach_color_texture(uint32_t location, Ref<Texture> texture, int32_t level = 0) override;
+    void attach_color_texture_layer(uint32_t location, Ref<Texture> texture, int32_t layer,
                                     int32_t level = 0) override;
     void detach_color_texture(uint32_t location) noexcept override;
-    intrusive_ptr<Texture> get_color_texture(uint32_t location) const noexcept override {
+    Ref<Texture> get_color_texture(uint32_t location) const noexcept override {
         return attached_color_texture[location];
     };
     // 不会有想要渲染到RenderBuffer的吧？不会吧不会吧
 
     // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
-    void set_depth_texture(intrusive_ptr<Texture> texture, int32_t level = 0) override;
-    void set_depth_texture_layer(intrusive_ptr<Texture> texture, int32_t layer, int32_t level = 0) override;
+    void set_depth_texture(Ref<Texture> texture, int32_t level = 0) override;
+    void set_depth_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level = 0) override;
     void set_depth_renderbuffer(RenderBufferPixelFormat format) override;
     bool has_depth_buffer() const noexcept override { return !std::holds_alternative<std::monostate>(depth_buffer); };
 
-    void set_stencil_texture(intrusive_ptr<Texture> texture, int32_t level = 0) override;
-    void set_stencil_texture_layer(intrusive_ptr<Texture> texture, int32_t layer, int32_t level = 0) override;
+    void set_stencil_texture(Ref<Texture> texture, int32_t level = 0) override;
+    void set_stencil_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level = 0) override;
     void set_stencil_renderbuffer(RenderBufferPixelFormat format) override;
     bool has_stencil_buffer() const noexcept override {
         return !std::holds_alternative<std::monostate>(stencil_buffer);
     };
 
-    void set_depth_stencil_texture(intrusive_ptr<Texture> texture, int32_t level = 0) override;
-    void set_depth_stencil_texture_layer(intrusive_ptr<Texture> texture, int32_t layer, int32_t level = 0) override;
+    void set_depth_stencil_texture(Ref<Texture> texture, int32_t level = 0) override;
+    void set_depth_stencil_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level = 0) override;
     void set_depth_stencil_renderbuffer(RenderBufferPixelFormat format) override;
 
     bool check_status() const noexcept override;

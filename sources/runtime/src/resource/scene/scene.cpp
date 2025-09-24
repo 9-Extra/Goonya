@@ -1,7 +1,7 @@
 #include "scene.h"
 
 #include "core/cgmath.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
@@ -50,7 +50,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
                 cpnt_ptr->set_mesh(resources.meshes.get(cpnt_desc["mesh"].asString()));
             }
             if (cpnt_desc.isMember("material")) {
-                std::vector<intrusive_ptr<Graphics::Material>> materials;
+                std::vector<Ref<Graphics::Material>> materials;
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
                     materials.emplace_back(resources.materials.get(material_name.asString()));
                 }
@@ -70,7 +70,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
                 std::make_unique<Graphics::CpntCamera>(is_main, near_z, far_z, fov);
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
-            intrusive_ptr<Graphics::Material> material =
+            Ref<Graphics::Material> material =
                 resources.materials.get(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;

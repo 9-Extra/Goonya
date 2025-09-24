@@ -16,7 +16,7 @@ public:
     float near_z, far_z;
     
     Viewport view_port = {0, 0, 0, 0};         // 需要手动设置
-    intrusive_ptr<RenderTarget> render_target; // 相机绘制的目标
+    Ref<RenderTarget> render_target; // 相机绘制的目标
 
 public:
     CameraRenderProxy() {

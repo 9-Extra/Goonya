@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/hash_helper.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/graphics/Texture.h"
 #include "platform/image/image.h"
 
@@ -24,7 +24,7 @@ public:
     TextureArrayAllocator(TextureArrayAllocator&) = delete;
     TextureArrayAllocator(std::filesystem::path resource_path, uint32_t width, uint32_t height);
     uint32_t alloc_texture(std::string_view texture_location);
-    intrusive_ptr<Goonya::Graphics::Texture> generate_texture_array();
+    Ref<Goonya::Graphics::Texture> generate_texture_array();
 };
 
 } // namespace Craft

@@ -2,7 +2,7 @@
 
 #include "core/assets.h"
 #include "core/hash_helper.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/graphics/Shader.h"
 #include "runtime/GoonyaException.h"
 #include <cassert>
@@ -117,7 +117,7 @@ class UberShader final {
 protected:
     // 创建后会变的
     VariantCode global_key_code = 0;                                       // 当前元着色器的全局变体定义编码
-    std::unordered_map<VariantCodeSet, intrusive_ptr<Shader>> shaders; // 此元着色器的变体缓存
+    std::unordered_map<VariantCodeSet, Ref<Shader>> shaders; // 此元着色器的变体缓存
     // 不会变的
     std::string vs_src;
     std::string ps_src;
@@ -141,7 +141,7 @@ public:
     const ShaderUniformBlockInfo &per_object_block() const noexcept { return per_object; }
     const std::unordered_map<std::string, uint32_t> &get_texture_units() const noexcept { return texture_units; }
     const std::unordered_map<std::string, ShaderUniformBlockInfo> &get_uniform_info() const noexcept { return uniform_info; }
-    intrusive_ptr<Shader> query_variant(VariantCodeSet variant_code);
+    Ref<Shader> query_variant(VariantCodeSet variant_code);
 
     void get_variant_key_names(VariantCodeSet code, std::vector<std::string> &out_names) const noexcept {
         local_variant_key_collect.get_variant_key_names(code.local_code, out_names);

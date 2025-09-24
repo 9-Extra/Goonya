@@ -1,7 +1,7 @@
 #include "LevelRenderer.h"
 
 #include "core/cgmath.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
@@ -19,7 +19,7 @@ namespace Craft {
 
 LevelRenderer::LevelRenderer() {
     Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
-    terrain_material = make_intrusive<Goonya::Graphics::Material>(shader);
+    terrain_material = create_ref<Goonya::Graphics::Material>(shader);
     terrain_material->set_pipeline_state(Goonya::Graphics::PipeLineState{
         .depth_test = Goonya::Graphics::DepthTestMode::LESS,
         .cull_mode = Goonya::Graphics::CullFaceMode::BACK,
@@ -35,31 +35,31 @@ void LevelRenderer::render_frame() {
     auto receiver = [terrain_material = this->terrain_material](std::shared_ptr<RenderSection> &section, ComplieTask::ComplieResult &&result) {
         ASSERT_RENDER_THREAD();
         using namespace Goonya::Graphics;
-        intrusive_ptr<Mesh> updated_mesh = graphics_api->create_mesh();
+        Ref<Mesh> updated_mesh = graphics_api->create_mesh();
         updated_mesh->set_layout(VERTEX_LAYOUT_PLANE);
         updated_mesh->submeshes.emplace_back(SubMesh{.start_index = 0,
                                                      .index_count = (uint32_t)result.indices.size(),
                                                      .topology = Goonya::Graphics::Topology::TRIANGLE});
 
-        intrusive_ptr<Buffer> vertex_buffer =
+        Ref<Buffer> vertex_buffer =
             graphics_api->create_buffer(result.vertices.size() * sizeof(TerrainMeshVertex), BufferType::STATIC);
         vertex_buffer->write(std::as_bytes(std::span(result.vertices)), 0);
         updated_mesh->set_vertex_buffer(vertex_buffer);
 
-        intrusive_ptr<Buffer> index_buffer =
+        Ref<Buffer> index_buffer =
             graphics_api->create_buffer(result.indices.size() * sizeof(uint32_t), BufferType::STATIC);
         index_buffer->write(std::as_bytes(std::span(result.indices)), 0);
         updated_mesh->set_indices_buffer(index_buffer);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
-        intrusive_ptr<Buffer> updated_per_surface_buffer =
+        Ref<Buffer> updated_per_surface_buffer =
             graphics_api->create_buffer(per_surface_data.size_bytes(), BufferType::STATIC);
         updated_per_surface_buffer->write(per_surface_data, 0);
 
         LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
 
         if (section->mesh_proxy == nullptr) {
-            intrusive_ptr<Material> material = terrain_material->clone();
+            Ref<Material> material = terrain_material->clone();
             material->set_external_buffer("per_surface", updated_per_surface_buffer);
 
             MeshRenderProxy *proxy = new MeshRenderProxy{};

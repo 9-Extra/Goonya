@@ -8,7 +8,7 @@ namespace Goonya::Graphics {
 // 渲染mesh的组件，可以渲染出物体
 class CpntSkybox : public Component {
 public:
-    explicit CpntSkybox(const intrusive_ptr<Material> &skybox_material, bool ignore_range = true,
+    explicit CpntSkybox(const Ref<Material> &skybox_material, bool ignore_range = true,
                         const BoundingBox &bbox = BoundingBox())
         : skybox_material(skybox_material), ignore_range(ignore_range), bbox(bbox) {}
     void on_tick() override {
@@ -22,7 +22,7 @@ public:
     }
 
 private:
-    intrusive_ptr<Material> skybox_material;
+    Ref<Material> skybox_material;
     bool ignore_range;
     BoundingBox bbox;
 };

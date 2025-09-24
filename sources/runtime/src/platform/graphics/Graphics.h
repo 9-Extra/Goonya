@@ -12,7 +12,7 @@
 #include "Texture.h"
 #include "core/ThreadPool.h"
 #include "core/cgmath.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/Shader.h"
 
@@ -37,22 +37,22 @@ public:
     virtual void pop_debug_group_label() const noexcept = 0;
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-    virtual intrusive_ptr<Mesh> create_mesh() = 0;
-    virtual intrusive_ptr<Texture> create_texture(const TextureCreateDesc &desc) const = 0;
+    virtual Ref<Mesh> create_mesh() = 0;
+    virtual Ref<Texture> create_texture(const TextureCreateDesc &desc) const = 0;
 
-    virtual intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) = 0;
+    virtual Ref<Buffer> create_buffer(uint32_t size, BufferType type) = 0;
 
-    virtual intrusive_ptr<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size) = 0;
+    virtual Ref<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size) = 0;
 
     // ---------------------------------材质和着色器相关------------------------------------------
-    virtual intrusive_ptr<Shader> compile_shader_program(const std::string &vs_src,
+    virtual Ref<Shader> compile_shader_program(const std::string &vs_src,
                                                          const std::string &ps_src) const = 0;
     virtual std::unique_ptr<ShaderIntrospector> create_shader_introspect(Shader *shader) const = 0;
 
     virtual void set_pipeline_state(const PipeLineState &state) const noexcept = 0;
 
     // ---------------------------------绘制调用-------------------------------------------------------------
-    virtual intrusive_ptr<RenderTarget> get_rendertarget_screen() noexcept = 0;
+    virtual Ref<RenderTarget> get_rendertarget_screen() noexcept = 0;
     virtual void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                                      std::optional<int> stencil = std::nullopt) noexcept = 0;
     virtual void clear(bool color, bool depth,

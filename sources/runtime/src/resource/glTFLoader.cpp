@@ -3,7 +3,7 @@
 #include "core/as_u8string.h"
 #include "core/assets.h"
 #include "core/cgmath.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "core/world/Component.h"
 #include "core/world/GObject.h"
@@ -292,7 +292,7 @@ static std::shared_ptr<GObject> load_gltf_node(const AssetKey &base_key, const J
         uint32_t mesh_id = node_json["mesh"].asUInt();
         const Json::Value &mesh_json = json["meshes"][mesh_id];
         AssetKey mesh_key = std::format("{}:{}", base_key, mesh_json["name"].asString());
-        intrusive_ptr<Graphics::Mesh> mesh = resources.meshes.get(mesh_key);
+        Ref<Graphics::Mesh> mesh = resources.meshes.get(mesh_key);
         mesh_render->set_mesh(mesh);
 
         /*

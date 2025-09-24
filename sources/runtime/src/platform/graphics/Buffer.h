@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/metatype/metatype.h"
 #include <cassert>
 #include <span>
@@ -15,7 +15,7 @@ enum class BufferMapOption {
     READ_WRITE,    // 用于读写
 };
 
-class Buffer : public intrusive_ptr_base<Buffer> {
+class Buffer : public RefCount {
 protected:
     Buffer(size_t size, BufferType type) : size(size), type(type) {}
 
@@ -57,11 +57,11 @@ private:
     T *ptr;
 
 public:
-    StructBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option)
+    StructBufferWriter(Ref<Buffer> buffer, BufferMapOption option)
         : buffer(buffer.get()), ptr(static_cast<T *>(buffer->map(option))) {
         assert(buffer);
     }
-    StructBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option, size_t offset)
+    StructBufferWriter(Ref<Buffer> buffer, BufferMapOption option, size_t offset)
         : buffer(buffer.get()), ptr(static_cast<T *>(buffer->map_range(option, offset, sizeof(T)))) {
         assert(buffer);
     }
@@ -79,16 +79,17 @@ private:
     Buffer *buffer;
     T *ptr;
     size_t element_count;
+
 public:
     // 映射整个缓冲区
-    ArrayBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option)
+    ArrayBufferWriter(Ref<Buffer> buffer, BufferMapOption option)
         : buffer(buffer.get()), element_count(buffer->get_size() / sizeof(T)) {
         assert(buffer);
         ptr = static_cast<T *>(buffer->map(option));
     }
 
     // 映射指定范围的缓冲区
-    ArrayBufferWriter(intrusive_ptr<Buffer> buffer, BufferMapOption option, size_t start_index, size_t element_count)
+    ArrayBufferWriter(Ref<Buffer> buffer, BufferMapOption option, size_t start_index, size_t element_count)
         : buffer(buffer.get()), element_count(element_count) {
         assert(buffer);
         size_t offset = start_index * sizeof(T);
@@ -120,12 +121,11 @@ private:
     Buffer *buffer;
 
 public:
-    DynamicBufferWriter(intrusive_ptr<Buffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option)
+    DynamicBufferWriter(Ref<Buffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option)
         : Meta::DynamicStructWriter(layout, buffer->map(option)), buffer(buffer.get()) {
         assert(buffer);
     }
-    DynamicBufferWriter(intrusive_ptr<Buffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option,
-                        size_t offset)
+    DynamicBufferWriter(Ref<Buffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option, size_t offset)
         : Meta::DynamicStructWriter(layout, buffer->map_range(option, offset, layout.size)), buffer(buffer.get()) {
         assert(buffer);
     }

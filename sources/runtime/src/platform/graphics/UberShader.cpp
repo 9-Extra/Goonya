@@ -126,7 +126,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     std::string mixed_vs = shader_source_inject(this->vs_src, variant_keys);
     std::string mixed_ps = shader_source_inject(this->ps_src, variant_keys);
 
-    intrusive_ptr<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
+    Ref<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
     this->shaders[empty] = shader; // 既然编译了就加入缓存
 
     // 反射获取着色器信息
@@ -149,7 +149,7 @@ void ShaderLib::add_uber_shader(const AssetKey &name, UberShaderDesc &&desc) {
     uber_shaders.emplace(name, new UberShader{std::move(desc)});
 }
 
-intrusive_ptr<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
+Ref<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
     if (auto iter = shaders.find(variant_code); iter != shaders.end()) {
         return iter->second;
     }
@@ -159,7 +159,7 @@ intrusive_ptr<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
     std::string mixed_vs = shader_source_inject(vs_src, variant_keys);
     std::string mixed_ps = shader_source_inject(ps_src, variant_keys);
 
-    intrusive_ptr<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
+    Ref<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
     shaders.emplace(variant_code, shader);
 
     return shader;

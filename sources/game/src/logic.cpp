@@ -3,7 +3,7 @@
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/input/input.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
 #include "craft/level/level.h"
@@ -48,7 +48,7 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('P')) {
         LOG_DEBUG("正在进行图像导出");
-        intrusive_ptr<Graphics::Texture> skybox = resources.cubemaps.get("skybox_valley_color");
+        Ref<Graphics::Texture> skybox = resources.cubemaps.get("skybox_valley_color");
         stb::Image image = skybox->export_image(0);
         image.save("output.hdr");
     }

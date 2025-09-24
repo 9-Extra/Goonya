@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/cgmath.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/graphics/Material.h"
 
 namespace Goonya::Graphics {
@@ -18,7 +18,7 @@ struct DirectionalLight {
 };
 
 struct Skybox {
-    intrusive_ptr<Material> material;
+    Ref<Material> material;
     bool ignore_range;
     BoundingBox bbox;
 };

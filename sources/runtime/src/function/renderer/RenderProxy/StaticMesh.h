@@ -20,8 +20,8 @@ namespace Goonya::Graphics {
  * Component发生更新时通知Renderer更新RenderProxy数据
  */
 struct MeshRenderProxy {
-    intrusive_ptr<Mesh> mesh;
-    std::vector<intrusive_ptr<Material>> materials;
+    Ref<Mesh> mesh;
+    std::vector<Ref<Material>> materials;
     
     Matrix4 model_matrix;
     Matrix3 normal_matrix;

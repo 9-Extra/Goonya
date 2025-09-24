@@ -21,15 +21,15 @@ public:
     void pop_debug_group_label() const noexcept override { glPopDebugGroup(); }
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-    intrusive_ptr<Mesh> create_mesh() override;
-    intrusive_ptr<Texture> create_texture(const TextureCreateDesc &desc) const override {
-        return make_intrusive<GLTexture>(desc);
+    Ref<Mesh> create_mesh() override;
+    Ref<Texture> create_texture(const TextureCreateDesc &desc) const override {
+        return create_ref<GLTexture>(desc);
     };
-    intrusive_ptr<Buffer> create_buffer(uint32_t size, BufferType type) override;
-    intrusive_ptr<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size) override;
+    Ref<Buffer> create_buffer(uint32_t size, BufferType type) override;
+    Ref<FrameBuffer> create_rendertarget(std::tuple<uint32_t, uint32_t> size) override;
 
     // ---------------------------------材质和着色器相关------------------------------------------
-    intrusive_ptr<Shader> compile_shader_program(const std::string &vs_src, const std::string &ps_src) const override;
+    Ref<Shader> compile_shader_program(const std::string &vs_src, const std::string &ps_src) const override;
     std::unique_ptr<ShaderIntrospector> create_shader_introspect(Shader *shader) const override {
         return std::make_unique<GLShaderIntrospector>(shader);
     }
@@ -37,7 +37,7 @@ public:
     void set_pipeline_state(const PipeLineState &state) const noexcept override;
 
     // ---------------------------------绘制调用-------------------------------------------------------------
-    intrusive_ptr<RenderTarget> get_rendertarget_screen() noexcept override { return rendertarget_screen; };
+    Ref<RenderTarget> get_rendertarget_screen() noexcept override { return rendertarget_screen; };
     void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                              std::optional<int> stencil = std::nullopt) noexcept override;
     void clear(bool color, bool depth, bool stencil) const noexcept override;
@@ -50,7 +50,7 @@ public:
                                        bool render_to_texture) const noexcept override;
 
 private:
-    intrusive_ptr<RenderTarget> rendertarget_screen;
+    Ref<RenderTarget> rendertarget_screen;
 };
 
 } // namespace Goonya::Graphics

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/cgmath.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/world/GObject.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/Renderer.h"
@@ -36,15 +36,15 @@ public:
         });
     }
 
-    const intrusive_ptr<Mesh> &get_mesh() const noexcept { return mesh; }
-    const std::vector<intrusive_ptr<Material>> &get_materials() const noexcept { return materials; }
+    const Ref<Mesh> &get_mesh() const noexcept { return mesh; }
+    const std::vector<Ref<Material>> &get_materials() const noexcept { return materials; }
 
-    void set_mesh(const intrusive_ptr<Mesh> &mesh) noexcept {
+    void set_mesh(const Ref<Mesh> &mesh) noexcept {
         this->mesh = mesh;
         is_mesh_dirty = true;
     }
 
-    void set_material(uint32_t slot, const intrusive_ptr<Material> &material) noexcept {
+    void set_material(uint32_t slot, const Ref<Material> &material) noexcept {
         if (materials.size() <= slot) {
             materials.resize(slot + 1, nullptr);
         }
@@ -52,7 +52,7 @@ public:
         is_materials_dirty = true;
     }
 
-    void set_materials(std::span<intrusive_ptr<Material>> materials) noexcept {
+    void set_materials(std::span<Ref<Material>> materials) noexcept {
         this->materials.assign(materials.begin(), materials.end());
         is_materials_dirty = true;
     }
@@ -96,8 +96,8 @@ public:
     }
 
 protected:
-    intrusive_ptr<Mesh> mesh;
-    std::vector<intrusive_ptr<Material>> materials;
+    Ref<Mesh> mesh;
+    std::vector<Ref<Material>> materials;
     bool is_mesh_dirty = false;
     bool is_materials_dirty = false;
 

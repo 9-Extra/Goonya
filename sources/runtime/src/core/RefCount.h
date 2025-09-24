@@ -60,7 +60,7 @@ public:
     // cast
     template <std::derived_from<T> U>
     Ref(const Ref<U> &other) noexcept // NOLINT，向基类可以隐式转换
-        : ptr(other.ptr) {
+        : ptr(const_cast<U*>(other.get())) {
         if (ptr != nullptr) {
             ptr->add_ref();
         }

@@ -37,8 +37,8 @@ void Renderer::render() {
             is_screen_painted = true;
         }
 
-        // static intrusive_ptr<FrameBuffer> test_target;
-        // static intrusive_ptr<Texture> render_texture;
+        // static Ref<FrameBuffer> test_target;
+        // static Ref<Texture> render_texture;
         // if (!test_target){
         //     test_target = graphics_api->create_rendertarget({1024, 1024});
         //     test_target->set_depth_renderbuffer(RenderBufferPixelFormat::DEPTH24_STENCIL8);

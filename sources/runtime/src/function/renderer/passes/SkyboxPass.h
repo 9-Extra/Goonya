@@ -15,8 +15,8 @@ private:
         Matrix4 skybox_view_perspective_matrix;
     };
 
-    intrusive_ptr<Buffer> skybox_uniform;
-    intrusive_ptr<Mesh> mesh;
+    Ref<Buffer> skybox_uniform;
+    Ref<Mesh> mesh;
 
 public:
     SkyBoxPass()

@@ -1,5 +1,5 @@
 #include "GLRenderTarget.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/opengl/GLBasic.h"
@@ -35,12 +35,12 @@ void GLFrameBuffer::bind_draw() const {
 }
 
 // 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
-void GLFrameBuffer::attach_color_texture(uint32_t location, intrusive_ptr<Texture> texture, int32_t level) {
+void GLFrameBuffer::attach_color_texture(uint32_t location, Ref<Texture> texture, int32_t level) {
     assert(texture);
     glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level);
     attached_color_texture[location] = texture;
 }
-void GLFrameBuffer::attach_color_texture_layer(uint32_t location, intrusive_ptr<Texture> texture, int32_t layer,
+void GLFrameBuffer::attach_color_texture_layer(uint32_t location, Ref<Texture> texture, int32_t layer,
                                                int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level,
@@ -54,45 +54,45 @@ void GLFrameBuffer::detach_color_texture(uint32_t location) noexcept {
 };
 
 // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
-void GLFrameBuffer::set_depth_texture(intrusive_ptr<Texture> texture, int32_t level) {
+void GLFrameBuffer::set_depth_texture(Ref<Texture> texture, int32_t level) {
     glNamedFramebufferTexture(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     depth_buffer = texture;
 }
-void GLFrameBuffer::set_depth_texture_layer(intrusive_ptr<Texture> texture, int32_t layer, int32_t level) {
+void GLFrameBuffer::set_depth_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level) {
     glNamedFramebufferTextureLayer(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     depth_buffer = texture;
 }
 void GLFrameBuffer::set_depth_renderbuffer(RenderBufferPixelFormat format) {
     assert(size != std::make_tuple(0, 0));
-    intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
+    Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;
 }
 
-void GLFrameBuffer::set_stencil_texture(intrusive_ptr<Texture> texture, int32_t level) {
+void GLFrameBuffer::set_stencil_texture(Ref<Texture> texture, int32_t level) {
     assert(texture);
     glNamedFramebufferTexture(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_stencil_texture_layer(intrusive_ptr<Texture> texture, int32_t layer, int32_t level) {
+void GLFrameBuffer::set_stencil_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     stencil_buffer = texture;
 }
 void GLFrameBuffer::set_stencil_renderbuffer(RenderBufferPixelFormat format) {
     assert(size != std::make_tuple(0, 0));
-    intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
+    Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     stencil_buffer = renderbuffer;
 }
 
-void GLFrameBuffer::set_depth_stencil_texture(intrusive_ptr<Texture> texture, int32_t level) {
+void GLFrameBuffer::set_depth_stencil_texture(Ref<Texture> texture, int32_t level) {
     assert(texture);
     glNamedFramebufferTexture(id, GL_DEPTH_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     depth_buffer = texture;
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_depth_stencil_texture_layer(intrusive_ptr<Texture> texture, int32_t layer, int32_t level) {
+void GLFrameBuffer::set_depth_stencil_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_DEPTH_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level,
                                    layer);
@@ -101,7 +101,7 @@ void GLFrameBuffer::set_depth_stencil_texture_layer(intrusive_ptr<Texture> textu
 }
 void GLFrameBuffer::set_depth_stencil_renderbuffer(RenderBufferPixelFormat format) {
     assert(size != std::make_tuple(0, 0));
-    intrusive_ptr<GLRenderBuffer> renderbuffer = make_intrusive<GLRenderBuffer>(size, format);
+    Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;
     stencil_buffer = renderbuffer;

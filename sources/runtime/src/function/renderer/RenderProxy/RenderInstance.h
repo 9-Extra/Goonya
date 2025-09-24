@@ -7,8 +7,8 @@
 namespace Goonya::Graphics{
 
 class RenderInstance{
-    intrusive_ptr<Mesh> mesh;
-    std::vector<intrusive_ptr<Material>> materials;
+    Ref<Mesh> mesh;
+    std::vector<Ref<Material>> materials;
     std::vector<std::byte> per_object_data; 
 
 

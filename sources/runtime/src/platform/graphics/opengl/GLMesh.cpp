@@ -1,5 +1,5 @@
 #include "GLMesh.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include <cassert>
@@ -37,8 +37,8 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
 }
 
 void GLMesh::update_VAO() const noexcept {
-    const intrusive_ptr<GLBuffer> gl_vertex_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(vertex_buffer);
-    const intrusive_ptr<GLBuffer> gl_indices_buffer = dynamic_intrusive_ptr_cast<GLBuffer>(indices_buffer);
+    const Ref<GLBuffer> gl_vertex_buffer = Ref<GLBuffer>::cast_from(vertex_buffer);
+    const Ref<GLBuffer> gl_indices_buffer = Ref<GLBuffer>::cast_from(indices_buffer);
     assert(gl_vertex_buffer && gl_indices_buffer);
     assert(layout.size != 0); // Layout记得设置
 

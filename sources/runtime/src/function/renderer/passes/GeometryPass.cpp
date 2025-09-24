@@ -51,7 +51,7 @@ void GeometryPass::run() {
         // 填充结束
     }
 
-    intrusive_ptr<Material> default_material = resources.materials.get("materials/default");
+    Ref<Material> default_material = resources.materials.get("materials/default");
 
     struct alignas(256) PerObjectData final {
         Matrix4 model_matrix;
@@ -67,7 +67,7 @@ void GeometryPass::run() {
     std::unordered_map<Material *, std::vector<Batch>> batcher;
 
     // 把所有用于一般渲染每帧变化的数据收集到一个buffer中
-    intrusive_ptr<Buffer> per_object_uniform =
+    Ref<Buffer> per_object_uniform =
         graphics_api->create_buffer(renderer.mesh_proxys.size() * sizeof(PerObjectData), BufferType::STREAM);
     per_object_uniform->set_debug_label("Lambert Per Object");
 

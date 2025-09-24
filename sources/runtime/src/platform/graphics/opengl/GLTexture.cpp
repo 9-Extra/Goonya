@@ -325,7 +325,7 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
     unsigned int buf_size = image.get_size_byte();
     GLenum target_type = is_float ? GL_FLOAT : GL_UNSIGNED_BYTE;
     glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
-                            image.get_data());
+                         image.get_data());
     return image;
 };
 

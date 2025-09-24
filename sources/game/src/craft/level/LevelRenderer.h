@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/ThreadPool.h"
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
@@ -131,7 +131,7 @@ public:
 
 class LevelRenderer {
 public:
-    intrusive_ptr<Goonya::Graphics::Material> terrain_material;
+    Ref<Goonya::Graphics::Material> terrain_material;
 
 private:
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块

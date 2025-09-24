@@ -25,7 +25,7 @@ static Graphics::TextureStorageFormat get_proper_storage_type(const stb::Image &
     return storage_type;
 }
 
-intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Graphics::Texture2DDesc &desc) const {
+Ref<Graphics::Texture> Texture2DContainer::load(const Graphics::Texture2DDesc &desc) const {
     stb::Image image = stb::Image::load(desc.path, desc.is_color);
     if (!image) {
         throw RuntimeError(std::format("图像{}加载失败", desc.path.string()));
@@ -41,7 +41,7 @@ intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Graphics::Textur
     }
     Graphics::TextureCreateDesc texture_desc{Graphics::TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
 
-    intrusive_ptr<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
+    Ref<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
     texture->set_warp_mode(desc.warp_mode);
 
@@ -51,7 +51,7 @@ intrusive_ptr<Graphics::Texture> Texture2DContainer::load(const Graphics::Textur
     return texture;
 };
 
-intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const Graphics::TextureCubeMapDesc &desc) const {
+Ref<Graphics::Texture> TextureCubeMapContainer::load(const Graphics::TextureCubeMapDesc &desc) const {
     using Graphics::TextureStorageFormat;
     // 使用第一张图像的宽高信息分配纹理空间
     stb::Image image = stb::Image::load(desc.path[0], desc.is_color);
@@ -68,7 +68,7 @@ intrusive_ptr<Graphics::Texture> TextureCubeMapContainer::load(const Graphics::T
     }
     Graphics::TextureCreateDesc texture_desc{
         Graphics::TextureType::TEXTURE_CUBEMAP, storage_type, {(uint32_t)width, (uint32_t)height, 0}};
-    intrusive_ptr<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
+    Ref<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
     texture->set_filter_mode(desc.filter_mode);
 
     texture->import_image(image, 0, 0, 0, 0);

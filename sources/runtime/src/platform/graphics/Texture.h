@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "platform/image/image.h"
 #include "resource/Resource.h"
 #include <cstdint>
@@ -79,7 +79,7 @@ struct TextureCubeMapDesc {
     TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
 };
 
-class Texture : public intrusive_ptr_base<Texture> {
+class Texture : public RefCount {
 protected:
     TextureType type;
     TextureStorageFormat format;
@@ -91,8 +91,8 @@ public:
     virtual void set_warp_mode(TextureWarpMode warp_mode) noexcept = 0;
     virtual void generate_mipmaps() noexcept = 0;
 
-    virtual void import_image(const stb::Image& image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
-                              uint32_t zoffset = 0) = 0;
+    virtual void import_image(const stb::Image &image, uint32_t mipmap_level = 0, uint32_t xoffset = 0,
+                              uint32_t yoffset = 0, uint32_t zoffset = 0) = 0;
     virtual stb::Image export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const = 0;
 
     TextureType get_type() const noexcept { return type; }
@@ -108,7 +108,7 @@ public:
     Texture2DContainer() : ResourceContainer<Texture2DDesc, Texture>("纹理") {}
 
 protected:
-    intrusive_ptr<Texture> load(const Texture2DDesc &desc) const override;
+    Ref<Texture> load(const Texture2DDesc &desc) const override;
 };
 
 class TextureCubeMapContainer final : public Resource::ResourceContainer<TextureCubeMapDesc, Texture> {
@@ -116,8 +116,7 @@ public:
     TextureCubeMapContainer() : ResourceContainer<TextureCubeMapDesc, Texture>("纹理") {}
 
 protected:
-    intrusive_ptr<Texture> load(const TextureCubeMapDesc &desc) const override;
+    Ref<Texture> load(const TextureCubeMapDesc &desc) const override;
 };
-
 
 } // namespace Goonya::Graphics

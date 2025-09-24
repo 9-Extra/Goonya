@@ -23,7 +23,7 @@ private:
         PointLightData pointlight_list[POINTLIGHT_MAX];
     };
 
-    intrusive_ptr<Buffer> per_frame_uniform; // 用于一般渲染每帧变化的数据
+    Ref<Buffer> per_frame_uniform; // 用于一般渲染每帧变化的数据
 public:
     GeometryPass();
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/intrusive_ptr.h"
+#include "core/RefCount.h"
 #include "core/metatype/metatype.h"
 #include <cassert>
 #include <string>
@@ -19,7 +19,7 @@ struct ShaderUniformBlockInfo final {
     BufferBindingType binding_type = BufferBindingType::UNIFORM;
 };
 
-class Shader : public intrusive_ptr_base<Shader> {
+class Shader : public RefCount {
 public:
     Shader(const Shader &) = delete;
     Shader(Shader &&) = delete;
