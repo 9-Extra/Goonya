@@ -1,10 +1,8 @@
 #pragma once
 
 #include <cassert>
-#include <functional>
 #include <memory>
 #include <optional>
-#include <queue>
 #include <spdlog/logger.h>
 #include <thread>
 
@@ -12,6 +10,7 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "Texture.h"
+#include "core/ThreadPool.h"
 #include "core/cgmath.h"
 #include "core/intrusive_ptr.h"
 #include "platform/graphics/RenderTarget.h"
@@ -90,18 +89,14 @@ public:
 extern std::unique_ptr<GraphicsAPI> graphics_api;
 extern std::thread render_thread;
 
-extern std::queue<std::function<void()>> render_tasks;
-
 template <typename T, bool IS_RHI_THREAD = false>
 void enqueue_render_task(T &&task) {
     if constexpr (IS_RHI_THREAD){
-        std::invoke(std::forward<T>(task));
+        task();
     } else {
-        render_tasks.push(std::forward<T>(task));
+        THREAD_POOL.enqueue_renderer_thread(std::forward<T>(task));
     }
 }
-
-void run_all_tasks();
 
 void initialize(GraphicsAPIType api_type);
 

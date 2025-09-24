@@ -2,26 +2,17 @@
 
 #include "core/ThreadPool.h"
 #include "core/intrusive_ptr.h"
-#include "core/log/Log.h"
-#include "craft/block/block_model.h"
-#include "craft/block/blockstate.h"
-#include "craft/core/LockQueue.h"
 #include "craft/core/core.h"
-#include "craft/level/CraftGraphicsBasic.h"
+#include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/Renderer.h"
 #include "platform/graphics/Material.h"
 
-#include <array>
-#include <atomic>
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
 #include <functional>
 #include <future>
 #include <memory>
-#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -93,111 +84,19 @@ Minecraft中LevelRender和ClientLevel运行在同一线程，SeverLevel运行在
 */
 
 /**
- * @brief 一个区块信息的复制，用于在编译时访问
- * 与Minecraft不同，这里的一个区块就是一个section
- */
-struct RenderChunk {
-    std::array<BlockState *, CHUNK_BLOCK_COUNT> block_states;
-    std::unordered_map<BlockInnerPos, int, BlockInnerPos::Hasher> block_entities;
-
-    // 从Chunk复制数据
-    explicit RenderChunk(Ref<Chunk> chunk) : block_states(chunk->block_states), block_entities(chunk->block_entities) {}
-
-    BlockState *get_block_state(BlockInnerPos pos) const noexcept { return block_states[pos.as_index()]; }
-    BlockState *get_block_state(BlockPos pos) const noexcept { return get_block_state(BlockInnerPos(pos)); }
-};
-
-/**
- * @brief 记录一个section编译时其自身及附近的6个区块信息
- *
- */
-struct RenderChunkRegion {
-    std::array<std::shared_ptr<RenderChunk>, 7> render_chunks;
-    ChunkPos center_chunk_pos; // 角落处区块的位置
-
-    BlockState *get_block_state(BlockPos pos) const noexcept {
-        return render_chunks[flatten_index(center_chunk_pos, ChunkPos(pos))]->get_block_state(pos);
-    }
-
-    std::shared_ptr<RenderChunk> &operator[](ChunkPos pos) noexcept{
-        return render_chunks[flatten_index(center_chunk_pos, pos)];
-    }
-
-    static size_t flatten_index(ChunkPos center_chunk_pos, ChunkPos pos) noexcept {
-        Vector3i offset = pos - center_chunk_pos;
-        assert(center_chunk_pos.distance_manhattan(pos) <= 1);
-        if (offset.x != 0){
-            return offset.x == -1 ? 1 : 2;
-        } else if (offset.y != 0){
-            return offset.y == -1 ? 3 : 4; 
-        } else if (offset.z != 0){
-            return offset.z == -1 ? 5 : 6; 
-        } else [[likely]] {
-            return 0;
-        }
-    }
-};
-
-class LevelRenderer;
-
-/**
- * @brief 缓存一帧中所有编译时需要的所有RenderChunk
- * 构建ComplieTask时从这里取出对应section需要的27个RenderChunk打包成RenderChunkRegion
- */
-struct RenderRegionCache {
-    const LevelRenderer &level;
-    std::unordered_map<ChunkPos, std::shared_ptr<RenderChunk>> cached_render_chunk;
-
-    explicit RenderRegionCache(const LevelRenderer &level) noexcept : level(level) {}
-
-    RenderChunkRegion create_region(ChunkPos section_pos);
-};
-
-/**
  * @brief 一个可以渲染的区块，除了对应的mesh，还管理它的编译任务
  *
  */
-struct RenderSection : public std::enable_shared_from_this<RenderSection> {
-    struct ComplieTask {
-        std::weak_ptr<RenderSection> owner; // 持有owner，你才知道结果写到哪里去
-        RenderChunkRegion region;
-        std::atomic<bool> is_cancelled = false;
-        std::future<void> task_blocker; // 用于等待此task结束
-
-        ComplieTask(const std::weak_ptr<RenderSection> &owner, RenderChunkRegion region) noexcept
-            : owner(owner), region(std::move(region)) {}
-
-        ~ComplieTask() {
-            assert(is_cancelled.load()); // 销毁任务前应当取消任务
-            if (task_blocker.valid()) {
-                task_blocker.wait(); // 如果被调度了，则等待任务结束，避免任务访问无效数据
-            }
-        }
-        void cancel() noexcept { is_cancelled.store(true, std::memory_order::relaxed); }
-
-        struct ComplieResult{
-            std::vector<TerrainMeshVertex> vertices;
-            std::vector<uint32_t> indices;
-            std::vector<TerrainPerSurface> per_surface;
-        };
-
-        void do_complie(LockQueue<std::move_only_function<void(LevelRenderer*)>> &update_tasks_queue) const;
-
-    private:
-        static void compiler_push_quad(ComplieResult &result, BlockPos pos, const BakedQuad &quad) noexcept;
-
-        ComplieResult compile_mesh() const;
-    };
-
+class RenderSection : public std::enable_shared_from_this<RenderSection> {
+public:
     ChunkPos chunk_pos;
     Ref<Chunk> origin_chunk;
 
     std::shared_ptr<ComplieTask> complie_task;
     bool is_dirty = true;
 
-    Goonya::Graphics::MeshRenderProxy* mesh_proxy = nullptr;
+    Goonya::Graphics::MeshRenderProxy *mesh_proxy = nullptr;
 
-public:
     explicit RenderSection(Ref<Chunk> chunk) : chunk_pos(chunk->chunk_pos), origin_chunk(chunk) {
         assert(origin_chunk);
     }
@@ -206,24 +105,24 @@ public:
         if (complie_task) {
             complie_task->cancel();
         }
-        if (mesh_proxy){
+        if (mesh_proxy) {
             Goonya::Graphics::renderer.remove_mesh_proxy(mesh_proxy);
         }
     }
 
-    void complie_async(RenderRegionCache &region_cache,
-                       LockQueue<std::move_only_function<void(LevelRenderer* level)>> &update_tasks_queue) {
+    void complie_async(
+        RenderRegionCache &region_cache,
+        std::move_only_function<void(std::shared_ptr<RenderSection> &, ComplieTask::ComplieResult &&)> delegate) {
         assert(is_dirty);
         if (complie_task) {
             complie_task->cancel();
         }
 
-        complie_task =
-            std::make_shared<RenderSection::ComplieTask>(this->weak_from_this(), region_cache.create_region(chunk_pos));
+        complie_task = std::make_shared<ComplieTask>(this->weak_from_this(), region_cache.create_region(chunk_pos));
         complie_task->task_blocker =
-            Goonya::THREAD_POOL.enqueue([task = this->complie_task, &queue = update_tasks_queue] {
+            Goonya::THREAD_POOL.enqueue([task = this->complie_task, delegate = std::move(delegate)] mutable {
                 // 在LevelRenderer销毁前一定提前结束所有任务，所以queue一定可用
-                task->do_complie(queue);
+                task->do_complie(std::move(delegate));
             });
 
         is_dirty = false;
@@ -233,11 +132,11 @@ public:
 class LevelRenderer {
 public:
     intrusive_ptr<Goonya::Graphics::Material> terrain_material;
+
 private:
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块
 
     std::vector<RenderSection *> visible_chunk; // 当前帧可见的区块
-    LockQueue<std::move_only_function<void(LevelRenderer*)>> update_tasks;
 public:
     LevelRenderer();
     ~LevelRenderer() {
@@ -276,21 +175,7 @@ public:
     void render_frame();
 
 private:
-    void pull_tasks(){
-        for (std::optional<std::move_only_function<void(LevelRenderer*)>> task = update_tasks.pop_front(); task.has_value();
-             task = update_tasks.pop_front()) {
-            std::move(task.value())(this);
-        }
-    }
-
-    void do_cull() {
-        visible_chunk.clear();
-        for (const auto &[pos, section] : render_chunks) {
-            if (has_all_neighbors(pos)) {
-                visible_chunk.push_back(section.get());
-            }
-        }
-    }
+    void do_cull();
 };
 
 } // namespace Craft

@@ -1,4 +1,5 @@
 #include "World.h"
+#include "core/ThreadPool.h"
 
 namespace Goonya {
 World world; // global world instance
@@ -11,6 +12,6 @@ void World::tick() {
         this->root->tick(GObject::DirtyFlag::DEFAULT);
     }
 
-    // 递归更新所有物体
+    main_thread_process();
 }
 }

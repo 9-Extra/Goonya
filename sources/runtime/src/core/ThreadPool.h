@@ -1,7 +1,10 @@
 #pragma once
 
+#include "core/LockQueue.h"
+#include "core/ThreadUtils.h"
 #include "runtime/GoonyaException.h"
 
+#include <cassert>
 #include <concepts>
 #include <condition_variable>
 #include <functional>
@@ -21,9 +24,7 @@ namespace Goonya {
 //     std::atomic<uint32_t> prerequistites_count;
 // public:
 
-
 // private:
-
 
 // };
 
@@ -31,6 +32,9 @@ class ThreadPool final {
 private:
     std::vector<std::thread> workers;
     std::queue<std::move_only_function<void()>> tasks;
+
+    LockQueue<std::move_only_function<void()>> main_thread_tasks;
+    LockQueue<std::move_only_function<void()>> renderer_thread_tasks;
 
     std::mutex queue_mutex;
     std::condition_variable condition;
@@ -46,7 +50,8 @@ public:
     ThreadPool &operator=(ThreadPool &&) = delete;
 
     // 提交任务，返回future
-    template <typename F> requires std::invocable<F>
+    template <typename F>
+        requires std::invocable<F>
     auto enqueue(F &&f) -> std::future<std::invoke_result_t<F>> {
         using return_type = std::invoke_result_t<F>;
 
@@ -64,8 +69,55 @@ public:
         condition.notify_one();
         return res;
     }
+
+    // 提交任务，但不返回
+    template <typename F> requires std::invocable<F>
+    void enqueue_detached(F &&f) {
+        static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
+        {
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            if (stop) {
+                throw RuntimeError("enqueue on stopped ThreadPool");
+            }
+            tasks.emplace(std::forward<F>(f));
+        }
+        condition.notify_one();
+    }
+
+    template <typename F>
+        requires std::invocable<F>
+    void enqueue_main_thread(F&& f) noexcept {
+        static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
+        main_thread_tasks.push_back(std::forward<F>(f));
+    }
+
+    template <typename F>
+        requires std::invocable<F>
+    void enqueue_renderer_thread(F&& f) noexcept {
+        static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
+        renderer_thread_tasks.push_back(std::forward<F>(f));
+    }
+
+private:
+    friend void main_thread_process();
+    friend void renderer_thread_process();
 };
 
 extern ThreadPool THREAD_POOL; // 全局的线程池
+
+inline void main_thread_process() {
+    auto &queue = THREAD_POOL.main_thread_tasks;
+    for (auto task = queue.pop_front(); task.has_value(); task = queue.pop_front()) {
+        std::move(task.value())();
+    }
+}
+
+inline void renderer_thread_process() {
+    assert(current_thread_type == ThreadType::RENDER);
+    auto &queue = THREAD_POOL.renderer_thread_tasks;
+    for (auto task = queue.pop_front(); task.has_value(); task = queue.pop_front()) {
+        std::move(task.value())();
+    }
+}
 
 } // namespace Goonya

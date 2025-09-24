@@ -27,7 +27,7 @@ void Renderer::init() {
 
 void Renderer::render() {
 
-    run_all_tasks();
+    renderer_thread_process();
 
     bool is_screen_painted = false;
     for (CameraRenderProxy *camera : cameras) {
@@ -85,7 +85,7 @@ void Renderer::render() {
 }
 
 void Renderer::clear() {
-    run_all_tasks();
+    renderer_thread_process();
 
     assert(mesh_proxys.empty());
 

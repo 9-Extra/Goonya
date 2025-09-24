@@ -1,13 +1,13 @@
 #include "level.h"
 
+#include "core/log/Log.h"
 #include "craft/core/core.h"
 #include "craft/level/chunk.h"
-#include <cstddef>
 #include <ranges>
 
 namespace Craft {
 
-Level::Level() : delta_time_residual(GameClock::duration::zero()){
+Level::Level() : delta_time_residual(GameClock::duration::zero()) {
     player_pos = {0, 0, 0};
     player_chunk_pos = {255, 255, 255}; // 保证第一帧 ChunkPos(BlockPos(player_pos)) != play_chunk_pos
 }
@@ -35,20 +35,26 @@ void Level::tick() {
 }
 
 void Level::load_chunks() {
-    
+
     ChunkPos current_player_chunk_pos = ChunkPos(BlockPos(player_pos));
     if (current_player_chunk_pos == player_chunk_pos) {
-        return;        
+        return;
     } else {
         player_chunk_pos = current_player_chunk_pos;
+        auto processed_chunk_receiver = [level = Ref{this}](const Ref<Chunk> &chunk) mutable {
+            level->accessible_chunk.emplace(chunk->chunk_pos, chunk);
+            level->level_renderer.register_chunk(chunk);
+        };
         // 添加区块加载任务
-        for (int32_t x = player_chunk_pos.x - chunk_load_distance; x <= player_chunk_pos.y + chunk_load_distance; x++) {
-            for (int32_t y = player_chunk_pos.x - chunk_load_distance; y <= player_chunk_pos.y + chunk_load_distance; y++) {
-                for (int32_t z = player_chunk_pos.x - chunk_load_distance; z <= player_chunk_pos.y + chunk_load_distance; z++) {
+        for (int32_t x = player_chunk_pos.x - chunk_load_distance; x <= player_chunk_pos.x + chunk_load_distance; x++) {
+            for (int32_t y = player_chunk_pos.y - chunk_load_distance; y <= player_chunk_pos.y + chunk_load_distance;
+                 y++) {
+                for (int32_t z = player_chunk_pos.z - chunk_load_distance;
+                     z <= player_chunk_pos.z + chunk_load_distance; z++) {
                     ChunkPos chunk_pos = ChunkPos{x, y, z};
                     if (!all_chunks.contains(chunk_pos)) {
-                        Ref<Chunk> chunk = all_chunks.emplace(chunk_pos, create_ref<Chunk>(chunk_pos)).first->second;      
-                        generating_chunks.emplace_back(chunk_generator.process_chunk_async(chunk));
+                        Ref<Chunk> chunk = all_chunks.emplace(chunk_pos, create_ref<Chunk>(chunk_pos)).first->second;
+                        chunk_generator.process_chunk_async(chunk, processed_chunk_receiver);
                     }
                 }
             }
@@ -56,18 +62,6 @@ void Level::load_chunks() {
     }
 
     // 收集加载完成的区块到visible_chunks
-    size_t j = 0;
-    for (std::future<Ref<Chunk>> &task : generating_chunks) {
-        if (task.valid()) {
-            Ref<Chunk> generated = task.get();
-            accessible_chunk.emplace(generated->chunk_pos, generated);
-            level_renderer.register_chunk(generated);
-        } else {
-            generating_chunks[j] = std::move(task);
-            j++;
-        }
-    }
-    generating_chunks.resize(j);
 }
 
 void Level::do_tick() {

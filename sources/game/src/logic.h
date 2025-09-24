@@ -18,5 +18,5 @@ private:
     std::shared_ptr<Goonya::GObject> camera;
     std::shared_ptr<Goonya::GObject> teapot;
 
-    Craft::Level level;
+    Ref<Craft::Level> level;
 };

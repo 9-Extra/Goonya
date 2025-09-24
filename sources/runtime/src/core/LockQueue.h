@@ -4,7 +4,7 @@
 #include <mutex>
 #include <optional>
 
-namespace Craft {
+namespace Goonya {
 
 // "有"锁队列
 template<typename T>

@@ -6,6 +6,7 @@
 #include "core/intrusive_ptr.h"
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
+#include "craft/level/level.h"
 #include "resource/ResMng.h"
 
 #include <platform/graphics/Shader.h>
@@ -86,7 +87,6 @@ void MoveSystem::handle_keyboard(float delta) const {
     if (Input::is_key_click('0')) {
         camera->set_transform(Transform{});
     }
-
     // Vector3f pos = camera->get_transform().position;
     // LOG_DEBUG("x = {}, y = {}, z = {}", pos.x, pos.y, pos.z);
 
@@ -111,11 +111,14 @@ void MoveSystem::on_register() {
     teapot = get_owner()->get_child_by_name("teapot");
     assert(teapot);
 
-    level.prepare_start();
+    level = create_ref<Craft::Level>();
+    level->prepare_start();
 }
 void MoveSystem::on_tick() {
     handle_keyboard(Goonya::Timer::delta());
     handle_mouse();
+
+    level->set_player_pos(camera->get_transform().position);
 
     teapot->rotate_global_axis(Goonya::Vector3f({0, Goonya::Timer::delta() * 0.001f, 0}));
     Goonya::Quaternion r =
@@ -123,5 +126,5 @@ void MoveSystem::on_tick() {
     cube->rotate_local_axis(r);
     light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
 
-    level.tick();
+    level->tick();
 }
