@@ -70,17 +70,11 @@ void LevelRenderer::render_frame() {
 
             section->mesh_proxy = proxy;
 
-            enqueue_render_task([proxy] mutable {
-                ASSERT_RENDER_THREAD();
-                renderer.add_mesh_proxy(std::unique_ptr<MeshRenderProxy>{proxy});
-            });
+            renderer.add_mesh_proxy(std::unique_ptr<MeshRenderProxy>{proxy});
         } else {
             MeshRenderProxy *proxy = section->mesh_proxy;
-            enqueue_render_task([proxy, updated_mesh, updated_per_surface_buffer] mutable {
-                ASSERT_RENDER_THREAD();
-                proxy->mesh = updated_mesh;
-                proxy->materials[0]->set_external_buffer("per_surface", updated_per_surface_buffer);
-            });
+            proxy->mesh = updated_mesh;
+            proxy->materials[0]->set_external_buffer("per_surface", updated_per_surface_buffer);
         }
     };
 

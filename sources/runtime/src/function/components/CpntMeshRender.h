@@ -68,8 +68,6 @@ public:
         assert(get_owner() != nullptr);
         GObject &owner = *get_owner();
 
-        bool is_transform_dirty = owner.has_dirty_flag(GObject::DirtyFlag::TRANSFORM_DIRTY);
-
         if (is_materials_dirty) {
             enqueue_render_task([proxy = mesh_proxy, copy_materials = materials] mutable {
                 ASSERT_RENDER_THREAD();
@@ -84,6 +82,8 @@ public:
             });
             is_mesh_dirty = false;
         }
+        
+        bool is_transform_dirty = owner.has_dirty_flag(GObject::DirtyFlag::TRANSFORM_DIRTY);
         if (is_transform_dirty) {
             enqueue_render_task([proxy = mesh_proxy, model_matrix = owner.get_world_model_matrix(),
                                           normal_matrix = owner.get_world_normal_matrix()] mutable {
@@ -91,7 +91,6 @@ public:
                 proxy->model_matrix = model_matrix;
                 proxy->normal_matrix = normal_matrix;
             });
-            is_transform_dirty = false;
         }
     }
 

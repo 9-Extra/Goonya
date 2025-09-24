@@ -118,13 +118,13 @@ void MoveSystem::on_tick() {
     handle_keyboard(Goonya::Timer::delta());
     handle_mouse();
 
-    level->set_player_pos(camera->get_transform().position);
-
+    
     teapot->rotate_global_axis(Goonya::Vector3f({0, Goonya::Timer::delta() * 0.001f, 0}));
     Goonya::Quaternion r =
-        Goonya::Quaternion::from_eular({Goonya::Timer::delta() * 0.001f, Goonya::Timer::delta() * 0.0015f, 0.0f});
+    Goonya::Quaternion::from_eular({Goonya::Timer::delta() * 0.001f, Goonya::Timer::delta() * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
     light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
-
+    
+    level->set_player_pos(camera->get_transform().position);
     level->tick();
 }

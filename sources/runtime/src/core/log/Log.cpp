@@ -1,4 +1,5 @@
 #include "Log.h"
+#include "spdlog/common.h"
 
 #include <memory>
 #include <spdlog/async.h>
@@ -22,9 +23,11 @@ Logger::Logger() {
     spdlog::init_thread_pool(10000, 1);
 
     core_logger = std::make_shared<spdlog::async_logger>("core", sinks.begin(), sinks.end(), spdlog::thread_pool());
-
+#ifdef DEBUG
     core_logger->set_level(spdlog::level::trace);
-
+#else
+    core_logger->set_level(spdlog::level::warn);
+#endif
     spdlog::register_logger(core_logger);
 };
 
