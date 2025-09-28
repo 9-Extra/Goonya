@@ -1,7 +1,7 @@
 #include "LevelRenderer.h"
 
-#include "core/cgmath.h"
 #include "core/RefCount.h"
+#include "core/cgmath.h"
 #include "core/log/Log.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
@@ -14,6 +14,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <span>
 
 namespace Craft {
 
@@ -32,24 +33,17 @@ void LevelRenderer::render_frame() {
 
     RenderRegionCache region_cache{*this};
 
-    auto receiver = [terrain_material = this->terrain_material](std::shared_ptr<RenderSection> &section, ComplieTask::ComplieResult &&result) {
+    auto receiver = [terrain_material = this->terrain_material](std::shared_ptr<RenderSection> &section,
+                                                                ComplieTask::ComplieResult &&result) {
         ASSERT_RENDER_THREAD();
         using namespace Goonya::Graphics;
-        Ref<Mesh> updated_mesh = graphics_api->create_mesh();
-        updated_mesh->set_layout(VERTEX_LAYOUT_PLANE);
+        Ref<Mesh> updated_mesh = graphics_api->create_mesh(VERTEX_LAYOUT_PLANE);
         updated_mesh->submeshes.emplace_back(SubMesh{.start_index = 0,
                                                      .index_count = (uint32_t)result.indices.size(),
                                                      .topology = Goonya::Graphics::Topology::TRIANGLE});
 
-        Ref<Buffer> vertex_buffer =
-            graphics_api->create_buffer(result.vertices.size() * sizeof(TerrainMeshVertex), BufferType::STATIC);
-        vertex_buffer->write(std::as_bytes(std::span(result.vertices)), 0);
-        updated_mesh->set_vertex_buffer(vertex_buffer);
-
-        Ref<Buffer> index_buffer =
-            graphics_api->create_buffer(result.indices.size() * sizeof(uint32_t), BufferType::STATIC);
-        index_buffer->write(std::as_bytes(std::span(result.indices)), 0);
-        updated_mesh->set_indices_buffer(index_buffer);
+        updated_mesh->set_vertices(0, std::as_bytes(std::span(result.vertices)));
+        updated_mesh->set_indices(result.indices);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
         Ref<Buffer> updated_per_surface_buffer =
@@ -62,11 +56,15 @@ void LevelRenderer::render_frame() {
             Ref<Material> material = terrain_material->clone();
             material->set_external_buffer("per_surface", updated_per_surface_buffer);
 
+            Goonya::Vector3f start_pos = section->chunk_pos.get_start_pos();
+            Goonya::Vector3f end_pos = start_pos + Goonya::Vector3f{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH};
+
             MeshRenderProxy *proxy = new MeshRenderProxy{};
             proxy->mesh = updated_mesh;
             proxy->materials = {material};
             proxy->model_matrix = Goonya::Matrix4::identity();
             proxy->normal_matrix = Goonya::Matrix3::identity();
+            proxy->aabbs = {Goonya::BoundingBox{start_pos, end_pos}};
 
             section->mesh_proxy = proxy;
 

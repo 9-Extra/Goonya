@@ -56,7 +56,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
         glDebugMessageCallback(_opengl_debug_callback, nullptr);
         glEnable(GL_DEBUG_OUTPUT); // 无论是否为调试模式，都要打开，不然不报错
         // glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, nullptr, GL_FALSE);
-#ifdef NDEBUG
+#ifndef DEBUG
         // 只报告重要的事
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_MEDIUM, 0, nullptr, GL_FALSE);
         glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_LOW, 0, nullptr, GL_FALSE);
@@ -89,9 +89,9 @@ OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
 }
 
 // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-Ref<Mesh> OpenGLGraphicsAPI::create_mesh() {
+Ref<Mesh> OpenGLGraphicsAPI::create_mesh(VertexLayout layout) {
     ASSERT_RENDER_THREAD();
-    return create_ref<GLMesh>();
+    return create_ref<GLMesh>(std::move(layout));
 }
 
 Ref<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
@@ -227,8 +227,8 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
 
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
     ASSERT_RENDER_THREAD();
-    glDrawElements(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_INT,
-                   reinterpret_cast<void *>((size_t)submesh.start_index * sizeof(uint32_t))); // 绘制
+    glDrawElementsBaseVertex(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_INT,
+                   reinterpret_cast<void *>((size_t)submesh.start_index * sizeof(uint32_t)), submesh.base_vertex_offset); // 绘制
 }
 
 // -----------------------bind-------------------------------

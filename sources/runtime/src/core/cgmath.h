@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstddef>
 #include <format>
+#include <limits>
 
 namespace Goonya {
 
@@ -62,7 +63,8 @@ struct Vector3f {
 
     const float *data() const { return v; }
 
-    constexpr float operator[](const unsigned int i) const { return v[i]; }
+    constexpr float &operator[](unsigned int i) noexcept { return v[i]; }
+    constexpr const float &operator[](unsigned int i) const noexcept { return v[i]; }
 
     constexpr Vector3f operator+(const Vector3f b) const { return Vector3f{x + b.x, y + b.y, z + b.z}; }
     constexpr Vector3f operator-(const Vector3f b) const { return Vector3f{x - b.x, y - b.y, z - b.z}; }
@@ -70,6 +72,7 @@ struct Vector3f {
     constexpr Vector3f operator+=(const Vector3f b) { return *this = *this + b; }
     constexpr Vector3f operator*(const float n) const { return {x * n, y * n, z * n}; }
     constexpr Vector3f operator/(const float n) const { return *this * (1.0f / n); }
+    constexpr Vector3f operator*(const Vector3f v) const { return {x * v.x, y * v.y, z * v.z}; }
 
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }
 
@@ -101,8 +104,10 @@ struct Vector4f {
 
     constexpr float &operator[](size_t i) noexcept { return v[i]; }
     constexpr const float &operator[](size_t i) const noexcept { return v[i]; }
-    constexpr Vector4f operator*(const float n) const { return {x * n, y * n, z * n, w * n}; }
-    constexpr Vector4f operator/(const float n) const { return *this * (1.0f / n); }
+    constexpr Vector4f operator+(Vector4f n) const noexcept { return {x + n.x, y + n.y, z + n.z, w + n.w}; }
+    constexpr Vector4f operator-(Vector4f n) const noexcept { return {x - n.x, y - n.y, z - n.z, w - n.w}; }
+    constexpr Vector4f operator*(const float n) const noexcept { return {x * n, y * n, z * n, w * n}; }
+    constexpr Vector4f operator/(const float n) const noexcept { return *this * (1.0f / n); }
 };
 
 struct Quaternion {
@@ -123,11 +128,18 @@ struct Quaternion {
                Quaternion::from_rotation({0, 0, 1}, rotate.z);
     }
 
-    Vector3f rotate_direction(Vector3f src) const {
+    constexpr Vector3f rotate_direction(Vector3f src) const {
         const Quaternion &q = *this;
         Quaternion p{src.x, src.y, src.z, 0.0f};
         Quaternion rotated = q * p * q.conjugate();
         return Vector3f{rotated.x, rotated.y, rotated.z}.normalize();
+    }
+
+    Vector3f apply(Vector3f src) const {
+        const Quaternion &q = *this;
+        Quaternion p{src.x, src.y, src.z, 0.0f};
+        Quaternion rotated = q * p * q.conjugate();
+        return Vector3f{rotated.x, rotated.y, rotated.z};
     }
 
     float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
@@ -227,6 +239,7 @@ struct Matrix3 {
 };
 
 struct Matrix4 {
+
     float m[4][4]; // 以行主序存储矩阵
 
     constexpr Matrix4() : m{{0}} {}
@@ -257,7 +270,15 @@ struct Matrix4 {
         return m[i][j];
     }
 
-    constexpr Matrix4 operator*(const Matrix4 &m) const {
+    /**
+     * @brief 取矩阵的第i行
+     */
+    constexpr Vector4f &operator[](size_t i) noexcept {
+        assert(i < 4);
+        return reinterpret_cast<Vector4f&>(m[i]);
+    }
+
+    constexpr Matrix4 operator*(const Matrix4 &m) const noexcept {
         Matrix4 r;
         for (unsigned int i = 0; i < 4; i++) {
             for (unsigned int j = 0; j < 4; j++) {
@@ -268,7 +289,7 @@ struct Matrix4 {
         return r;
     }
 
-    constexpr Vector4f operator*(const Vector4f &right) const {
+    constexpr Vector4f operator*(const Vector4f &right) const noexcept {
         Vector4f r;
         r.v[0] = m[0][0] * right.v[0] + m[0][1] * right.v[1] + m[0][2] * right.v[2] + m[0][3] * right.v[3];
         r.v[1] = m[1][0] * right.v[0] + m[1][1] * right.v[1] + m[1][2] * right.v[2] + m[1][3] * right.v[3];
@@ -310,6 +331,13 @@ struct Matrix4 {
         float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]);
         return Quaternion{qx, qy, qz, qw};
     }
+
+    // --------------------------------------------
+    Matrix3 to_matrix3() const noexcept {
+        return Matrix3{
+            m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2],
+        };
+    }
 };
 
 struct Transform {
@@ -327,14 +355,16 @@ struct Transform {
         return Transform{{}, matrix.resolve_rotation(), matrix.resolve_scale()};
     }
 
-    Vector3f get_forward_direction() const { return rotation.rotate_direction({0, 0, -1}); }
+    constexpr Vector3f apply_point(Vector3f p) const noexcept { return rotation.apply(p * scale) + position; }
 
-    Vector3f get_up_direction() const { return rotation.rotate_direction({0, 1, 0}); }
+    constexpr Vector3f get_forward_direction() const noexcept { return rotation.rotate_direction({0, 0, -1}); }
 
-    constexpr Matrix4 model_matrix() const {
+    constexpr Vector3f get_up_direction() const noexcept { return rotation.rotate_direction({0, 1, 0}); }
+
+    constexpr Matrix4 model_matrix() const noexcept {
         return Matrix4{Matrix3::scale(scale) * Matrix3::rotate(rotation)} * Matrix4::translate(position);
     }
-    constexpr Matrix3 normal_matrix() const {
+    constexpr Matrix3 normal_matrix() const noexcept {
         // 旋转矩阵 * 缩放矩阵的伴随矩阵
         return Matrix3::scale(scale.y * scale.z, scale.x * scale.z, scale.y * scale.z) * Matrix3::rotate(rotation);
     }
@@ -344,13 +374,51 @@ struct BoundingBox {
     Vector3f min;
     Vector3f max;
 
-    constexpr BoundingBox() noexcept = default;
+    constexpr static BoundingBox infinite() {
+        // 不使用浮点inf作为包围盒长度，因为计算center会得到nan
+        float max = std::numeric_limits<float>::max();
+        float min = std::numeric_limits<float>::min();
+        return BoundingBox{{-min, -min, -min}, {max, max, max}};
+    }
+
+    constexpr BoundingBox() noexcept : min{0, 0, 0}, max{0, 0, 0} {};
     constexpr BoundingBox(Vector3f min, Vector3f max) noexcept : min(min), max(max) {
         assert(min.x <= max.x && min.y <= max.y && min.z <= max.z);
     }
 
     constexpr BoundingBox offset(Vector3f pos) const noexcept { return BoundingBox{min + pos, max + pos}; }
+    /**
+     * @brief 获取变换后后的保守包围盒
+     */
+    constexpr BoundingBox transformed(const Matrix4 &transform) const noexcept {
+        /*
+        此函数源自 [Godot] (https://github.com/godotengine/godot)
+        版权归 [Juan Linietsky, Ariel Manzur] 所有
+        遵循 MIT 许可证
+        */
+        Matrix3 rotation_scale = transform.to_matrix3().transpose();
+        Vector3f position = transform.resolve_translate();
 
+        Vector3f tmin, tmax;
+        for (int i = 0; i < 3; i++) {
+            tmin[i] = position[i];
+            tmax[i] = position[i];
+
+            for (int j = 0; j < 3; j++) {
+                float e = rotation_scale.m[i][j] * min[j];
+                float f = rotation_scale.m[i][j] * max[j];
+                if (e < f) {
+                    tmin[i] += e;
+                    tmax[i] += f;
+                } else {
+                    tmin[i] += f;
+                    tmax[i] += e;
+                }
+            }
+        }
+
+        return {tmin, tmax};
+    }
     constexpr bool contains(Vector3f pos) const noexcept {
         return pos.x >= min.x && pos.y >= min.y && pos.z >= min.z && pos.x <= max.x && pos.y <= max.y && pos.z <= max.z;
     }
@@ -358,14 +426,29 @@ struct BoundingBox {
         Vector3f vec = max - min;
         return vec.x * vec.y * vec.z;
     }
-    constexpr Vector3f center() const noexcept { return (min + max) * 0.5; }
+    constexpr Vector3f center() const noexcept { return (min + max) * 0.5f; }
+    constexpr Vector3f extent() const noexcept { return (max - min) * 0.5f; }
+};
+
+struct Plane /* NOLINT */ {
+    Vector3f normal; // 归一化的法向量，指向视锥体内部
+    float d;         // 平面方程中的常数项 Ax+By+Cz+d=0
+    // 完整的平面方程是: normal.x * x + normal.y * y + normal.z * z + d = 0
+    Plane() noexcept = default;
+    Plane(Vector3f normal, float d) noexcept : normal(normal), d(d) {}
+    explicit Plane(Vector4f vec4) noexcept : normal(vec4.get_xyz()), d(vec4.w) {}
+
+    Plane normalize() const noexcept {
+        float len = normal.length();
+        return Plane{normal / len, d / len};
+    }
 };
 
 } // namespace Goonya
 
 template <>
 struct std::formatter<Goonya::Vector2f> {
-    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
     template <typename FormatContext>
     auto format(const Goonya::Vector2f vec2, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "({}, {})", vec2.x, vec2.y);
@@ -374,7 +457,7 @@ struct std::formatter<Goonya::Vector2f> {
 
 template <>
 struct std::formatter<Goonya::Vector3f> {
-    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
     template <typename FormatContext>
     auto format(const Goonya::Vector3f vec3, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "({}, {}, {})", vec3.x, vec3.y, vec3.z);

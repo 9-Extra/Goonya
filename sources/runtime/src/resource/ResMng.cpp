@@ -31,13 +31,13 @@ void RenderResource::init_buildin_resources() {
     std::span<const std::byte> plane_vertex_span = std::as_bytes(std::span(Assets::plane_vertices));
     Graphics::MeshDesc plane{Assets::plane_vertices_vertex_layout,
                              std::vector(plane_vertex_span.begin(), plane_vertex_span.end()), Assets::plane_indices,
-                             Graphics::Topology::TRIANGLE};
+                             Graphics::Topology::TRIANGLE, Assets::plane_aabb};
     meshes.add("plane", std::move(plane));
     // 添加天空盒的mesh，因为格式不一样所以单独处理
     std::span<const std::byte> skybox_cube_vertex_span = std::as_bytes(std::span(Assets::skybox_cube_vertices));
     Graphics::MeshDesc skybox_cube{Assets::skybox_cube_vertex_layout,
                                    std::vector(skybox_cube_vertex_span.begin(), skybox_cube_vertex_span.end()),
-                                   Assets::skybox_cube_indices, Graphics::Topology::TRIANGLE};
+                                   Assets::skybox_cube_indices, Graphics::Topology::TRIANGLE, Assets::skybox_cube_aabb};
     meshes.add("skybox_cube", std::move(skybox_cube));
 }
 

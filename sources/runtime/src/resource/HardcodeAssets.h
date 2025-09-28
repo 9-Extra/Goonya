@@ -9,35 +9,40 @@
 namespace Goonya::Assets {
 
 inline const std::vector<Vector3f> skybox_cube_vertices = {{-1.0, -1.0, -1.0}, {1.0, -1.0, -1.0}, {1.0, 1.0, -1.0},
-                                                    {-1.0, 1.0, -1.0},  {-1.0, -1.0, 1.0}, {1.0, -1.0, 1.0},
-                                                    {1.0, 1.0, 1.0},    {-1.0, 1.0, 1.0}};
+                                                           {-1.0, 1.0, -1.0},  {-1.0, -1.0, 1.0}, {1.0, -1.0, 1.0},
+                                                           {1.0, 1.0, 1.0},    {-1.0, 1.0, 1.0}};
 
-inline const Graphics::VertexLayout skybox_cube_vertex_layout{
-    {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, 0}}, sizeof(Vector3f)};
+inline const BoundingBox skybox_cube_aabb = {{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}};
+
+inline const Graphics::VertexLayout skybox_cube_vertex_layout =
+    Graphics::VertexLayoutBuilder().add_attribute(Graphics::VertexAttribute::POSITION).build();
 
 inline const std::vector<uint32_t> skybox_cube_indices = {1, 0, 3, 3, 2, 1, 3, 7, 6, 6, 2, 3, 7, 3, 0, 0, 4, 7,
-                                                   2, 6, 5, 5, 1, 2, 4, 5, 6, 6, 7, 4, 5, 4, 0, 0, 1, 5};
+                                                          2, 6, 5, 5, 1, 2, 4, 5, 6, 6, 7, 4, 5, 4, 0, 0, 1, 5};
 
 struct Vertex {
     Vector3f position;
     Vector3f normal;
-    Vector3f tangent;
+    Vector4f tangent;
     Vector2f uv;
 };
 
 inline const std::vector<Vertex> plane_vertices = {
-    {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
-    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+    {{1.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-1.0f, -1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
 };
 
-inline const Graphics::VertexLayout plane_vertices_vertex_layout{
-    {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Vertex, position)},
-     {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Vertex, normal)},
-     {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Vertex, tangent)},
-     {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
-    sizeof(Vertex)};
+inline const BoundingBox plane_aabb = {{-1.0f, -1.0f, -0.0001f}, {1.0f, 1.0f, 0.0001f}};
+
+inline const Graphics::VertexLayout plane_vertices_vertex_layout =
+    Graphics::VertexLayoutBuilder()
+        .add_attribute(Graphics::VertexAttribute::POSITION)
+        .add_attribute(Graphics::VertexAttribute::NORMAL)
+        .add_attribute(Graphics::VertexAttribute::TANGENT)
+        .add_attribute(Graphics::VertexAttribute::UV)
+        .build();
 
 inline const std::vector<uint32_t> plane_indices = {0, 1, 2, 2, 3, 0};
 } // namespace Goonya::Assets

@@ -26,7 +26,7 @@ struct CType2FieldType {
     const static FieldType Type = FieldType::nul;
 };
 
-#define GOONYA_DEFINE_FIELDTYPE2CTYPE(field_type, ctype)                                                             \
+#define GOONYA_DEFINE_FIELDTYPE2CTYPE(field_type, ctype)                                                               \
     template <>                                                                                                        \
     struct FieldType2CType<FieldType::field_type> {                                                                    \
         using Type = ctype;                                                                                            \
@@ -46,6 +46,8 @@ GOONYA_DEFINE_FIELDTYPE2CTYPE(vec2f, Vector2f)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(vec3f, Vector3f)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(vec4f, Vector4f)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(mat4f, Matrix4)
+
+#undef GOONYA_DEFINE_FIELDTYPE2CTYPE
 
 template <typename T>
 concept meta_type = CType2FieldType<T>::Type != FieldType::nul;
@@ -277,8 +279,9 @@ public:
 
 template <>
 struct std::formatter<Goonya::Meta::FieldType> {
-    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
-    constexpr auto format(const Goonya::Meta::FieldType t, std::format_context &ctx) const {
+    constexpr auto parse(std::format_parse_context &context) /* NOLINT*/ { return context.begin(); }
+    constexpr auto format(const Goonya::Meta::FieldType t, std::format_context &ctx) const // NOLINT
+    {
         switch (t) {
         case Goonya::Meta::FieldType::nul:
             return std::format_to(ctx.out(), "nul");
@@ -309,8 +312,8 @@ struct std::formatter<Goonya::Meta::FieldType> {
 
 template <>
 struct std::formatter<Goonya::Meta::LayoutInfo> {
-    constexpr auto parse(std::format_parse_context &context) { return context.begin(); }
-    auto format(const Goonya::Meta::LayoutInfo &p, std::format_context &ctx) const {
+    constexpr auto parse(std::format_parse_context &context) /* NOLINT*/ { return context.begin(); }
+    auto format(const Goonya::Meta::LayoutInfo &p, std::format_context &ctx) /* NOLINT*/ const {
         auto i = std::format_to(ctx.out(), "{{\n");
         ctx.advance_to(i);
         for (const auto &[name, f] : p.fields) {

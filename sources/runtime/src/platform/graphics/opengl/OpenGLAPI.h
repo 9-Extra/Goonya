@@ -21,7 +21,7 @@ public:
     void pop_debug_group_label() const noexcept override { glPopDebugGroup(); }
 
     // -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-    Ref<Mesh> create_mesh() override;
+    Ref<Mesh> create_mesh(VertexLayout layout) override;
     Ref<Texture> create_texture(const TextureCreateDesc &desc) const override {
         return create_ref<GLTexture>(desc);
     };

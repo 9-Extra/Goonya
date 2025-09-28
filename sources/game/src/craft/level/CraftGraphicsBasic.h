@@ -16,7 +16,7 @@ struct alignas(16) TerrainPerSurface { // NOLINT
     alignas(16) Goonya::Vector3f normal;
 };
 
-struct PointLight{
+struct PointLight {
     alignas(16) Goonya::Vector3f position;
     alignas(16) Goonya::Vector3f intensity;
 };
@@ -33,11 +33,11 @@ struct PointLight{
 //     PointLight pointlight_list[2];
 // };
 
-inline const Goonya::Graphics::VertexLayout VERTEX_LAYOUT_PLANE{
-    {{Goonya::Graphics::VertexAttribute::POSITION, Goonya::Meta::FieldType::vec3f,
-      offsetof(TerrainMeshVertex, position)},
-     {Goonya::Graphics::VertexAttribute::UV, Goonya::Meta::FieldType::vec2f, offsetof(TerrainMeshVertex, uv)}},
-    sizeof(TerrainMeshVertex)};
+inline const Goonya::Graphics::VertexLayout VERTEX_LAYOUT_PLANE =
+    Goonya::Graphics::VertexLayoutBuilder()
+        .add_attribute(Goonya::Graphics::VertexAttribute::POSITION)
+        .add_attribute(Goonya::Graphics::VertexAttribute::UV)
+        .build();
 
 constexpr std::string_view TERRAIN_SHADER_NAME = "shaders/craft/terrain/terrain";
 

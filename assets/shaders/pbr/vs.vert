@@ -4,7 +4,7 @@
 
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
-layout (location = 2) in vec3 tangent;
+layout (location = 2) in vec4 tangent;
 layout (location = 3) in vec3 color;
 layout (location = 4) in vec2 uv;
 
@@ -30,13 +30,13 @@ layout(binding = 0, std140) uniform per_frame
 layout(binding = 1) uniform per_object
 {
     mat4 model_matrix;
-    mat4 normal_matrix;
+    mat3 normal_matrix;
 };
 
 out VS_OUT
 {
     vec3 normal;
-    vec3 tangent;
+    vec4 tangent;
     vec3 world_position;
     vec2 tex_coords;
 } vs_out;
@@ -45,8 +45,8 @@ void main()
 {
     vec4 world_position = vec4(position.xyz, 1.0f) * model_matrix;
     vs_out.world_position = world_position.xyz / world_position.w;
-    vs_out.normal = (vec4(normal, 0.0f) * normal_matrix).xyz;
-    vs_out.tangent = (vec4(tangent, 0.0f) * model_matrix).xyz; // 切线应该使用模型变换
+    vs_out.normal = normal * normal_matrix;
+    vs_out.tangent = vec4(tangent.xyz * normal_matrix, tangent.w);
     vs_out.tex_coords = uv;
 
     gl_Position = world_position * view_perspective_matrix;

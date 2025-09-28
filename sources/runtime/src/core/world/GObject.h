@@ -66,7 +66,7 @@ public:
     void enable() noexcept { // NOLINT: 手动保证没有循环引用
         if (!is_disabled())
             return;
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY); // 重新计算变换矩阵
+        recaculate_world_transform(); // 重新计算变换矩阵
         disabled = false;
         if (_is_in_world) {
             for (auto &component : components) {
@@ -227,5 +227,19 @@ public:
 private:
     friend class World;
     void tick(DirtyFlag parent_flag);
+
+    void recaculate_world_transform() noexcept {
+        if (has_parent()) {
+            // 子节点的transform为父节点的transform叠加上自身的transform
+            // 从逻辑上是先进行子节点的变换，再进行父节点的变换
+            world_model_matrix = transform.model_matrix() * get_parent().lock()->world_model_matrix;
+            world_normal_matrix = transform.normal_matrix() * get_parent().lock()->world_normal_matrix;
+        } else {
+            // 对于根节点特殊处理
+            world_model_matrix = transform.model_matrix();
+            world_normal_matrix = transform.normal_matrix();
+        }
+        dirty_flag.remove(DirtyFlag::TRANSFORM_DIRTY);
+    }
 };
 } // namespace Goonya

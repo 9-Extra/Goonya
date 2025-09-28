@@ -40,7 +40,7 @@ layout(binding = 2) uniform sampler2D metallic_roughness_texture;
 in VS_OUT
 {
     vec3 normal;
-    vec3 tangent;
+    vec4 tangent;
     vec3 world_position;
     vec2 tex_coords;
 } vs_out;
@@ -183,9 +183,9 @@ vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
 vec3 caculate_normal(){
     const vec3 normal = normalize(vs_out.normal);
     // 施密特正交化
-    const vec3 tangent = normalize(vs_out.tangent - normal * dot(normal, vs_out.tangent));
-    // 这个B的方向和纹理坐标的方向有关，同时还要考虑贴图的副发现定义，F**K
-    const vec3 bitangent = cross(tangent, normal);
+    const vec3 tangent = normalize(vs_out.tangent.xyz - normal * dot(normal, vs_out.tangent.xyz));
+    // 规定死的副切线计算方法
+    const vec3 bitangent = cross(normal, tangent) * vs_out.tangent.w;
     // const mat3 tbn = mat3(tangent, cross(tangent, normal), normal);
     vec3 h = texture(normal_texture, vs_out.tex_coords).xyz * 2 - 1;
     vec3 world_normal = tangent * h.x + bitangent * h.y + normal * h.z;

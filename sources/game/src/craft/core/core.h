@@ -61,9 +61,15 @@ struct Vector3i {
 
     constexpr bool operator==(const Vector3i &pos) const noexcept = default;
 
+    constexpr Vector3i operator+(int32_t offset) const noexcept { return {x + offset, y + offset, z + offset}; }
+    constexpr Vector3i operator-(int32_t offset) const noexcept { return {x - offset, y - offset, z - offset}; }
     constexpr Vector3i operator+(Vector3i offset) const noexcept { return {x + offset.x, y + offset.y, z + offset.z}; }
     constexpr Vector3i operator-(Vector3i offset) const noexcept { return {x - offset.x, y - offset.y, z - offset.z}; }
 
+    constexpr operator Goonya::Vector3f() const noexcept /*NOLINT: implict*/{
+        return {(float)x, (float)y, (float)z};
+    }
+    
     int32_t distance_manhattan(Vector3i vec) const noexcept {
         return std::abs(x - vec.x) + std::abs(y - vec.y) + std::abs(z - vec.z);
     }

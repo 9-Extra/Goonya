@@ -1,5 +1,5 @@
 #include "GLMesh.h"
-#include "core/RefCount.h"
+
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include <cassert>
@@ -36,28 +36,37 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invalid Field Type");
 }
 
-void GLMesh::update_VAO() const noexcept {
-    const Ref<GLBuffer> gl_vertex_buffer = Ref<GLBuffer>::cast_from(vertex_buffer);
-    const Ref<GLBuffer> gl_indices_buffer = Ref<GLBuffer>::cast_from(indices_buffer);
-    assert(gl_vertex_buffer && gl_indices_buffer);
-    assert(layout.size != 0); // Layout记得设置
+GLMesh::GLMesh(VertexLayout layout) noexcept: Mesh(std::move(layout)) {
+    glCreateVertexArrays(1, &vao_id); // 创建空的vao
 
-    GLsizei stride = this->layout.size;
-    GLuint stream_id = 0; // 一个VAO是可以有多个顶点缓冲区的，目前先只用一个
-
-    // 指定顶点缓冲区和索引
-    glVertexArrayVertexBuffer(vao_id, stream_id, gl_vertex_buffer->get_id(), 0, stride);
-    glVertexArrayElementBuffer(vao_id, gl_indices_buffer->get_id());
     // 指定顶点格式
-    for (const auto &[attribute, type, offset] : this->layout.attributes) {
-
+    for(const auto& [location, info]: this->layout.attributes){
+        const auto [type, stream_id, offset] = info;
+            
         const auto [num_components, gl_type] = FieldType2OpenGLComponentsAndType(type);
-
-        GLuint index = static_cast<GLuint>(attribute);
+        
+        GLuint index = static_cast<GLuint>(location);
         glEnableVertexArrayAttrib(vao_id, index);
         glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);
         glVertexArrayAttribBinding(vao_id, index, stream_id);
     }
+};
+
+void GLMesh::set_vertices(uint32_t stream_id, const std::span<const std::byte> &data) noexcept {
+    assert(stream_id < layout.buffer_count());
+    Ref<GLBuffer> buffer = create_ref<GLBuffer>(data.size_bytes(), BufferType::STATIC);
+    buffer->write(data, 0);
+
+    vertices_buffers[stream_id] = buffer;
+    glVertexArrayVertexBuffer(vao_id, stream_id, buffer->get_id(), 0, layout.vertex_size[stream_id]);
+}
+
+void GLMesh::set_indices(const std::span<const uint32_t> &indices) noexcept {
+    Ref<GLBuffer> buffer = create_ref<GLBuffer>(indices.size_bytes(), BufferType::STATIC);
+    buffer->write(std::as_bytes(indices), 0);
+
+    indices_buffer = buffer;
+    glVertexArrayElementBuffer(vao_id, buffer->get_id());
 }
 
 } // namespace Goonya::Graphics

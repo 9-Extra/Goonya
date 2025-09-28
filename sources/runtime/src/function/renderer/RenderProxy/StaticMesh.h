@@ -3,6 +3,7 @@
 #include "core/cgmath.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
+#include <vector>
 
 namespace Goonya::Graphics {
 
@@ -25,5 +26,6 @@ struct MeshRenderProxy {
     
     Matrix4 model_matrix;
     Matrix3 normal_matrix;
+    std::vector<BoundingBox> aabbs; // 每个submesh经过变换的包围盒
 };
 } // namespace Goonya::Graphics

@@ -8,16 +8,7 @@ void GObject::tick(DirtyFlag parent_flag) {
     dirty_flag.append(parent_flag);
 
     if (dirty_flag[DirtyFlag::TRANSFORM_DIRTY]) {
-        if (has_parent()) {
-            // 子节点的transform为父节点的transform叠加上自身的transform
-            // 从逻辑上是先进行子节点的变换，再进行父节点的变换
-            world_model_matrix = transform.model_matrix() * get_parent().lock()->world_model_matrix;
-            world_normal_matrix = transform.normal_matrix() * get_parent().lock()->world_normal_matrix;
-        } else {
-            // 对于根节点特殊处理
-            world_model_matrix = transform.model_matrix();
-            world_normal_matrix = transform.normal_matrix();
-        }
+        recaculate_world_transform();
     }
     // 更新组件
     // todo：如果在更新组件时组件增删了components怎么办
@@ -51,11 +42,9 @@ void GObject::set_world(bool is_in_world) noexcept {
         return;
     } else {
         _is_in_world = is_in_world;
-        for (auto &child : children) {
-            child->set_world(is_in_world);
-        }
         if (is_in_world) {
             // enter world
+            recaculate_world_transform();
             if (!is_disabled()) {
                 for (auto &component : components) {
                     component->on_register();
@@ -68,6 +57,9 @@ void GObject::set_world(bool is_in_world) noexcept {
                     component->on_unregister();
                 }
             }
+        }
+        for (auto &child : children) {
+            child->set_world(is_in_world);
         }
     }
 }

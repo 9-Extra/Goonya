@@ -1,9 +1,9 @@
 #include "glTFLoader.h"
 
+#include "core/RefCount.h"
 #include "core/as_u8string.h"
 #include "core/assets.h"
 #include "core/cgmath.h"
-#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "core/world/Component.h"
 #include "core/world/GObject.h"
@@ -17,6 +17,7 @@
 
 #include "runtime/GoonyaException.h"
 #include "json/value.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -82,16 +83,16 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
     struct Vertex {
         Vector3f position;
         Vector3f normal;
-        Vector3f tangent;
+        Vector4f tangent;
         Vector2f uv;
     };
 
-    const static Graphics::VertexLayout vertex_layout{
-        {{Graphics::VertexAttribute::POSITION, Meta::FieldType::vec3f, offsetof(Vertex, position)},
-         {Graphics::VertexAttribute::NORMAL, Meta::FieldType::vec3f, offsetof(Vertex, normal)},
-         {Graphics::VertexAttribute::TANGENT, Meta::FieldType::vec3f, offsetof(Vertex, tangent)},
-         {Graphics::VertexAttribute::UV, Meta::FieldType::vec2f, offsetof(Vertex, uv)}},
-        sizeof(Vertex)};
+    const Graphics::VertexLayout vertex_layout = Graphics::VertexLayoutBuilder()
+                                                     .add_attribute(Graphics::VertexAttribute::POSITION)
+                                                     .add_attribute(Graphics::VertexAttribute::NORMAL)
+                                                     .add_attribute(Graphics::VertexAttribute::TANGENT)
+                                                     .add_attribute(Graphics::VertexAttribute::UV)
+                                                     .build();
 
     for (const Json::Value &mesh : json["meshes"]) {
         const std::string &key = std::format("{}:{}", base_key, mesh["name"].asString());
@@ -129,7 +130,7 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
             uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
             uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
-            if (vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
+            if (vertex_count == 0 || vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
                 throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
             Vector3f *pos = reinterpret_cast<Vector3f *>(buffers[position_buffer["buffer"].asUInt()].ptr +
@@ -154,25 +155,28 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
         std::vector<Graphics::SubMesh> sub_meshes;
         sub_meshes.reserve(primitive_info.size());
 
-        std::span<Vertex> vertices = std::span((Vertex*)raw_vertices.data(), total_vertex_count);
+        std::span<Vertex> vertices = std::span((Vertex *)raw_vertices.data(), total_vertex_count);
         uint32_t vertex_offset = 0;
         uint32_t index_offset = 0;
         for (const PrimitiveInfo &info : primitive_info) {
+            Vector3f position_min = info.pos[0];
+            Vector3f position_max = info.pos[0];
             for (uint32_t i = 0; i < info.vertex_count; i++) {
-                // tangent的第四个分量是用来根据平台决定手性的，在opengl中始终应该取1，所以忽略
-                Vector3f tang = Vector3f(info.tangent[i].x, info.tangent[i].y, info.tangent[i].z);
-                vertices[vertex_offset + i] = {info.pos[i], info.normal[i], tang, info.uv[i]};
+                Vector3f pos = info.pos[i];
+                position_min = {std::min(pos.x, position_min.x), std::min(pos.y, position_min.y), std::min(pos.z, position_min.z)};
+                position_max = {std::max(pos.x, position_max.x), std::max(pos.y, position_max.y), std::max(pos.z, position_max.z)};
+                vertices[vertex_offset + i] = {pos, info.normal[i], info.tangent[i], info.uv[i]};
             }
-
+    
             for (uint32_t i = 0; i < info.indices_count; i += 3) {
                 // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
-                // 并且加上偏移
-                indices[index_offset + i + 0] = vertex_offset + info.indices_ptr[i + 2];
-                indices[index_offset + i + 1] = vertex_offset + info.indices_ptr[i + 1];
-                indices[index_offset + i + 2] = vertex_offset + info.indices_ptr[i + 0];
+                indices[index_offset + i + 0] = info.indices_ptr[i + 2];
+                indices[index_offset + i + 1] = info.indices_ptr[i + 1];
+                indices[index_offset + i + 2] = info.indices_ptr[i + 0];
             }
 
-            sub_meshes.emplace_back(Graphics::SubMesh{index_offset, info.indices_count, Graphics::Topology::TRIANGLE});
+            sub_meshes.emplace_back(
+                Graphics::SubMesh{index_offset, info.indices_count, vertex_offset, Graphics::Topology::TRIANGLE, BoundingBox{position_min, position_max}});
 
             vertex_offset += info.vertex_count;
             index_offset += info.indices_count;
