@@ -27,7 +27,7 @@ private:
 public:
     GeometryPass();
 
-    void run() override;
+    void run(CameraRenderProxy *camera) override;
 };
 
 } // namespace Goonya::Graphics

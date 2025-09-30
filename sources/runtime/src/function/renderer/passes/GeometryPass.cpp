@@ -71,8 +71,7 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
     return true;
 }
 // 一般物体渲染
-void GeometryPass::run() {
-    const CameraRenderProxy *camera = renderer.current_camera;
+void GeometryPass::run(CameraRenderProxy *camera) {
     Vector3f camera_pos = camera->get_position();
 
     const Matrix4 view_perspective = camera->get_view_perspective_matrix();

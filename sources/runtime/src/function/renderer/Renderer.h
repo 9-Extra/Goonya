@@ -19,7 +19,6 @@ namespace Goonya::Graphics {
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
-    const CameraRenderProxy *current_camera;         // 当前正在绘制的相机
     std::unordered_set<CameraRenderProxy *> cameras; // 所有需要绘制的相机
 
     Vector3f ambient_light = {0.02f, 0.02f, 0.02f}; // 环境光

@@ -5,8 +5,7 @@
 namespace Goonya::Graphics {
 
 // 渲染天空盒
-void SkyBoxPass::run() {
-    const CameraRenderProxy *camera = renderer.current_camera;
+void SkyBoxPass::run(CameraRenderProxy *camera) {
     Vector3f camera_pos = camera->get_position();
 
     // 寻找包含且最小，接近中心的天空盒

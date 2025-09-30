@@ -55,16 +55,15 @@ void Renderer::render() {
         auto [w, h] = camera->render_target->get_size();
         camera->view_port = {0, 0, static_cast<int32_t>(w), static_cast<int32_t>(h)};
 
-        current_camera = camera;
-        current_camera->render_target->bind_draw();
-        graphics_api->set_viewport(current_camera->view_port);
+        camera->render_target->bind_draw();
+        graphics_api->set_viewport(camera->view_port);
 
         // 清除旧画面
         graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         graphics_api->clear(true, true, true);
 
-        geometry_pass->run();
-        skybox_pass->run();
+        geometry_pass->run(camera);
+        skybox_pass->run(camera);
  
         pointlights.clear();
 

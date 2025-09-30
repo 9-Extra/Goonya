@@ -51,6 +51,21 @@ static std::string url_decode(const std::string &url) {
     return output.str();
 }
 
+// 固定使用此顶点格式
+struct glTFVertex {
+    Vector3f position;
+    Vector3f normal;
+    Vector4f tangent;
+    Vector2f uv;
+};
+
+const Graphics::VertexLayout GLTF_VERTEX_LAYOUT = Graphics::VertexLayoutBuilder()
+                                                      .add_attribute(Graphics::VertexAttribute::POSITION)
+                                                      .add_attribute(Graphics::VertexAttribute::NORMAL)
+                                                      .add_attribute(Graphics::VertexAttribute::TANGENT)
+                                                      .add_attribute(Graphics::VertexAttribute::UV)
+                                                      .build();
+
 static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path &path, const Json::Value &json) {
     std::filesystem::path root = path.parent_path();
 
@@ -79,20 +94,6 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
         return buffer_view;
     };
     // 加载网格
-    // 固定使用此顶点格式
-    struct Vertex {
-        Vector3f position;
-        Vector3f normal;
-        Vector4f tangent;
-        Vector2f uv;
-    };
-
-    const Graphics::VertexLayout vertex_layout = Graphics::VertexLayoutBuilder()
-                                                     .add_attribute(Graphics::VertexAttribute::POSITION)
-                                                     .add_attribute(Graphics::VertexAttribute::NORMAL)
-                                                     .add_attribute(Graphics::VertexAttribute::TANGENT)
-                                                     .add_attribute(Graphics::VertexAttribute::UV)
-                                                     .build();
 
     for (const Json::Value &mesh : json["meshes"]) {
         const std::string &key = std::format("{}:{}", base_key, mesh["name"].asString());
@@ -116,12 +117,14 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
         uint32_t total_indices_count = 0;
 
         for (const Json::Value &primitive : mesh["primitives"]) {
+            // 解析各个顶点属性
             const Json::Value &indices_buffer = get_buffer(primitive["indices"].asUInt());
             const Json::Value &position_buffer = get_buffer(primitive["attributes"]["POSITION"].asUInt());
             const Json::Value &normal_buffer = get_buffer(primitive["attributes"]["NORMAL"].asUInt());
             const Json::Value &uv_buffer = get_buffer(primitive["attributes"]["TEXCOORD_0"].asUInt());
             const Json::Value &tangent_buffer = get_buffer(primitive["attributes"]["TANGENT"].asUInt());
 
+            // 解析索引
             const Json::Value &indices_accessor = json["accessors"][primitive["indices"].asUInt()];
             uint32_t indices_count = indices_accessor["count"].asUInt();
             assert(indices_count % 3 == 0);
@@ -129,6 +132,7 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
             uint16_t *indices_ptr = reinterpret_cast<uint16_t *>(buffers[indices_buffer["buffer"].asUInt()].ptr +
                                                                  indices_buffer["byteOffset"].asUInt());
 
+            // 获取所有顶点属性的数量，显然它们应当相同
             uint32_t vertex_count = position_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
@@ -137,7 +141,7 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
                 vertex_count != tangent_count) {
                 throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
-
+            // 获取指向顶点数据的指针
             Vector3f *pos = reinterpret_cast<Vector3f *>(buffers[position_buffer["buffer"].asUInt()].ptr +
                                                          position_buffer["byteOffset"].asUInt());
             Vector3f *normal = reinterpret_cast<Vector3f *>(buffers[normal_buffer["buffer"].asUInt()].ptr +
@@ -146,7 +150,8 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
                                                         uv_buffer["byteOffset"].asInt64());
             Vector4f *tangent = reinterpret_cast<Vector4f *>(buffers[tangent_buffer["buffer"].asUInt()].ptr +
                                                              tangent_buffer["byteOffset"].asUInt());
-
+            // 计算顶点位置的最大最小值，用于包围盒
+            // todo: 尝试从glsl读取
             Vector3f position_min = pos[0];
             Vector3f position_max = pos[0];
             for (uint32_t i = 0; i < vertex_count; i++) {
@@ -155,22 +160,24 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
                 position_max = {std::max(pos[i].x, position_max.x), std::max(pos[i].y, position_max.y),
                                 std::max(pos[i].z, position_max.z)};
             }
-            // Collect
+            // 收集所有数据到primitive_info中
             primitive_info.emplace_back(PrimitiveInfo{pos, normal, uv, tangent, vertex_count, indices_ptr,
                                                       indices_count, position_min, position_max});
-
+            // 统计整个Mesh的顶点和索引总数，用于计算一次性分配Buffer的大小
             total_vertex_count += vertex_count;
             total_indices_count += indices_count;
         }
 
-        std::vector<std::byte> raw_vertices(total_vertex_count * sizeof(Vertex));
+        // 通过顶点和索引总数预先分配内存
+        std::vector<std::byte> raw_vertices(total_vertex_count * sizeof(glTFVertex));
         std::vector<uint32_t> indices(total_indices_count);
         std::vector<Graphics::SubMesh> sub_meshes;
         sub_meshes.reserve(primitive_info.size());
 
-        std::span<Vertex> vertices = std::span((Vertex *)raw_vertices.data(), total_vertex_count);
+        std::span<glTFVertex> vertices = std::span((glTFVertex *)raw_vertices.data(), total_vertex_count);
         uint32_t vertex_offset = 0;
         uint32_t index_offset = 0;
+        // 遍历之前收集到的PrimitiveInfo，将其中数据转换格式并填入raw_vertices, indices和sub_meshes
         for (const PrimitiveInfo &info : primitive_info) {
 
             for (uint32_t i = 0; i < info.vertex_count; i++) {
@@ -193,9 +200,9 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
         }
 
         assert(vertex_offset == total_vertex_count && index_offset == total_indices_count);
-
-        resources.meshes.add(
-            key, Graphics::MeshDesc{vertex_layout, std::move(raw_vertices), std::move(indices), std::move(sub_meshes)});
+        // 用收集完成的数据构建MeshDesc并添加资源
+        resources.meshes.add(key, Graphics::MeshDesc{GLTF_VERTEX_LAYOUT, std::move(raw_vertices), std::move(indices),
+                                                     std::move(sub_meshes)});
     }
 }
 

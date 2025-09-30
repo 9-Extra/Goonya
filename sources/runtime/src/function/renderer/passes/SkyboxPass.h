@@ -23,6 +23,6 @@ public:
         : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
           mesh(resources.meshes.get("skybox_cube")) {}
 
-    void run() override;
+    void run(CameraRenderProxy *camera) override;
 };
 } // namespace Goonya::Graphics
