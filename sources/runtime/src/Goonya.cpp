@@ -53,7 +53,7 @@ void init_engine() {
         return false;
     });
 
-    EventBus::subscribe_event<Display::Events::SysWindowClose>(0, [](Display::Events::SysWindowClose &e) {
+    EventBus::subscribe_event<Events::SysWindowClose>(0, [](Events::SysWindowClose &e) {
         EventBus::dispatch_event(Events::EngineStop{});
         return false;
     });
@@ -99,7 +99,7 @@ void main_loop() {
         EventBus::dispatch_event(Events::PostTick{});
     }
 
-    EventBus::remove_listener<Display::Events::SysWindowClose>(id);
+    EventBus::remove_listener<Events::SysWindowClose>(id);
 }
 
 void drop_engine() {

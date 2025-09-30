@@ -106,6 +106,9 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
 
             uint16_t *indices_ptr;
             uint32_t indices_count;
+
+            Vector3f pos_min;
+            Vector3f pos_max;
         };
         std::vector<PrimitiveInfo> primitive_info; // 收集所有Primitive信息并存在这里
         primitive_info.reserve(mesh["primitives"].size());
@@ -130,9 +133,11 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
             uint32_t normal_count = normal_buffer["byteLength"].asUInt() / sizeof(Vector3f);
             uint32_t uv_count = uv_buffer["byteLength"].asUInt() / sizeof(Vector2f);
             uint32_t tangent_count = tangent_buffer["byteLength"].asUInt() / sizeof(Vector4f);
-            if (vertex_count == 0 || vertex_count != normal_count || vertex_count != uv_count || vertex_count != tangent_count) {
+            if (vertex_count == 0 || vertex_count != normal_count || vertex_count != uv_count ||
+                vertex_count != tangent_count) {
                 throw RuntimeError(std::format("gltf文件\"{}\"网格数据格式不对", path.string()));
             }
+
             Vector3f *pos = reinterpret_cast<Vector3f *>(buffers[position_buffer["buffer"].asUInt()].ptr +
                                                          position_buffer["byteOffset"].asUInt());
             Vector3f *normal = reinterpret_cast<Vector3f *>(buffers[normal_buffer["buffer"].asUInt()].ptr +
@@ -142,9 +147,17 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
             Vector4f *tangent = reinterpret_cast<Vector4f *>(buffers[tangent_buffer["buffer"].asUInt()].ptr +
                                                              tangent_buffer["byteOffset"].asUInt());
 
+            Vector3f position_min = pos[0];
+            Vector3f position_max = pos[0];
+            for (uint32_t i = 0; i < vertex_count; i++) {
+                position_min = {std::min(pos[i].x, position_min.x), std::min(pos[i].y, position_min.y),
+                                std::min(pos[i].z, position_min.z)};
+                position_max = {std::max(pos[i].x, position_max.x), std::max(pos[i].y, position_max.y),
+                                std::max(pos[i].z, position_max.z)};
+            }
             // Collect
-            primitive_info.emplace_back(
-                PrimitiveInfo{pos, normal, uv, tangent, vertex_count, indices_ptr, indices_count});
+            primitive_info.emplace_back(PrimitiveInfo{pos, normal, uv, tangent, vertex_count, indices_ptr,
+                                                      indices_count, position_min, position_max});
 
             total_vertex_count += vertex_count;
             total_indices_count += indices_count;
@@ -159,15 +172,11 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
         uint32_t vertex_offset = 0;
         uint32_t index_offset = 0;
         for (const PrimitiveInfo &info : primitive_info) {
-            Vector3f position_min = info.pos[0];
-            Vector3f position_max = info.pos[0];
+
             for (uint32_t i = 0; i < info.vertex_count; i++) {
-                Vector3f pos = info.pos[i];
-                position_min = {std::min(pos.x, position_min.x), std::min(pos.y, position_min.y), std::min(pos.z, position_min.z)};
-                position_max = {std::max(pos.x, position_max.x), std::max(pos.y, position_max.y), std::max(pos.z, position_max.z)};
-                vertices[vertex_offset + i] = {pos, info.normal[i], info.tangent[i], info.uv[i]};
+                vertices[vertex_offset + i] = {info.pos[i], info.normal[i], info.tangent[i], info.uv[i]};
             }
-    
+
             for (uint32_t i = 0; i < info.indices_count; i += 3) {
                 // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
                 indices[index_offset + i + 0] = info.indices_ptr[i + 2];
@@ -175,8 +184,9 @@ static void load_gltf_mesh(const AssetKey &base_key, const std::filesystem::path
                 indices[index_offset + i + 2] = info.indices_ptr[i + 0];
             }
 
-            sub_meshes.emplace_back(
-                Graphics::SubMesh{index_offset, info.indices_count, vertex_offset, Graphics::Topology::TRIANGLE, BoundingBox{position_min, position_max}});
+            sub_meshes.emplace_back(Graphics::SubMesh{index_offset, info.indices_count, vertex_offset,
+                                                      Graphics::Topology::TRIANGLE,
+                                                      BoundingBox{info.pos_min, info.pos_max}});
 
             vertex_offset += info.vertex_count;
             index_offset += info.indices_count;

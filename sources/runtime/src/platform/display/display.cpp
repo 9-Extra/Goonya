@@ -13,9 +13,9 @@
 #include <imgui_impl_glfw.h>
 #include <utility>
 
-namespace Goonya::Display {
+namespace Goonya {
 
-GLFWwindow *window;
+GLFWwindow *Display::window;
 
 static Input::KeyCode glfw_key2goonya_keycode(int key) {
 
@@ -121,9 +121,9 @@ void glfw_window_focus_callback(GLFWwindow *window, int focused) {
     }
 }
 
-void swap() { glfwSwapBuffers(window); }
+void Display::swap() { glfwSwapBuffers(window); }
 
-void create_window(uint32_t width, uint32_t height) {
+void Display::create_window(uint32_t width, uint32_t height) {
     // window setting
     glfwWindowHint(GLFW_SCALE_FRAMEBUFFER, GLFW_TRUE);
 
@@ -139,7 +139,7 @@ void create_window(uint32_t width, uint32_t height) {
 #ifdef DEBUG
     glfwWindowHint(GLFW_CONTEXT_DEBUG, GLFW_TRUE);
 #endif
-    window = glfwCreateWindow(width, height, "GoonyaWindow", nullptr, nullptr);
+    Display::window = glfwCreateWindow(width, height, "GoonyaWindow", nullptr, nullptr);
     if (!window) {
         throw RuntimeError("创建窗口失败");
     }
@@ -149,7 +149,7 @@ void static glfw_error_callback(int error, const char *description) {
     LOG_ERROR("GLFW Error {}: {}", error, description);
 }
 
-void initialize(uint32_t width, uint32_t height) {
+void Display::initialize(uint32_t width, uint32_t height) {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit()) {
         throw RuntimeError("GLFW init error");
@@ -168,19 +168,19 @@ void initialize(uint32_t width, uint32_t height) {
     glfwSetCursorPosCallback(window, glfw_cursor_position_callback);
 }
 
-void drop() {
+void Display::drop() {
     glfwDestroyWindow(window);
     glfwTerminate();
 }
 
-void set_title(const std::string &title) { glfwSetWindowTitle(window, title.c_str()); }
+void Display::set_title(const std::string &title) { glfwSetWindowTitle(window, title.c_str()); }
 
-std::tuple<uint32_t, uint32_t> get_size() {
+std::tuple<uint32_t, uint32_t> Display::get_size() {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
     return {w, h};
 }
 
-void poll_events() { glfwPollEvents(); }
+void Display::poll_events() { glfwPollEvents(); }
 
-} // namespace Goonya::Display
+} // namespace Goonya

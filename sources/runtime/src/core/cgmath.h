@@ -274,6 +274,7 @@ struct Matrix4 {
      * @brief 取矩阵的第i行
      */
     constexpr Vector4f &operator[](size_t i) noexcept {
+        static_assert(sizeof(Matrix4) == sizeof(Vector4f[4]), "意想不到的内存布局");
         assert(i < 4);
         return reinterpret_cast<Vector4f&>(m[i]);
     }
@@ -289,14 +290,6 @@ struct Matrix4 {
         return r;
     }
 
-    constexpr Vector4f operator*(const Vector4f &right) const noexcept {
-        Vector4f r;
-        r.v[0] = m[0][0] * right.v[0] + m[0][1] * right.v[1] + m[0][2] * right.v[2] + m[0][3] * right.v[3];
-        r.v[1] = m[1][0] * right.v[0] + m[1][1] * right.v[1] + m[1][2] * right.v[2] + m[1][3] * right.v[3];
-        r.v[2] = m[2][0] * right.v[0] + m[2][1] * right.v[1] + m[2][2] * right.v[2] + m[2][3] * right.v[3];
-        r.v[3] = m[3][0] * right.v[0] + m[3][1] * right.v[1] + m[3][2] * right.v[2] + m[3][3] * right.v[3];
-        return r;
-    }
     // ----------------构造缩放，旋转，位移矩阵--------------------
     static constexpr Matrix4 translate(float x, float y, float z) {
         return Matrix4{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1};
@@ -430,10 +423,11 @@ struct BoundingBox {
     constexpr Vector3f extent() const noexcept { return (max - min) * 0.5f; }
 };
 
-struct Plane /* NOLINT */ {
-    Vector3f normal; // 归一化的法向量，指向视锥体内部
-    float d;         // 平面方程中的常数项 Ax+By+Cz+d=0
+struct Plane {
     // 完整的平面方程是: normal.x * x + normal.y * y + normal.z * z + d = 0
+    Vector3f normal;
+    float d = 0;
+     
     Plane() noexcept = default;
     Plane(Vector3f normal, float d) noexcept : normal(normal), d(d) {}
     explicit Plane(Vector4f vec4) noexcept : normal(vec4.get_xyz()), d(vec4.w) {}

@@ -21,11 +21,11 @@ GeometryPass::GeometryPass() {
 
 /**
  * @brief 从矩阵重建视锥体
- * 
+ *
  * @param mat 任意可以投影到OpenGL裁剪空间的矩阵（乘在右边的版本，Y轴翻转没有实际影响）
  * @return 视锥体的6个平面，法线向视椎体内，没有归一化
  */
-std::array<Plane, 6> create_frustum_planes(const Matrix4& mat) noexcept {
+std::array<Plane, 6> create_frustum_planes(const Matrix4 &mat) noexcept {
     Matrix4 col = mat.transpose();
 
     Plane p0 = Plane{col[3] + col[0]};
@@ -36,11 +36,15 @@ std::array<Plane, 6> create_frustum_planes(const Matrix4& mat) noexcept {
     Plane p5 = Plane{col[3] - col[2]};
 
     return {p0, p1, p2, p3, p4, p5};
-
 }
 
-// 判断AABB和视锥体（6个平面）是否相交
-bool intersect_frustum_aabb(const std::array<Plane, 6>& frustum, const BoundingBox &aabb) noexcept {
+/**
+ * @brief 判断AABB和视锥体（6个平面）是否相交
+ *
+ * @param frustum 视锥体的6个平面，法线向视椎体内
+ * @param aabb 包围盒
+ */
+bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingBox &aabb) noexcept {
     // 计算AABB的中心点和半长（半宽高）
     Vector3f center = aabb.center();
     Vector3f extents = aabb.max - center; // 一半长度
@@ -70,9 +74,9 @@ bool intersect_frustum_aabb(const std::array<Plane, 6>& frustum, const BoundingB
 void GeometryPass::run() {
     const CameraRenderProxy *camera = renderer.current_camera;
     Vector3f camera_pos = camera->get_position();
-    
+
     const Matrix4 view_perspective = camera->get_view_perspective_matrix();
-    
+
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(0);
     {
@@ -139,7 +143,7 @@ void GeometryPass::run() {
                 if (m->submeshes[i].index_count == 0) {
                     continue;
                 }
-                if (!intersect_frustum_aabb(worldspace_frustum, mesh->aabbs[i])){
+                if (!intersect_frustum_aabb(worldspace_frustum, mesh->aabbs[i])) {
                     continue; // 不在视椎体内部
                 }
 

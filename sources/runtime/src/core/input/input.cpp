@@ -36,22 +36,22 @@ void tick_update() {
 void initalize() {
     using namespace Detail;
     reset_state();
-    EventBus::subscribe_event<Display::Events::SysKeyEvent>(0, [](Display::Events::SysKeyEvent &e) {
+    EventBus::subscribe_event<Events::SysKeyEvent>(0, [](Events::SysKeyEvent &e) {
         keys_state[(uint32_t)e.key] = e.state;
         return false;
     });
-    EventBus::subscribe_event<Display::Events::SysMousePos>(0, [](Display::Events::SysMousePos &e) {
+    EventBus::subscribe_event<Events::SysMousePos>(0, [](Events::SysMousePos &e) {
         mouse_delta_x = (int32_t)e.x - mouse_pos_x;
         mouse_delta_y = (int32_t)e.y - mouse_pos_y;
         mouse_pos_x = (int32_t)e.x;
         mouse_pos_y = (int32_t)e.y;
         return false;
     });
-    EventBus::subscribe_event<Display::Events::SysMouseClick>(0, [](Display::Events::SysMouseClick &e) {
+    EventBus::subscribe_event<Events::SysMouseClick>(0, [](Events::SysMouseClick &e) {
         mouse_key_state[(uint32_t)e.key] = e.state;
         return false;
     });
-    EventBus::subscribe_event<Display::Events::SysWindowDeActive>(0, [](Display::Events::SysWindowDeActive &e) {
+    EventBus::subscribe_event<Events::SysWindowDeActive>(0, [](Events::SysWindowDeActive &e) {
         tick_update(); // 失去焦点时抬起所有按键
         // LOG_TRACE("窗口失去焦点");
         return false;
