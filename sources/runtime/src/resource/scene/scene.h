@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/world/GObject.h"
+#include "function/world/GObject.h"
 
 namespace Goonya::Scene {
 

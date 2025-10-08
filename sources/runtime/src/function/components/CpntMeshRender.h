@@ -2,13 +2,14 @@
 
 #include "core/RefCount.h"
 #include "core/cgmath.h"
-#include "core/world/GObject.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/renderer/Renderer.h"
 #include "function/renderer/RendererBasic.h"
+#include "function/world/GObject.h"
+#include "function/world/World.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
+#include <cassert>
 #include <cstdint>
 #include <memory>
 #include <ranges>
@@ -38,7 +39,7 @@ public:
         enqueue_render_task([mesh_proxy = mesh_proxy] mutable {
             ASSERT_RENDER_THREAD();
             // mesh_proxy移交给渲染线程，Component中只持有指针，不要在逻辑线程访问它
-            renderer.add_mesh_proxy(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
+            world.main_scene()->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
         });
     }
 
@@ -65,7 +66,12 @@ public:
 
     void on_unregister() override {
         assert(get_owner() != nullptr);
-        enqueue_render_task([proxy = mesh_proxy] { renderer.remove_mesh_proxy(proxy); });
+        enqueue_render_task([proxy = mesh_proxy] {
+            auto &container = world.main_scene()->mesh_proxys;
+            auto iter = container.find(proxy);
+            assert(iter != container.end());
+            container.erase(iter);
+        });
     }
 
     void on_tick() override {

@@ -7,8 +7,8 @@
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/model_manager.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/renderer/Renderer.h"
 #include "function/renderer/RendererBasic.h"
+#include "function/world/World.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include <cassert>
@@ -68,7 +68,7 @@ void LevelRenderer::render_frame() {
 
             section->mesh_proxy = proxy;
 
-            renderer.add_mesh_proxy(std::unique_ptr<MeshRenderProxy>{proxy});
+            Goonya::world.main_scene()->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
         } else {
             MeshRenderProxy *proxy = section->mesh_proxy;
             proxy->mesh = updated_mesh;

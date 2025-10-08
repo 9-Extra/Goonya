@@ -1,7 +1,7 @@
 #pragma once
 
 #include "craft/level/level.h"
-#include <core/world/GObject.h>
+#include <function/world/GObject.h>
 
 class MoveSystem : public Goonya::Component {
 public:

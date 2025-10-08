@@ -6,6 +6,7 @@
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntSkybox.h"
+#include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "runtime/GoonyaException.h"
 #include <fstream>
@@ -67,7 +68,10 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             float far_z = cpnt_desc["far_z"].asFloat();
             float fov = cpnt_desc["fov"].asFloat();
             std::unique_ptr<Graphics::CpntCamera> camera =
-                std::make_unique<Graphics::CpntCamera>(is_main, near_z, far_z, fov);
+                std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov);
+            if (is_main){
+                camera->render_target = Graphics::graphics_api->get_rendertarget_screen();
+            }
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
             Ref<Graphics::Material> material =

@@ -11,7 +11,7 @@
 #include "core/input/input.h"
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
-#include "core/world/World.h"
+#include "function/world/World.h"
 #include "function/renderer/Renderer.h"
 #include "platform/display/display.h"
 #include "platform/imgui/imgui_module.h"

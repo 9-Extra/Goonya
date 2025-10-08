@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/world/GObject.h"
+#include "function/world/GObject.h"
 
 namespace Goonya::Graphics {
 // 雾组件
@@ -12,6 +12,6 @@ public:
     float fog_min_distance; // 雾开始的距离
     float fog_density;      // 雾强度
 
-    virtual void on_tick() override { assert(get_owner() != nullptr); }
+    void on_tick() override { assert(get_owner() != nullptr); }
 };
 } // namespace Goonya::Graphics

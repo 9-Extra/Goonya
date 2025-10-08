@@ -1,30 +1,41 @@
 #pragma once
 
 #include "core/cgmath.h"
-#include "core/world/GObject.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/Renderer.h"
-#include "platform/graphics/Graphics.h"
+#include "function/world/GObject.h"
+#include "function/world/World.h"
+#include "platform/graphics/RenderTarget.h"
 
 namespace Goonya::Graphics {
 // 相机组件，可以设置为主相机，使相机跟随其owner object移动
 class CpntCamera : public Component {
 public:
-    explicit CpntCamera(bool bind_to_screen = false, float near_z = 1.0f, float far_z = 1000.0f, float fov = 1.57) {
-        camera_proxy.near_z = near_z;
-        camera_proxy.far_z = far_z;
-        camera_proxy.fov = fov;
+    Ref<RenderTarget> render_target;
 
-        if (bind_to_screen) {
-            camera_proxy.render_target = graphics_api->get_rendertarget_screen();
-        }
+protected:
+    CameraRenderProxy *camera_proxy = nullptr;
+
+private:
+    float near_z;
+    float far_z;
+    float fov;
+
+public:
+    explicit CpntCamera(float near_z = 1.0f, float far_z = 1000.0f, float fov = 1.57)
+        : near_z(near_z), far_z(far_z), fov(fov) {}
+
+    void on_register() override {
+        camera_proxy = renderer.create_camera();
+
+        camera_proxy->near_z = near_z;
+        camera_proxy->far_z = far_z;
+        camera_proxy->fov = fov;
+        camera_proxy->render_target = render_target;
+        camera_proxy->scene = world.main_scene();
     }
 
-    bool should_be_main = false;
-
-    void on_register() override { renderer.cameras.emplace(&camera_proxy); }
-
-    void on_unregister() override { renderer.cameras.erase(&camera_proxy); }
+    void on_unregister() override { renderer.drop_camera(camera_proxy); }
 
     void on_tick() override {
         assert(get_owner() != nullptr);
@@ -37,12 +48,9 @@ public:
                 Matrix4 parent_view_matrix = Matrix4::translate(-t.position) * Matrix4::rotate(t.rotation.conjugate());
                 view_matrix = parent_view_matrix * view_matrix;
             }
-            camera_proxy.view_matrix = view_matrix;
-            camera_proxy.camera_pos = get_owner()->get_world_model_matrix().resolve_translate();
+            camera_proxy->view_matrix = view_matrix;
+            camera_proxy->camera_pos = get_owner()->get_world_model_matrix().resolve_translate();
         }
     }
-
-protected:
-    CameraRenderProxy camera_proxy;
 };
 } // namespace Goonya::Graphics

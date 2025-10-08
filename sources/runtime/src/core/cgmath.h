@@ -112,6 +112,7 @@ struct Vector4f {
 
 struct Quaternion {
     float x, y, z, w;
+    constexpr Quaternion() : x(0), y(0), z(0), w(1) {}
     constexpr Quaternion(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
     static constexpr Quaternion identity() { return Quaternion{0.0f, 0.0f, 0.0f, 1.0f}; }
 
@@ -276,7 +277,7 @@ struct Matrix4 {
     constexpr Vector4f &operator[](size_t i) noexcept {
         static_assert(sizeof(Matrix4) == sizeof(Vector4f[4]), "意想不到的内存布局");
         assert(i < 4);
-        return reinterpret_cast<Vector4f&>(m[i]);
+        return reinterpret_cast<Vector4f &>(m[i]);
     }
 
     constexpr Matrix4 operator*(const Matrix4 &m) const noexcept {
@@ -427,7 +428,7 @@ struct Plane {
     // 完整的平面方程是: normal.x * x + normal.y * y + normal.z * z + d = 0
     Vector3f normal;
     float d = 0;
-     
+
     Plane() noexcept = default;
     Plane(Vector3f normal, float d) noexcept : normal(normal), d(d) {}
     explicit Plane(Vector4f vec4) noexcept : normal(vec4.get_xyz()), d(vec4.w) {}

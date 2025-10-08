@@ -2,7 +2,7 @@
 #include "core/cgmath.h"
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
-#include "function/renderer/Renderer.h"
+#include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
 #include "resource/ResMng.h"
 
@@ -71,10 +71,11 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
     return true;
 }
 // 一般物体渲染
-void GeometryPass::run(CameraRenderProxy *camera) {
-    Vector3f camera_pos = camera->get_position();
+void GeometryPass::run(const PassRenderInfo& info) {
+    Vector3f camera_pos = info.camera->get_position();
+    RenderScene& scene = *info.camera->scene;
 
-    const Matrix4 view_perspective = camera->get_view_perspective_matrix();
+    const Matrix4 view_perspective = info.camera->get_view_perspective_matrix(info.width_height_ratio);
 
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(0);
@@ -86,19 +87,19 @@ void GeometryPass::run(CameraRenderProxy *camera) {
         // 相机位置
         data->camera_position = camera_pos;
         // 雾参数
-        assert(renderer.fog_density >= 0.0f);
-        data->fog_density = renderer.fog_density;
-        data->fog_min_distance = renderer.fog_min_distance;
+        assert(scene.fog_density >= 0.0f);
+        data->fog_density = scene.fog_density;
+        data->fog_min_distance = scene.fog_min_distance;
         data->time = Timer::total();
         // 灯光参数
-        data->ambient_light = renderer.ambient_light;
-        if (renderer.pointlights.size() > POINTLIGHT_MAX) {
-            LOG_WARN("点光源数量({})超出上限({})", renderer.pointlights.size(), POINTLIGHT_MAX);
+        data->ambient_light = scene.ambient_light;
+        if (scene.pointlights.size() > POINTLIGHT_MAX) {
+            LOG_WARN("点光源数量({})超出上限({})", scene.pointlights.size(), POINTLIGHT_MAX);
         }
-        uint32_t count = static_cast<uint32_t>(std::min<size_t>(renderer.pointlights.size(), POINTLIGHT_MAX));
-        for (uint32_t i = 0; i < count; ++i) {
-            data->pointlight_list[i].position = renderer.pointlights[i].position;
-            data->pointlight_list[i].intensity = renderer.pointlights[i].color * renderer.pointlights[i].factor;
+        uint32_t count = static_cast<uint32_t>(std::min<size_t>(scene.pointlights.size(), POINTLIGHT_MAX));
+        for (const auto& [i, l]: std::views::enumerate(scene.pointlights)) {
+            data->pointlight_list[i].position = l.position;
+            data->pointlight_list[i].intensity = l.color * l.factor;
         }
         data->pointlight_num = count;
         // 填充结束
@@ -124,14 +125,14 @@ void GeometryPass::run(CameraRenderProxy *camera) {
 
     // 把所有用于一般渲染每帧变化的数据收集到一个buffer中
     Ref<Buffer> per_object_uniform =
-        graphics_api->create_buffer(renderer.mesh_proxys.size() * sizeof(PerObjectData), BufferType::STREAM);
+        graphics_api->create_buffer(scene.mesh_proxys.size() * sizeof(PerObjectData), BufferType::STREAM);
     per_object_uniform->set_debug_label("Lambert Per Object");
 
     {
         ArrayBufferWriter<PerObjectData> per_object_data(per_object_uniform, BufferMapOption::WRITE_DISCARD);
 
         // 遍历所有part，绘制每一个part
-        for (const auto [offset, mesh] : std::views::enumerate(renderer.mesh_proxys)) {
+        for (const auto [offset, mesh] : std::views::enumerate(scene.mesh_proxys)) {
             const Mesh *m = mesh->mesh.get();
 
             // 填充PerObject参数

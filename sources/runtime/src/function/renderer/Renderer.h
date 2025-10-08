@@ -1,55 +1,74 @@
 #pragma once
 
-#include "RenderAspect.h"
-#include "core/cgmath.h"
-#include "core/hash_helper.h"
 #include "function/renderer/RenderProxy/Camera.h"
-#include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/renderer/RendererBasic.h"
+#include "function/renderer/RenderScene.h"
 #include "function/renderer/passes/GeometryPass.h"
 #include "function/renderer/passes/SkyboxPass.h"
-#include "passes/Passes.h"
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
-#include <unordered_set>
 #include <vector>
 
 namespace Goonya::Graphics {
+
+// template<typename T>
+// class GHandle{
+//     T* ptr = nullptr;
+// public:
+//     explicit GHandle(T* ptr) noexcept : ptr(ptr) {}
+
+//     explicit operator bool() const noexcept{
+//         return ptr != nullptr;
+//     }
+//     bool operator==(const GHandle<T>& ptr) noexcept{
+//         return this->ptr == ptr.ptr;
+//     }
+//     bool operator==(const T* ptr) noexcept{
+//         return this->ptr == ptr;
+//     }
+
+//     T* get() noexcept{
+//         return ptr;
+//     }
+// };
+
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
-    std::unordered_set<CameraRenderProxy *> cameras; // 所有需要绘制的相机
-
-    Vector3f ambient_light = {0.02f, 0.02f, 0.02f}; // 环境光
-    std::vector<PointLight> pointlights;            // 点光源
-
-    float fog_min_distance = 5.0f; // 雾开始的距离
-    float fog_density = 0.001f;    // 雾强度
-
-    std::vector<Skybox> current_skyboxs; // 天空盒
-
-    std::unordered_set<std::unique_ptr<MeshRenderProxy>, PointerHash, PointerEqual> mesh_proxys; // 要渲染的网格
-
+    std::vector<std::unique_ptr<CameraRenderProxy>> camera_set; // 所有的相机
+    std::vector<std::unique_ptr<RenderScene>> scene_set;
 private:
-    // passes
+// passes
     std::unique_ptr<GeometryPass> geometry_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
-
 public:
+    RenderScene* create_scene() {
+        RenderScene* scene = new RenderScene();
+        scene_set.emplace_back(scene);
+        return scene;
+    }
+    void drop_scene(RenderScene* scene){
+        auto iter = std::ranges::find_if(scene_set, [scene](auto&& a){return a.get() == scene;});
+        assert(iter != scene_set.end());
+
+        scene_set.erase(iter); 
+    }
+    CameraRenderProxy* create_camera() {
+        CameraRenderProxy* camera = new CameraRenderProxy();
+        camera_set.emplace_back(camera);
+        return camera;
+    }
+
+    void drop_camera(CameraRenderProxy* camera){
+        auto iter = std::ranges::find_if(camera_set, [camera](auto&& c){return c.get() == camera;});
+        assert(iter != camera_set.end());
+
+        camera_set.erase(iter); 
+    }
+
     void init();
-
-    void add_mesh_proxy(std::unique_ptr<MeshRenderProxy>&& proxy) {
-        ASSERT_RENDER_THREAD();
-        mesh_proxys.emplace(std::move(proxy));
-    }
-    void remove_mesh_proxy(MeshRenderProxy *proxy) {
-        ASSERT_RENDER_THREAD();
-        mesh_proxys.erase(mesh_proxys.find(proxy));
-    }
-
     void render();
-
     void clear();
 };
 

@@ -9,6 +9,7 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/RenderTarget.h"
 #include "resource/ResMng.h"
+#include <cassert>
 #include <cstdint>
 #include <memory>
 
@@ -30,8 +31,8 @@ void Renderer::render() {
     renderer_thread_process();
 
     bool is_screen_painted = false;
-    for (CameraRenderProxy *camera : cameras) {
-        if (!camera->render_target)
+    for (auto &&camera : camera_set) {
+        if (!camera->render_target || camera->scene == nullptr)
             continue;
         if (camera->render_target->is_screen()) {
             is_screen_painted = true;
@@ -53,19 +54,23 @@ void Renderer::render() {
 
         // todo: ViewPort的大小计算不完善
         auto [w, h] = camera->render_target->get_size();
-        camera->view_port = {0, 0, static_cast<int32_t>(w), static_cast<int32_t>(h)};
-
+        const Viewport viewport{(int32_t)(camera->rect.x * w), (int32_t)(camera->rect.y * h),
+                                (int32_t)(camera->rect.z * w), (int32_t)(camera->rect.w * h)};
+        graphics_api->set_viewport(viewport);
         camera->render_target->bind_draw();
-        graphics_api->set_viewport(camera->view_port);
 
         // 清除旧画面
         graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         graphics_api->clear(true, true, true);
+        
+        PassRenderInfo info{
+            .camera = camera.get(),
+            .viewport = viewport,
+            .width_height_ratio = (float)viewport.width / viewport.height
+        };
 
-        geometry_pass->run(camera);
-        skybox_pass->run(camera);
- 
-        pointlights.clear();
+        geometry_pass->run(info);
+        skybox_pass->run(info);
 
         // FIBITMAP *image = render_texture->export_image();
         // assert(image);
@@ -86,9 +91,8 @@ void Renderer::render() {
 void Renderer::clear() {
     renderer_thread_process();
 
-    assert(mesh_proxys.empty());
-
-    current_skyboxs.clear();
+    camera_set.clear();
+    scene_set.clear();
 
     geometry_pass.reset();
     skybox_pass.reset();

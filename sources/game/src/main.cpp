@@ -1,4 +1,4 @@
-#include <core/world/World.h>
+#include <function/world/World.h>
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -8,7 +8,7 @@
 
 #include "core/log/Log.h"
 #include "core/format_exception.h"
-#include "core/world/GObject.h"
+#include "function/world/GObject.h"
 #include "craft/craft.h"
 #include "logic.h"
 

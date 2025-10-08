@@ -6,7 +6,7 @@
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/renderer/Renderer.h"
+#include "function/world/World.h"
 #include "platform/graphics/Material.h"
 
 #include <cassert>
@@ -106,7 +106,9 @@ public:
             complie_task->cancel();
         }
         if (mesh_proxy) {
-            Goonya::Graphics::renderer.remove_mesh_proxy(mesh_proxy);
+            auto iter = Goonya::world.main_scene()->mesh_proxys.find(mesh_proxy);
+            assert(iter != Goonya::world.main_scene()->mesh_proxys.end());
+            Goonya::world.main_scene()->mesh_proxys.erase(iter);
         }
     }
 
