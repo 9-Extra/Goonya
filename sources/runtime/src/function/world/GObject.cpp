@@ -1,31 +1,14 @@
 #include "GObject.h"
+#include "function/world/Component.h"
+#include "function/world/World.h"
+#include <cassert>
 
 namespace Goonya {
-void GObject::tick(DirtyFlag parent_flag) {
-    if (is_disabled())
-        return; // 跳过不启用的物体
 
-    dirty_flag.append(parent_flag);
-
-    if (dirty_flag[DirtyFlag::TRANSFORM_DIRTY]) {
-        recaculate_world_transform();
-    }
-    // 更新组件
-    // todo：如果在更新组件时组件增删了components怎么办
-    for (auto &c : get_components()) {
-        c->on_tick();
-    }
-
-    for (auto &child : get_children()) {
-        child->tick(dirty_flag); // 更新子节点
-    }
-
-    dirty_flag.clear(); // 清理标记
-}
 bool GObject::remove_component(const std::type_info &t_info) {
     for (auto it = components.begin(); it != components.end(); ++it) {
         auto &c = **it; // 比较其内容而非智能指针
-        if (_is_in_world) {
+        if (get_world()) {
             c.on_unregister();
         }
         c.set_owner(nullptr);
@@ -37,30 +20,88 @@ bool GObject::remove_component(const std::type_info &t_info) {
     return false;
 }
 
-void GObject::set_world(bool is_in_world) noexcept {
-    if (_is_in_world == is_in_world) {
+void GObject::set_world(World *world) noexcept {
+    if (world == _world) {
         return;
     } else {
-        _is_in_world = is_in_world;
-        if (is_in_world) {
-            // enter world
-            recaculate_world_transform();
-            if (!is_disabled()) {
-                for (auto &component : components) {
-                    component->on_register();
-                }
-            }
-        } else {
-            // exit world
-            if (!is_disabled()) {
-                for (auto &component : components) {
-                    component->on_unregister();
-                }
-            }
+        // exit world
+        if (_world) {
+            do_unregister();
         }
+
+        _world = world; // 提前设置使component可以获取正确的世界
+        // enter world
+        if (world) {
+            do_register();
+        }
+
         for (auto &child : children) {
-            child->set_world(is_in_world);
+            child->set_world(world);
         }
     }
 }
+void GObject::recaculate_world_transform() noexcept {
+    assert(is_world_transform_dirty);
+    if (auto p = parent.lock(); p) {
+        // 递归计算父节点的世界变换
+        if (p->is_world_transform_dirty) {
+            p->recaculate_world_transform();
+        }
+        // 子节点的transform为父节点的transform叠加上自身的transform
+        // 从逻辑上是先进行子节点的变换，再进行父节点的变换
+        world_model_matrix = transform.model_matrix() * p->world_model_matrix;
+        world_normal_matrix = transform.normal_matrix() * p->world_normal_matrix;
+    } else {
+        // 对于根节点特殊处理
+        world_model_matrix = transform.model_matrix();
+        world_normal_matrix = transform.normal_matrix();
+    }
+    is_world_transform_dirty = false;
+}
+
+void GObject::do_register() {
+    assert(!_is_registered);
+    _is_registered = true;
+
+    for (auto &&component : components) {
+        component->on_register();
+    }
+    // queue_deferred_update(ComponentUpdateFlag::INITALIZE); 刚注册时不需要更新
+}
+void GObject::do_unregister() {
+    assert(_is_registered);
+    _is_registered = false;
+    for (auto &&component : components) {
+        component->on_unregister();
+    }
+
+    // 如果已经注册到了更新队列里，则取出来
+    if (cpnt_update_flag != ComponentUpdateFlag::NONE) {
+        get_world()->remove_deferred_update(this->weak_from_this());
+        cpnt_update_flag = ComponentUpdateFlag::NONE;
+    }
+}
+
+void GObject::do_deferred_update() {
+    assert(_is_registered);
+    for (auto &&component : components) {
+        component->on_update(cpnt_update_flag);
+    }
+    cpnt_update_flag = ComponentUpdateFlag::NONE; // deferred_update_list由World来清除
+}
+
+void GObject::queue_deferred_update(ComponentUpdateFlag flag) noexcept {
+    assert(flag != ComponentUpdateFlag::NONE);
+    if (!_is_registered) {
+        return; // 不在世界中的组件不会收到更新
+    }
+    // 如果当前的cpnt_update_flag为NONE，说明还没有注册到deferred_update_list
+    if (cpnt_update_flag == ComponentUpdateFlag::NONE) {
+        get_world()->add_deferred_update(weak_from_this());
+    }
+    cpnt_update_flag |= flag;
+
+    // 不会递归更新子节点
+}
+
 } // namespace Goonya

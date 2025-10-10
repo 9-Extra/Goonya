@@ -1,15 +1,15 @@
-#include <function/world/World.h>
 #include <exception>
+#include <function/world/World.h>
 #include <iostream>
 #include <memory>
 #include <print>
 #include <resource/scene/scene.h>
 #include <runtime/Goonya.h>
 
-#include "core/log/Log.h"
 #include "core/format_exception.h"
-#include "function/world/GObject.h"
+#include "core/log/Log.h"
 #include "craft/craft.h"
+#include "function/world/GObject.h"
 #include "logic.h"
 
 int main() {
@@ -17,18 +17,22 @@ int main() {
         Goonya::init_engine();
         Craft::initalize();
 
+        Goonya::World* world = Goonya::World::create_world();
+
         {
             Goonya::Scene::Scene scene =
                 Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
             // std::shared_ptr<Goonya::GObject> k = Goonya::resources.scenes.at("科拉莉.Scene").root;
             // k->set_position({2, 0, 0});
             // scene.root->attach_child(k);
-            Goonya::world.root = std::move(scene.root);
+            world->set_root(scene.root);
         }
 
-        Goonya::world.root->add_component(std::make_unique<MoveSystem>());
+        world->get_root()->add_component(std::make_unique<MoveSystem>());
 
         Goonya::main_loop();
+
+        Goonya::World::delete_world(world);
 
         Goonya::drop_engine();
     } catch (const std::exception &e) {

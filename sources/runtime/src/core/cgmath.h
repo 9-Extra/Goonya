@@ -313,7 +313,7 @@ struct Matrix4 {
         return Vector3f{c1.length(), c2.length(), c3.length()} / m[3][3];
     }
 
-    constexpr Vector3f resolve_translate() const noexcept { return Vector3f{m[3][0], m[3][1], m[3][2]} / m[3][3]; }
+    constexpr Vector3f resolve_position() const noexcept { return Vector3f{m[3][0], m[3][1], m[3][2]} / m[3][3]; }
 
     // 从矩阵中反解出其旋转对应的四元数
     Quaternion resolve_rotation() const noexcept {
@@ -343,7 +343,7 @@ struct Transform {
                                  Vector3f scale = {1, 1, 1})
         : position(position), rotation(rotation), scale(scale) {}
     static constexpr Transform from_matrix(const Matrix4 &matrix) {
-        return Transform{matrix.resolve_translate(), matrix.resolve_rotation(), matrix.resolve_scale()};
+        return Transform{matrix.resolve_position(), matrix.resolve_rotation(), matrix.resolve_scale()};
     }
     static constexpr Transform from_matrix(const Matrix3 &matrix) {
         return Transform{{}, matrix.resolve_rotation(), matrix.resolve_scale()};
@@ -391,7 +391,7 @@ struct BoundingBox {
         遵循 MIT 许可证
         */
         Matrix3 rotation_scale = transform.to_matrix3().transpose();
-        Vector3f position = transform.resolve_translate();
+        Vector3f position = transform.resolve_position();
 
         Vector3f tmin, tmax;
         for (int i = 0; i < 3; i++) {

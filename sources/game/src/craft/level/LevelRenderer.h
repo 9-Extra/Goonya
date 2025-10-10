@@ -6,7 +6,7 @@
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/world/World.h"
+#include "function/renderer/RenderScene.h"
 #include "platform/graphics/Material.h"
 
 #include <cassert>
@@ -95,10 +95,11 @@ public:
     std::shared_ptr<ComplieTask> complie_task;
     bool is_dirty = true;
 
+    Goonya::Graphics::RenderScene* render_scene = nullptr;
     Goonya::Graphics::MeshRenderProxy *mesh_proxy = nullptr;
 
-    explicit RenderSection(Ref<Chunk> chunk) : chunk_pos(chunk->chunk_pos), origin_chunk(chunk) {
-        assert(origin_chunk);
+    RenderSection(Ref<Chunk> chunk, Goonya::Graphics::RenderScene* render_scene) : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
+        assert(origin_chunk && render_scene);
     }
 
     ~RenderSection() {
@@ -106,9 +107,9 @@ public:
             complie_task->cancel();
         }
         if (mesh_proxy) {
-            auto iter = Goonya::world.main_scene()->mesh_proxys.find(mesh_proxy);
-            assert(iter != Goonya::world.main_scene()->mesh_proxys.end());
-            Goonya::world.main_scene()->mesh_proxys.erase(iter);
+            auto iter = render_scene->mesh_proxys.find(mesh_proxy);
+            assert(iter != render_scene->mesh_proxys.end());
+            render_scene->mesh_proxys.erase(iter);
         }
     }
 
@@ -136,18 +137,19 @@ public:
     Ref<Goonya::Graphics::Material> terrain_material;
 
 private:
+    Goonya::Graphics::RenderScene* render_scene = nullptr; 
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块
 
     std::vector<RenderSection *> visible_chunk; // 当前帧可见的区块
 public:
-    LevelRenderer();
+    explicit LevelRenderer(Goonya::Graphics::RenderScene* render_scene);
     ~LevelRenderer() {
         render_chunks.clear(); // 提前销毁render_chunks，保证所有ComplieTask已结束
     }
 
     void register_chunk(const Ref<Chunk> &chunk) noexcept {
         ChunkPos pos = chunk->chunk_pos;
-        auto section = std::make_unique<RenderSection>(chunk);
+        auto section = std::make_unique<RenderSection>(chunk, render_scene);
 
         render_chunks.emplace(pos, std::move(section));
     }

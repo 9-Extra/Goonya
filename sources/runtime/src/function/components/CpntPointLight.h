@@ -4,6 +4,7 @@
 #include "function/renderer/RenderAspect.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
+#include "platform/graphics/Graphics.h"
 
 namespace Goonya::Graphics {
 // 光源组件
@@ -18,14 +19,23 @@ public:
 
     void on_register() override {
         assert(get_owner() != nullptr);
-        pointlight_handle = world.main_scene()->pointlights.emplace(get_owner()->get_transform().position, color, radius);
+        RenderScene *scene = get_owner()->get_world()->main_scene();
+        pointlight_handle = scene->pointlights.emplace(get_owner()->get_transform().position, color, radius);
     }
 
     void on_unregister() override {
-        world.main_scene()->pointlights.erase(pointlight_handle);
+        RenderScene *scene = get_owner()->get_world()->main_scene();
+        scene->pointlights.erase(pointlight_handle);
     }
 
-    void on_tick() override {}
+    void on_update(ComponentUpdateFlag flag) override {
+        if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {
+            Vector3f position = get_owner()->get_world_model_matrix().resolve_position();
+            enqueue_render_task([handle = pointlight_handle, position]{
+                handle->position = position;
+            });
+        }
+    }
 
 };
 } // namespace Goonya::Graphics

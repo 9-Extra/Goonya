@@ -8,38 +8,23 @@
 
 #include "Component.h"
 #include "core/cgmath.h"
+#include "core/enum_operator.h"
 
 namespace Goonya {
 
+class World;
+
+enum class DirtyFlag {
+    NONE = 0,
+    WORLD_TRANSFORM_DIRTY = 1,
+};
+DECLARE_ENUM_OPERATORS(DirtyFlag);
+
 // 一个物体，单独的物体没有功能，也不可见，需要挂上组件来实现具体的功能
 class GObject final : public std::enable_shared_from_this<GObject> {
-public:
-    struct DirtyFlag {
-        using FlagType = uint32_t;
-
-        FlagType value = DEFAULT;
-        DirtyFlag(FlagType value = DEFAULT) noexcept : value(value) {} // NOLINT
-
-        const static FlagType DEFAULT = 0;
-        const static FlagType TRANSFORM_DIRTY = 1 << 0;
-
-        bool operator[](FlagType ft) const noexcept { return (value & ft) == ft; }
-
-        bool operator[](DirtyFlag ft) const noexcept { return (value & ft.value) == ft.value; }
-
-        void append(DirtyFlag f) noexcept { this->value |= f.value; }
-        void append(FlagType f) noexcept { this->value |= f; }
-        void remove(DirtyFlag f) noexcept { this->value &= f.value; }
-
-        void remove(FlagType f) noexcept { this->value &= f; }
-
-        void clear() noexcept { value = DEFAULT; }
-    };
-
 private:
     std::string name;
-    bool disabled = false;
-    bool _is_in_world = false;
+    World *_world = nullptr;
 
     Transform transform; // 相对父节点的变换
 
@@ -50,7 +35,12 @@ private:
     std::weak_ptr<GObject> parent;
     std::vector<std::shared_ptr<GObject>> children;
 
-    DirtyFlag dirty_flag{DirtyFlag::TRANSFORM_DIRTY};
+    bool is_world_transform_dirty : 1 = true;
+
+    bool disabled : 1 = false;
+    bool _is_registered : 1 = false;
+
+    ComponentUpdateFlag cpnt_update_flag = ComponentUpdateFlag::NONE;
 
 public:
     explicit GObject(std::string name = "") noexcept : name(std::move(name)) {};
@@ -58,20 +48,21 @@ public:
         : name(std::move(name)), transform(transform) {};
 
     ~GObject() {
+        if (_is_registered) {
+            do_unregister();
+        }
         assert(!parent.lock()); // 必须没有父节点
     };
 
-    bool is_in_world() const noexcept { return _is_in_world; }
+    std::string_view get_name() const noexcept { return name; }
+    World *get_world() const noexcept { return _world; }
 
     void enable() noexcept { // NOLINT: 手动保证没有循环引用
         if (!is_disabled())
             return;
-        recaculate_world_transform(); // 重新计算变换矩阵
         disabled = false;
-        if (_is_in_world) {
-            for (auto &component : components) {
-                component->on_register();
-            }
+        if (get_world()) {
+            do_register();
         }
         for (std::shared_ptr<GObject> &child : children) {
             child->enable();
@@ -82,10 +73,8 @@ public:
         if (is_disabled())
             return;
         disabled = true;
-        if (_is_in_world) {
-            for (auto &component : components) {
-                component->on_unregister();
-            }
+        if (get_world()) {
+            do_unregister();
         }
         for (std::shared_ptr<GObject> &child : children) {
             child->disable();
@@ -94,7 +83,7 @@ public:
 
     void add_component(std::unique_ptr<Component> &&component) {
         component->set_owner(this);
-        if (_is_in_world) {
+        if (get_world()) {
             component->on_register();
         }
         components.push_back(std::move(component));
@@ -128,50 +117,51 @@ public:
 
     void set_transform(const Transform &transform) noexcept {
         this->transform = transform;
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
+        mark_world_transform_dirty();
     }
 
     const Transform &get_transform() const noexcept { return transform; }
 
-    void translate(Vector3f distance) noexcept {
-        this->transform.position += distance;
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
-    }
+    void translate(Vector3f distance) noexcept { set_position(transform.position + distance); }
 
     void set_position(Vector3f pos) noexcept {
         this->transform.position = pos;
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
+        mark_world_transform_dirty();
     }
 
     void rotate_local_axis(Vector3f angle) noexcept { rotate_local_axis(Quaternion::from_eular(angle)); }
-    void rotate_local_axis(Quaternion rotation) noexcept {
-        this->transform.rotation = this->transform.rotation * rotation;
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
-    }
+    void rotate_local_axis(Quaternion rotation) noexcept { set_rotation(this->transform.rotation * rotation); }
 
     void rotate_global_axis(Vector3f angle) noexcept { rotate_global_axis(Quaternion::from_eular(angle)); }
     void rotate_global_axis(Quaternion rotation) noexcept {
         // 沿全局坐标系旋转（原点依然是物体中心而非世界中心），依赖于父节点相对世界的旋转
-        // todo: 如果父节点的world_model_matrix是脏的怎么办？
+        Quaternion new_rotation;
         if (has_parent()) {
-            Quaternion parent_rotation = parent.lock()->world_model_matrix.resolve_rotation();
-            this->transform.rotation =
-                parent_rotation.conjugate() * rotation * parent_rotation * this->transform.rotation;
+            Quaternion parent_rotation = parent.lock()->get_world_model_matrix().resolve_rotation();
+            new_rotation = parent_rotation.conjugate() * rotation * parent_rotation * this->transform.rotation;
         } else {
-            this->transform.rotation = rotation * this->transform.rotation;
+            new_rotation = rotation * this->transform.rotation;
         }
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
+        set_rotation(new_rotation);
     }
 
     void set_rotation(Quaternion rotation) noexcept {
         this->transform.rotation = rotation;
-        dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
+        mark_world_transform_dirty();
     }
-    DirtyFlag get_dirty_flag() const noexcept { return dirty_flag; }
-    bool has_dirty_flag(const DirtyFlag::FlagType flag) const noexcept { return dirty_flag[flag]; }
 
-    const Matrix4 &get_world_model_matrix() const noexcept { return world_model_matrix; }
-    const Matrix3 &get_world_normal_matrix() const noexcept { return world_normal_matrix; }
+    const Matrix4 &get_world_model_matrix() noexcept {
+        if (is_world_transform_dirty) {
+            recaculate_world_transform();
+        }
+        return world_model_matrix;
+    }
+    const Matrix3 &get_world_normal_matrix() noexcept {
+        if (is_world_transform_dirty) {
+            recaculate_world_transform();
+        }
+        return world_normal_matrix;
+    }
 
     const std::vector<std::shared_ptr<GObject>> &get_children() const noexcept { return children; }
     std::shared_ptr<GObject> get_child_by_name(const std::string &name) noexcept {
@@ -185,22 +175,20 @@ public:
         return nullptr;
     }
 
-    void set_world(bool is_in_world) noexcept;
-
     void attach_child(const std::shared_ptr<GObject> &child) noexcept {
         assert(!child->has_parent());
         children.push_back(child);
-        child->dirty_flag.append(DirtyFlag::TRANSFORM_DIRTY);
-        child->set_world(this->_is_in_world);
+        child->mark_world_transform_dirty();
         child->parent = weak_from_this();
+        child->set_world(this->get_world());
     }
 
     void remove_child(GObject *child) noexcept {
-        auto it =
-            std::find_if(children.begin(), children.end(), [child](const auto &c) -> bool { return c.get() == child; });
+        assert(child);
+        auto it = std::ranges::find_if(children, [child](const auto &c) { return c.get() == child; });
         if (it != children.end()) {
-            (*it)->parent.reset();
-            (*it)->set_world(false);
+            child->parent.reset();
+            child->set_world(this->get_world());
             children.erase(it);
         }
     }
@@ -223,23 +211,34 @@ public:
     }
 
     bool is_disabled() const noexcept { return disabled; }
+    bool is_registered() const noexcept { return _is_registered; }
 
 private:
     friend class World;
-    void tick(DirtyFlag parent_flag);
+    /**
+     * @brief 设置此Object所在的世界，如果为nullptr，则此Object将不属于任何世界
+     * @note 子节点所在的世界应该总是与父节点保持一致，对外部来说只需要设置root节点的world就可以了
+     */
+    void set_world(World *world) noexcept;
+    void do_deferred_update();
 
-    void recaculate_world_transform() noexcept {
-        if (has_parent()) {
-            // 子节点的transform为父节点的transform叠加上自身的transform
-            // 从逻辑上是先进行子节点的变换，再进行父节点的变换
-            world_model_matrix = transform.model_matrix() * get_parent().lock()->world_model_matrix;
-            world_normal_matrix = transform.normal_matrix() * get_parent().lock()->world_normal_matrix;
-        } else {
-            // 对于根节点特殊处理
-            world_model_matrix = transform.model_matrix();
-            world_normal_matrix = transform.normal_matrix();
+private:
+    void do_register();
+    void do_unregister();
+
+    void mark_world_transform_dirty() noexcept{
+        is_world_transform_dirty = true;
+
+        if (contain(cpnt_update_flag, ComponentUpdateFlag::TRANSFORM)){
+            return; // 这基于如下假设：如果当前已经标记ComponentUpdateFlag::TRANSFORM，则所有子节点也一定已经标记过了
         }
-        dirty_flag.remove(DirtyFlag::TRANSFORM_DIRTY);
+        queue_deferred_update(ComponentUpdateFlag::TRANSFORM);
+        // 递归标记子节点
+        for(auto& child: children){
+            child->mark_world_transform_dirty();
+        }
     }
+    void recaculate_world_transform() noexcept;
+    void queue_deferred_update(ComponentUpdateFlag flag) noexcept;
 };
 } // namespace Goonya

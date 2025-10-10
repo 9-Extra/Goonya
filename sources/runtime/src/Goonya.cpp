@@ -64,7 +64,9 @@ void logic_tick() {
 
     // auto [x, y] = Input::get_mouse_pos();
     // LOG_DEBUG("鼠标位置: {}, {}", x, y);
-    world.tick();
+    for(auto&& w: World::world_list){
+        w.tick();
+    }
 }
 
 void render_frame() {
@@ -105,7 +107,7 @@ void main_loop() {
 void drop_engine() {
     LOG_WARN("退出");
 
-    world.reset();
+    World::world_list.clear();
     Graphics::renderer.clear();
     resources.clear(); // 在设备drop之前清理资源
     ImguiMng::drop();

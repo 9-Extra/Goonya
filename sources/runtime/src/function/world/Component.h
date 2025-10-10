@@ -1,9 +1,18 @@
 #pragma once
 
-#include <assert.h>
+#include <cassert>
+
+#include "core/enum_operator.h"
 
 namespace Goonya {
 class GObject;
+
+enum class ComponentUpdateFlag{
+    NONE = 0,
+    TRANSFORM = 1,
+};
+
+DECLARE_ENUM_OPERATORS(ComponentUpdateFlag);
 
 /**
  * @brief 组件基类
@@ -15,10 +24,10 @@ private:
     GObject* owner; // Weak reference
 public:
     Component() : owner(nullptr) {}
-    GObject* get_owner() const{
+    virtual ~Component() = default;
+    GObject* get_owner() const noexcept {
         return owner;
     }
-    virtual ~Component() = default;
 protected:
     friend class GObject;
     /**
@@ -38,10 +47,11 @@ protected:
         assert(owner != nullptr);
         // owner = nullptr 由GObject在detach后执行
     }
-    /**
-     * @brief 逻辑帧更新时调用
-     */
-    virtual void on_tick() = 0;
+
+    virtual void on_update(ComponentUpdateFlag flag) {
+        assert(get_owner() != nullptr); // 而且必然已注册
+        assert(flag != ComponentUpdateFlag::NONE); // 屁事没有则不会更新
+    }
 private:    
     friend class GObject;
     void set_owner(GObject* owner){

@@ -6,6 +6,7 @@
 #include "craft/core/core.h"
 #include "craft/level/LevelRenderer.h"
 #include "craft/level/chunk.h"
+#include "function/world/World.h"
 
 #include <cassert>
 #include <chrono>
@@ -19,6 +20,8 @@ public:
     using GameClock = std::chrono::steady_clock;
     static constexpr GameClock::duration TICK_INTERVAL = std::chrono::milliseconds(50); // 50 ms
 private:
+    Goonya::World* bind_world;
+
     ChunkGenerator chunk_generator;
     LevelRenderer level_renderer;
 
@@ -35,7 +38,7 @@ private:
     int32_t chunk_load_distance = 4;
 
 public:
-    Level();
+    explicit Level(Goonya::World* world);
     ~Level() {
         for (const auto &[_, c] : accessible_chunk) {
             level_renderer.unregister_chunk(c);

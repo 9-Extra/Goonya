@@ -8,9 +8,10 @@
 #include "craft/model_manager.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RendererBasic.h"
-#include "function/world/World.h"
+#include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
+#include "resource/ResMng.h"
 #include <cassert>
 #include <cstdint>
 #include <memory>
@@ -18,7 +19,8 @@
 
 namespace Craft {
 
-LevelRenderer::LevelRenderer() {
+LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene *render_scene) : render_scene(render_scene) {
+    assert(render_scene);
     Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
     terrain_material = create_ref<Goonya::Graphics::Material>(shader);
     terrain_material->set_pipeline_state(Goonya::Graphics::PipeLineState{
@@ -33,8 +35,8 @@ void LevelRenderer::render_frame() {
 
     RenderRegionCache region_cache{*this};
 
-    auto receiver = [terrain_material = this->terrain_material](std::shared_ptr<RenderSection> &section,
-                                                                ComplieTask::ComplieResult &&result) {
+    auto receiver = [render_scene = render_scene, terrain_material = this->terrain_material](
+                        std::shared_ptr<RenderSection> &section, ComplieTask::ComplieResult &&result) {
         ASSERT_RENDER_THREAD();
         using namespace Goonya::Graphics;
         Ref<Mesh> updated_mesh = graphics_api->create_mesh(VERTEX_LAYOUT_PLANE);
@@ -68,7 +70,7 @@ void LevelRenderer::render_frame() {
 
             section->mesh_proxy = proxy;
 
-            Goonya::world.main_scene()->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
+            render_scene->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
         } else {
             MeshRenderProxy *proxy = section->mesh_proxy;
             proxy->mesh = updated_mesh;

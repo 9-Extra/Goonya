@@ -12,6 +12,5 @@ public:
     float fog_min_distance; // 雾开始的距离
     float fog_density;      // 雾强度
 
-    void on_tick() override { assert(get_owner() != nullptr); }
 };
 } // namespace Goonya::Graphics

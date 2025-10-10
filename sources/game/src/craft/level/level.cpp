@@ -2,12 +2,16 @@
 
 #include "core/log/Log.h"
 #include "craft/core/core.h"
+#include "craft/level/LevelRenderer.h"
 #include "craft/level/chunk.h"
+#include "function/world/World.h"
+#include <cassert>
 #include <ranges>
 
 namespace Craft {
 
-Level::Level() : delta_time_residual(GameClock::duration::zero()) {
+Level::Level(Goonya::World* world) : bind_world(world), level_renderer(world->main_scene()), delta_time_residual(GameClock::duration::zero()) {
+    assert(world != nullptr);
     player_pos = {0, 0, 0};
     player_chunk_pos = {255, 255, 255}; // 保证第一帧 ChunkPos(BlockPos(player_pos)) != play_chunk_pos
 }

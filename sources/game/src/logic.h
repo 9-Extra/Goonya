@@ -1,15 +1,17 @@
 #pragma once
 
 #include "craft/level/level.h"
+#include "function/world/World.h"
 #include <function/world/GObject.h>
 
-class MoveSystem : public Goonya::Component {
+class MoveSystem final : public Goonya::Component, public Goonya::TickFunction {
 public:
     void handle_mouse() const;
     void handle_keyboard(float delta) const;
 
     void on_register() override;
-    void on_tick() override;
+    void on_unregister() override;
+    void tick() override;
 
 private:
     std::shared_ptr<Goonya::GObject> cube;
