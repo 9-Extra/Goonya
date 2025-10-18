@@ -16,14 +16,13 @@
 
 namespace Goonya::Resource {
 
-template <class TDesc, class TAsset>
+template <typename Derived, typename TDesc, typename TAsset>
 class ResourceContainer {
 protected:
     std::string name;
     std::unordered_map<AssetKey, std::tuple<Ref<TAsset>, TDesc>> container;
 
 public:
-    virtual ~ResourceContainer() = default;
     explicit ResourceContainer(std::string name) : name(std::move(name)) {}
     template <typename T>
         requires std::is_convertible_v<T, TDesc>
@@ -40,7 +39,7 @@ public:
             auto &[asset, desc] = iter->second;
             if (!asset) [[unlikely]] {
                 LOG_TRACE("正在加载{}：\"{}\"", name, key);
-                asset = load(desc);
+                asset = static_cast<const Derived *>(this)->load(desc); // crtp
             }
             return asset;
         } else {
@@ -49,9 +48,6 @@ public:
     }
 
     void clear() { container.clear(); }
-
-protected:
-    virtual Ref<TAsset> load(const TDesc &desc) const = 0;
 };
 
 } // namespace Goonya::Resource

@@ -226,6 +226,9 @@ private:
     void do_register();
     void do_unregister();
 
+    /**
+     * @brief 标记此节点world_transform为脏，同时递归标记子节点，并且触发应有的更新
+     */
     void mark_world_transform_dirty() noexcept{
         is_world_transform_dirty = true;
 

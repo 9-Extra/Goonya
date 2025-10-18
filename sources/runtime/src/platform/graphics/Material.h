@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/assets.h"
 #include "core/RefCount.h"
+#include "core/assets.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/Shader.h"
@@ -50,7 +50,8 @@ protected:
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, Meta::DynamicData> parameters;
     std::unordered_map<uint32_t, Ref<Texture>> textures; // slot -> texture
-    std::unordered_map<uint32_t, std::tuple<Ref<Buffer>, BufferBindingType>> external_buffer; // slot -> (buffer, bindingtype) 
+    std::unordered_map<uint32_t, std::tuple<Ref<Buffer>, BufferBindingType>>
+        external_buffer; // slot -> (buffer, bindingtype)
 
     // 脏标记
     mutable bool is_parameters_dirty;
@@ -76,14 +77,14 @@ public:
     void set_pipeline_state(const PipeLineState &state) noexcept { pipeline_state = state; }
 
     void set_param(const std::string &name, const Meta::DynamicData &value);
-    void set_external_buffer(const std::string &name, const Ref<Buffer> &buffer){
-        auto& info = uber_shader->get_uniform_info().at(name);
+    void set_external_buffer(const std::string &name, const Ref<Buffer> &buffer) {
+        auto &info = uber_shader->get_uniform_info().at(name);
         external_buffer[info.binding] = {buffer, info.binding_type};
     }
 
     void set_texture(const std::string &name, const Ref<Texture> &texture) {
         // texture slot可能被优化掉了
-        if (auto iter = uber_shader->get_texture_units().find(name);iter != uber_shader->get_texture_units().end()){
+        if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
             this->textures[iter->second] = texture;
         }
     }
@@ -102,12 +103,11 @@ protected:
     void update_parameter();
 };
 
-class MaterialContainer final : public Resource::ResourceContainer<MaterialDesc, Material> {
+class MaterialContainer final : public Resource::ResourceContainer<MaterialContainer, MaterialDesc, Material> {
 public:
-    MaterialContainer() : ResourceContainer<MaterialDesc, Material>("材质") {}
+    MaterialContainer() : ResourceContainer<MaterialContainer, MaterialDesc, Material>("材质") {}
 
-protected:
-    Ref<Material> load(const MaterialDesc &desc) const override;
+    Ref<Material> load(const MaterialDesc &desc) const;
 };
 
 } // namespace Goonya::Graphics

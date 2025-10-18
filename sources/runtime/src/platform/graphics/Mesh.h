@@ -180,12 +180,11 @@ protected:
     virtual void _set_debug_label(const std::string &name) const noexcept = 0;
 };
 
-class MeshContainer final : public Resource::ResourceContainer<Graphics::MeshDesc, Graphics::Mesh> {
+class MeshContainer final : public Resource::ResourceContainer<MeshContainer, Graphics::MeshDesc, Graphics::Mesh> {
 public:
-    MeshContainer() : ResourceContainer<MeshDesc, Mesh>("网格") {}
+    MeshContainer() : Resource::ResourceContainer<MeshContainer, Graphics::MeshDesc, Graphics::Mesh>("网格") {}
 
-protected:
-    Ref<Mesh> load(const MeshDesc &desc) const override;
+    Ref<Mesh> load(const MeshDesc &desc) const;
 };
 
 } // namespace Goonya::Graphics

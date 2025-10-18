@@ -16,7 +16,7 @@ target("GRuntime")
     add_defines("GLFW_INCLUDE_NONE") -- 手动包含glad
 
     add_packages("glfw")
-    add_packages("imgui", "spdlog", "jsoncpp", "nowide_standalone", "reflect-cpp", {public=true})
+    add_packages("imgui", "spdlog", "jsoncpp", "reflect-cpp", {public=true})
     add_syslinks("stdc++exp", {tools = {"gcc", "gxx"}}) -- 用于支持stackstrace
     add_includedirs("runtime/include", {public = true})
 

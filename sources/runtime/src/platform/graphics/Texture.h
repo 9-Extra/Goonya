@@ -103,20 +103,20 @@ protected:
     explicit Texture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
 };
 
-class Texture2DContainer final : public Resource::ResourceContainer<Texture2DDesc, Texture> {
+class Texture2DContainer final : public Resource::ResourceContainer<Texture2DContainer, Texture2DDesc, Texture> {
 public:
-    Texture2DContainer() : ResourceContainer<Texture2DDesc, Texture>("纹理") {}
+    Texture2DContainer() : ResourceContainer<Texture2DContainer, Texture2DDesc, Texture>("纹理") {}
 
-protected:
-    Ref<Texture> load(const Texture2DDesc &desc) const override;
+    Ref<Texture> load(const Texture2DDesc &desc) const;
 };
 
-class TextureCubeMapContainer final : public Resource::ResourceContainer<TextureCubeMapDesc, Texture> {
+class TextureCubeMapContainer final
+    : public Resource::ResourceContainer<TextureCubeMapContainer, TextureCubeMapDesc, Texture> {
 public:
-    TextureCubeMapContainer() : ResourceContainer<TextureCubeMapDesc, Texture>("纹理") {}
+    TextureCubeMapContainer()
+        : Resource::ResourceContainer<TextureCubeMapContainer, TextureCubeMapDesc, Texture>("纹理") {}
 
-protected:
-    Ref<Texture> load(const TextureCubeMapDesc &desc) const override;
+    Ref<Texture> load(const TextureCubeMapDesc &desc) const;
 };
 
 } // namespace Goonya::Graphics
