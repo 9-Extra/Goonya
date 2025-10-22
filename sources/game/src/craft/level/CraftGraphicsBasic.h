@@ -13,6 +13,7 @@ struct TerrainMeshVertex {
 
 struct alignas(16) TerrainPerSurface { // NOLINT
     alignas(16) uint32_t basecolor_id;
+    alignas(16) Goonya::Vector3f tint_color;
     alignas(16) Goonya::Vector3f normal;
 };
 

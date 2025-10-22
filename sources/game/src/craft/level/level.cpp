@@ -71,6 +71,8 @@ void Level::load_chunks() {
 void Level::do_tick() {
     load_chunks();
 
+    LOG_INFO("{} {}",BlockPos{player_pos}, get_block_state(BlockPos{player_pos})->get_block()->get_display_name());
+
     level_renderer.render_frame();
 }
 

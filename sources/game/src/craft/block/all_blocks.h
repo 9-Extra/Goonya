@@ -1,6 +1,8 @@
 #pragma once
 
 #include "block.h"
+#include "craft/block/all_blockstate_properties.h"
+#include "craft/block/blocks/grass_block.h"
 #include "craft/core/registry.h"
 
 #include <cassert>
@@ -12,14 +14,17 @@ class Blocks {
 public:
     Block *const AIR = _register("air", new Block("空气", false));
     Block *const STONE = _register("stone", new Block("石头"));
-    Block *const DIRT = _register("granite", new Block("花岗岩"));
-    Block *const GRASS = _register("polished_granite", new Block("平滑花岗岩"));
+    Block *const DIRT = _register("dirt", new Block("泥土"));
+    Block *const GRASS_BLOCK = _register("grass_block", new GrassBlock("草方块", true, {Properties::get().SNOWY}));
+    Block *const GRANITE = _register("granite", new Block("花岗岩"));
+    Block *const POLISHED_GRANITE = _register("polished_granite", new Block("平滑花岗岩"));
+
 private:
     static std::optional<Blocks> instance;
 
 public:
-    Blocks() // 不要调用，不知道为什么不能声明为private 
-    { 
+    Blocks() // 不要调用，不知道为什么不能声明为private
+    {
         assert(!instance.has_value());
     }
     Blocks(Blocks &) = delete;
@@ -32,7 +37,7 @@ public:
 
     static void initalize() { instance.emplace(); }
 
-private:    
+private:
     Block *_register(std::string key, Block *block) noexcept // NOLINT: 不需要static
     {
         assert(block);
@@ -42,4 +47,3 @@ private:
 };
 
 } // namespace Craft
-

@@ -15,7 +15,7 @@ public:
     BlockStateProperty * const DIRECTION = _register(BlockStateProperty::create_enum<Direction>("direction"));
     BlockStateProperty * const NUMBER = _register(BlockStateProperty::create_int("number", {0, 1, 2}));
     BlockStateProperty * const BURNING = _register(BlockStateProperty::create_bool("burning"));
-
+    BlockStateProperty * const SNOWY = _register(BlockStateProperty::create_bool("snowy"));
 private:
     static std::optional<Properties> instance;
 

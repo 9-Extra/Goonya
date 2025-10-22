@@ -23,6 +23,7 @@ layout(binding = 0, std140) uniform per_frame
 
 struct PerSurface{
     uint basecolor_id;
+    vec3 tint_color;
     vec3 normal;
 };
 
@@ -46,12 +47,12 @@ out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类
 // ----------------------------------------------------------------------
 
 const vec3 sh_coeffs[9] = vec3[9](
-    vec3(0.8f, 0.8f, 0.8f),
-    vec3(-0.8f, -0.8f, -0.8f),
-    vec3(0.0f, 0.0f, 0.0f),
-    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.89f, 0.67f, 0.34f) * 1.5f,
+    vec3(0.5f, 0.5f, 0.5f), // y
+    vec3(0.1f, 0.1f, 0.1f), // z
+    vec3(0.1f, 0.1f, 0.1f), // x
     vec3(0.1f, 0.1f, 0.15f),
-    vec3(0.0f, 0.0f, 0.0f),
+    vec3(0.1f, 0.0f, 0.0f),
     vec3(0.05f, 0.05f, 0.1f),
     vec3(0.0f, 0.0f, 0.0f),
     vec3(0.08f, 0.08f, 0.12f)
@@ -74,15 +75,15 @@ vec3 spherical_harmonics3(vec3 direction)
     
     // l = 1
     basis[1] = 0.4886025119 * y; // Y1-1
-    basis[2] = 0.4886025119 * z; // Y10
-    basis[3] = 0.4886025119 * x; // Y11
+    basis[2] = 0.4886025119 * z; // Y1+0
+    basis[3] = 0.4886025119 * x; // Y1+1
     
     // l = 2
     basis[4] = 1.0925484306 * x * y; // Y2-2
     basis[5] = 1.0925484306 * y * z; // Y2-1
-    basis[6] = 0.3153915652 * (3.0 * z * z - 1.0); // Y20
-    basis[7] = 1.0925484306 * x * z; // Y21
-    basis[8] = 0.5462742153 * (x * x - y * y); // Y22
+    basis[6] = 0.3153915652 * (3.0 * z * z - 1.0); // Y2+0
+    basis[7] = 1.0925484306 * x * z; // Y2+1
+    basis[8] = 0.5462742153 * (x * x - y * y); // Y2+2
     
     // 计算球谐光照
     vec3 result = vec3(0.0);
@@ -98,7 +99,12 @@ vec3 spherical_harmonics3(vec3 direction)
 void main()
 {
     PerSurface surface = surfaces[vs_out.object_id];
-    vec4 color = texture(basecolor_texture, vec3(vs_out.tex_coords, surface.basecolor_id));
+    vec4 base_color = texture(basecolor_texture, vec3(vs_out.tex_coords, surface.basecolor_id));
+    float alpha = base_color.a;
+    if (alpha < 0.1)
+        discard; // 启用透明度测试，渲染个草方块都得要这玩意儿
+
+    vec3 color = base_color.rgb * surface.tint_color;
     vec3 light = spherical_harmonics3(surface.normal);
 
     vec3 linear_color = color.rgb * light;

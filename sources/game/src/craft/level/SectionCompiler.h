@@ -97,7 +97,7 @@ struct ComplieTask {
                         &&delegate) const;
 
 private:
-    static void compiler_push_quad(ComplieResult &result, BlockPos pos, const BakedQuad &quad) noexcept;
+    static void compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos, const BakedQuad &quad) noexcept;
 
     ComplieResult compile_mesh() const;
 };

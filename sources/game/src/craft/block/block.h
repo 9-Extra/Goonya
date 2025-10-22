@@ -1,6 +1,8 @@
 #pragma once
 
 #include "blockstate.h"
+#include "core/cgmath.h"
+#include "craft/core/core.h"
 #include "craft/core/registry.h"
 
 #include <cassert>
@@ -13,7 +15,7 @@ namespace Craft {
 extern Registry<Block> REGISTRY_BLOCK; // at all_blocks.cpp
 
 class Block {
-private:
+protected:
     std::string display_name;
 
     bool can_occlude; 
@@ -39,6 +41,20 @@ public:
     const std::vector<std::unique_ptr<BlockState>> &get_possible_states() const noexcept { return possible_states; }
     BlockState* get_default_blockstate() const noexcept{
         return default_blockstate;
+    }
+
+    /**
+     * @brief 给方块染色，需要blockstate文件中设置了对应的tintindex
+     * 
+     * @param state 方块状态
+     * @param pos 方块位置
+     * @param tintindex 染色索引，需要blockstate文件中设置了对应的tintindex
+     * @note 需要时请重载此函数
+     * @return Goonya::Vector3f 染色颜色
+     */
+    virtual Goonya::Vector3f get_tint_color(BlockState* state, BlockPos pos, int32_t tintindex) const noexcept { 
+        assert(false); //重载它！！！
+        return {}; 
     }
 
 private:

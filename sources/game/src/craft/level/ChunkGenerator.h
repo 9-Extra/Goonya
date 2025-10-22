@@ -54,10 +54,16 @@ private:
                     BlockPos world_pos = BlockPos(chunk->chunk_pos.get_start_pos() + Vector3i{x, y, z});
 
                     BlockState *state;
-                    if (world_pos.y < terrain_height_x_z) {
+                    if (world_pos.y > terrain_height_x_z) {
                         state = Blocks::get().AIR->get_default_blockstate();
                     } else {
-                        state = Blocks::get().STONE->get_default_blockstate();
+                        if (world_pos.y == terrain_height_x_z){
+                            state = Blocks::get().GRASS_BLOCK->get_default_blockstate();    
+                        } else if (world_pos.y >= terrain_height_x_z - 3){
+                            state = Blocks::get().DIRT->get_default_blockstate();    
+                        } else {
+                            state = Blocks::get().STONE->get_default_blockstate();
+                        }
                     }
                     chunk->set_block_state(inner_pos, state, SetBlockOption::DIRECT);
                 }

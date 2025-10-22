@@ -3,6 +3,7 @@
 #include "ChunkGenerator.h"
 #include "core/RefCount.h"
 #include "core/cgmath.h"
+#include "craft/block/blockstate.h"
 #include "craft/core/core.h"
 #include "craft/level/LevelRenderer.h"
 #include "craft/level/chunk.h"
@@ -35,7 +36,7 @@ private:
     Goonya::Vector3f player_pos;
     ChunkPos player_chunk_pos;
 
-    int32_t chunk_load_distance = 4;
+    int32_t chunk_load_distance = 6;
 
 public:
     explicit Level(Goonya::World* world);
@@ -50,6 +51,14 @@ public:
     Ref<Chunk> get_chunk(ChunkPos pos) const noexcept {
         auto iter = accessible_chunk.find(pos);
         return iter != all_chunks.end() ? iter->second : nullptr;
+    }
+
+    BlockState* get_block_state(BlockPos pos) const noexcept {
+        Ref<Chunk> chunk = get_chunk(ChunkPos{pos});
+        if (chunk == nullptr) {
+            return Blocks::get().AIR->get_default_blockstate();
+        }
+        return chunk->get_block_state(BlockInnerPos{pos});
     }
 
     void prepare_start() {

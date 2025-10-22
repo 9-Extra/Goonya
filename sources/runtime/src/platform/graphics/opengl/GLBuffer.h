@@ -36,18 +36,6 @@ public:
         glCreateBuffers(1, &id);
         glNamedBufferData(id, size, nullptr, GLBufferType(type));
     };
-    template <typename D>
-    GLBuffer(std::span<const D> data, BufferType type) : Buffer(data.size_bytes(), type) {
-        glCreateBuffers(1, &id);
-        glNamedBufferData(id, size, data.data(), GLBufferType(type));
-    };
-
-    template <typename D>
-    GLBuffer(std::span<D> data, BufferType type) : Buffer(data.size_bytes(), type) {
-        glCreateBuffers(1, &id);
-        glNamedBufferData(id, size, data.data(), GLBufferType(type));
-    };
-
     GLuint get_id() const noexcept { return id; }
 
     // access

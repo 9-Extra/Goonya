@@ -1,8 +1,10 @@
 #include "SectionCompiler.h"
 
 #include "core/ThreadPool.h"
+#include "craft/level/CraftGraphicsBasic.h"
 #include "craft/level/LevelRenderer.h"
 #include "craft/model_manager.h"
+#include "craft/block/block.h"
 
 namespace Craft {
 
@@ -33,27 +35,41 @@ RenderChunkRegion RenderRegionCache::create_region(ChunkPos section_pos) {
 
 void ComplieTask::do_complie(
     std::move_only_function<void(std::shared_ptr<RenderSection> &, ComplieResult &&)> &&delegate) const {
-    std::shared_ptr<RenderSection> section = owner.lock();
-    if (!section || is_cancelled.load(std::memory_order::acquire)) {
-        return; // 被删了，不用看了
+    if (is_cancelled.load(std::memory_order::acquire)) {
+        return;
     }
-
+    
     ComplieResult result = compile_mesh();
 
     if (is_cancelled.load(std::memory_order::acquire)) {
         return; // 再检查一次
     }
-
+    
+    std::shared_ptr<RenderSection> section = owner.lock();
+    if (!section) {
+        return; // 被删了，不用看了
+    }
     Goonya::THREAD_POOL.enqueue_renderer_thread(
         [delegate = std::move(delegate), section, result = std::move(result)] mutable {
             delegate(section, std::move(result));
         });
 }
 
-void ComplieTask::compiler_push_quad(ComplieResult &result, BlockPos pos, const BakedQuad &quad) noexcept {
+void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos, const BakedQuad &quad) noexcept {
     Goonya::Vector3f normal = get_direction_vector(quad.normal);
 
-    result.per_surface.emplace_back(quad.color_texture_index, normal);
+    Goonya::Vector3f tint_color;
+    if (quad.tintindex != -1){
+        tint_color = state->get_block()->get_tint_color(state, pos, quad.tintindex);
+    } else {
+        tint_color = {1.0f, 1.0f, 1.0f};
+    }
+
+    result.per_surface.emplace_back(TerrainPerSurface{
+        .basecolor_id = quad.color_texture_index,
+        .tint_color = tint_color,
+        .normal = normal,
+    });
 
     for (const auto &v : quad.vertices) {
         uint32_t base_index = result.vertices.size() * 4;
@@ -90,12 +106,12 @@ ComplieTask::ComplieResult ComplieTask::compile_mesh() const {
                         continue;
 
                     for (const BakedQuad &quad : model.culled_quads[std::to_underlying(direction)]) {
-                        compiler_push_quad(result, pos, quad);
+                        compiler_push_quad(result, state, pos, quad);
                     }
                 }
                 // 增加永远不会被遮挡的面
                 for (const BakedQuad &quad : model.unculled_quads) {
-                    compiler_push_quad(result, pos, quad);
+                    compiler_push_quad(result, state, pos, quad);
                 }
             }
         }

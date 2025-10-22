@@ -20,7 +20,7 @@ inline constexpr Direction direction_opposite(Direction d) noexcept {
     case Direction::UP:
         return Direction::DOWN;
     case Direction::NORTH:
-        return Direction::SOUTH; // 我们认为-1为南方，即摄像机初始方向是面向南方的
+        return Direction::SOUTH;
     case Direction::SOUTH:
         return Direction::NORTH;
     case Direction::WEST:
@@ -38,7 +38,7 @@ inline constexpr Goonya::Vector3f get_direction_vector(Direction d) noexcept {
     case Direction::UP:
         return {0, 1, 0};
     case Direction::NORTH:
-        return {0, 0, -1}; // 我们认为-1为南方，即摄像机初始方向是面向南方的
+        return {0, 0, -1}; // 我们认为-1为北方，即摄像机初始方向是面向北方的，与MC保持一致 
     case Direction::SOUTH:
         return {0, 0, 1};
     case Direction::WEST:

@@ -20,12 +20,13 @@ struct BlockElement{
         Goonya::Vector2f uv_up_left;
         Goonya::Vector2f uv_down_right;
         std::string texture_key; 
+        int32_t tintindex;
     };
 
     Goonya::Vector3f from; // 西下南角（最小）
     Goonya::Vector3f to; // 东上北角（最大）
     Goonya::Quaternion rotation = Goonya::Quaternion::identity();
-    std::vector<Face> faces;
+    std::vector<Face> faces; // 通常有6个面，但存在部分方向的表面不存在的情况
 };
 
 struct BlockModel{
@@ -42,6 +43,7 @@ struct BakedQuad{ // NOLINT
     std::array<BlockVertex, 4> vertices; // 从左上角开始顺时针旋转
     Direction normal;
     uint32_t color_texture_index = 0; // 颜色纹理在对应纹理数组中的下标
+    int32_t tintindex = -1; // 染色索引，需要blockstate文件中设置了对应的tintindex
 };
 
 struct BakedBlockModel{
