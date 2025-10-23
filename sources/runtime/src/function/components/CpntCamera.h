@@ -34,7 +34,7 @@ public:
         camera_proxy->far_z = far_z;
         camera_proxy->fov = fov;
         camera_proxy->render_target = render_target;
-        camera_proxy->scene = get_owner()->get_world()->main_scene();
+        camera_proxy->scene = &get_owner()->get_world()->main_scene();
     }
 
     void on_unregister() override { renderer.drop_camera(camera_proxy); }

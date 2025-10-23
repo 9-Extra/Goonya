@@ -65,7 +65,7 @@ private:
                             state = Blocks::get().STONE->get_default_blockstate();
                         }
                     }
-                    chunk->set_block_state(inner_pos, state, SetBlockOption::DIRECT);
+                    chunk->set_block_state(inner_pos, state);
                 }
             }
         }

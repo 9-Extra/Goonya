@@ -31,24 +31,6 @@ inline constexpr Direction direction_opposite(Direction d) noexcept {
     std::unreachable();
 }
 
-inline constexpr Goonya::Vector3f get_direction_vector(Direction d) noexcept {
-    switch (d) {
-    case Direction::DOWN:
-        return {0, -1, 0};
-    case Direction::UP:
-        return {0, 1, 0};
-    case Direction::NORTH:
-        return {0, 0, -1}; // 我们认为-1为北方，即摄像机初始方向是面向北方的，与MC保持一致 
-    case Direction::SOUTH:
-        return {0, 0, 1};
-    case Direction::WEST:
-        return {-1, 0, 0};
-    case Direction::EAST:
-        return {1, 0, 0};
-    }
-    std::unreachable();
-}
-
 struct Vector3i {
     int32_t x = 0;
     int32_t y = 0;
@@ -92,6 +74,25 @@ struct Vector3i {
         std::unreachable();
     }
 };
+
+constexpr Vector3i get_direction_vector(Direction d) noexcept {
+    switch (d) {
+    case Direction::DOWN:
+        return {0, -1, 0};
+    case Direction::UP:
+        return {0, 1, 0};
+    case Direction::NORTH:
+        return {0, 0, -1}; // 我们认为-1为北方，即摄像机初始方向是面向北方的，与MC保持一致 
+    case Direction::SOUTH:
+        return {0, 0, 1};
+    case Direction::WEST:
+        return {-1, 0, 0};
+    case Direction::EAST:
+        return {1, 0, 0};
+    }
+    std::unreachable();
+}
+
 
 struct BlockPos : public Vector3i {
     using Vector3i::Vector3i;

@@ -27,21 +27,20 @@ public:
 private:
     std::shared_ptr<GObject> root;
     uint64_t tick_count = 0;
-    Graphics::RenderScene *_main_scene = nullptr;
+    Graphics::RenderScene &_main_scene;
 
     std::unordered_set<TickFunction *> tick_functions;
     std::vector<std::weak_ptr<GObject>> deferred_update_list;
 
 public:
-    World() {
-        _main_scene = Graphics::renderer.create_scene();
+    World() : _main_scene(*Graphics::renderer.create_scene()) {
         root = std::make_shared<GObject>("__root__");
         root->set_world(this);
     }
     ~World() {
         root.reset();
         tick_count = 0;
-        Graphics::enqueue_render_task([scene = _main_scene] { Graphics::renderer.drop_scene(scene); });
+        Graphics::enqueue_render_task([&scene = _main_scene] { Graphics::renderer.drop_scene(&scene); });
     }
 
 public:
@@ -51,10 +50,7 @@ public:
     }
     World(const World &) = delete;
     // --------------------管理--------------------------
-    Graphics::RenderScene *main_scene() noexcept {
-        assert(_main_scene != nullptr);
-        return _main_scene;
-    }
+    Graphics::RenderScene &main_scene() noexcept { return _main_scene; }
 
     std::shared_ptr<GObject> get_root() const noexcept { return root; }
 

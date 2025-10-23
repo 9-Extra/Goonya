@@ -105,6 +105,10 @@ struct Vector3f {
     }
 };
 
+constexpr static Vector3f FORWARD = {0, 0, -1};
+constexpr static Vector3f UP = {0, 1, 0};
+constexpr static Vector3f RIGHT = {1, 0, 0};
+
 struct Vector4f {
     union {
         struct {
@@ -162,8 +166,9 @@ struct Quaternion {
         return Vector3f{rotated.x, rotated.y, rotated.z};
     }
 
-    constexpr Vector3f forward() const noexcept { return rotate_direction({0, 0, -1}); }
+    constexpr Vector3f forward_direction() const noexcept { return rotate_direction(FORWARD); }
 
+    constexpr Vector3f up_direction() const noexcept { return rotate_direction(UP); }
     float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
 
     Quaternion normalize() const noexcept {
@@ -391,9 +396,9 @@ struct Transform {
 
     constexpr Vector3f apply_point(Vector3f p) const noexcept { return rotation.apply(p * scale) + position; }
 
-    constexpr Vector3f get_forward_direction() const noexcept { return rotation.rotate_direction({0, 0, -1}); }
+    constexpr Vector3f forward_direction() const noexcept { return rotation.rotate_direction(FORWARD); }
 
-    constexpr Vector3f get_up_direction() const noexcept { return rotation.rotate_direction({0, 1, 0}); }
+    constexpr Vector3f up_direction() const noexcept { return rotation.rotate_direction(UP); }
 
     constexpr Matrix4 model_matrix() const noexcept {
         return Matrix4{Matrix3::scale(scale) * Matrix3::rotate(rotation)} * Matrix4::translate(position);

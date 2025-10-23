@@ -2,7 +2,6 @@
 
 #include "core/RefCount.h"
 #include "core/cgmath.h"
-#include "core/log/Log.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/model_manager.h"
@@ -19,8 +18,7 @@
 
 namespace Craft {
 
-LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene *render_scene) : render_scene(render_scene) {
-    assert(render_scene);
+LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
     Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
     terrain_material = create_ref<Goonya::Graphics::Material>(shader);
     terrain_material->set_pipeline_state(Goonya::Graphics::PipeLineState{
@@ -35,7 +33,7 @@ void LevelRenderer::render_frame() {
 
     RenderRegionCache region_cache{*this};
 
-    auto receiver = [render_scene = render_scene, terrain_material = this->terrain_material](
+    auto receiver = [&render_scene = render_scene, terrain_material = this->terrain_material](
                         std::shared_ptr<RenderSection> &section, ComplieTask::ComplieResult &&result) {
         ASSERT_RENDER_THREAD();
         using namespace Goonya::Graphics;
@@ -52,7 +50,7 @@ void LevelRenderer::render_frame() {
             graphics_api->create_buffer(per_surface_data.size_bytes(), BufferType::STATIC);
         updated_per_surface_buffer->write(per_surface_data, 0);
 
-        LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
+        // LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
 
         if (section->mesh_proxy == nullptr) {
             Ref<Material> material = terrain_material->clone();
@@ -70,7 +68,7 @@ void LevelRenderer::render_frame() {
 
             section->mesh_proxy = proxy;
 
-            render_scene->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
+            render_scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
         } else {
             MeshRenderProxy *proxy = section->mesh_proxy;
             proxy->mesh = updated_mesh;

@@ -72,22 +72,22 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     const Transform &trans = camera->get_transform();
     if (Input::is_key_pressing('W')) {
-        Vector3f ori = trans.get_forward_direction();
+        Vector3f ori = trans.forward_direction();
         ori.y = 0.0;
         camera->translate(ori.normalize() * move_speed);
     }
     if (Input::is_key_pressing('S')) {
-        Vector3f ori = trans.get_forward_direction();
+        Vector3f ori = trans.forward_direction();
         ori.y = 0.0;
         camera->translate(ori.normalize() * -move_speed);
     }
     if (Input::is_key_pressing('A')) {
-        Vector3f ori = trans.get_forward_direction();
+        Vector3f ori = trans.forward_direction();
         ori = {ori.z, 0.0, -ori.x};
         camera->translate(ori.normalize() * move_speed);
     }
     if (Input::is_key_pressing('D')) {
-        Vector3f ori = trans.get_forward_direction();
+        Vector3f ori = trans.forward_direction();
         ori = {ori.z, 0.0, -ori.x};
         camera->translate(ori.normalize() * -move_speed);
     }
@@ -127,7 +127,7 @@ void MoveSystem::on_register() {
 
     get_owner()->get_world()->register_ticker(this);
 
-    level = create_ref<Craft::Level>(get_owner()->get_world());
+    level = create_ref<Craft::Level>(get_owner()->get_world(), camera);
     level->prepare_start();
 }
 
@@ -143,6 +143,5 @@ void MoveSystem::tick() {
     cube->rotate_local_axis(r);
     light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
 
-    level->set_player_pos(camera->get_transform().position);
     level->tick();
 }

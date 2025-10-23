@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/ThreadPool.h"
 #include "core/RefCount.h"
+#include "core/ThreadPool.h"
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
@@ -95,11 +95,12 @@ public:
     std::shared_ptr<ComplieTask> complie_task;
     bool is_dirty = true;
 
-    Goonya::Graphics::RenderScene* render_scene = nullptr;
+    Goonya::Graphics::RenderScene &render_scene;
     Goonya::Graphics::MeshRenderProxy *mesh_proxy = nullptr;
 
-    RenderSection(Ref<Chunk> chunk, Goonya::Graphics::RenderScene* render_scene) : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
-        assert(origin_chunk && render_scene);
+    RenderSection(Ref<Chunk> chunk, Goonya::Graphics::RenderScene &render_scene)
+        : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
+        assert(origin_chunk);
     }
 
     ~RenderSection() {
@@ -107,9 +108,9 @@ public:
             complie_task->cancel();
         }
         if (mesh_proxy) {
-            auto iter = render_scene->mesh_proxys.find(mesh_proxy);
-            assert(iter != render_scene->mesh_proxys.end());
-            render_scene->mesh_proxys.erase(iter);
+            auto iter = render_scene.mesh_proxys.find(mesh_proxy);
+            assert(iter != render_scene.mesh_proxys.end());
+            render_scene.mesh_proxys.erase(iter);
         }
     }
 
@@ -137,12 +138,12 @@ public:
     Ref<Goonya::Graphics::Material> terrain_material;
 
 private:
-    Goonya::Graphics::RenderScene* render_scene = nullptr; 
+    Goonya::Graphics::RenderScene &render_scene;
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块
 
     std::vector<RenderSection *> visible_chunk; // 当前帧可见的区块
 public:
-    explicit LevelRenderer(Goonya::Graphics::RenderScene* render_scene);
+    explicit LevelRenderer(Goonya::Graphics::RenderScene &render_scene);
     ~LevelRenderer() {
         render_chunks.clear(); // 提前销毁render_chunks，保证所有ComplieTask已结束
     }
@@ -174,7 +175,12 @@ public:
         return all;
     }
 
-    void notify_chunk_update(const Ref<Chunk> &chunk) noexcept {}
+    void notify_chunk_update(const Ref<Chunk> &chunk) noexcept // NOLINT
+    {
+        if (auto section = get_section(chunk->chunk_pos)) {
+            section->is_dirty = true;
+        }
+    }
 
     void render_frame();
 

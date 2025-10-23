@@ -60,13 +60,13 @@ public:
 
     BlockState *get_block_state(BlockInnerPos pos) const noexcept { return block_states[pos.as_index()]; }
     BlockState *get_block_state(BlockPos pos)  const noexcept { return get_block_state(BlockInnerPos(pos)); }
-    BlockState *set_block_state(BlockInnerPos pos, BlockState *state, SetBlockOption option) noexcept {
+    BlockState *set_block_state(BlockInnerPos pos, BlockState *state) noexcept {
         BlockState *old = block_states[pos.as_index()];
         block_states[pos.as_index()] = state;
         return old;
     }
-    BlockState *set_block_state(BlockPos pos, BlockState *state, SetBlockOption option) noexcept {
-        return set_block_state(BlockInnerPos(pos), state, option);
+    BlockState *set_block_state(BlockPos pos, BlockState *state) noexcept {
+        return set_block_state(BlockInnerPos(pos), state);
     }
 
 private:

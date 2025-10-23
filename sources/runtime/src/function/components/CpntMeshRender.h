@@ -40,10 +40,10 @@ public:
             mesh_proxy->aabbs.push_back(sub_mesh.aabb.transformed(owner.get_world_model_matrix()));
         }
 
-        enqueue_render_task([mesh_proxy = mesh_proxy, scene = get_owner()->get_world()->main_scene()] mutable {
+        enqueue_render_task([mesh_proxy = mesh_proxy, &scene = get_owner()->get_world()->main_scene()] mutable {
             ASSERT_RENDER_THREAD();
             // mesh_proxy移交给渲染线程，Component中只持有指针，不要在逻辑线程访问它
-            scene->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
+            scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
         });
     }
 
@@ -79,7 +79,7 @@ public:
 
     void on_unregister() override {
         assert(get_owner() != nullptr);
-        RenderScene *scene = get_owner()->get_world()->main_scene();
+        RenderScene *scene = &get_owner()->get_world()->main_scene();
         enqueue_render_task([proxy = mesh_proxy, scene] {
             auto &container = scene->mesh_proxys;
             auto iter = container.find(proxy);

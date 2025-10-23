@@ -28,12 +28,12 @@ public:
 
         Skybox skybox{skybox_material, ignore_range, bbox.offset(pos)};
 
-        RenderScene *scene = get_owner()->get_world()->main_scene();
+        RenderScene *scene = &get_owner()->get_world()->main_scene();
         skybox_proxy = scene->skyboxs.emplace(std::move(skybox));
     }
 
     void on_unregister() override {
-        RenderScene *scene = get_owner()->get_world()->main_scene();
+        RenderScene *scene = &get_owner()->get_world()->main_scene();
         scene->skyboxs.erase(skybox_proxy);
     }
 
