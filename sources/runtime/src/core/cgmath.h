@@ -5,10 +5,23 @@
 #include <cstddef>
 #include <format>
 #include <limits>
+#include <type_traits>
 
 namespace Goonya {
 
 constexpr float to_radian(float angle) { return angle / 180.0f * 3.1415926535f; }
+
+template <typename T>
+    requires std::is_arithmetic_v<T>
+constexpr int8_t sign(T x) {
+    if constexpr (std::is_signed_v<T>) {
+        return x > 0 ? 1 : (x < 0 ? -1 : 0);
+    } else if constexpr (std::is_unsigned_v<T>) {
+        return x > 0 ? 1 : 0;
+    } else {
+        static_assert(std::is_void_v<T>, "what?!");
+    }
+}
 
 struct Vector2f {
     union {
@@ -50,6 +63,9 @@ struct Color {
     constexpr bool operator!=(const Color &ps) const { return !(*this == ps); }
 };
 
+struct Matrix3;
+struct Matrix4;
+
 struct Vector3f {
     union {
         struct {
@@ -74,6 +90,7 @@ struct Vector3f {
     constexpr Vector3f operator/(const float n) const { return *this * (1.0f / n); }
     constexpr Vector3f operator*(const Vector3f v) const { return {x * v.x, y * v.y, z * v.z}; }
 
+    friend constexpr Vector3f operator*(Vector3f left, Matrix3 right) noexcept;
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }
 
     inline constexpr Vector3f cross(const Vector3f b) const {
@@ -108,6 +125,8 @@ struct Vector4f {
     constexpr Vector4f operator-(Vector4f n) const noexcept { return {x - n.x, y - n.y, z - n.z, w - n.w}; }
     constexpr Vector4f operator*(const float n) const noexcept { return {x * n, y * n, z * n, w * n}; }
     constexpr Vector4f operator/(const float n) const noexcept { return *this * (1.0f / n); }
+
+    friend constexpr Vector4f operator*(Vector4f left, Matrix4 right) noexcept;
 };
 
 struct Quaternion {
@@ -129,7 +148,7 @@ struct Quaternion {
                Quaternion::from_rotation({0, 0, 1}, rotate.z);
     }
 
-    constexpr Vector3f rotate_direction(Vector3f src) const {
+    constexpr Vector3f rotate_direction(Vector3f src) const noexcept {
         const Quaternion &q = *this;
         Quaternion p{src.x, src.y, src.z, 0.0f};
         Quaternion rotated = q * p * q.conjugate();
@@ -142,6 +161,8 @@ struct Quaternion {
         Quaternion rotated = q * p * q.conjugate();
         return Vector3f{rotated.x, rotated.y, rotated.z};
     }
+
+    constexpr Vector3f forward() const noexcept { return rotate_direction({0, 0, -1}); }
 
     float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
 
@@ -231,10 +252,10 @@ struct Matrix3 {
     Quaternion resolve_rotation() const noexcept {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
-        float qx = 0.5f * std::sqrt(m[0][0] - m[1][1] - m[2][2]);
-        float qy = 0.5f * std::sqrt(-m[0][0] + m[1][1] - m[2][2]);
-        float qz = 0.5f * std::sqrt(-m[0][0] - m[1][1] + m[2][2]);
-        float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2]);
+        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(m[0][0] - m[1][1] - m[2][2] + 1);
+        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] + m[1][1] - m[2][2] + 1);
+        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] - m[1][1] + m[2][2] + 1);
+        float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2] + 1);
         return Quaternion{qx, qy, qz, qw};
     }
 };
@@ -319,9 +340,9 @@ struct Matrix4 {
     Quaternion resolve_rotation() const noexcept {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
-        float qx = 0.5f * std::sqrt(m[0][0] - m[1][1] - m[2][2] + m[3][3]);
-        float qy = 0.5f * std::sqrt(-m[0][0] + m[1][1] - m[2][2] + m[3][3]);
-        float qz = 0.5f * std::sqrt(-m[0][0] - m[1][1] + m[2][2] + m[3][3]);
+        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(m[0][0] - m[1][1] - m[2][2] + m[3][3]);
+        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] + m[1][1] - m[2][2] + m[3][3]);
+        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] - m[1][1] + m[2][2] + m[3][3]);
         float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]);
         return Quaternion{qx, qy, qz, qw};
     }
@@ -333,6 +354,25 @@ struct Matrix4 {
         };
     }
 };
+
+constexpr Vector3f operator*(Vector3f left, Matrix3 right) noexcept {
+    Vector3f r;
+    // 将向量视为行向量，左乘矩阵
+    r.v[0] = left[0] * right.m[0][0] + left[1] * right.m[1][0] + left[2] * right.m[2][0];
+    r.v[1] = left[0] * right.m[0][1] + left[1] * right.m[1][1] + left[2] * right.m[2][1];
+    r.v[2] = left[0] * right.m[0][2] + left[1] * right.m[1][2] + left[2] * right.m[2][2];
+    return r;
+}
+
+constexpr Vector4f operator*(Vector4f left, Matrix4 right) noexcept {
+    Vector4f r;
+    // 将向量视为行向量，左乘矩阵
+    r.v[0] = left[0] * right.m[0][0] + left[1] * right.m[1][0] + left[2] * right.m[2][0] + left[3] * right.m[3][0];
+    r.v[1] = left[0] * right.m[0][1] + left[1] * right.m[1][1] + left[2] * right.m[2][1] + left[3] * right.m[3][1];
+    r.v[2] = left[0] * right.m[0][2] + left[1] * right.m[1][2] + left[2] * right.m[2][2] + left[3] * right.m[3][2];
+    r.v[3] = left[0] * right.m[0][3] + left[1] * right.m[1][3] + left[2] * right.m[2][3] + left[3] * right.m[3][3];
+    return r;
+}
 
 struct Transform {
     Vector3f position;
@@ -456,5 +496,14 @@ struct std::formatter<Goonya::Vector3f> {
     template <typename FormatContext>
     auto format(const Goonya::Vector3f vec3, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "({}, {}, {})", vec3.x, vec3.y, vec3.z);
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Quaternion> {
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
+    template <typename FormatContext>
+    auto format(const Goonya::Quaternion q, FormatContext &ctx) const {
+        return std::format_to(ctx.out(), "({}, {}, {}, {})", q.x, q.y, q.z, q.w);
     }
 };
