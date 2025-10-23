@@ -11,6 +11,7 @@
 #include "craft/craft.h"
 #include "function/world/GObject.h"
 #include "logic.h"
+#include "platform/display/display.h"
 
 int main() {
     try {
@@ -28,6 +29,8 @@ int main() {
             world->set_root(scene.root);
         }
 
+        Goonya::Display::set_cursor_mode(Goonya::CursorMode::CAPTURED | Goonya::CursorMode::HIDDEN); // 捕获鼠标
+        
         world->get_root()->add_component(std::make_unique<MoveSystem>());
 
         Goonya::main_loop();

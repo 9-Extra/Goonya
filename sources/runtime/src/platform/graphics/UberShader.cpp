@@ -44,7 +44,7 @@ void VariantKeyCollect::get_variant_key_names(VariantCode code, std::vector<std:
         }
     }
 }
-bool VariantKeyCollect::set_variant_code(VariantCode &code, const std::string &variant_key) const noexcept {
+bool VariantKeyCollect::set_variant_code(VariantCode &code, std::string_view variant_key) const noexcept {
     if (auto iter = variants_key_map.find(variant_key); iter != variants_key_map.end()) {
         auto [group_index, index] = iter->second;
         const auto &[base, group] = variants_key_groups[group_index];
@@ -59,7 +59,7 @@ bool VariantKeyCollect::set_variant_code(VariantCode &code, const std::string &v
         return false;
     }
 }
-bool VariantKeyCollect::reset_variant_code(VariantCode &code, const std::string &variant_key) const noexcept {
+bool VariantKeyCollect::reset_variant_code(VariantCode &code, std::string_view variant_key) const noexcept {
     if (auto iter = variants_key_map.find(variant_key); iter != variants_key_map.end()) {
         auto [group_index, _] = iter->second;
         const auto &[base, group] = variants_key_groups[group_index];
@@ -73,7 +73,7 @@ bool VariantKeyCollect::reset_variant_code(VariantCode &code, const std::string 
         return false;
     }
 }
-bool VariantKeyCollect::is_key_defined(VariantCode code, const std::string &key) const noexcept {
+bool VariantKeyCollect::is_key_defined(VariantCode code, std::string_view key) const noexcept {
     if (auto iter = variants_key_map.find(key); iter != variants_key_map.end()) {
         auto [group_index, index] = iter->second;
         const auto &[base, group] = variants_key_groups[group_index];

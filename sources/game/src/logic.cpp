@@ -7,6 +7,8 @@
 #include "core/log/Log.h"
 #include "core/timer/timer.h"
 #include "craft/level/level.h"
+#include "function/world/Component.h"
+#include "platform/display/display.h"
 #include "resource/ResMng.h"
 
 #include <platform/graphics/Shader.h>
@@ -16,33 +18,44 @@ void MoveSystem::handle_mouse() const {
     using namespace Goonya;
     if (Goonya::Input::is_mouse_click(Input::LEFT)) {
         lights->enable();
+        // 左键点击时，捕获光标
+        Display::set_cursor_mode(CursorMode::CAPTURED | CursorMode::HIDDEN);
     }
     if (Goonya::Input::is_mouse_click(Input::RIGHT)) {
         lights->disable();
     }
 
-    // 使用鼠标中键旋转视角
-    //  左上角为(0,0)，右下角为(w,h)
-    if (Goonya::Input::get_mouse_state(Input::MIDDLE) == Input::KeyState::DOWN) {
+    // 如何光标已捕获，使用鼠标移动旋转视角
+    // 左上角为(0,0)，右下角为(w,h)
+    if (contain(Display::get_cursor_mode(), CursorMode::CAPTURED)) {
         auto [dx, dy] = Input::get_mouse_move();
-        // 鼠标向右拖拽，相机沿全局坐标系y轴顺时针旋转。鼠标向下拖拽时，相机沿局部坐标系x轴顺时针旋转
-        const float rotate_speed = 0.003f;
-        camera->rotate_local_axis({dy * rotate_speed, 0, 0});
-        camera->rotate_global_axis({0, dx * rotate_speed, 0});
+        // 鼠标向右拖拽，相机沿全局坐标系y轴逆时针旋转。鼠标向下拖拽时，相机沿局部坐标系x轴逆时针旋转
+        const float rotate_speed = 0.006f;
+        camera->rotate_local_axis({-dy * rotate_speed, 0, 0});
+        camera->rotate_global_axis({0, -dx * rotate_speed, 0});
     }
 }
 void MoveSystem::handle_keyboard(float delta) const {
     // wasd移动
     using namespace Goonya;
-    const float move_speed = 0.02f * delta;
+    const float move_speed = delta * (Input::is_key_pressing(Input::KeyCode::LCTRL) ? 0.06f : 0.02f);
 
     if (Input::is_key_click('F')) {
-        static const std::string key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
+        const std::string_view key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
         Graphics::ShaderLib *shader_lib = resources.shader_lib.get();
         if (!shader_lib->is_global_variant_key_set(key_name)) {
             shader_lib->set_global_variant_key(key_name);
         } else {
             shader_lib->reset_global_variant_key(key_name);
+        }
+    }
+
+    // 按下LALT时，切换光标模式
+    if (Input::is_key_click(Input::KeyCode::LALT)){
+        if (!contain(Display::get_cursor_mode(), CursorMode::CAPTURED)) {
+            Display::set_cursor_mode(CursorMode::CAPTURED | CursorMode::HIDDEN);
+        } else {
+            Display::set_cursor_mode(CursorMode::FREE | CursorMode::VISIBLE);
         }
     }
 
@@ -56,31 +69,32 @@ void MoveSystem::handle_keyboard(float delta) const {
     if (Goonya::Input::is_key_click(Input::KeyCode::ESCAPE)) {
         EventBus::dispatch_event(Events::EngineStop{});
     }
+
     const Transform &trans = camera->get_transform();
-    if (Input::get_key_state('W') == Input::KeyState::DOWN) {
+    if (Input::is_key_pressing('W')) {
         Vector3f ori = trans.get_forward_direction();
         ori.y = 0.0;
         camera->translate(ori.normalize() * move_speed);
     }
-    if (Input::get_key_state('S') == Input::KeyState::DOWN) {
+    if (Input::is_key_pressing('S')) {
         Vector3f ori = trans.get_forward_direction();
         ori.y = 0.0;
         camera->translate(ori.normalize() * -move_speed);
     }
-    if (Input::get_key_state('A') == Input::KeyState::DOWN) {
+    if (Input::is_key_pressing('A')) {
         Vector3f ori = trans.get_forward_direction();
         ori = {ori.z, 0.0, -ori.x};
         camera->translate(ori.normalize() * move_speed);
     }
-    if (Input::get_key_state('D') == Input::KeyState::DOWN) {
+    if (Input::is_key_pressing('D')) {
         Vector3f ori = trans.get_forward_direction();
         ori = {ori.z, 0.0, -ori.x};
         camera->translate(ori.normalize() * -move_speed);
     }
-    if (Goonya::Input::get_key_state(Input::KeyCode::SPACE) == Input::KeyState::DOWN) {
+    if (Input::is_key_pressing(Input::KeyCode::SPACE)) {
         camera->translate({0.0f, move_speed, 0.0f});
     }
-    if (Goonya::Input::get_key_state(Input::KeyCode::LSHIFT) == Input::KeyState::DOWN) {
+    if (Input::is_key_pressing(Input::KeyCode::LSHIFT)) {
         camera->translate({0.0f, -move_speed, 0.0f});
     }
 

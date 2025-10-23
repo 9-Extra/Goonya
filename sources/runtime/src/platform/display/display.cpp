@@ -175,6 +175,41 @@ void Display::drop() {
 
 void Display::set_title(const std::string &title) { glfwSetWindowTitle(window, title.c_str()); }
 
+CursorMode Display::get_cursor_mode() noexcept {
+    int mode = glfwGetInputMode(window, GLFW_CURSOR);
+    switch (mode) {
+    case GLFW_CURSOR_NORMAL:
+        return CursorMode::FREE | CursorMode::VISIBLE;
+    case GLFW_CURSOR_CAPTURED:
+        return CursorMode::CAPTURED | CursorMode::VISIBLE;
+    case GLFW_CURSOR_HIDDEN:
+        return CursorMode::FREE | CursorMode::HIDDEN;
+    case GLFW_CURSOR_DISABLED:
+        return CursorMode::CAPTURED | CursorMode::HIDDEN;
+    default:
+        assert(false);
+    }
+}
+
+void Display::set_cursor_mode(CursorMode mode) {
+    switch (mode) {
+    case CursorMode::FREE | CursorMode::VISIBLE:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        break;
+    case CursorMode::CAPTURED | CursorMode::VISIBLE:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
+        break;
+    case CursorMode::FREE | CursorMode::HIDDEN:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+        break;
+    case CursorMode::CAPTURED | CursorMode::HIDDEN:
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        break;
+    default:
+        assert(false);
+    }
+};
+
 std::tuple<uint32_t, uint32_t> Display::get_size() {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);

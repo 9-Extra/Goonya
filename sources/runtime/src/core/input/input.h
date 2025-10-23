@@ -32,7 +32,9 @@ const size_t MAX_KEYCODE = 256;
 void initalize();
 void reset_state();
 KeyState get_key_state(KeyCode key);
-inline KeyState get_key_state(char key) { return get_key_state((KeyCode)key); }
+inline KeyState get_key_state(char key) noexcept { return get_key_state((KeyCode)key); }
+inline bool is_key_pressing(KeyCode key) noexcept { return get_key_state(key) == KeyState::DOWN; }
+inline bool is_key_pressing(char key) noexcept { return is_key_pressing((KeyCode)key); }
 
 bool is_key_click(KeyCode key);
 inline bool is_key_click(char key) { return is_key_click((KeyCode)key); }

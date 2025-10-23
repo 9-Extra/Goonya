@@ -8,6 +8,7 @@
 #include <cassert>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -63,7 +64,7 @@ private:
     // 着色器组及其组的基
     std::vector<std::tuple<uint32_t, std::vector<std::string>>> variants_key_groups;
     // 变体所在组号及其在组中的序号
-    std::unordered_map<std::string, std::tuple<uint8_t, uint8_t>> variants_key_map;
+    std::unordered_map<std::string, std::tuple<uint8_t, uint8_t>, StringHash, StringEqual> variants_key_map;
     uint32_t variant_count = 1;
 
 public:
@@ -80,7 +81,7 @@ public:
 
     void get_variant_key_names(VariantCode code, std::vector<std::string> &out_result) const noexcept;
 
-    bool set_variant_code(VariantCode &code, const std::string &variant_key) const noexcept;
+    bool set_variant_code(VariantCode &code, std::string_view variant_key) const noexcept;
     /**
      * @brief 设置指定varient_key所在组为默认
      * 不存在“移除”一个变体键的方法，因为那样产生的变体可能是不合法的，最多重置成默认情况
@@ -88,8 +89,8 @@ public:
      * @param variant_key 要“移除”的键，同组中任意一个键效果相同
      * @return 是否发生更新
      */
-    bool reset_variant_code(VariantCode &code, const std::string &variant_key) const noexcept;
-    bool is_key_defined(VariantCode code, const std::string &key) const noexcept;
+    bool reset_variant_code(VariantCode &code, std::string_view variant_key) const noexcept;
+    bool is_key_defined(VariantCode code, std::string_view variant_key) const noexcept;
 };
 
 struct ShaderDesc final {
@@ -162,16 +163,16 @@ private:
 
 class ShaderLib final {
 protected:
-    std::unordered_set<std::string> global_variant_key_names;               // 全局着色器变体定义
+    std::unordered_set<std::string, StringHash, StringEqual> global_variant_key_names;               // 全局着色器变体定义
     std::unordered_map<AssetKey, std::unique_ptr<UberShader>, StringHash, StringEqual> uber_shaders; // 从名称到UberShader
 public:
     void add_uber_shader(const AssetKey &name, UberShaderDesc &&desc);
 
-    bool is_global_variant_key_set(const std::string &key) const noexcept {
+    bool is_global_variant_key_set(std::string_view key) const noexcept {
         return global_variant_key_names.contains(key);
     }
-    const std::unordered_set<std::string> &get_global_variant_keys() const noexcept { return global_variant_key_names; }
-    void set_global_variant_key(const std::string &key) noexcept {
+    const std::unordered_set<std::string, StringHash, StringEqual> &get_global_variant_keys() const noexcept { return global_variant_key_names; }
+    void set_global_variant_key(std::string_view key) noexcept {
         auto [_, is_update] = global_variant_key_names.emplace(key);
         if (is_update) {
             for (auto &[name, uber] : uber_shaders) {
@@ -180,9 +181,9 @@ public:
         }
     }
 
-    void reset_global_variant_key(const std::string &key) noexcept {
+    void reset_global_variant_key(std::string_view key) noexcept {
         if (auto iter = global_variant_key_names.find(key); iter != global_variant_key_names.end()) {
-            global_variant_key_names.erase(key);
+            global_variant_key_names.erase(iter);
             for (auto &[name, uber] : uber_shaders) {
                 uber->global_variant_key_collect.reset_variant_code(uber->global_key_code, key);
             }
