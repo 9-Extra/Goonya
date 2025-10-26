@@ -13,9 +13,27 @@
 
 namespace Goonya {
 
+class World;
+
+enum class TickType {
+    TICK,
+    FIXED_TICK,
+};
+
 struct TickFunction {
+private:
+    World *owner_world = nullptr;
+    TickType tick_type = TickType::TICK;
+
+public:
     TickFunction() = default;
-    virtual ~TickFunction() = default;
+    explicit TickFunction(TickType type) : tick_type(type) {}
+    virtual ~TickFunction() { unregister_ticker(); };
+
+    TickType get_tick_type() const noexcept { return tick_type; }
+    void register_ticker(World *world);
+    void unregister_ticker();
+    bool is_registered() const noexcept { return owner_world != nullptr; }
 
     virtual void tick() = 0;
 };
@@ -30,6 +48,7 @@ private:
     Graphics::RenderScene &_main_scene;
 
     std::unordered_set<TickFunction *> tick_functions;
+    std::unordered_set<TickFunction *> fixed_tick_functions;
     std::vector<std::weak_ptr<GObject>> deferred_update_list;
 
 public:
@@ -63,9 +82,10 @@ public:
     uint64_t get_tick_count() const { return tick_count; }
 
     void tick();
+    void fixed_tick();
 
-    void register_ticker(TickFunction *function) { tick_functions.emplace(function); }
-    void unregister_ticker(TickFunction *function) { tick_functions.erase(function); }
+    void register_ticker(TickFunction *function);
+    void unregister_ticker(TickFunction *function);
 
     // ---------------------延迟更新---------------------
     void add_deferred_update(const std::weak_ptr<GObject> &obj) noexcept { deferred_update_list.emplace_back(obj); }

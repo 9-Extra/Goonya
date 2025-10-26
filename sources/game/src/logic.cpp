@@ -125,13 +125,15 @@ void MoveSystem::on_register() {
     teapot = get_owner()->get_child_by_name("teapot");
     assert(teapot);
 
-    get_owner()->get_world()->register_ticker(this);
-
+    this->register_ticker(get_owner()->get_world());
     level = create_ref<Craft::Level>(get_owner()->get_world(), camera);
-    level->prepare_start();
+    level->register_ticker(get_owner()->get_world());
 }
 
-void MoveSystem::on_unregister() { get_owner()->get_world()->unregister_ticker(this); }
+void MoveSystem::on_unregister() { 
+    level->unregister_ticker();
+    this->unregister_ticker();
+ }
 
 void MoveSystem::tick() {
     float delta_time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.delta()).count();
@@ -144,6 +146,4 @@ void MoveSystem::tick() {
         Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
     light1->set_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
-
-    level->tick();
 }

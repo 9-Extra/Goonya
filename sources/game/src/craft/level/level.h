@@ -17,7 +17,7 @@
 
 namespace Craft {
 
-class Level : public RefCount {
+class Level : public RefCount, public Goonya::TickFunction {
 public:
     using GameClock = std::chrono::steady_clock;
     static constexpr GameClock::duration TICK_INTERVAL = std::chrono::milliseconds(50); // 50 ms
@@ -75,16 +75,9 @@ public:
 
     BlockHitResult ray_cast(Ray ray, float max_distance) const noexcept;
 
-    void prepare_start() {
-        last_real_frame_time = GameClock::now();
-        delta_time_residual = GameClock::duration::zero();
-        assert(world_time == 0);
-    }
-
-    void tick();
+    void tick() override;
 
 private:
-    void do_tick();
     void load_chunks();
 };
 

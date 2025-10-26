@@ -1,7 +1,6 @@
 #include "level.h"
 
 #include "core/cgmath.h"
-#include "core/log/Log.h"
 #include "craft/block/all_blocks.h"
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
@@ -10,12 +9,12 @@
 #include "craft/level/chunk.h"
 #include "function/world/World.h"
 #include <cassert>
-#include <ranges>
 
 namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
-    : bind_world(world), level_renderer(world->main_scene()), delta_time_residual(GameClock::duration::zero()) {
+    : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), bind_world(world), level_renderer(world->main_scene()),
+      delta_time_residual(GameClock::duration::zero()) {
     assert(world != nullptr && player != nullptr);
 
     this->player = player;
@@ -23,25 +22,21 @@ Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &playe
 }
 
 void Level::tick() {
-    const GameClock::time_point current_time = GameClock::now();
-    delta_time_residual += current_time - last_real_frame_time;
-    uint32_t contigues_tick = std::min<uint32_t>(10, delta_time_residual / TICK_INTERVAL);
+    load_chunks();
 
-    for (auto _ : std::views::iota(uint32_t(0), contigues_tick)) {
+    Goonya::Vector3f player_pos = player->get_world_model_matrix().resolve_position();
+    Goonya::Vector3f player_dir = Goonya::Vector3f{0, 0, -1} * player->get_world_model_matrix().to_matrix3();
+    BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
 
-        // ---------------------------
-        do_tick(); // 一次tick
-        // ---------------------------
-
-        world_time++;
+    if (hit_result) {
+        // LOG_INFO("{} {}", hit_result.normal, hit_result.block_state->get_block()->get_display_name());
+        BlockPos pos = BlockPos{hit_result.position + get_direction_vector(hit_result.normal)};
+        set_block_state(pos, Blocks::get().GRANITE->get_default_blockstate());
+    } else {
+        // LOG_INFO("No hit");
     }
 
-    last_real_frame_time = current_time;
-    delta_time_residual -= contigues_tick * TICK_INTERVAL;
-    if (delta_time_residual >= TICK_INTERVAL) {
-        LOG_WARN("Lagged: {} tick", delta_time_residual / TICK_INTERVAL);
-        delta_time_residual %= TICK_INTERVAL; // 延迟超过一帧则丢帧
-    }
+    level_renderer.render_frame();
 }
 
 void Level::load_chunks() {
@@ -86,7 +81,8 @@ BlockHitResult Level::ray_cast(Ray ray, float max_distance) const noexcept {
         if (s->get_block() != Blocks::get().AIR) {
             // 因为起点在方块内部，所以取绝对值最大的方向作为命中方向，则法方向与该方向相反
             Direction hit_dir;
-            Goonya::Vector3f abs_dir = {std::abs(ray.direction.x), std::abs(ray.direction.y), std::abs(ray.direction.z)};
+            Goonya::Vector3f abs_dir = {std::abs(ray.direction.x), std::abs(ray.direction.y),
+                                        std::abs(ray.direction.z)};
             if (abs_dir.x > abs_dir.y && abs_dir.x > abs_dir.z) {
                 hit_dir = ray.direction.x > 0 ? Direction::WEST : Direction::EAST;
             } else if (abs_dir.y > abs_dir.z) {
@@ -156,24 +152,6 @@ BlockHitResult Level::ray_cast(Ray ray, float max_distance) const noexcept {
     }
 
     return {};
-}
-
-void Level::do_tick() {
-    load_chunks();
-
-    Goonya::Vector3f player_pos = player->get_world_model_matrix().resolve_position();
-    Goonya::Vector3f player_dir = Goonya::Vector3f{0, 0, -1} * player->get_world_model_matrix().to_matrix3();
-    BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
-
-    if (hit_result) {
-        // LOG_INFO("{} {}", hit_result.normal, hit_result.block_state->get_block()->get_display_name());
-        BlockPos pos = BlockPos{hit_result.position + get_direction_vector(hit_result.normal)};
-        set_block_state(pos, Blocks::get().GRANITE->get_default_blockstate());
-    } else {
-        // LOG_INFO("No hit");
-    }
-
-    level_renderer.render_frame();
 }
 
 } // namespace Craft

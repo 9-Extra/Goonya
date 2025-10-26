@@ -6,17 +6,30 @@ namespace Goonya {
 
 std::forward_list<World> World::world_list;
 
+void TickFunction::register_ticker(World *world) {
+    if (!is_registered()) {
+        world->register_ticker(this);
+        owner_world = world;
+    }
+}
+
+void TickFunction::unregister_ticker() {
+    if (is_registered()) {
+        owner_world->unregister_ticker(this);
+        owner_world = nullptr;
+    }
+}
 void World::tick() {
     tick_count++;
 
     assert(root && root->get_world() == this);
-    
-    for(const auto& t: tick_functions){
+
+    for (const auto &t : tick_functions) {
         t->tick();
     }
-    
-    for(auto&& obj: deferred_update_list){
-        if (auto p = obj.lock();p){
+
+    for (auto &&obj : deferred_update_list) {
+        if (auto p = obj.lock(); p) {
             p->do_deferred_update();
         }
     }
@@ -24,4 +37,34 @@ void World::tick() {
 
     main_thread_process();
 }
+
+void World::fixed_tick() {
+    for (const auto &t : fixed_tick_functions) {
+        t->tick();
+    }
 }
+
+void World::register_ticker(TickFunction *function) {
+    assert(function && !function->TickFunction::is_registered());
+    switch (function->get_tick_type()) {
+    case TickType::TICK:
+        tick_functions.emplace(function);
+        break;
+    case TickType::FIXED_TICK:
+        fixed_tick_functions.emplace(function);
+        break;
+    }
+}
+void World::unregister_ticker(TickFunction *function) {
+    assert(function && function->TickFunction::is_registered());
+    switch (function->get_tick_type()) {
+    case TickType::TICK:
+        tick_functions.erase(function);
+        break;
+    case TickType::FIXED_TICK:
+        fixed_tick_functions.erase(function);
+        break;
+    }
+}
+
+} // namespace Goonya

@@ -66,6 +66,15 @@ static void logic_tick() {
     }
 }
 
+static void fixed_tick() {
+    ImGui::ShowDemoWindow();
+    // auto [x, y] = Input::get_mouse_pos();
+    // LOG_DEBUG("鼠标位置: {}, {}", x, y);
+    for (auto &&w : World::world_list) {
+        w.fixed_tick();
+    }
+}
+
 static void render_frame() {
 
     Graphics::renderer.render();
@@ -93,7 +102,7 @@ void main_loop() {
 
         Display::poll_events();
         while (GAME_CLOCK.advance_fixed_tick()) {
-            // todo: fixed tick
+            fixed_tick();
         }
 
         logic_tick();
