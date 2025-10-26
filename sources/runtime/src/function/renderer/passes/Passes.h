@@ -9,6 +9,7 @@ struct PassRenderInfo{
     CameraRenderProxy *camera;
     Viewport viewport;
     float width_height_ratio;
+    float time;
 };
 
 class Pass {

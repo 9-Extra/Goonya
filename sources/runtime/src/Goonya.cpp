@@ -1,4 +1,6 @@
+#include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <imgui.h>
@@ -6,30 +8,27 @@
 #include <runtime/Goonya.h>
 
 #include "core/ThreadUtils.h"
+#include "core/clock/GameClock.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/input/input.h"
 #include "core/log/Log.h"
-#include "core/timer/timer.h"
-#include "function/world/World.h"
 #include "function/renderer/Renderer.h"
+#include "function/world/World.h"
 #include "platform/display/display.h"
 #include "platform/imgui/imgui_module.h"
 
-
 namespace Goonya {
 
-static uint32_t calculate_fps(float delta_time) {
-    static float average_frame_time = std::nanf("");
+static uint32_t calculate_fps(GameClock::ClockType::duration delta) {
+    using Clock = std::chrono::steady_clock;
+    static Clock::duration average_frame_time = Clock::duration::zero();
+    const float smoothing_factor = 0.05f;
 
-    if (std::isnormal(average_frame_time)) {
-        const float ratio = 0.05f;
-        average_frame_time = average_frame_time * (1.0f - ratio) + delta_time * ratio;
-    } else {
-        average_frame_time = delta_time;
-    }
+    average_frame_time = Clock::duration(
+        (Clock::duration::rep)std::lerp(average_frame_time.count(), delta.count(), smoothing_factor));
 
-    return static_cast<unsigned int>(1000.0f / average_frame_time);
+    return static_cast<uint32_t>(std::chrono::seconds(1) / average_frame_time);
 }
 
 void init_engine() {
@@ -40,15 +39,14 @@ void init_engine() {
 
     EventBus::initalize();
     Input::initalize();
-    Timer::initialize();
     Display::initialize(1080, 720);
-    
+
     Graphics::renderer.init();
 
     ImguiMng::init();
 
     EventBus::subscribe_event<Events::PostTick>(0, [](Events::PostTick &e) {
-        uint32_t fps = calculate_fps(Timer::delta());
+        uint32_t fps = calculate_fps(GAME_CLOCK.delta());
         Display::set_title(std::format("Goonya - FPS: {}", fps));
         return false;
     });
@@ -59,17 +57,16 @@ void init_engine() {
     });
 }
 
-void logic_tick() {
+static void logic_tick() {
     ImGui::ShowDemoWindow();
-
     // auto [x, y] = Input::get_mouse_pos();
     // LOG_DEBUG("鼠标位置: {}, {}", x, y);
-    for(auto&& w: World::world_list){
+    for (auto &&w : World::world_list) {
         w.tick();
     }
 }
 
-void render_frame() {
+static void render_frame() {
 
     Graphics::renderer.render();
 
@@ -86,19 +83,24 @@ void main_loop() {
             return true;
         });
 
+    GAME_CLOCK.start();
+
     while (should_continue) {
+        GAME_CLOCK.update();
+
         ImguiMng::new_frame();
         ImGui::NewFrame();
 
         Display::poll_events();
-        Timer::tick_update();
+        while (GAME_CLOCK.advance_fixed_tick()) {
+            // todo: fixed tick
+        }
 
         logic_tick();
         render_frame();
 
-        Display::swap();
-
         EventBus::dispatch_event(Events::PostTick{});
+        Display::swap();
     }
 
     EventBus::remove_listener<Events::SysWindowClose>(id);
@@ -113,8 +115,6 @@ void drop_engine() {
     ImguiMng::drop();
 
     Display::drop();
-    Timer::drop();
-
     core_logger->flush();
 }
 } // namespace Goonya

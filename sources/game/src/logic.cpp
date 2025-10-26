@@ -1,11 +1,11 @@
 #include "logic.h"
 #include "core/RefCount.h"
 #include "core/cgmath.h"
+#include "core/clock/GameClock.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/input/input.h"
 #include "core/log/Log.h"
-#include "core/timer/timer.h"
 #include "craft/level/level.h"
 #include "function/world/Component.h"
 #include "platform/display/display.h"
@@ -134,14 +134,16 @@ void MoveSystem::on_register() {
 void MoveSystem::on_unregister() { get_owner()->get_world()->unregister_ticker(this); }
 
 void MoveSystem::tick() {
-    handle_keyboard(Goonya::Timer::delta());
+    float delta_time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.delta()).count();
+    float total_time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.total()).count();
+    handle_keyboard(delta_time);
     handle_mouse();
 
-    teapot->rotate_global_axis(Goonya::Vector3f({0, Goonya::Timer::delta() * 0.001f, 0}));
+    teapot->rotate_global_axis(Goonya::Vector3f({0, delta_time * 0.001f, 0}));
     Goonya::Quaternion r =
-        Goonya::Quaternion::from_eular({Goonya::Timer::delta() * 0.001f, Goonya::Timer::delta() * 0.0015f, 0.0f});
+        Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
-    light1->set_position({20.0f * sinf(Goonya::Timer::total() * 0.005f), 0.0f, 0.0f});
+    light1->set_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
 
     level->tick();
 }

@@ -2,6 +2,7 @@
 
 #include "core/ThreadUtils.h"
 #include "core/cgmath.h"
+#include "core/clock/GameClock.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/passes/GeometryPass.h"
@@ -10,8 +11,10 @@
 #include "platform/graphics/RenderTarget.h"
 #include "resource/ResMng.h"
 #include <cassert>
+#include <chrono>
 #include <cstdint>
 #include <memory>
+#include <ratio>
 
 namespace Goonya::Graphics {
 Renderer renderer; // global renderer
@@ -66,7 +69,8 @@ void Renderer::render() {
         PassRenderInfo info{
             .camera = camera.get(),
             .viewport = viewport,
-            .width_height_ratio = (float)viewport.width / viewport.height
+            .width_height_ratio = (float)viewport.width / viewport.height,
+            .time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(GAME_CLOCK.total()).count(),
         };
 
         geometry_pass->run(info);

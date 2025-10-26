@@ -88,14 +88,14 @@ public:
         requires std::invocable<F>
     void enqueue_main_thread(F&& f) noexcept {
         static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
-        main_thread_tasks.push_back(std::forward<F>(f));
+        main_thread_tasks.push(std::forward<F>(f));
     }
 
     template <typename F>
         requires std::invocable<F>
     void enqueue_renderer_thread(F&& f) noexcept {
         static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
-        renderer_thread_tasks.push_back(std::forward<F>(f));
+        renderer_thread_tasks.push(std::forward<F>(f));
     }
 
 private:
@@ -107,7 +107,7 @@ extern ThreadPool THREAD_POOL; // 全局的线程池
 
 inline void main_thread_process() {
     auto &queue = THREAD_POOL.main_thread_tasks;
-    for (auto task = queue.pop_front(); task.has_value(); task = queue.pop_front()) {
+    for (auto task = queue.pop(); task.has_value(); task = queue.pop()) {
         std::move(task.value())();
     }
 }
@@ -115,7 +115,7 @@ inline void main_thread_process() {
 inline void renderer_thread_process() {
     assert(current_thread_type == ThreadType::RENDER);
     auto &queue = THREAD_POOL.renderer_thread_tasks;
-    for (auto task = queue.pop_front(); task.has_value(); task = queue.pop_front()) {
+    for (auto task = queue.pop(); task.has_value(); task = queue.pop()) {
         std::move(task.value())();
     }
 }

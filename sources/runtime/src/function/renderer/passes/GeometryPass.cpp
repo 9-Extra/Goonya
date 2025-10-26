@@ -1,7 +1,6 @@
 #include "GeometryPass.h"
 #include "core/cgmath.h"
 #include "core/log/Log.h"
-#include "core/timer/timer.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
 #include "resource/ResMng.h"
@@ -90,7 +89,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
         assert(scene.fog_density >= 0.0f);
         data->fog_density = scene.fog_density;
         data->fog_min_distance = scene.fog_min_distance;
-        data->time = Timer::total();
+        data->time = info.time;
         // 灯光参数
         data->ambient_light = scene.ambient_light;
         if (scene.pointlights.size() > POINTLIGHT_MAX) {
