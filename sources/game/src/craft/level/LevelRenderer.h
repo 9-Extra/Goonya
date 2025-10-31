@@ -1,17 +1,16 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/ThreadPool.h"
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RenderScene.h"
+#include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 
 #include <cassert>
-#include <functional>
-#include <future>
+#include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <utility>
@@ -36,7 +35,7 @@ Minecraft世界Level被分为16 * height *
 2. SectionOcclusionGraph sectionOcclusionGraph // 负责剔除，每帧根据相机位置和旋转同步更新visibleSections
 3. ViewArea viewArea // 负责根据当前的渲染距离和相机所在区段创建所有的RenderSection，只是创建
 4. LevelRenderer本身 // 每帧遍历visibleSections发起同步或异步编译
-5. SectionRenderDispatcher sectionRenderDispatcher // 负责RenderSection的编译，包含编译的代码
+5. SectionRenderDispatcher sectionRenderDispatcher // 负责RenderSection的编译，包含编译逻辑
 
 下面先说剔除流程：
 visibleSections是剔除结果保存的地方，它的相关写入操作只在两个地方
@@ -52,7 +51,8 @@ this.visibleSections)，可能是负责添加刚刚加载出来的区块
 所有的RenderSection只会在初始化中的LevelRenderer.allChanged()-> new ViewArea ->
 ViewArea.createSections中被一次性全部构建
 并存储在viewArea.sections数组中。之后每帧的渲染都复用这些RenderSection。在以下情况对RenderSection进行更新（清空并标记为脏）：
-1. 在setupRender中，如果相机所在的section发生变化，则调用viewArea.repositionCamera(player_pos_x, player_pos_y)，其调用
+1. 在setupRender（每帧执行）中，如果相机所在的section发生变化，则调用viewArea.repositionCamera(player_pos_x,
+player_pos_y)，其调用
 更新viewArea.sections中的所有RenderSection的setOrigin以更新原点，同时会将其标记为脏，取消运行中的RebuildTask和ResortTransparencyTask（如果有），
 设置compiled为UNCOMPILED（这个对象用于记录整个section在不同方向上的遮挡，用于剔除），更新包围盒
 2. 方块更新后，最终会调用到viewArea.setDirty()对指定section进行重置，重置时仅仅设置脏标记
@@ -93,7 +93,8 @@ public:
     Ref<Chunk> origin_chunk;
 
     std::shared_ptr<ComplieTask> complie_task;
-    bool is_dirty = true;
+    uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
+    bool is_dirty = true; // 是否需要重新编译
 
     Goonya::Graphics::RenderScene &render_scene;
     Goonya::Graphics::MeshRenderProxy *mesh_proxy = nullptr;
@@ -107,30 +108,17 @@ public:
         if (complie_task) {
             complie_task->cancel();
         }
-        if (mesh_proxy) {
-            auto iter = render_scene.mesh_proxys.find(mesh_proxy);
-            assert(iter != render_scene.mesh_proxys.end());
-            render_scene.mesh_proxys.erase(iter);
-        }
+        // 异步销毁mesh_proxy
+        Goonya::Graphics::enqueue_render_task([&render_scene = render_scene, mesh_proxy = mesh_proxy]() mutable {
+            if (mesh_proxy) {
+                auto iter = render_scene.mesh_proxys.find(mesh_proxy);
+                assert(iter != render_scene.mesh_proxys.end());
+                render_scene.mesh_proxys.erase(iter);
+            }
+        });
     }
 
-    void complie_async(
-        RenderRegionCache &region_cache,
-        std::move_only_function<void(std::shared_ptr<RenderSection> &, ComplieTask::ComplieResult &&)> delegate) {
-        assert(is_dirty);
-        if (complie_task) {
-            complie_task->cancel();
-        }
-
-        complie_task = std::make_shared<ComplieTask>(this->weak_from_this(), region_cache.create_region(chunk_pos));
-        complie_task->task_blocker =
-            Goonya::THREAD_POOL.enqueue([task = this->complie_task, delegate = std::move(delegate)] mutable {
-                // 在LevelRenderer销毁前一定提前结束所有任务，所以queue一定可用
-                task->do_complie(std::move(delegate));
-            });
-
-        is_dirty = false;
-    }
+    void complie_async(RenderRegionCache &region_cache, const Ref<Goonya::Graphics::Material> &terrain_material);
 };
 
 class LevelRenderer {
@@ -155,7 +143,7 @@ public:
         render_chunks.emplace(pos, std::move(section));
     }
 
-    void unregister_chunk(const Ref<Chunk> &chunk) noexcept { render_chunks.erase(chunk->chunk_pos); }
+    void unregister_chunk(ChunkPos pos) noexcept { render_chunks.erase(pos); }
 
     RenderSection *get_section(ChunkPos pos) const noexcept {
         auto iter = render_chunks.find(pos);

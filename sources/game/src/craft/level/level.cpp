@@ -5,6 +5,7 @@
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
 #include "craft/level/LevelRenderer.h"
+#include "craft/level/Player.h"
 #include "craft/level/RayCast.h"
 #include "craft/level/chunk.h"
 #include "function/world/World.h"
@@ -14,61 +15,85 @@ namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
     : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), bind_world(world), level_renderer(world->main_scene()),
-      delta_time_residual(GameClock::duration::zero()) {
-    assert(world != nullptr && player != nullptr);
-
-    this->player = player;
-    player_chunk_pos = {255, 255, 255}; // 保证第一帧 ChunkPos(BlockPos(player_pos)) != play_chunk_pos
+      delta_time_residual(GameClock::duration::zero()), player(player) {
+    assert(world != nullptr);
 }
 
 void Level::tick() {
     load_chunks();
 
-    Goonya::Vector3f player_pos = player->get_world_model_matrix().resolve_position();
-    Goonya::Vector3f player_dir = Goonya::Vector3f{0, 0, -1} * player->get_world_model_matrix().to_matrix3();
+    Goonya::Vector3f player_pos = player.get_position();
+    Goonya::Vector3f player_dir = player.get_direction();
     BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
 
     if (hit_result) {
-        // LOG_INFO("{} {}", hit_result.normal, hit_result.block_state->get_block()->get_display_name());
         BlockPos pos = BlockPos{hit_result.position + get_direction_vector(hit_result.normal)};
         set_block_state(pos, Blocks::get().GRANITE->get_default_blockstate());
     } else {
-        // LOG_INFO("No hit");
     }
 
     level_renderer.render_frame();
 }
 
 void Level::load_chunks() {
-    // 玩家位置
-    Goonya::Vector3f player_pos = player->get_world_model_matrix().resolve_position();
+    // 玩家位置，假定玩家类一定在根节点上
+    ChunkPos player_chunk_pos = ChunkPos{BlockPos{player.get_position()}};
+    if (player_chunk_pos == player.last_chunk_pos && chunk_load_distance == player.chunk_load_distance) {
+        return; // 玩家在同一个区块里且加载范围不变，则不需要加载新的区块
+    }
 
-    ChunkPos current_player_chunk_pos = ChunkPos(BlockPos(player_pos));
-    if (current_player_chunk_pos == player_chunk_pos) {
-        return;
-    } else {
-        player_chunk_pos = current_player_chunk_pos;
-        auto processed_chunk_receiver = [level = Ref{this}](const Ref<Chunk> &chunk) mutable {
-            level->accessible_chunk.emplace(chunk->chunk_pos, chunk);
-            level->level_renderer.register_chunk(chunk);
-        };
-        // 添加区块加载任务
-        for (int32_t x = player_chunk_pos.x - chunk_load_distance; x <= player_chunk_pos.x + chunk_load_distance; x++) {
-            for (int32_t y = player_chunk_pos.y - chunk_load_distance; y <= player_chunk_pos.y + chunk_load_distance;
-                 y++) {
-                for (int32_t z = player_chunk_pos.z - chunk_load_distance;
-                     z <= player_chunk_pos.z + chunk_load_distance; z++) {
-                    ChunkPos chunk_pos = ChunkPos{x, y, z};
-                    if (!all_chunks.contains(chunk_pos)) {
-                        Ref<Chunk> chunk = all_chunks.emplace(chunk_pos, create_ref<Chunk>(chunk_pos)).first->second;
-                        chunk_generator.process_chunk_async(chunk, processed_chunk_receiver);
-                    }
-                }
+    auto load_new_chunk = [&](ChunkPos pos) -> void {
+        if (auto iter = accessible_chunk.find(pos); iter != accessible_chunk.end()) {
+            level_renderer.register_chunk(iter->second);
+            return;
+        }
+
+        if (auto iter = all_chunks.find(pos); iter != all_chunks.end()) {
+            // 区块生成到一半继续等
+        } else {
+            Ref<Chunk> chunk = create_ref<Chunk>(pos);
+            all_chunks.emplace(pos, chunk);
+            chunk_generator.process_chunk_async(chunk, [level = Ref{this}](const Ref<Chunk> &chunk) mutable {
+                level->accessible_chunk.emplace(chunk->chunk_pos, chunk);
+                level->level_renderer.register_chunk(chunk);
+            });
+        }
+    };
+
+    auto drop_chunk = [&](ChunkPos pos) -> void { level_renderer.unregister_chunk(pos); };
+
+    // intersect即使误判为true不会导致问题
+    bool intersect =
+        player.last_chunk_pos.is_in_region(player_chunk_pos, chunk_load_distance + player.chunk_load_distance);
+    if (intersect) {
+        for (ChunkPos pos : ChunkPos::iterate_region(player.last_chunk_pos - player.chunk_load_distance,
+                                                     player.last_chunk_pos + player.chunk_load_distance + 1)) {
+            if (pos.is_in_region(player_chunk_pos, chunk_load_distance)) {
+                continue; // 跳过相交区域
             }
+            drop_chunk(pos);
+        }
+
+        for (ChunkPos pos : ChunkPos::iterate_region(player_chunk_pos - chunk_load_distance,
+                                                     player_chunk_pos + chunk_load_distance + 1)) {
+            if (pos.is_in_region(player.last_chunk_pos, player.chunk_load_distance)) {
+                continue; // 跳过相交区域
+            }
+            load_new_chunk(pos);
+        }
+    } else {
+        for (ChunkPos pos : ChunkPos::iterate_region(player.last_chunk_pos - player.chunk_load_distance,
+                                                     player.last_chunk_pos + player.chunk_load_distance + 1)) {
+            drop_chunk(pos);
+        }
+        for (ChunkPos pos : ChunkPos::iterate_region(player_chunk_pos - chunk_load_distance,
+                                                     player_chunk_pos + chunk_load_distance + 1)) {
+            load_new_chunk(pos);
         }
     }
 
-    // 收集加载完成的区块到visible_chunks
+    player.last_chunk_pos = player_chunk_pos;
+    player.chunk_load_distance = chunk_load_distance;
 }
 
 BlockHitResult Level::ray_cast(Ray ray, float max_distance) const noexcept {

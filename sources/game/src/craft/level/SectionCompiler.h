@@ -2,9 +2,11 @@
 
 #include "craft/block/block_model.h"
 #include "craft/block/blockstate.h"
+#include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/level/chunk.h"
-#include <future>
+#include <cstdint>
+
 namespace Craft {
 
 /**
@@ -31,7 +33,7 @@ struct RenderChunkRegion {
     ChunkPos center_chunk_pos; // 角落处区块的位置
 
     BlockState *get_block_state(BlockPos pos) const noexcept {
-        return render_chunks[flatten_index(center_chunk_pos, ChunkPos(pos))]->get_block_state(pos);
+        return render_chunks[flatten_index(center_chunk_pos, ChunkPos{pos})]->get_block_state(pos);
     }
 
     std::shared_ptr<RenderChunk> &operator[](ChunkPos pos) noexcept {
@@ -70,36 +72,37 @@ struct RenderRegionCache {
 
 class RenderSection;
 
+struct ComplieResult {
+    std::vector<TerrainMeshVertex> vertices;
+    std::vector<uint32_t> indices;
+    std::vector<TerrainPerSurface> per_surface;
+};
+
 struct ComplieTask {
-    std::weak_ptr<RenderSection> owner; // 持有owner，你才知道结果写到哪里去
+private:
+    ChunkPos pos; // 编译的区块位置
     RenderChunkRegion region;
+    uint32_t version; // 编译版本
     std::atomic<bool> is_cancelled = false;
-    std::future<void> task_blocker; // 用于等待此task结束
+    std::move_only_function<void(ComplieResult &&, uint32_t)> receiver;
 
-    ComplieTask(const std::weak_ptr<RenderSection> &owner, RenderChunkRegion region) noexcept
-        : owner(owner), region(std::move(region)) {}
+public:
+    ComplieTask(ChunkPos pos, RenderChunkRegion region, uint32_t version,
+                std::move_only_function<void(ComplieResult &&, uint32_t)> receiver) noexcept
+        : pos(pos), region(std::move(region)), version(version), receiver(std::move(receiver)) {}
 
-    ~ComplieTask() {
-        assert(is_cancelled.load()); // 销毁任务前应当取消任务
-        if (task_blocker.valid()) {
-            task_blocker.wait(); // 如果被调度了，则等待任务结束，避免任务访问无效数据
-        }
-    }
     void cancel() noexcept { is_cancelled.store(true, std::memory_order::relaxed); }
-
-    struct ComplieResult {
-        std::vector<TerrainMeshVertex> vertices;
-        std::vector<uint32_t> indices;
-        std::vector<TerrainPerSurface> per_surface;
-    };
-
-    void do_complie(std::move_only_function<void(std::shared_ptr<RenderSection> &, ComplieTask::ComplieResult &&)>
-                        &&delegate) const;
+    /**
+     * @brief 异步执行的编译任务，编译完成后调用receiver
+     * @param delegate 编译完成后的回调函数，参数为编译结果
+     */
+    void do_complie();
 
 private:
-    static void compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos, const BakedQuad &quad) noexcept;
+    static void compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos,
+                                   const BakedQuad &quad) noexcept;
 
-    ComplieResult compile_mesh() const;
+    ComplieResult compile_mesh(ChunkPos pos) const;
 };
 
 } // namespace Craft

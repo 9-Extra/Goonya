@@ -18,25 +18,26 @@
 
 namespace Craft {
 
-LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
-    Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
-    terrain_material = create_ref<Goonya::Graphics::Material>(shader);
-    terrain_material->set_pipeline_state(Goonya::Graphics::PipeLineState{
-        .depth_test = Goonya::Graphics::DepthTestMode::LESS_EQUAL, // 后渲染的相同位置的表面会覆盖先渲染的
-        .cull_mode = Goonya::Graphics::CullFaceMode::BACK,
-    });
-    terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());
-}
+void RenderSection::complie_async(RenderRegionCache &region_cache,
+                                  const Ref<Goonya::Graphics::Material> &terrain_material) {
+    assert(is_dirty);
 
-void LevelRenderer::render_frame() {
-    do_cull();
-
-    RenderRegionCache region_cache{*this};
-
-    auto receiver = [&render_scene = render_scene, terrain_material = this->terrain_material](
-                        std::shared_ptr<RenderSection> &section, ComplieTask::ComplieResult &&result) {
+    auto receiver = [section_ptr = this->weak_from_this(), &render_scene = render_scene,
+                     terrain_material = terrain_material](ComplieResult &&result, uint32_t version) {
         ASSERT_RENDER_THREAD();
         using namespace Goonya::Graphics;
+        std::shared_ptr<RenderSection> section = section_ptr.lock();
+        if (section == nullptr) {
+            return; // 区块已被销毁
+        }
+        if (version < section->version) {
+            return; // 当前版本较旧，跳过
+        }
+        section->version = version; // 更新版本号
+        if (result.indices.size() == 0) {
+            return; // 跳过不需要渲染的区块
+        }
+
         Ref<Mesh> updated_mesh = graphics_api->create_mesh(VERTEX_LAYOUT_PLANE);
         updated_mesh->submeshes.emplace_back(SubMesh{.start_index = 0,
                                                      .index_count = (uint32_t)result.indices.size(),
@@ -51,7 +52,6 @@ void LevelRenderer::render_frame() {
         updated_per_surface_buffer->write(per_surface_data, 0);
 
         // LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
-
         if (section->mesh_proxy == nullptr) {
             Ref<Material> material = terrain_material->clone();
             material->set_external_buffer("per_surface", updated_per_surface_buffer);
@@ -76,11 +76,40 @@ void LevelRenderer::render_frame() {
         }
     };
 
+    if (complie_task) {
+        complie_task->cancel();
+    }
+
+    version++;
+    complie_task = std::make_shared<ComplieTask>(chunk_pos, region_cache.create_region(chunk_pos), version, receiver);
+    Goonya::THREAD_POOL.enqueue_detached([task = this->complie_task, receiver = std::move(receiver)] mutable {
+        // 在LevelRenderer销毁前一定提前结束所有任务，所以queue一定可用
+        task->do_complie();
+    });
+
+    is_dirty = false;
+}
+
+LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
+    Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
+    terrain_material = create_ref<Goonya::Graphics::Material>(shader);
+    terrain_material->set_pipeline_state(Goonya::Graphics::PipeLineState{
+        .depth_test = Goonya::Graphics::DepthTestMode::LESS_EQUAL, // 后渲染的相同位置的表面会覆盖先渲染的
+        .cull_mode = Goonya::Graphics::CullFaceMode::BACK,
+    });
+    terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());
+}
+
+void LevelRenderer::render_frame() {
+    do_cull();
+
+    // 提交所有需要编译的区块
+    RenderRegionCache region_cache{*this};
     for (RenderSection *section : visible_chunk) {
         if (!section->is_dirty)
             continue;
 
-        section->complie_async(region_cache, receiver);
+        section->complie_async(region_cache, terrain_material);
     }
 }
 

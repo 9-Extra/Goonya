@@ -5,6 +5,7 @@
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
 #include "craft/level/LevelRenderer.h"
+#include "craft/level/Player.h"
 #include "craft/level/RayCast.h"
 #include "craft/level/chunk.h"
 #include "function/world/GObject.h"
@@ -34,16 +35,14 @@ private:
     GameClock::duration delta_time_residual;
     GameTime world_time = 0; // 从开始运行的游戏刻数
 
-    std::shared_ptr<Goonya::GObject> player;
-    ChunkPos player_chunk_pos;
-
+    Player player;
     int32_t chunk_load_distance = 6;
 
 public:
     Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player);
     ~Level() {
         for (const auto &[_, c] : accessible_chunk) {
-            level_renderer.unregister_chunk(c);
+            level_renderer.unregister_chunk(c->chunk_pos);
         }
     }
 
@@ -55,7 +54,7 @@ public:
     BlockState *get_block_state(BlockPos pos) const noexcept {
         Ref<Chunk> chunk = get_chunk(ChunkPos{pos});
         if (chunk == nullptr) {
-            return Blocks::get().AIR->get_default_blockstate();
+            return nullptr;
         }
         return chunk->get_block_state(BlockInnerPos{pos});
     }

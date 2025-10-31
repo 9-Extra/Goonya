@@ -90,8 +90,11 @@ public:
     // ---------------------延迟更新---------------------
     void add_deferred_update(const std::weak_ptr<GObject> &obj) noexcept { deferred_update_list.emplace_back(obj); }
     void remove_deferred_update(const std::weak_ptr<GObject> &obj) noexcept {
-        auto iter = std::ranges::find_if(deferred_update_list, [obj](const auto &rhs) {
-            return !obj.owner_before(rhs) && !rhs.owner_before(obj); // 判断两个weak_ptr相等
+        // deferred_update_list中所有的GObject都应该是alive的
+        auto to_remove = obj.lock();
+        assert(to_remove);
+        auto iter = std::ranges::find_if(deferred_update_list, [to_remove](const auto &rhs) {
+            return to_remove == rhs.lock(); // 判断两个weak_ptr相等
         });
         assert(iter != deferred_update_list.end());
         deferred_update_list.erase(iter);
