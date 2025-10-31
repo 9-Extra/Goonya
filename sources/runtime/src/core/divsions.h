@@ -26,15 +26,25 @@ constexpr bool no_remainder(Dividend dividend, Divisor divisor) noexcept {
 
 template <std::integral Dividend, std::integral Divisor>
 constexpr bool is_ceilinged(Dividend dividend, Divisor divisor) noexcept {
-    return is_negative(dividend, divisor) || no_remainder(dividend, divisor);
+    return is_divsion_negative(dividend, divisor) || no_remainder(dividend, divisor);
 }
 
 template <std::integral Dividend, std::integral Divisor>
 constexpr bool is_floored(Dividend dividend, Divisor divisor) noexcept {
-    return !is_negative(dividend, divisor) || no_remainder(dividend, divisor);
+    return !is_divsion_negative(dividend, divisor) || no_remainder(dividend, divisor);
 }
 
 } // namespace Details
+
+template <std::integral Dividend, std::integral Divisor>
+constexpr auto truncated_divide(Dividend dividend, Divisor divisor) noexcept -> decltype(dividend / divisor) {
+    return dividend / divisor;
+}
+
+template <std::integral Dividend, std::integral Divisor>
+constexpr auto truncated_modulo(Dividend dividend, Divisor divisor) noexcept -> decltype(dividend % divisor) {
+    return dividend % divisor;
+}
 
 template <std::integral Dividend, std::integral Divisor>
 constexpr auto ceilinged_divide(Dividend dividend, Divisor divisor) noexcept -> decltype(dividend / divisor) {
@@ -55,14 +65,4 @@ constexpr auto floored_divide(Dividend dividend, Divisor divisor) noexcept -> de
 template <std::integral Dividend, std::integral Divisor>
 constexpr auto floored_modulo(Dividend dividend, Divisor divisor) noexcept -> decltype(dividend % divisor) {
     return truncated_modulo(dividend, divisor) + (Details::is_floored(dividend, divisor) ? 0 : divisor);
-}
-
-template <std::integral Dividend, std::integral Divisor>
-constexpr auto truncated_divide(Dividend dividend, Divisor divisor) noexcept -> decltype(dividend / divisor) {
-    return dividend / divisor;
-}
-
-template <std::integral Dividend, std::integral Divisor>
-constexpr auto truncated_modulo(Dividend dividend, Divisor divisor) noexcept -> decltype(dividend % divisor) {
-    return dividend % divisor;
 }

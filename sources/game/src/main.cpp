@@ -8,6 +8,7 @@
 
 #include "core/format_exception.h"
 #include "core/log/Log.h"
+#include "core/divsions.h"
 #include "craft/craft.h"
 #include "function/world/GObject.h"
 #include "logic.h"

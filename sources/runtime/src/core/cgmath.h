@@ -65,6 +65,7 @@ struct Color {
 
 struct Matrix3;
 struct Matrix4;
+struct Quaternion;
 
 struct Vector3f {
     union {
@@ -93,9 +94,10 @@ struct Vector3f {
     friend constexpr Vector3f operator*(Vector3f left, Matrix3 right) noexcept;
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }
 
-    inline constexpr Vector3f cross(const Vector3f b) const {
+    constexpr Vector3f cross(const Vector3f b) const {
         return {this->y * b.z - this->z * b.y, this->z * b.x - this->x * b.z, this->x * b.y - this->y * b.x};
     }
+    inline constexpr Vector3f apply(Quaternion q) const noexcept;
 
     constexpr float square() const { return this->dot(*this); }
     float length() const { return std::sqrt(square()); }
@@ -141,6 +143,7 @@ struct Quaternion {
 
     // 需要axis长度为1，顺时针旋转（沿着轴看过去）
     static Quaternion from_rotation(Vector3f axis, float angle) {
+        assert(axis.length() == 1);
         angle = angle * 0.5f;
         float sin_theta = sinf(angle), cos_theta = cosf(angle);
         return Quaternion{sin_theta * axis.x, sin_theta * axis.y, sin_theta * axis.z, cos_theta};
@@ -152,23 +155,16 @@ struct Quaternion {
                Quaternion::from_rotation({0, 0, 1}, rotate.z);
     }
 
-    constexpr Vector3f rotate_direction(Vector3f src) const noexcept {
-        const Quaternion &q = *this;
-        Quaternion p{src.x, src.y, src.z, 0.0f};
-        Quaternion rotated = q * p * q.conjugate();
-        return Vector3f{rotated.x, rotated.y, rotated.z}.normalize();
+    constexpr Vector3f apply(Vector3f src) const noexcept {
+        // from godot: https://github.com/godotengine/godot
+        Vector3f u{x, y, z};
+        Vector3f uv = u.cross(src);
+        return src + ((uv * w) + u.cross(uv)) * 2.0f;
     }
 
-    Vector3f apply(Vector3f src) const {
-        const Quaternion &q = *this;
-        Quaternion p{src.x, src.y, src.z, 0.0f};
-        Quaternion rotated = q * p * q.conjugate();
-        return Vector3f{rotated.x, rotated.y, rotated.z};
-    }
+    constexpr Vector3f forward_direction() const noexcept { return apply(FORWARD); }
 
-    constexpr Vector3f forward_direction() const noexcept { return rotate_direction(FORWARD); }
-
-    constexpr Vector3f up_direction() const noexcept { return rotate_direction(UP); }
+    constexpr Vector3f up_direction() const noexcept { return apply(UP); }
     float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
 
     Quaternion normalize() const noexcept {
@@ -181,15 +177,11 @@ struct Quaternion {
     Quaternion operator*(const Quaternion r) const noexcept {
         Vector3f qv{x, y, z}, rv{r.x, r.y, r.z};
         Vector3f v = qv.cross(rv) + qv * r.w + rv * w;
-        // 每次计算后归一化防止浮点误差累积
-        return Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)}.normalize();
+        return Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)};
     }
 
     Quaternion operator*=(const Quaternion r) noexcept {
-        Vector3f qv{x, y, z}, rv{r.x, r.y, r.z};
-        Vector3f v = qv.cross(rv) + qv * r.w + rv * w;
-        // 每次计算后归一化防止浮点误差累积
-        *this = Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)}.normalize();
+        *this = *this * r;
         return *this;
     }
 
@@ -197,6 +189,10 @@ struct Quaternion {
         return self.x == r.x && self.y == r.y && self.z == r.z && self.w == r.w;
     }
 };
+
+constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept{
+    return q.apply(*this);
+}
 
 struct Matrix3 {
     float m[3][3];
@@ -394,11 +390,11 @@ struct Transform {
         return Transform{{}, matrix.resolve_rotation(), matrix.resolve_scale()};
     }
 
-    constexpr Vector3f apply_point(Vector3f p) const noexcept { return rotation.apply(p * scale) + position; }
+    constexpr Vector3f apply_point(Vector3f p) const noexcept { return (p * scale).apply(rotation) + position; }
 
-    constexpr Vector3f forward_direction() const noexcept { return rotation.rotate_direction(FORWARD); }
+    constexpr Vector3f forward_direction() const noexcept { return FORWARD.apply(rotation); }
 
-    constexpr Vector3f up_direction() const noexcept { return rotation.rotate_direction(UP); }
+    constexpr Vector3f up_direction() const noexcept { return UP.apply(rotation); }
 
     constexpr Matrix4 model_matrix() const noexcept {
         return Matrix4{Matrix3::scale(scale) * Matrix3::rotate(rotation)} * Matrix4::translate(position);

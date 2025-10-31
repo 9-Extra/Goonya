@@ -3,8 +3,8 @@
 #include "block/block.h"
 #include "block/block_model.h"
 #include "block/blockstate.h"
-#include "block/blockstates.h"
 #include "core/cgmath.h"
+#include "core/divsions.h"
 #include "core/log/Log.h"
 #include "craft/core/core.h"
 #include "craft/core/registry.h"
@@ -14,6 +14,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstdint>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -243,7 +244,7 @@ void ModelManager::load_all_models() {
     TextureArrayAllocator texture_allocator(resource_path, 16, 16);
     BlockModelJsonLoader model_loader(resource_path);
 
-    missing_block_model = bake_model(missing_block_model_unbaked, texture_allocator);
+    missing_block_model = bake_model(missing_block_model_unbaked, 0, 0, false, texture_allocator);
 
     for (const auto &[block, _] : REGISTRY_BLOCK) {
         ResourceLocation location = ResourceLocation::parse(REGISTRY_BLOCK.find_key(block));
@@ -276,23 +277,53 @@ void ModelManager::load_all_models() {
                             continue;
                         }
                         const Json::Value &variant_content_list = blockstate_json["variants"][variant_key];
-                        // 对于多选一的模型，目前固定选择第一个
-                        const Json::Value &variant_content =
-                            variant_content_list.isArray() ? variant_content_list[0] : variant_content_list;
-                        ResourceLocation model_location = ResourceLocation::parse(variant_content["model"].asString());
-                        std::optional<BlockModel> model = model_loader.load_block_model(model_location);
-                        if (!model) {
-                            LOG_ERROR("加载方块模型{}失败", model_location);
-                            model = missing_block_model_unbaked;
+
+                        if (!variant_content_list.isArray()) {
+                            // 单个模型
+                            const Json::Value &variant_content = variant_content_list;
+                            ResourceLocation model_location =
+                                ResourceLocation::parse(variant_content["model"].asString());
+                            std::optional<BlockModel> model = model_loader.load_block_model(model_location);
+                            if (!model) {
+                                LOG_ERROR("加载方块模型{}失败", model_location);
+                                model = missing_block_model_unbaked;
+                            }
+
+                            BlockModel &m = model.value();
+                            bool uvlock = variant_content.get("uvlock", false).asBool();
+                            int32_t rotation_x = variant_content.get("x", 0).asInt();
+                            int32_t rotation_y = variant_content.get("y", 0).asInt();
+
+                            blockstate_model_map.emplace(
+                                state, ModelSelector{bake_model(m, rotation_x, rotation_y, uvlock, texture_allocator)});
+                        } else {
+                            // 多个带权重的模型
+                            const uint32_t model_count = variant_content_list.size();
+                            std::vector<BakedBlockModel> baked_models;
+                            std::vector<uint32_t> weights;
+                            baked_models.reserve(model_count);
+                            weights.reserve(model_count);
+                            for (const Json::Value &variant_content : variant_content_list) {
+                                ResourceLocation model_location =
+                                    ResourceLocation::parse(variant_content["model"].asString());
+                                std::optional<BlockModel> model = model_loader.load_block_model(model_location);
+                                if (!model) {
+                                    LOG_ERROR("加载方块模型{}失败", model_location);
+                                    model = missing_block_model_unbaked;
+                                }
+
+                                BlockModel &m = model.value();
+
+                                bool uvlock = variant_content.get("uvlock", false).asBool();
+                                int32_t rotation_x = variant_content.get("x", 0).asInt();
+                                int32_t rotation_y = variant_content.get("y", 0).asInt();
+                                baked_models.emplace_back(
+                                    bake_model(m, rotation_x, rotation_y, uvlock, texture_allocator));
+                                weights.emplace_back(variant_content.get("weight", 1).asInt());
+                            }
+                            blockstate_model_map.emplace(state,
+                                                         ModelSelector{std::move(baked_models), std::move(weights)});
                         }
-
-                        BlockModel &m = model.value();
-
-                        // bool uvlock = variant_content.get("uvlock", false).asBool();
-                        // int32_t rotation_x = variant_content.get("x", 0).asInt();
-                        // int32_t rotation_y = variant_content.get("y", 0).asInt();
-
-                        blockstate_model_map.emplace(state, bake_model(m, texture_allocator));
                     }
                 }
                 // todo
@@ -308,7 +339,8 @@ void ModelManager::load_all_models() {
     block_texture_array = texture_allocator.generate_texture_array();
 }
 
-BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, TextureArrayAllocator &texture_allocator) {
+BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, int32_t rotation_x, int32_t rotation_y,
+                                         bool uvlock, TextureArrayAllocator &texture_allocator) {
     using namespace Goonya;
 
     BakedBlockModel baked_model;
@@ -381,11 +413,40 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, TextureArr
             }
             }
 
+            if (rotation_x != 0 || rotation_y != 0) {
+                // 旋转quad，Y轴顺时针旋转整型y，再以方块中心沿X轴顺时针旋转整型x
+                float y = to_radian(rotation_y);
+                float x = to_radian(rotation_x);
+                Quaternion q = Quaternion::from_rotation({1, 0, 0}, x) * Quaternion::from_rotation({0, 1, 0}, y);
+                for (auto &v : quad.vertices) {
+                    v.position = q.apply(v.position - Vector3f{0.5, 0.5, 0.5}) + Vector3f{0.5, 0.5, 0.5};
+                    if (uvlock) {
+                        // todo
+                        assert(false);
+                    }
+                }
+
+                Goonya::Vector3f new_normal = q.apply(get_direction_vector(quad.normal));
+                if (new_normal.y < -0.5) {
+                    quad.normal = Direction::DOWN;
+                } else if (new_normal.y > 0.5) {
+                    quad.normal = Direction::UP;
+                } else if (new_normal.x < -0.5) {
+                    quad.normal = Direction::WEST;
+                } else if (new_normal.x > 0.5) {
+                    quad.normal = Direction::EAST;
+                } else if (new_normal.z < -0.5) {
+                    quad.normal = Direction::NORTH;
+                } else if (new_normal.z > 0.5) {
+                    quad.normal = Direction::SOUTH;
+                }
+            }
+
             // 设置染色索引
             quad.tintindex = face.tintindex;
 
             if (is_cullface) {
-                baked_model.culled_quads[std::to_underlying(face.direction)].emplace_back(quad);
+                baked_model.culled_quads[std::to_underlying(quad.normal)].emplace_back(quad);
             } else {
                 baked_model.unculled_quads.emplace_back(quad);
             }
