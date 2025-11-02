@@ -419,14 +419,14 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, int32_t ro
                 float x = to_radian(rotation_x);
                 Quaternion q = Quaternion::from_rotation({1, 0, 0}, x) * Quaternion::from_rotation({0, 1, 0}, y);
                 for (auto &v : quad.vertices) {
-                    v.position = q.apply(v.position - Vector3f{0.5, 0.5, 0.5}) + Vector3f{0.5, 0.5, 0.5};
+                    v.position = (v.position - Vector3f{0.5, 0.5, 0.5}).apply(q) + Vector3f{0.5, 0.5, 0.5};
                     if (uvlock) {
                         // todo
                         assert(false);
                     }
                 }
 
-                Goonya::Vector3f new_normal = q.apply(get_direction_vector(quad.normal));
+                Goonya::Vector3f new_normal = Vector3f{get_direction_vector(quad.normal)}.apply(q);
                 if (new_normal.y < -0.5) {
                     quad.normal = Direction::DOWN;
                 } else if (new_normal.y > 0.5) {

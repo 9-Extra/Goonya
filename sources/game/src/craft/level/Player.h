@@ -17,11 +17,11 @@ struct Player {
     }
 
     Goonya::Vector3f get_position() const noexcept {
-        return player->get_transform().position;
+        return player->get_local_transform().position;
     }
 
     Goonya::Vector3f get_direction() const noexcept {
-        return player->get_transform().forward_direction();
+        return player->get_local_transform().forward_direction();
     }
 };
 

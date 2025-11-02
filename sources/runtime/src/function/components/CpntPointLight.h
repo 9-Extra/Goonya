@@ -20,7 +20,7 @@ public:
     void on_register() override {
         assert(get_owner() != nullptr);
         RenderScene *scene = &get_owner()->get_world()->main_scene();
-        pointlight_handle = scene->pointlights.emplace(get_owner()->get_transform().position, color, radius);
+        pointlight_handle = scene->pointlights.emplace(get_owner()->get_local_transform().position, color, radius);
     }
 
     void on_unregister() override {

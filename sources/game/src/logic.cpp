@@ -70,36 +70,36 @@ void MoveSystem::handle_keyboard(float delta) const {
         EventBus::dispatch_event(Events::EngineStop{});
     }
 
-    const Transform &trans = camera->get_transform();
+    const Transform &trans = camera->get_local_transform();
     if (Input::is_key_pressing('W')) {
         Vector3f ori = trans.forward_direction();
         ori.y = 0.0;
-        camera->translate(ori.normalize() * move_speed);
+        camera->translate_local(ori.normalize() * move_speed);
     }
     if (Input::is_key_pressing('S')) {
         Vector3f ori = trans.forward_direction();
         ori.y = 0.0;
-        camera->translate(ori.normalize() * -move_speed);
+        camera->translate_local(ori.normalize() * -move_speed);
     }
     if (Input::is_key_pressing('A')) {
         Vector3f ori = trans.forward_direction();
         ori = {ori.z, 0.0, -ori.x};
-        camera->translate(ori.normalize() * move_speed);
+        camera->translate_local(ori.normalize() * move_speed);
     }
     if (Input::is_key_pressing('D')) {
         Vector3f ori = trans.forward_direction();
         ori = {ori.z, 0.0, -ori.x};
-        camera->translate(ori.normalize() * -move_speed);
+        camera->translate_local(ori.normalize() * -move_speed);
     }
     if (Input::is_key_pressing(Input::KeyCode::SPACE)) {
-        camera->translate({0.0f, move_speed, 0.0f});
+        camera->translate_local({0.0f, move_speed, 0.0f});
     }
     if (Input::is_key_pressing(Input::KeyCode::LSHIFT)) {
-        camera->translate({0.0f, -move_speed, 0.0f});
+        camera->translate_local({0.0f, -move_speed, 0.0f});
     }
 
     if (Input::is_key_click('0')) {
-        camera->set_transform(Transform{});
+        camera->set_local_transform(Transform{});
     }
     // Vector3f pos = camera->get_transform().position;
     // LOG_DEBUG("x = {}, y = {}, z = {}", pos.x, pos.y, pos.z);
@@ -145,5 +145,5 @@ void MoveSystem::tick() {
     Goonya::Quaternion r =
         Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
-    light1->set_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
+    light1->set_local_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
 }

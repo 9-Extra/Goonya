@@ -4,8 +4,10 @@
 #include <cmath>
 #include <concepts>
 #include <cstddef>
+#include <cstdint>
 #include <format>
 #include <limits>
+#include <optional>
 #include <type_traits>
 
 namespace Goonya {
@@ -161,22 +163,27 @@ struct Quaternion {
         return Quaternion{sin_theta * axis.x, sin_theta * axis.y, sin_theta * axis.z, cos_theta};
     }
 
-    // 按XYZ顺序顺时针内旋，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度。（或者等同于ZYX外旋）
+    // 按XYZ顺序顺时针外旋（每个分量的旋转都基于初始坐标系），或者等同于ZYX内旋（每旋转一个分量后，下一次旋转基于旋转后的坐标系）
     static Quaternion from_eular(Vector3f rotate) {
         return Quaternion::from_rotation({1, 0, 0}, rotate.x) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
                Quaternion::from_rotation({0, 0, 1}, rotate.z);
     }
 
-    constexpr Vector3f apply(Vector3f src) const noexcept {
-        // from godot: https://github.com/godotengine/godot
-        Vector3f u{x, y, z};
-        Vector3f uv = u.cross(src);
-        return src + ((uv * w) + u.cross(uv)) * 2.0f;
-    }
+    /**
+     * @brief 级联旋转
+     * 使用乘法进行旋转顺序与逻辑顺序相反，而apply是正的。对向量v进行旋转A，B，C使用乘法写作
+     * (C * B * A).apply(v)
+     * 但使用apply则写作
+     * v.apply(A.apply(B).apply(C))
+     * 更加似人
+     * @param next
+     * @return constexpr Quaternion
+     */
+    constexpr Quaternion apply(Quaternion next) const noexcept { return next * (*this); }
 
-    constexpr Vector3f forward_direction() const noexcept { return apply(FORWARD); }
+    constexpr Vector3f forward_direction() const noexcept { return FORWARD.apply(*this); }
 
-    constexpr Vector3f up_direction() const noexcept { return apply(UP); }
+    constexpr Vector3f up_direction() const noexcept { return UP.apply(*this); }
     float length() const noexcept { return std::sqrtf(x * x + y * y + z * z + w * w); }
 
     Quaternion normalize() const noexcept {
@@ -197,13 +204,20 @@ struct Quaternion {
         return *this;
     }
 
+    constexpr Vector3f operator*(Vector3f src) const noexcept {
+        // from godot: https://github.com/godotengine/godot
+        Vector3f u{x, y, z};
+        Vector3f uv = u.cross(src);
+        return src + ((uv * w) + u.cross(uv)) * 2.0f;
+    }
+
     bool operator==(this const Quaternion &self, const Quaternion r) noexcept {
         return is_nearly_equal(self.x, r.x) && is_nearly_equal(self.y, r.y) && is_nearly_equal(self.z, r.z) &&
                is_nearly_equal(self.w, r.w);
     }
 };
 
-constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept { return q.apply(*this); }
+constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept { return q * (*this); }
 
 struct Matrix3 {
     float m[3][3];
@@ -239,7 +253,7 @@ struct Matrix3 {
         return r;
     }
 
-    constexpr bool operator==(const Matrix3 &rhs) const {
+    constexpr bool operator==(const Matrix3 &rhs) const noexcept {
         for (unsigned int i = 0; i < 3; i++) {
             for (unsigned int j = 0; j < 3; j++) {
                 if (!is_nearly_equal(this->m[i][j], rhs.m[i][j])) {
@@ -248,6 +262,30 @@ struct Matrix3 {
             }
         }
         return true;
+    }
+
+    constexpr float determinant() const noexcept {
+        float r = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]);
+        r -= m[1][0] * (m[0][1] * m[2][2] - m[0][2] * m[2][1]);
+        r += m[2][0] * (m[0][1] * m[1][2] - m[0][2] * m[1][1]);
+        return r;
+    }
+
+    constexpr std::optional<Matrix3> inverse() const noexcept {
+        float d = determinant();
+        if (is_nearly_equal(d, 0.0f)) {
+            return std::nullopt; // 不可逆
+        }
+
+        float inv_d = 1.0f / d;
+        Matrix3 inv;
+        for (uint32_t i = 0; i < 3; i++) {
+            for (uint32_t j = 0; j < 3; j++) {
+                // 每个元素换为代数余子式，转置，除以行列式
+                inv.m[i][j] = ((i + j) % 2 == 0 ? 1 : -1) * cofactor(j, i) * inv_d;
+            }
+        }
+        return inv;
     }
 
     // ----------------构造缩放，旋转矩阵--------------------
@@ -280,6 +318,20 @@ struct Matrix3 {
         float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] - m[1][1] + m[2][2] + 1);
         float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2] + 1);
         return Quaternion{qx, qy, qz, qw};
+    }
+
+private:
+    /**
+     * @brief 计算余子式（不是代数余子式）
+     */
+    constexpr float cofactor(uint32_t x, uint32_t y) const noexcept {
+        float r[2][2];
+        for (uint32_t i = 0; i < 2; i++) {
+            for (uint32_t j = 0; j < 2; j++) {
+                r[i][j] = this->m[i >= x ? i + 1 : i][j >= y ? j + 1 : j];
+            }
+        }
+        return r[0][0] * r[1][1] - r[1][0] * r[0][1];
     }
 };
 
@@ -335,6 +387,39 @@ struct Matrix4 {
         return r;
     }
 
+    constexpr bool operator==(const Matrix4 &rhs) const noexcept {
+        for (uint32_t i = 0; i < 4; i++) {
+            for (uint32_t j = 0; j < 4; j++) {
+                if (!is_nearly_equal(this->m[i][j], rhs.m[i][j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    constexpr float determinant() const noexcept {
+        return m[0][0] * cofactor(0, 0) - m[0][1] * cofactor(0, 1) + m[0][2] * cofactor(0, 2) -
+               m[0][3] * cofactor(0, 3);
+    }
+
+    constexpr std::optional<Matrix4> inverse() const noexcept {
+        float d = determinant();
+        if (is_nearly_equal(d, 0.0f)) {
+            return std::nullopt; // 不可逆
+        }
+
+        float inv_d = 1.0f / d;
+        Matrix4 inv;
+        for (uint32_t i = 0; i < 4; i++) {
+            for (uint32_t j = 0; j < 4; j++) {
+                // 每个元素换为代数余子式，转置，除以行列式
+                inv.m[i][j] = ((i + j) % 2 == 0 ? 1 : -1) * cofactor(j, i) * inv_d;
+            }
+        }
+        return inv;
+    }
+
     // ----------------构造缩放，旋转，位移矩阵--------------------
     static constexpr Matrix4 translate(float x, float y, float z) {
         return Matrix4{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1};
@@ -375,6 +460,20 @@ struct Matrix4 {
         return Matrix3{
             m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2], m[2][0], m[2][1], m[2][2],
         };
+    }
+
+private:
+    /**
+     * @brief 计算余子式（不是代数余子式）
+     */
+    constexpr float cofactor(uint32_t x, uint32_t y) const noexcept {
+        Matrix3 r;
+        for (uint32_t i = 0; i < 3; i++) {
+            for (uint32_t j = 0; j < 3; j++) {
+                r.m[i][j] = this->m[i >= x ? i + 1 : i][j >= y ? j + 1 : j];
+            }
+        }
+        return r.determinant();
     }
 };
 

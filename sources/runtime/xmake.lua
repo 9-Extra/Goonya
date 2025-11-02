@@ -16,7 +16,15 @@ target("test_math")
     add_tests("default")
     set_default(false)
     add_files("test/math.cpp")
-    add_includedirs("src")
+    add_includedirs("src", "include")
     add_packages("gtest")
+
+target("test_gobject")
+    set_kind("binary")
+    add_tests("default")
+    set_default(false)
+    add_files("test/GObject.cpp", "src/function/world/GObject.cpp", "src/core/log/*.cpp")
+    add_includedirs("src", "include")
+    add_packages("gtest", "spdlog")
 
 

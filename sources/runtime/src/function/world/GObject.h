@@ -9,6 +9,7 @@
 #include "Component.h"
 #include "core/cgmath.h"
 #include "core/enum_operator.h"
+#include "core/log/Log.h"
 
 namespace Goonya {
 
@@ -115,39 +116,91 @@ public:
 
     std::vector<std::unique_ptr<Component>> &get_components() noexcept { return components; }
 
-    void set_transform(const Transform &transform) noexcept {
+    const Transform &get_local_transform() const noexcept { return transform; }
+
+    void set_local_transform(const Transform &transform) noexcept {
         this->transform = transform;
         mark_world_transform_dirty();
     }
 
-    const Transform &get_transform() const noexcept { return transform; }
+    // --------------位置------------------
 
-    void translate(Vector3f distance) noexcept { set_position(transform.position + distance); }
+    Vector3f get_local_position() const noexcept { return this->transform.position; }
 
-    void set_position(Vector3f pos) noexcept {
+    Vector3f get_global_position() noexcept {
+        if (is_world_transform_dirty) {
+            recaculate_world_transform();
+        }
+        return this->world_model_matrix.resolve_position();
+    }
+
+    void set_local_position(Vector3f pos) noexcept {
         this->transform.position = pos;
         mark_world_transform_dirty();
     }
 
+    void set_global_position(Vector3f pos) noexcept {
+        if (auto parent = this->parent.lock(); parent) {
+            Matrix4 parent_space = parent->get_world_model_matrix();
+            if (auto inv = parent_space.inverse(); inv) {
+                // 此位置在其父节点定义的空间中的坐标
+                Vector4f pos_parent_space = Vector4f{pos, 1.0f} * inv.value();
+                set_local_position((pos_parent_space / pos_parent_space.w).get_xyz());
+            } else {
+                LOG_ERROR("设置全局位置失败，检查所有父节点是否存在scale分量为0的情况");
+                return;
+            }
+        } else {
+            set_local_position(pos);
+        }
+    }
+
+    void translate_local(Vector3f distance) noexcept { set_local_position(transform.position + distance); }
+    void translate_global(Vector3f distance) noexcept { set_global_position(get_global_position() + distance); }
+
+    // -------------旋转----------------
+
+    Quaternion get_local_rotation() const noexcept { return this->transform.rotation; }
+    Quaternion get_global_rotation() noexcept {
+        if (is_world_transform_dirty) {
+            recaculate_world_transform();
+        }
+        return world_model_matrix.resolve_rotation();
+    }
+
+    void set_local_rotation(Quaternion rotation) noexcept {
+        this->transform.rotation = rotation;
+        mark_world_transform_dirty();
+    }
+    void set_global_rotation(Quaternion rotation) noexcept {
+        if (auto parent = this->parent.lock(); parent) {
+            set_local_rotation(rotation.apply(parent->get_global_rotation().conjugate()));
+        } else {
+            set_local_rotation(rotation);
+        }
+    }
+
     void rotate_local_axis(Vector3f angle) noexcept { rotate_local_axis(Quaternion::from_eular(angle)); }
-    void rotate_local_axis(Quaternion rotation) noexcept { set_rotation(this->transform.rotation * rotation); }
+    void rotate_local_axis(Quaternion rotation) noexcept {
+        set_local_rotation(rotation.apply(this->transform.rotation));
+    }
 
     void rotate_global_axis(Vector3f angle) noexcept { rotate_global_axis(Quaternion::from_eular(angle)); }
     void rotate_global_axis(Quaternion rotation) noexcept {
         // 沿全局坐标系旋转（原点依然是物体中心而非世界中心），依赖于父节点相对世界的旋转
-        Quaternion new_rotation;
-        if (has_parent()) {
-            Quaternion parent_rotation = parent.lock()->get_world_model_matrix().resolve_rotation();
-            new_rotation = parent_rotation.conjugate() * rotation * parent_rotation * this->transform.rotation;
-        } else {
-            new_rotation = rotation * this->transform.rotation;
-        }
-        set_rotation(new_rotation);
+        set_global_rotation(get_global_rotation().apply(rotation));
     }
 
-    void set_rotation(Quaternion rotation) noexcept {
-        this->transform.rotation = rotation;
-        mark_world_transform_dirty();
+    // ----------------缩放--------------------
+    Vector3f get_local_scale() const noexcept{
+        return this->transform.scale;
+    }
+
+    Vector3f get_global_scale() noexcept{
+        if (is_world_transform_dirty) {
+            recaculate_world_transform();
+        }
+        return world_model_matrix.resolve_scale();
     }
 
     const Matrix4 &get_world_model_matrix() noexcept {
@@ -195,7 +248,7 @@ public:
 
     bool has_parent() const noexcept { return !parent.expired(); }
 
-    std::weak_ptr<GObject> get_parent() noexcept { return parent; }
+    std::weak_ptr<GObject> get_parent() const noexcept { return parent; }
 
     void attach_parent(const std::shared_ptr<GObject> &new_parent) noexcept {
         if (new_parent == parent.lock())
@@ -229,15 +282,15 @@ private:
     /**
      * @brief 标记此节点world_transform为脏，同时递归标记子节点，并且触发应有的更新
      */
-    void mark_world_transform_dirty() noexcept{
+    void mark_world_transform_dirty() noexcept {
         is_world_transform_dirty = true;
 
-        if (contain(cpnt_update_flag, ComponentUpdateFlag::TRANSFORM)){
+        if (contain(cpnt_update_flag, ComponentUpdateFlag::TRANSFORM)) {
             return; // 这基于如下假设：如果当前已经标记ComponentUpdateFlag::TRANSFORM，则所有子节点也一定已经标记过了
         }
         queue_deferred_update(ComponentUpdateFlag::TRANSFORM);
         // 递归标记子节点
-        for(auto& child: children){
+        for (auto &child : children) {
             child->mark_world_transform_dirty();
         }
     }
