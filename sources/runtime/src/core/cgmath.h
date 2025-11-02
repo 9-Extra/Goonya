@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <concepts>
 #include <cstddef>
 #include <format>
 #include <limits>
@@ -20,6 +21,15 @@ constexpr int8_t sign(T x) {
         return x > 0 ? 1 : 0;
     } else {
         static_assert(std::is_void_v<T>, "what?!");
+    }
+}
+
+template <std::floating_point T>
+constexpr bool is_nearly_equal(T a, T b, T bias = 0.00001) noexcept {
+    if (a == b) {
+        return true;
+    } else {
+        return std::abs(a - b) < bias;
     }
 }
 
@@ -83,14 +93,16 @@ struct Vector3f {
     constexpr float &operator[](unsigned int i) noexcept { return v[i]; }
     constexpr const float &operator[](unsigned int i) const noexcept { return v[i]; }
 
-    constexpr Vector3f operator+(const Vector3f b) const { return Vector3f{x + b.x, y + b.y, z + b.z}; }
-    constexpr Vector3f operator-(const Vector3f b) const { return Vector3f{x - b.x, y - b.y, z - b.z}; }
+    constexpr Vector3f operator+(Vector3f b) const { return Vector3f{x + b.x, y + b.y, z + b.z}; }
+    constexpr Vector3f operator-(Vector3f b) const { return Vector3f{x - b.x, y - b.y, z - b.z}; }
     constexpr Vector3f operator-() const { return Vector3f{-x, -y, -z}; }
-    constexpr Vector3f operator+=(const Vector3f b) { return *this = *this + b; }
-    constexpr Vector3f operator*(const float n) const { return {x * n, y * n, z * n}; }
-    constexpr Vector3f operator/(const float n) const { return *this * (1.0f / n); }
-    constexpr Vector3f operator*(const Vector3f v) const { return {x * v.x, y * v.y, z * v.z}; }
-
+    constexpr Vector3f operator+=(Vector3f b) { return *this = *this + b; }
+    constexpr Vector3f operator*(float n) const { return {x * n, y * n, z * n}; }
+    constexpr Vector3f operator/(float n) const { return *this * (1.0f / n); }
+    constexpr Vector3f operator*(Vector3f v) const { return {x * v.x, y * v.y, z * v.z}; }
+    constexpr bool operator==(Vector3f rhs) const noexcept {
+        return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y) && is_nearly_equal(y, rhs.y);
+    }
     friend constexpr Vector3f operator*(Vector3f left, Matrix3 right) noexcept;
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }
 
@@ -102,7 +114,7 @@ struct Vector3f {
     constexpr float square() const { return this->dot(*this); }
     float length() const { return std::sqrt(square()); }
     Vector3f normalize() const {
-        float inv_sqrt = 1.0f / std::sqrt(this->square());
+        float inv_sqrt = 1.0f / length();
         return *this * inv_sqrt;
     }
 };
@@ -143,13 +155,13 @@ struct Quaternion {
 
     // 需要axis长度为1，顺时针旋转（沿着轴看过去）
     static Quaternion from_rotation(Vector3f axis, float angle) {
-        assert(axis.length() == 1);
+        assert(is_nearly_equal(axis.length(), 1.0f));
         angle = angle * 0.5f;
         float sin_theta = sinf(angle), cos_theta = cosf(angle);
         return Quaternion{sin_theta * axis.x, sin_theta * axis.y, sin_theta * axis.z, cos_theta};
     }
 
-    // 按XYZ顺序顺时针，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度
+    // 按XYZ顺序顺时针内旋，沿X旋转的角度，沿Y旋转的角度，沿Z旋转的角度。（或者等同于ZYX外旋）
     static Quaternion from_eular(Vector3f rotate) {
         return Quaternion::from_rotation({1, 0, 0}, rotate.x) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
                Quaternion::from_rotation({0, 0, 1}, rotate.z);
@@ -174,10 +186,10 @@ struct Quaternion {
 
     constexpr Quaternion conjugate() const { return Quaternion{-x, -y, -z, w}; }
 
-    Quaternion operator*(const Quaternion r) const noexcept {
-        Vector3f qv{x, y, z}, rv{r.x, r.y, r.z};
-        Vector3f v = qv.cross(rv) + qv * r.w + rv * w;
-        return Quaternion{v.x, v.y, v.z, w * r.w - qv.dot(rv)};
+    Quaternion operator*(this const Quaternion lhs, Quaternion rhs) noexcept {
+        Vector3f lv{lhs.x, lhs.y, lhs.z}, rv{rhs.x, rhs.y, rhs.z};
+        Vector3f v = lv.cross(rv) + lv * rhs.w + rv * lhs.w;
+        return Quaternion{v.x, v.y, v.z, lhs.w * rhs.w - lv.dot(rv)};
     }
 
     Quaternion operator*=(const Quaternion r) noexcept {
@@ -186,13 +198,12 @@ struct Quaternion {
     }
 
     bool operator==(this const Quaternion &self, const Quaternion r) noexcept {
-        return self.x == r.x && self.y == r.y && self.z == r.z && self.w == r.w;
+        return is_nearly_equal(self.x, r.x) && is_nearly_equal(self.y, r.y) && is_nearly_equal(self.z, r.z) &&
+               is_nearly_equal(self.w, r.w);
     }
 };
 
-constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept{
-    return q.apply(*this);
-}
+constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept { return q.apply(*this); }
 
 struct Matrix3 {
     float m[3][3];
@@ -226,6 +237,17 @@ struct Matrix3 {
         r.v[1] = m[1][0] * right.v[0] + m[1][1] * right.v[1] + m[1][2] * right.v[2];
         r.v[2] = m[2][0] * right.v[0] + m[2][1] * right.v[1] + m[2][2] * right.v[2];
         return r;
+    }
+
+    constexpr bool operator==(const Matrix3 &rhs) const {
+        for (unsigned int i = 0; i < 3; i++) {
+            for (unsigned int j = 0; j < 3; j++) {
+                if (!is_nearly_equal(this->m[i][j], rhs.m[i][j])) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     // ----------------构造缩放，旋转矩阵--------------------
@@ -506,5 +528,15 @@ struct std::formatter<Goonya::Quaternion> {
     template <typename FormatContext>
     auto format(const Goonya::Quaternion q, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "({}, {}, {}, {})", q.x, q.y, q.z, q.w);
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Matrix3> {
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
+    template <typename FormatContext>
+    auto format(const Goonya::Matrix3 &m, FormatContext &ctx) const {
+        return std::format_to(ctx.out(), "({}, {}, {}, {}, {}, {}, {}, {}, {})", m.m[0][0], m.m[0][1], m.m[0][2],
+                              m.m[1][0], m.m[1][1], m.m[1][2], m.m[2][0], m.m[2][1], m.m[2][2]);
     }
 };
