@@ -22,17 +22,16 @@ enum class TickType {
 
 struct TickFunction {
 private:
+    friend class World;
     World *owner_world = nullptr;
     TickType tick_type = TickType::TICK;
 
 public:
     TickFunction() = default;
     explicit TickFunction(TickType type) : tick_type(type) {}
-    virtual ~TickFunction() { unregister_ticker(); };
+    virtual ~TickFunction();
 
     TickType get_tick_type() const noexcept { return tick_type; }
-    void register_ticker(World *world);
-    void unregister_ticker();
     bool is_registered() const noexcept { return owner_world != nullptr; }
 
     virtual void tick() = 0;

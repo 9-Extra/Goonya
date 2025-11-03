@@ -8,6 +8,7 @@
 #include "core/log/Log.h"
 #include "craft/level/level.h"
 #include "function/world/Component.h"
+#include "function/world/World.h"
 #include "platform/display/display.h"
 #include "resource/ResMng.h"
 
@@ -125,15 +126,17 @@ void MoveSystem::on_register() {
     teapot = get_owner()->get_child_by_name("teapot");
     assert(teapot);
 
-    this->register_ticker(get_owner()->get_world());
+    Goonya::World* world = get_owner()->get_world();
+    world->register_ticker(this);
     level = create_ref<Craft::Level>(get_owner()->get_world(), camera);
-    level->register_ticker(get_owner()->get_world());
+    world->register_ticker(level.get());
 }
 
 void MoveSystem::on_unregister() { 
-    level->unregister_ticker();
-    this->unregister_ticker();
- }
+    Goonya::World* world = get_owner()->get_world();
+    world->unregister_ticker(this);
+    world->unregister_ticker(level.get());
+}
 
 void MoveSystem::tick() {
     float delta_time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.delta()).count();
@@ -145,5 +148,6 @@ void MoveSystem::tick() {
     Goonya::Quaternion r =
         Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
+    // LOG_DEBUG("r = {}, cube = {}", r, cube->get_global_rotation());
     light1->set_local_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
 }

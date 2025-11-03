@@ -46,12 +46,21 @@ TEST(Quaternion, apply) {
     EXPECT_EQ(point.apply(qz).apply(qy).apply(qx), qx * qy * qz * point);
 }
 
-TEST(Quaternion, to_matrix) {
+TEST(Quaternion, to_matrix_and_resolve) {
     Vector3f point{0, 0, -1};
     Quaternion q1 = Quaternion::from_eular(Vector3f(to_radian(23), to_radian(45), to_radian(90)));
     Quaternion q2 = Quaternion::from_eular(Vector3f(to_radian(108), to_radian(23), to_radian(80)));
     EXPECT_EQ(point * Matrix3::rotate(q1), point.apply(q1));
     EXPECT_EQ(Matrix3::rotate(q1) * Matrix3::rotate(q2), Matrix3::rotate(q1.apply(q2)));
+
+    EXPECT_EQ(Matrix3::rotate(q1).resolve_rotation(), q1);
+    EXPECT_EQ(Matrix4::rotate(q1).resolve_rotation(), q1);
+    EXPECT_EQ(Matrix4::rotate(q1).transpose().resolve_rotation(), q1.conjugate());
+    
+    EXPECT_EQ((Matrix4::translate({123, 1, 0}) * Matrix4::rotate(q1) * Matrix4::translate({115, 514, 221})).resolve_rotation(), q1);
+    //todo: failed
+    EXPECT_EQ((Matrix4::scale({123, 1, 1}) * Matrix4::rotate(q1) * Matrix4::scale({115, 514, 221})).resolve_rotation(), q1);
+     
 }
 
 TEST(Matrix, determinant_and_inverse) {
