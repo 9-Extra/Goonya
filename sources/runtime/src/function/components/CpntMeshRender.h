@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RendererBasic.h"
 #include "function/world/Component.h"

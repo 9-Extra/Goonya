@@ -1,6 +1,7 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
+#include "core/cgmath/aabb.h"
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderScene.h"

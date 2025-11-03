@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/vector.h"
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
 

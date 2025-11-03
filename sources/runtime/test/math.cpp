@@ -1,7 +1,7 @@
 #include <cmath>
 #include <gtest/gtest.h>
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "PrintTo.h"
 
 using namespace Goonya;

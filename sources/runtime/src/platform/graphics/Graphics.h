@@ -11,7 +11,7 @@
 #include "Mesh.h"
 #include "Texture.h"
 #include "core/ThreadPool.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "core/RefCount.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/Shader.h"

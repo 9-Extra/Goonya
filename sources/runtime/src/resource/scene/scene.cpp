@@ -1,6 +1,6 @@
 #include "scene.h"
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "core/RefCount.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"

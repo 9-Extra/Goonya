@@ -3,7 +3,7 @@
 #include "core/RefCount.h"
 #include "core/as_u8string.h"
 #include "core/assets.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "core/log/Log.h"
 #include "function/world/Component.h"
 #include "function/world/GObject.h"

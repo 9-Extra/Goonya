@@ -1,8 +1,9 @@
 #pragma once
 
-#include "core/cgmath.h"
 #include "platform/graphics/Mesh.h"
+
 #include <cstdint>
+#include <string_view>
 
 namespace Craft {
 

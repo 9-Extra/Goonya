@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "runtime/GoonyaException.h"
 #include <cassert>
 #include <cstddef>

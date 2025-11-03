@@ -1,5 +1,5 @@
 #include "GeometryPass.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"

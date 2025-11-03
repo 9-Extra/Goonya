@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include <vector>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Mesh.h"

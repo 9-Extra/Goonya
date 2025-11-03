@@ -1,7 +1,6 @@
 #include "LevelRenderer.h"
 
 #include "core/RefCount.h"
-#include "core/cgmath.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/model_manager.h"

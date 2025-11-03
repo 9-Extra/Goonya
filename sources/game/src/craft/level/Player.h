@@ -1,9 +1,9 @@
 #pragma once
 
-#include "core/cgmath.h"
 #include "craft/core/core.h"
 #include "function/world/GObject.h"
 #include <cassert>
+
 namespace Craft {
 
 struct Player {

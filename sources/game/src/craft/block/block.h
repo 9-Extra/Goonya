@@ -1,7 +1,7 @@
 #pragma once
 
 #include "blockstate.h"
-#include "core/cgmath.h"
+#include "core/cgmath/vector.h"
 #include "craft/core/core.h"
 #include "craft/core/registry.h"
 

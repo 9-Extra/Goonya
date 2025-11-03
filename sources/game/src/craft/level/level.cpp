@@ -1,6 +1,5 @@
 #include "level.h"
 
-#include "core/cgmath.h"
 #include "craft/block/all_blocks.h"
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"

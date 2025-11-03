@@ -1,7 +1,7 @@
 #include "Renderer.h"
 
 #include "core/ThreadUtils.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "core/clock/GameClock.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderProxy/Camera.h"

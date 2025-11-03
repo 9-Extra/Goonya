@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include <concepts>
 #include <cstddef>
 #include <cstdint>

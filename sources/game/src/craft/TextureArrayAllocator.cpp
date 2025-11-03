@@ -1,6 +1,6 @@
 #include "TextureArrayAllocator.h"
 
-#include "core/cgmath.h"
+#include "core/cgmath/vector.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Texture.h"

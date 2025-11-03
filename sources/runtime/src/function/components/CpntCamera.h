@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/Renderer.h"
 #include "function/world/Component.h"

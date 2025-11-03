@@ -7,7 +7,8 @@
 #include <vector>
 
 #include "Component.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
+#include "core/cgmath/transform.h"
 #include "core/enum_operator.h"
 #include "core/log/Log.h"
 

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/aabb.h"
+#include "core/cgmath/cgmath.h"
 #include "core/RefCount.h"
 #include "platform/graphics/Material.h"
 

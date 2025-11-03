@@ -1,7 +1,7 @@
 #pragma once
 
 #include "craft/core/core.h"
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 
 #include <array>
 #include <cstdint>

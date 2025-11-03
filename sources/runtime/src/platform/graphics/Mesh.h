@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/cgmath.h"
+#include "core/cgmath/aabb.h"
 #include "core/metatype/metatype.h"
 #include "resource/Resource.h"
 #include <array>

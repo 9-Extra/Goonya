@@ -1,6 +1,6 @@
 #pragma once
 
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 #include "core/hash_helper.h"
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"

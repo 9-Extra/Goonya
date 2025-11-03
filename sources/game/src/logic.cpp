@@ -1,6 +1,6 @@
 #include "logic.h"
+
 #include "core/RefCount.h"
-#include "core/cgmath.h"
 #include "core/clock/GameClock.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"

@@ -1,6 +1,6 @@
 // IWYU pragma: always_keep
 #pragma once
-#include "core/cgmath.h"
+#include "core/cgmath/cgmath.h"
 
 namespace Goonya {
 
