@@ -97,13 +97,13 @@ struct Matrix3 {
         return {c1.length(), c2.length(), c3.length()};
     }
     // 从矩阵中反解出其旋转对应的四元数
-    Quaternion resolve_rotation() const noexcept {
+    Quaternion resolve_rotation_normalized() const noexcept {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
-        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(m[0][0] - m[1][1] - m[2][2] + 1);
-        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] + m[1][1] - m[2][2] + 1);
-        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] - m[1][1] + m[2][2] + 1);
-        float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2] + 1);
+        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(std::max(m[0][0] - m[1][1] - m[2][2] + 1, 0.0f));
+        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] + m[1][1] - m[2][2] + 1, 0.0f));
+        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] - m[1][1] + m[2][2] + 1, 0.0f));
+        float qw = 0.5f * std::sqrt(std::max(m[0][0] + m[1][1] + m[2][2] + 1, 0.0f));
         return Quaternion{qx, qy, qz, qw};
     }
 
@@ -174,6 +174,28 @@ struct Matrix4 {
         return r;
     }
 
+    constexpr Matrix4 operator*(float rhs) const noexcept {
+        Matrix4 r;
+        for (unsigned int i = 0; i < 4; i++) {
+            for (unsigned int j = 0; j < 4; j++) {
+                r.m[i][j] = m[i][j] * rhs;
+            }
+        }
+        return r;
+    }
+
+    constexpr Matrix4 operator/(float rhs) const noexcept {
+        assert(!is_nearly_equal(rhs, 0.0f));
+        rhs = 1 / rhs;
+        Matrix4 r;
+        for (unsigned int i = 0; i < 4; i++) {
+            for (unsigned int j = 0; j < 4; j++) {
+                r.m[i][j] = m[i][j] * rhs;
+            }
+        }
+        return r;
+    }
+
     constexpr bool operator==(const Matrix4 &rhs) const noexcept {
         for (uint32_t i = 0; i < 4; i++) {
             for (uint32_t j = 0; j < 4; j++) {
@@ -232,13 +254,14 @@ struct Matrix4 {
     constexpr Vector3f resolve_position() const noexcept { return Vector3f{m[3][0], m[3][1], m[3][2]} / m[3][3]; }
 
     // 从矩阵中反解出其旋转对应的四元数
-    Quaternion resolve_rotation() const noexcept {
+    Quaternion resolve_rotation_normalized() const noexcept {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
-        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(m[0][0] - m[1][1] - m[2][2] + m[3][3]);
-        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] + m[1][1] - m[2][2] + m[3][3]);
-        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(-m[0][0] - m[1][1] + m[2][2] + m[3][3]);
-        float qw = 0.5f * std::sqrt(m[0][0] + m[1][1] + m[2][2] + m[3][3]);
+        // 同时，为了避免数值精度导致对负数开方有时发生，强行取正数
+        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(std::max(m[0][0] - m[1][1] - m[2][2] + m[3][3], 0.0f));
+        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] + m[1][1] - m[2][2] + m[3][3], 0.0f));
+        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] - m[1][1] + m[2][2] + m[3][3], 0.0f));
+        float qw = 0.5f * std::sqrt(std::max(m[0][0] + m[1][1] + m[2][2] + m[3][3], 0.0f));
         return Quaternion{qx, qy, qz, qw};
     }
 

@@ -3,6 +3,9 @@
 
 #include "core/cgmath/cgmath.h"
 #include "PrintTo.h"
+#include "core/cgmath/matrix.h"
+#include "core/cgmath/transform.h"
+#include "core/cgmath/vector.h"
 
 using namespace Goonya;
 
@@ -53,13 +56,22 @@ TEST(Quaternion, to_matrix_and_resolve) {
     EXPECT_EQ(point * Matrix3::rotate(q1), point.apply(q1));
     EXPECT_EQ(Matrix3::rotate(q1) * Matrix3::rotate(q2), Matrix3::rotate(q1.apply(q2)));
 
-    EXPECT_EQ(Matrix3::rotate(q1).resolve_rotation(), q1);
-    EXPECT_EQ(Matrix4::rotate(q1).resolve_rotation(), q1);
-    EXPECT_EQ(Matrix4::rotate(q1).transpose().resolve_rotation(), q1.conjugate());
+    EXPECT_EQ(Matrix3::rotate(q1).resolve_rotation_normalized(), q1);
+    EXPECT_EQ(Matrix4::rotate(q1).resolve_rotation_normalized(), q1);
+    EXPECT_EQ(Matrix4::rotate(q1).transpose().resolve_rotation_normalized(), q1.conjugate());
     
-    EXPECT_EQ((Matrix4::translate({123, 1, 0}) * Matrix4::rotate(q1) * Matrix4::translate({115, 514, 221})).resolve_rotation(), q1);
-    //todo: failed
-    EXPECT_EQ((Matrix4::scale({123, 1, 1}) * Matrix4::rotate(q1) * Matrix4::scale({115, 514, 221})).resolve_rotation(), q1);
+    EXPECT_EQ((Matrix4::translate({123, 1, 0}) * Matrix4::rotate(q1) * Matrix4::translate({115, 514, 221})).resolve_rotation_normalized(), q1);
+    
+    // resolve_rotation_normalized不支持没有归一化的矩阵
+    Matrix4 unnormalized_matrix = Matrix4::scale({123, 1, 1}) * Matrix4::rotate(q1);
+    EXPECT_NE(unnormalized_matrix.resolve_rotation_normalized(), q1);
+    // 用Transform分解
+    EXPECT_EQ(Transform::from_matrix(unnormalized_matrix).rotation, q1);
+
+    // 因为误差导致接近0的情况
+    Matrix4 mat{-0.999999523, -0.000418676762, 0.000213881052, 0, -0.000214216896, 0.000802397727, -0.999999523, 0, 0.00041850502, -0.999999403, -0.000802159309, 0, 0, 5, -10, 1};
+    Quaternion quat{-0.0, 0.707390308, -0.706822991, 0.00029901};
+    EXPECT_EQ(Transform::from_matrix(mat).rotation, quat);
      
 }
 
@@ -76,6 +88,20 @@ TEST(Matrix, determinant_and_inverse) {
     EXPECT_FLOAT_EQ(mat4.determinant(), -4350.f);
     EXPECT_EQ(mat4 * mat4.inverse().value(), Matrix4::identity());
 }
+
+TEST(Transform, to_and_from_matrix) {
+    Vector3f pos{114, 514, 221};
+    Quaternion rot = Quaternion::from_eular(Vector3f(to_radian(23), to_radian(45), to_radian(90)));
+    Vector3f scale = {3, 4, 5};
+
+    Transform transform{pos, rot, scale};
+    Transform resolved = Transform::from_matrix(transform.model_matrix());
+
+    EXPECT_EQ(resolved.position, transform.position);
+    EXPECT_EQ(resolved.rotation, transform.rotation);
+    EXPECT_EQ(resolved.scale, transform.scale);
+}
+
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

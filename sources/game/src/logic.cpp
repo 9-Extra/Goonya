@@ -1,6 +1,7 @@
 #include "logic.h"
 
 #include "core/RefCount.h"
+#include "core/cgmath/quaternion.h"
 #include "core/clock/GameClock.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
@@ -102,8 +103,6 @@ void MoveSystem::handle_keyboard(float delta) const {
     if (Input::is_key_click('0')) {
         camera->set_local_transform(Transform{});
     }
-    // Vector3f pos = camera->get_transform().position;
-    // LOG_DEBUG("x = {}, y = {}, z = {}", pos.x, pos.y, pos.z);
 
     // if (Goonya::Input::is_key_down(VK_UP)) {
     //     renderer.fog_density += 0.00001f * delta;
@@ -148,6 +147,5 @@ void MoveSystem::tick() {
     Goonya::Quaternion r =
         Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
-    // LOG_DEBUG("r = {}, cube = {}", r, cube->get_global_rotation());
     light1->set_local_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
 }

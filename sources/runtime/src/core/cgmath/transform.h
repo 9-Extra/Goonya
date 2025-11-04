@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/cgmath/vector.h"
 #include "matrix.h"
 
 namespace Goonya {
@@ -13,10 +14,17 @@ struct Transform {
                                  Vector3f scale = {1, 1, 1})
         : position(position), rotation(rotation), scale(scale) {}
     static constexpr Transform from_matrix(const Matrix4 &matrix) {
-        return Transform{matrix.resolve_position(), matrix.resolve_rotation(), matrix.resolve_scale()};
+        Vector3f pos = matrix.resolve_position();
+        Vector3f scale = matrix.resolve_scale();
+        Matrix4 normalized = Matrix4::scale({1 / scale.x, 1 / scale.y, 1 / scale.z}) * matrix;
+        Quaternion rotation = normalized.resolve_rotation_normalized();
+        return Transform{pos, rotation, scale};
     }
     static constexpr Transform from_matrix(const Matrix3 &matrix) {
-        return Transform{{}, matrix.resolve_rotation(), matrix.resolve_scale()};
+        Vector3f scale = matrix.resolve_scale();
+        Matrix3 normalized = matrix * Matrix3::scale({1 / scale.x, 1 / scale.y, 1 / scale.z});
+        Quaternion rotation = normalized.resolve_rotation_normalized();
+        return Transform{{0, 0, 0}, rotation, scale};
     }
 
     constexpr Vector3f apply_point(Vector3f p) const noexcept { return (p * scale).apply(rotation) + position; }

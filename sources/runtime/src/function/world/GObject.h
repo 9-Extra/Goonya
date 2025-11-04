@@ -8,6 +8,7 @@
 
 #include "Component.h"
 #include "core/cgmath/cgmath.h"
+#include "core/cgmath/quaternion.h"
 #include "core/cgmath/transform.h"
 #include "core/enum_operator.h"
 #include "core/log/Log.h"
@@ -166,7 +167,9 @@ public:
         if (is_world_transform_dirty) {
             recaculate_world_transform();
         }
-        return world_model_matrix.resolve_rotation();
+        Quaternion rotation = Transform::from_matrix(world_model_matrix).rotation;
+        assert(!rotation.isnan());
+        return rotation;
     }
 
     void set_local_rotation(Quaternion rotation) noexcept {

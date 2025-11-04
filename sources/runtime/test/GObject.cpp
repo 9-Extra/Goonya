@@ -2,7 +2,6 @@
 #include <memory>
 
 #include "function/world/GObject.h"
-#include "core/cgmath.h"
 #include "PrintTo.h"
 
 using namespace Goonya;

@@ -3,6 +3,7 @@
 #include "vector.h"
 
 #include <cassert>
+#include <cmath>
 
 namespace Goonya {
 
@@ -29,7 +30,7 @@ struct Quaternion {
     /**
      * @brief 级联旋转
      * 使用乘法进行旋转顺序与逻辑顺序相反，而apply是正的。对向量v进行旋转A，B，C使用乘法写作
-     * (C * B * A).apply(v)
+     * C * B * A * v
      * 但使用apply则写作
      * v.apply(A.apply(B).apply(C))
      * 更加似人
@@ -71,6 +72,10 @@ struct Quaternion {
     bool operator==(this const Quaternion &self, const Quaternion r) noexcept {
         return is_nearly_equal(self.x, r.x) && is_nearly_equal(self.y, r.y) && is_nearly_equal(self.z, r.z) &&
                is_nearly_equal(self.w, r.w);
+    }
+
+    bool isnan() const noexcept{
+        return std::isnan(x) || std::isnan(y) || std::isnan(z) || std::isnan(w);
     }
 };
 
