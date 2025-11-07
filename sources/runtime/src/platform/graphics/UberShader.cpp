@@ -116,6 +116,7 @@ static std::string shader_source_inject(const std::string &src, const std::vecto
 UberShader::UberShader(UberShaderDesc &&desc) {
     this->vs_src = std::move(desc.vs_src);
     this->ps_src = std::move(desc.ps_src);
+    this->pipeline_setting = desc.pipeline_setting;
     this->global_variant_key_collect = VariantKeyCollect(std::move(desc.global_variant_keys));
     this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
 

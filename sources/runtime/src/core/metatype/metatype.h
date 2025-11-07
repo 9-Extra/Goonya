@@ -23,7 +23,7 @@ struct FieldType2CType {
 
 template <typename T>
 struct CType2FieldType {
-    const static FieldType Type = FieldType::nul;
+    constexpr static FieldType Type = FieldType::nul;
 };
 
 #define GOONYA_DEFINE_FIELDTYPE2CTYPE(field_type, ctype)                                                               \
@@ -33,7 +33,7 @@ struct CType2FieldType {
     };                                                                                                                 \
     template <>                                                                                                        \
     struct CType2FieldType<ctype> {                                                                                    \
-        const static FieldType Type = FieldType::field_type;                                                           \
+        constexpr static FieldType Type = FieldType::field_type;                                                           \
     };
 
 GOONYA_DEFINE_FIELDTYPE2CTYPE(i32, int32_t)
@@ -167,14 +167,14 @@ struct DynamicData {
     }
 
     template <meta_type T>
-    T &get_value() const {
+    const T &get_value() const {
         if (type != CType2FieldType<T>::Type) {
             throw RuntimeError(std::format("类型不匹配：{} 与 {}", type, CType2FieldType<T>::Type));
         }
         if (is_internal()) {
-            return reinterpret_cast<T>(storage.value);
+            return reinterpret_cast<const T&>(storage.value);
         } else {
-            return *(T *)storage.ptr;
+            return *(const T *)storage.ptr;
         }
     }
 

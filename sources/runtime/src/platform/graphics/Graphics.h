@@ -7,12 +7,12 @@
 #include <thread>
 
 #include "Buffer.h"
-#include "Material.h"
 #include "Mesh.h"
 #include "Texture.h"
 #include "core/ThreadPool.h"
 #include "core/cgmath/cgmath.h"
 #include "core/RefCount.h"
+#include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/Shader.h"
 
@@ -49,7 +49,7 @@ public:
                                                          const std::string &ps_src) const = 0;
     virtual std::unique_ptr<ShaderIntrospector> create_shader_introspect(Shader *shader) const = 0;
 
-    virtual void set_pipeline_state(const PipeLineState &state) const noexcept = 0;
+    virtual void set_pipeline_state(const PipelineSetting &state) const noexcept = 0;
 
     // ---------------------------------绘制调用-------------------------------------------------------------
     virtual Ref<RenderTarget> get_rendertarget_screen() noexcept = 0;

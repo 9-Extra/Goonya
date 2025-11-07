@@ -34,7 +34,7 @@ public:
         return std::make_unique<GLShaderIntrospector>(shader);
     }
 
-    void set_pipeline_state(const PipeLineState &state) const noexcept override;
+    void set_pipeline_state(const PipelineSetting &state) const noexcept override;
 
     // ---------------------------------绘制调用-------------------------------------------------------------
     Ref<RenderTarget> get_rendertarget_screen() noexcept override { return rendertarget_screen; };

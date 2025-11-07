@@ -3,6 +3,7 @@
 #include "core/assets.h"
 #include "core/hash_helper.h"
 #include "core/RefCount.h"
+#include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/Shader.h"
 #include "runtime/GoonyaException.h"
 #include <cassert>
@@ -19,6 +20,8 @@ namespace Goonya::Graphics {
 struct UberShaderDesc final {
     std::string vs_src;
     std::string ps_src;
+
+    PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
 
     /**
      * 当全局的变体定义发生修改时，所有使用此定义的UberShader的所有材质受到影响并更新，
@@ -93,26 +96,6 @@ public:
     bool is_key_defined(VariantCode code, std::string_view variant_key) const noexcept;
 };
 
-struct ShaderDesc final {
-    std::string uber_name;
-    std::vector<std::string> variant_keys;
-
-    ShaderDesc() = default;
-
-    template <typename T1, typename T2>
-    ShaderDesc(T1 &&uber_name, T2 &&variant_code) noexcept
-        : uber_name(std::forward<T1>(uber_name)), variant_keys(std::forward<T2>(variant_keys)) {
-        assert(!uber_name.empty());
-    }
-
-    ShaderDesc(const ShaderDesc &desc) noexcept = default;
-    ShaderDesc(ShaderDesc &&desc) noexcept
-        : uber_name(std::move(desc.uber_name)), variant_keys(std::move(desc.variant_keys)) {}
-
-    ShaderDesc &operator=(const ShaderDesc &desc) noexcept = default;
-    bool operator==(const ShaderDesc &b) const noexcept = default;
-};
-
 class Shader;
 class UberShader final {
 protected:
@@ -122,6 +105,7 @@ protected:
     // 不会变的
     std::string vs_src;
     std::string ps_src;
+    PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
 
     VariantKeyCollect global_variant_key_collect; // 全局变体编码器
     VariantKeyCollect local_variant_key_collect;
@@ -135,6 +119,10 @@ protected:
 public:
     UberShader(const UberShader &) = delete;
     UberShader(UberShader &&) = delete;
+
+    const PipelineSetting& get_pipeline_setting() const noexcept{
+        return pipeline_setting;
+    }
 
     VariantCode get_global_key_code() const noexcept { return global_key_code; }
     const ShaderUniformBlockInfo &per_material_block() const noexcept { return per_material; }

@@ -15,7 +15,9 @@
 #include "HardcodeAssets.h"
 #include "core/format_exception.h"
 #include "core/log/Log.h"
+#include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
+#include "platform/graphics/PipelineSetting.h"
 #include "platform/read_file.h"
 #include "resource/glTFLoader.h"
 #include "runtime/GoonyaException.h"
@@ -237,33 +239,47 @@ void RenderResource::try_load(const std::filesystem::path &path) {
 
         const Json::Value &config = material_desc["config"];
 
-        const Json::Value &cull_mode = config["cull_mode"];
-        if (!cull_mode || cull_mode == "back") {
-            mat_builder.set_cull_mode(Graphics::CullFaceMode::BACK);
-        } else if (cull_mode == "front") {
-            mat_builder.set_cull_mode(Graphics::CullFaceMode::FRONT);
-        } else if (cull_mode == "front_back") {
-            mat_builder.set_cull_mode(Graphics::CullFaceMode::FRONT_AND_BACK);
-        } else {
-            throw RuntimeError(std::format("不支持的面裁剪模式：\"{}\"", cull_mode.asString()));
+        {
+            Graphics::PipelineSettingParamType value;
+            const Json::Value &cull_mode = config["cull_mode"];
+            if (!cull_mode) {
+                goto NEXT;
+            } else if (cull_mode == "back") {
+                value = Graphics::PipelineSettingParamType(Graphics::CullFaceMode::BACK);
+            } else if (cull_mode == "front") {
+                value = Graphics::PipelineSettingParamType(Graphics::CullFaceMode::FRONT);
+            } else if (cull_mode == "front_back") {
+                value = Graphics::PipelineSettingParamType(Graphics::CullFaceMode::FRONT_AND_BACK);
+            } else {
+                throw RuntimeError(std::format("不支持的面裁剪模式：\"{}\"", cull_mode.asString()));
+            }
+            mat_builder.set_pipeline_setting("_cull_mode", value);
         }
+    NEXT:
 
+    {
+        Graphics::PipelineSettingParamType value;
         const Json::Value &depth_test_mode = config["depth_func"];
-        if (!depth_test_mode || depth_test_mode == "less") {
-            mat_builder.set_depth_test_mode(Graphics::DepthTestMode::LESS);
+        if (!depth_test_mode) {
+            goto NEXT2;
+        } else if (depth_test_mode == "less") {
+            value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::LESS);
         } else if (depth_test_mode == "never") {
-            mat_builder.set_depth_test_mode(Graphics::DepthTestMode::NEVER);
+            value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::NEVER);
         } else if (depth_test_mode == "less_equal") {
-            mat_builder.set_depth_test_mode(Graphics::DepthTestMode::LESS_EQUAL);
+            value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::LESS_EQUAL);
         } else if (depth_test_mode == "greater") {
-            mat_builder.set_depth_test_mode(Graphics::DepthTestMode::GREATER);
+            value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::GREATER);
         } else if (depth_test_mode == "greater_equal") {
-            mat_builder.set_depth_test_mode(Graphics::DepthTestMode::GREATER_EQUAL);
+            value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::GREATER_EQUAL);
         } else if (depth_test_mode == "always") {
-            mat_builder.set_depth_test_mode(Graphics::DepthTestMode::ALWAYS);
+            value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::ALWAYS);
         } else {
             throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", depth_test_mode.asString()));
         }
+        mat_builder.set_pipeline_setting("_depth_test", value);
+    }
+    NEXT2:
 
         for (auto param_iter = material_desc["parameters"].begin(); param_iter != material_desc["parameters"].end();
              ++param_iter) {

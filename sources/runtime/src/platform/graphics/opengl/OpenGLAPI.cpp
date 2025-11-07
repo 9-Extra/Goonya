@@ -9,6 +9,7 @@
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
 #include <string>
+#include <utility>
 
 #include "GLBuffer.h"
 #include "GLRenderTarget.h"
@@ -28,7 +29,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 
     // 初始化日志
     {
-        const auto& sinks = Logger::get_sinks();
+        const auto &sinks = Logger::get_sinks();
         logger = std::make_shared<spdlog::async_logger>("OpenGL", sinks.begin(), sinks.end(), spdlog::thread_pool());
         logger->set_level(spdlog::level::trace);
         spdlog::register_logger(logger);
@@ -104,13 +105,54 @@ Ref<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uin
     return create_ref<GLFrameBuffer>(size);
 }
 
-Ref<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src,
-                                                                const std::string &ps_src) const {
+Ref<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src, const std::string &ps_src) const {
     ASSERT_RENDER_THREAD();
     return create_ref<GLShader>(vs_src, ps_src);
 }
 
-void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noexcept {
+static GLenum gl_blend_op(BlendOp op) noexcept {
+    switch (op) {
+    case BlendOp::ADD:
+        return GL_FUNC_ADD;
+    case BlendOp::SUB:
+        return GL_FUNC_SUBTRACT;
+    case BlendOp::REV_SUB:
+        return GL_FUNC_REVERSE_SUBTRACT;
+    case BlendOp::MIN:
+        return GL_MIN;
+    case BlendOp::MAX:
+        return GL_MAX;
+    }
+    std::unreachable();
+}
+
+static GLenum gl_blend_param(BlendFactor factor) noexcept {
+    switch (factor) {
+    case BlendFactor::ZERO:
+        return GL_ZERO;
+    case BlendFactor::ONE:
+        return GL_ONE;
+    case BlendFactor::SRC_COLOR:
+        return GL_SRC_COLOR;
+    case BlendFactor::DST_COLOR:
+        return GL_DST_COLOR;
+    case BlendFactor::ONE_MINUS_SRC_COLOR:
+        return GL_ONE_MINUS_SRC_COLOR;
+    case BlendFactor::ONE_MINUS_DST_COLOR:
+        return GL_ONE_MINUS_DST_COLOR;
+    case BlendFactor::SRC_ALPHA:
+        return GL_SRC_ALPHA;
+    case BlendFactor::DST_ALPHA:
+        return GL_DST_ALPHA;
+    case BlendFactor::ONE_MINUS_SRC_ALPHA:
+        return GL_ONE_MINUS_SRC_ALPHA;
+    case BlendFactor::ONE_MINUS_DST_ALPHA:
+        return GL_ONE_MINUS_DST_ALPHA;
+    }
+    std::unreachable();
+}
+
+void OpenGLGraphicsAPI::set_pipeline_state(const PipelineSetting &state) const noexcept {
     ASSERT_RENDER_THREAD();
     // 深度测试
     bool enable_depth_test = true;
@@ -187,6 +229,23 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipeLineState &state) const noe
     } else {
         glDisable(GL_CULL_FACE);
     }
+
+    if (state.is_blend_enable) {
+        glEnable(GL_BLEND);
+
+        GLenum color_op = gl_blend_op(state.blendop_color);
+        GLenum alpha_op = gl_blend_op(state.blendop_alpha);
+
+        GLenum src_color_factor = gl_blend_param(state.src_color_factor);
+        GLenum dst_color_factor = gl_blend_param(state.dst_color_factor);
+        GLenum src_alpha_factor = gl_blend_param(state.src_alpha_factor);
+        GLenum dst_alpha_factor = gl_blend_param(state.dst_alpha_factor);
+
+        glBlendEquationSeparate(color_op, alpha_op);
+        glBlendFuncSeparate(src_color_factor, dst_color_factor, src_alpha_factor, dst_alpha_factor);
+    } else {
+        glDisable(GL_BLEND);
+    }
 };
 
 // ---------------------------------绘制调用-------------------------------------------------------------
@@ -228,7 +287,8 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
     ASSERT_RENDER_THREAD();
     glDrawElementsBaseVertex(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_INT,
-                   reinterpret_cast<void *>((size_t)submesh.start_index * sizeof(uint32_t)), submesh.base_vertex_offset); // 绘制
+                             reinterpret_cast<void *>((size_t)submesh.start_index * sizeof(uint32_t)),
+                             submesh.base_vertex_offset); // 绘制
 }
 
 // -----------------------bind-------------------------------

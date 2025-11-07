@@ -13,8 +13,10 @@ public:
     explicit MaterialBuilder(const AssetKey &uber_shader_name) { desc.uber_shader_name = uber_shader_name; }
 
     void set_variant_key(const std::string &key) noexcept { variant_keys.emplace(key); }
-    void set_depth_test_mode(Graphics::DepthTestMode mode) noexcept { desc.pipeline_state.depth_test = mode; }
-    void set_cull_mode(Graphics::CullFaceMode mode) noexcept { desc.pipeline_state.cull_mode = mode; }
+    MaterialBuilder &set_pipeline_setting(const std::string &name, Graphics::PipelineSettingParamType value) {
+        desc.override_pipeline_setting.emplace(name, value);
+        return *this;
+    }
 
     template <Meta::meta_type T>
     MaterialBuilder &add_parameter(const std::string &name, const T &value) noexcept {
@@ -30,7 +32,7 @@ public:
 
     Graphics::MaterialDesc build() {
         desc.local_variant_keys = std::vector<std::string>{std::make_move_iterator(variant_keys.begin()),
-                                                     std::make_move_iterator(variant_keys.end())};
+                                                           std::make_move_iterator(variant_keys.end())};
         return desc;
     }
 

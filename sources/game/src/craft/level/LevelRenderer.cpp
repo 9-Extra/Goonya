@@ -92,10 +92,8 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
 LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
     Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
     terrain_material = create_ref<Goonya::Graphics::Material>(shader);
-    terrain_material->set_pipeline_state(Goonya::Graphics::PipeLineState{
-        .depth_test = Goonya::Graphics::DepthTestMode::LESS_EQUAL, // 后渲染的相同位置的表面会覆盖先渲染的
-        .cull_mode = Goonya::Graphics::CullFaceMode::BACK,
-    });
+    terrain_material->set_pipeline_setting("_depth_test", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));
+    terrain_material->set_pipeline_setting("_cull_mode", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::CullFaceMode::BACK));
     terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());
 }
 
