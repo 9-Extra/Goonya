@@ -14,7 +14,7 @@ namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
     : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), bind_world(world), level_renderer(world->main_scene()),
-      delta_time_residual(GameClock::duration::zero()), player(player) {
+      player(player) {
     assert(world != nullptr);
 }
 

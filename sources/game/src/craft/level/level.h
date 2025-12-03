@@ -12,16 +12,12 @@
 #include "function/world/World.h"
 
 #include <cassert>
-#include <chrono>
 #include <cstdint>
 #include <unordered_map>
 
 namespace Craft {
 
 class Level : public RefCount, public Goonya::TickFunction {
-public:
-    using GameClock = std::chrono::steady_clock;
-    static constexpr GameClock::duration TICK_INTERVAL = std::chrono::milliseconds(50); // 50 ms
 private:
     Goonya::World *bind_world;
 
@@ -30,10 +26,6 @@ private:
 
     std::unordered_map<ChunkPos, Ref<Chunk>> all_chunks;       // 所有（包括正在生成）的区块
     std::unordered_map<ChunkPos, Ref<Chunk>> accessible_chunk; // 所有可以被逻辑线程访问的区块
-
-    GameClock::time_point last_real_frame_time;
-    GameClock::duration delta_time_residual;
-    GameTime world_time = 0; // 从开始运行的游戏刻数
 
     Player player;
     int32_t chunk_load_distance = 6;

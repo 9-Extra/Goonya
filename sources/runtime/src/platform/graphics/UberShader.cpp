@@ -120,20 +120,13 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->global_variant_key_collect = VariantKeyCollect(std::move(desc.global_variant_keys));
     this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
 
-    // 立即编译一个不包含任何变体的版本用于反射，此时uber_shader不完整，不能用query_variant
-    VariantCodeSet empty{0};
-    std::vector<std::string> variant_keys;
-    this->get_variant_key_names(empty, variant_keys);
-    std::string mixed_vs = shader_source_inject(this->vs_src, variant_keys);
-    std::string mixed_ps = shader_source_inject(this->ps_src, variant_keys);
+    // 立即编译变体码为0的版本用于反射
+    Ref<Shader> shader = query_variant(VariantCodeSet{0});
 
-    Ref<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
-    this->shaders[empty] = shader; // 既然编译了就加入缓存
-
-    // 反射获取着色器信息
     std::unique_ptr<ShaderIntrospector> introspector = graphics_api->create_shader_introspect(shader.get());
     auto buffer_info = introspector->get_constant_buffer_info();
-
+    
+    // 反射获取着色器信息
     this->per_material = buffer_info["per_material"];
     this->per_frame = buffer_info.at("per_frame");
     this->per_object = buffer_info["per_object"];

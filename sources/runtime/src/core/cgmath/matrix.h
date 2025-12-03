@@ -3,6 +3,7 @@
 #include "quaternion.h"
 #include "vector.h"
 #include <cassert>
+#include <cstddef>
 
 namespace Goonya {
 
@@ -51,6 +52,10 @@ struct Matrix3 {
         return true;
     }
 
+    constexpr float &operator[](size_t x, size_t y) noexcept { return m[x][y]; }
+
+    constexpr const float &operator[](size_t x, size_t y) const noexcept { return m[x][y]; }
+
     constexpr float determinant() const noexcept {
         float r = m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]);
         r -= m[1][0] * (m[0][1] * m[2][2] - m[0][2] * m[2][1]);
@@ -75,11 +80,7 @@ struct Matrix3 {
         return inv;
     }
 
-    // ----------------构造缩放，旋转矩阵--------------------
-    static constexpr Matrix3 scale(float x, float y, float z) { return Matrix3{x, 0, 0, 0, y, 0, 0, 0, z}; }
-    static constexpr Matrix3 scale(Vector3f scale) { return Matrix3::scale(scale.x, scale.y, scale.z); }
-
-    static constexpr Matrix3 rotate(Quaternion rotation) {
+    static constexpr Matrix3 from_quaternion(Quaternion rotation) noexcept {
         auto [x, y, z, w] = rotation;
         return Matrix3{
             1.0f - 2.0f * (y * y + z * z), 2.0f * (x * y + w * z),        2.0f * (x * z - w * y),
@@ -87,6 +88,14 @@ struct Matrix3 {
             2.0f * (x * z + w * y),        2.0f * (y * z - w * x),        1.0f - 2.0f * (x * x + y * y),
         };
     }
+
+    // ----------------缩放，旋转--------------------
+    constexpr Matrix3 scale(float scale) const noexcept {return this->scale({scale, scale, scale});}
+    constexpr Matrix3 scale(Vector3f scale) const noexcept {
+        return *this * Matrix3{scale.x, 0, 0, 0, scale.y, 0, 0, 0, scale.z};
+    }
+
+    constexpr Matrix3 rotate(Quaternion rot) const noexcept { return *this * from_quaternion(rot); }
 
     // ----------------从矩阵中提取缩放，旋转--------------------
     constexpr Vector3f resolve_scale() const noexcept {
@@ -136,11 +145,11 @@ struct Matrix4 {
         };
     }
     static constexpr Matrix4 zero() { return Matrix4{}; }
-    explicit constexpr Matrix4(const Matrix3 &mat, float m44 = 1.0f)
+    explicit constexpr Matrix4(const Matrix3 &mat, float m33 = 1.0f)
         : m{{mat.m[0][0], mat.m[0][1], mat.m[0][2], 0.0},
             {mat.m[1][0], mat.m[1][1], mat.m[1][2], 0.0},
             {mat.m[2][0], mat.m[2][1], mat.m[2][2], 0.0},
-            {0.0, 0.0, 0.0, m44}} {}
+            {0.0, 0.0, 0.0, m33}} {}
 
     const float *data() const { return *m; }
 
@@ -229,19 +238,17 @@ struct Matrix4 {
         return inv;
     }
 
-    // ----------------构造缩放，旋转，位移矩阵--------------------
-    static constexpr Matrix4 translate(float x, float y, float z) {
-        return Matrix4{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, z, 1};
+    // ----------------缩放，旋转，位移--------------------
+    constexpr Matrix4 translate(Vector3f delta) const noexcept {
+        return *this * Matrix4{1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, delta.x, delta.y, delta.z, 1};
     }
-    static constexpr Matrix4 translate(Vector3f delta) { return Matrix4::translate(delta.x, delta.y, delta.z); }
-    static constexpr Matrix4 rotate(Quaternion rotation) { return Matrix4{Matrix3::rotate(rotation)}; }
-    static constexpr Matrix4 scale(float x, float y, float z) {
-        return Matrix4{
-            x, 0.0, 0.0, 0.0, 0.0, y, 0.0, 0.0, 0.0, 0.0, z, 0.0, 0.0, 0.0, 0.0, 1.0,
-        };
+    constexpr Matrix4 rotate(Quaternion rotation) const noexcept {
+        return *this * Matrix4{Matrix3::from_quaternion(rotation)};
     }
-    static constexpr Matrix4 scale(Vector3f scale) { return Matrix4::scale(scale.x, scale.y, scale.z); }
-
+    constexpr Matrix4 scale(float scale) const noexcept {return this->scale({scale, scale, scale});}
+    constexpr Matrix4 scale(Vector3f scale) const noexcept {
+        return *this * Matrix4{scale.x, 0, 0, 0, 0, scale.y, 0, 0, 0, 0, scale.z, 0, 0, 0, 0, 1};
+    }
     // ----------------从矩阵中提取缩放，旋转，位移--------------------
     constexpr Vector3f resolve_scale() const noexcept {
         // 乘在右边的缩放矩阵对矩阵的每个列向量进行了缩放
@@ -258,9 +265,12 @@ struct Matrix4 {
         // 为了数值稳定性，使用这个包含4个开方的版本
         // 还有另一种版本基于比较+使用最大数的版本
         // 同时，为了避免数值精度导致对负数开方有时发生，强行取正数
-        float qx = (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(std::max(m[0][0] - m[1][1] - m[2][2] + m[3][3], 0.0f));
-        float qy = (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] + m[1][1] - m[2][2] + m[3][3], 0.0f));
-        float qz = (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] - m[1][1] + m[2][2] + m[3][3], 0.0f));
+        float qx =
+            (m[2][1] < m[1][2] ? 0.5f : -0.5f) * std::sqrt(std::max(m[0][0] - m[1][1] - m[2][2] + m[3][3], 0.0f));
+        float qy =
+            (m[0][2] < m[2][0] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] + m[1][1] - m[2][2] + m[3][3], 0.0f));
+        float qz =
+            (m[1][0] < m[0][1] ? 0.5f : -0.5f) * std::sqrt(std::max(-m[0][0] - m[1][1] + m[2][2] + m[3][3], 0.0f));
         float qw = 0.5f * std::sqrt(std::max(m[0][0] + m[1][1] + m[2][2] + m[3][3], 0.0f));
         return Quaternion{qx, qy, qz, qw};
     }
@@ -315,5 +325,16 @@ struct std::formatter<Goonya::Matrix3> {
     auto format(const Goonya::Matrix3 &m, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "({}, {}, {}, {}, {}, {}, {}, {}, {})", m.m[0][0], m.m[0][1], m.m[0][2],
                               m.m[1][0], m.m[1][1], m.m[1][2], m.m[2][0], m.m[2][1], m.m[2][2]);
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Matrix4> {
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
+    template <typename FormatContext>
+    auto format(const Goonya::Matrix4 &m, FormatContext &ctx) const {
+        return std::format_to(ctx.out(), "({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {})", m.m[0][0],
+                              m.m[0][1], m.m[0][2], m.m[0][3], m.m[1][0], m.m[1][1], m.m[1][2], m.m[1][3], m.m[2][0],
+                              m.m[2][1], m.m[2][2], m.m[2][3], m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3]);
     }
 };

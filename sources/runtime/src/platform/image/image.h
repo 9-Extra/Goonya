@@ -1,12 +1,9 @@
 /*
-    这不是stb库本身的一部分，而是一个stb的c++风格封装，没错这是c++不是c
+    stb的c++风格封装
 */
 #pragma once
 
 #include <cassert>
-#include <cstdlib>
-#include <cstring>
-#include <print>
 #include <string>
 
 namespace stb{

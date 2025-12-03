@@ -186,10 +186,15 @@ vec3 caculate_normal(){
     const vec3 tangent = normalize(vs_out.tangent.xyz - normal * dot(normal, vs_out.tangent.xyz));
     // 规定死的副切线计算方法
     const vec3 bitangent = cross(normal, tangent) * vs_out.tangent.w;
-    // const mat3 tbn = mat3(tangent, cross(tangent, normal), normal);
+ 
     vec3 h = texture(normal_texture, vs_out.tex_coords).xyz * 2 - 1;
     vec3 world_normal = tangent * h.x + bitangent * h.y + normal * h.z;
     return world_normal;
+}
+
+vec4 post_process(vec3 color_in){
+    color_in = clamp(color_in, 0.0f, 1.0f); // 钳制到[0, 1]范围内
+    return vec4(pow(color_in, vec3(1 / 2.2)), 1.0f);
 }
 
 void main()
@@ -207,13 +212,15 @@ void main()
     // 反射率F用于计算Fresnel反射
     const vec3 F0 = mix(dielectric_specular, albedo, metallic);
 
-    // 环境光
     vec3 result_color = vec3(0);
 
-    result_color += ambient_light * albedo;
-
+    // 环境光
 #ifdef GYA_IBL_ENVIRONMENT_LIGHT
+    // 使用环境光贴图
     result_color += SpecularIBL(F0, roughness, N, V);
+#else
+    // 使用常数环境光强度
+    result_color += ambient_light * albedo;
 #endif
 
     // 点光源
@@ -221,24 +228,25 @@ void main()
         vec3 light_pos = pointlight_list[i].position;
         vec3 light_intensity = pointlight_list[i].intensity;
 
+        // 入射光方向
         vec3 L = normalize(light_pos - vs_out.world_position);
 
         float squared_distance = dot(light_pos - vs_out.world_position, light_pos - vs_out.world_position);
 
-        vec3 point_light_indensity = pointlight_list[i].intensity / squared_distance * max(dot(L, N), 0.0f);
-        
-        result_color += point_light_indensity * BRDF(L, V, N, F0, albedo, roughness, metallic);
+        vec3 point_light_indensity = pointlight_list[i].intensity / squared_distance;
+        // 点光源照到物体表面的强度 * 物体在此方向上的反射率 * 入射光与物体法线夹角的cos
+        result_color += point_light_indensity * BRDF(L, V, N, F0, albedo, roughness, metallic) * max(dot(L, N), 0.0f);
         //result_color = light_intensity;
     }
 
-    result_color = min(result_color, 1.0f);
 # ifdef GYA_FOG_EXP
+    // 指数雾
     const vec3 fog_color = vec3(1.0f ,1.0f ,1.0f);
     float distance = max(0.0f, length(vs_out.world_position - camera_position) - fog_min_distance);
     float fog_factor = exp(-distance * fog_density);
     result_color = mix(fog_color, result_color, fog_factor);
 # endif
-    out_color = vec4(pow(result_color, vec3(1 / 2.2)), 1.0f);
     
+    out_color = post_process(result_color);
     //out_color = vec4(BRDF(L, V, N, pixel_attribute) / 2, 1);
 }

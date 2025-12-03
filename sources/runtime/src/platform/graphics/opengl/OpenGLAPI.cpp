@@ -291,6 +291,11 @@ void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
                              submesh.base_vertex_offset); // 绘制
 }
 
+void OpenGLGraphicsAPI::draw_multidraw(Topology topology, int32_t* count_array, size_t* index_offset_array, int32_t* base_vertex_array, int32_t count) const {
+    ASSERT_RENDER_THREAD();
+    glMultiDrawElementsBaseVertex(Topology2OpenGL(topology), count_array, GL_UNSIGNED_INT, reinterpret_cast<const void *const *>(index_offset_array), count, count_array);
+}
+
 // -----------------------bind-------------------------------
 void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
     ASSERT_RENDER_THREAD();

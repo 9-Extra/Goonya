@@ -18,7 +18,6 @@ class Block {
     friend class BlockStateMap;
 
 private:
-    // 重载create_default_blockstate()以自定义默认状态
     std::string display_name;
 
     std::vector<BlockStateProperty *> valied_properties;

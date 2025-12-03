@@ -46,7 +46,7 @@ void main()
     vec4 world_position = vec4(position.xyz, 1.0f) * model_matrix;
     vs_out.world_position = world_position.xyz / world_position.w;
     vs_out.normal = normal * normal_matrix;
-    vs_out.tangent = vec4(tangent.xyz * normal_matrix, tangent.w);
+    vs_out.tangent = vec4(tangent.xyz * mat3(model_matrix), tangent.w);
     vs_out.tex_coords = uv;
 
     gl_Position = world_position * view_perspective_matrix;

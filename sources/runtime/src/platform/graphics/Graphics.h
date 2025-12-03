@@ -58,6 +58,7 @@ public:
     virtual void clear(bool color, bool depth,
                        bool stencil) const noexcept = 0; // 清理当前绑定的RenderTarget
     virtual void draw_submesh(const SubMesh &submesh) const = 0;
+    virtual void draw_multidraw(Topology topology, int32_t* count_array, size_t* index_offset_array, int32_t* base_vertex_array, int32_t count) const = 0;
 
     // bind
     virtual void set_viewport(const Viewport &view_port) noexcept = 0;

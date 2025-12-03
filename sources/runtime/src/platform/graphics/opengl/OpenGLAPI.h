@@ -4,7 +4,10 @@
 #include "GLRenderTarget.h"
 #include "GLShader.h"
 #include "GLTexture.h"
+#include "platform/graphics/Mesh.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
 
 namespace Goonya::Graphics {
@@ -42,6 +45,7 @@ public:
                              std::optional<int> stencil = std::nullopt) noexcept override;
     void clear(bool color, bool depth, bool stencil) const noexcept override;
     void draw_submesh(const SubMesh &submesh) const override;
+    void draw_multidraw(Topology topology, int32_t* count_array, size_t* index_offset_array, int32_t* base_vertex_array, int32_t count) const override;
 
     void set_viewport(const Viewport &view_port) noexcept override;
 

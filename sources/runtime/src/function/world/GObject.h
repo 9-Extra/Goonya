@@ -147,7 +147,7 @@ public:
             if (auto inv = parent_space.inverse(); inv) {
                 // 此位置在其父节点定义的空间中的坐标
                 Vector4f pos_parent_space = Vector4f{pos, 1.0f} * inv.value();
-                set_local_position((pos_parent_space / pos_parent_space.w).get_xyz());
+                set_local_position(pos_parent_space.get_xyz() / pos_parent_space.w);
             } else {
                 LOG_ERROR("设置全局位置失败，检查所有父节点是否存在scale分量为0的情况");
                 return;

@@ -34,7 +34,14 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
         }
         section->version = version; // 更新版本号
         if (result.indices.size() == 0) {
-            return; // 跳过不需要渲染的区块
+            // 对于没有东西需要渲染的区块，则其mesh_proxy都不需要存在
+            if (section->mesh_proxy){
+                auto iter = render_scene.mesh_proxys.find(section->mesh_proxy);
+                assert(iter != render_scene.mesh_proxys.end());
+                render_scene.mesh_proxys.erase(iter);
+                section->mesh_proxy = nullptr;
+            }
+            return;
         }
 
         Ref<Mesh> updated_mesh = graphics_api->create_mesh(VERTEX_LAYOUT_PLANE);
