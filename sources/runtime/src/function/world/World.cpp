@@ -6,10 +6,23 @@ namespace Goonya {
 
 std::forward_list<World> World::world_list;
 
-TickFunction::~TickFunction() {
+void TickFunction::register_ticker(World* world) noexcept {
+    assert(world != nullptr);
+    if (world == owner_world) {
+        return;
+    }
+    unregister_ticker();
+    world->register_ticker(this);
+}
+
+void TickFunction::unregister_ticker() noexcept {
     if (is_registered()) {
         owner_world->unregister_ticker(this);
     }
+}
+
+TickFunction::~TickFunction() {
+    unregister_ticker();
 }
 
 void World::tick() {

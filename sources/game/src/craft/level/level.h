@@ -17,10 +17,8 @@
 
 namespace Craft {
 
-class Level : public RefCount, public Goonya::TickFunction {
+class Level : public RefCount{
 private:
-    Goonya::World *bind_world;
-
     ChunkGenerator chunk_generator;
     LevelRenderer level_renderer;
 
@@ -28,6 +26,10 @@ private:
     std::unordered_map<ChunkPos, Ref<Chunk>> accessible_chunk; // 所有可以被逻辑线程访问的区块
 
     Player player;
+    bool is_breaking_block = false;
+    uint64_t last_break_block_tick = 0;
+    constexpr static int8_t BLOCK_BREAK_INTERVAL = 4;
+
     int32_t chunk_load_distance = 6;
 
 public:
@@ -66,7 +68,8 @@ public:
 
     BlockHitResult ray_cast(Ray ray, float max_distance) const noexcept;
 
-    void tick() override;
+    void tick();
+    void fixed_tick();
 
 private:
     void load_chunks();

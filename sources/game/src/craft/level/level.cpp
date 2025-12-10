@@ -1,5 +1,7 @@
 #include "level.h"
 
+#include "core/clock/GameClock.h"
+#include "core/input/input.h"
 #include "craft/block/all_blocks.h"
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
@@ -13,22 +15,39 @@
 namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
-    : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), bind_world(world), level_renderer(world->main_scene()),
+    : level_renderer(world->main_scene()),
       player(player) {
     assert(world != nullptr);
 }
 
 void Level::tick() {
-    load_chunks();
-
     Goonya::Vector3f player_pos = player.get_position();
     Goonya::Vector3f player_dir = player.get_direction();
+    
     BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
-
-    if (hit_result) {
-        BlockPos pos = BlockPos{hit_result.position + get_direction_vector(hit_result.normal)};
-        set_block_state(pos, Blocks::get().GRANITE->get_default_blockstate());
+    if (hit_result){
+        // todo: draw wire frame
+    }
+    if (Goonya::Input::is_mouse_pressing(Goonya::Input::MouseKey::LEFT)){
+        is_breaking_block = true;
     } else {
+        is_breaking_block = false;
+    }
+}
+
+void Level::fixed_tick() {
+    load_chunks();
+
+    if (is_breaking_block && Goonya::GAME_CLOCK.current_tick() - last_break_block_tick >= BLOCK_BREAK_INTERVAL){
+        Goonya::Vector3f player_pos = player.get_position();
+        Goonya::Vector3f player_dir = player.get_direction();
+        BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
+        if (hit_result){
+            bool success = set_block_state(hit_result.position, Blocks::get().AIR->get_default_blockstate());
+            if (success){
+                last_break_block_tick = Goonya::GAME_CLOCK.current_tick();
+            }
+        }
     }
 
     level_renderer.render_frame();

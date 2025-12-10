@@ -24,6 +24,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
     auto receiver = [section_ptr = this->weak_from_this(), &render_scene = render_scene,
                      terrain_material = terrain_material](ComplieResult &&result, uint32_t version) {
         ASSERT_RENDER_THREAD();
+        
         using namespace Goonya::Graphics;
         std::shared_ptr<RenderSection> section = section_ptr.lock();
         if (section == nullptr) {
@@ -112,7 +113,6 @@ void LevelRenderer::render_frame() {
     for (RenderSection *section : visible_chunk) {
         if (!section->is_dirty)
             continue;
-
         section->complie_async(region_cache, terrain_material);
     }
 }

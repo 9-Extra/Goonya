@@ -3,6 +3,7 @@
 #include "craft/level/level.h"
 #include "function/world/World.h"
 #include <function/world/GObject.h>
+#include <memory>
 
 class MoveSystem final : public Goonya::Component, public Goonya::TickFunction {
 public:
@@ -20,5 +21,23 @@ private:
     std::shared_ptr<Goonya::GObject> camera;
     std::shared_ptr<Goonya::GObject> teapot;
 
+    class LevelTicker : public Goonya::TickFunction {
+        Craft::Level *level;
+
+    public:
+        explicit LevelTicker(Ref<Craft::Level> &level)
+            : Goonya::TickFunction(Goonya::TickType::TICK), level(level.get()) {};
+        void tick() override { level->tick(); }
+    };
+    class LevelFixedTicker : public Goonya::TickFunction {
+        Craft::Level *level;
+
+    public:
+        explicit LevelFixedTicker(Ref<Craft::Level> &level)
+            : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), level(level.get()) {};
+        void tick() override { level->fixed_tick(); }
+    };
+
+    std::unique_ptr<Goonya::TickFunction> level_ticker[2];
     Ref<Craft::Level> level;
 };

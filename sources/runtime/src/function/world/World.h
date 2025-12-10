@@ -33,6 +33,8 @@ public:
 
     TickType get_tick_type() const noexcept { return tick_type; }
     bool is_registered() const noexcept { return owner_world != nullptr; }
+    void register_ticker(World* world) noexcept;
+    void unregister_ticker() noexcept;
 
     virtual void tick() = 0;
 };
