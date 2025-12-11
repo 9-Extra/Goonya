@@ -4,7 +4,7 @@
 #pragma once
 
 #include <cassert>
-#include <string>
+#include <filesystem>
 
 namespace stb{
 
@@ -78,9 +78,9 @@ public:
     Image flip_vertical() const noexcept;
     Image resize(int target_width, int target_height, ResizeMethod method) const noexcept;
 
-    int save(const std::string& path) const;
-    static Image load(const std::string& path, bool to_srgb_linear);
-    static Image loadf(const std::string& path, bool to_srgb_linear);
+    int save(const std::filesystem::path &path) const;
+    static Image load(const std::filesystem::path &path, bool to_srgb_linear);
+    static Image loadf(const std::filesystem::path &path, bool to_srgb_linear);
     static Image create_empty(int width, int height, int channel, bool _is_float);
 
     ~Image();

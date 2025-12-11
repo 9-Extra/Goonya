@@ -7,7 +7,9 @@ target("GRuntime")
     
     add_packages("glfw")
     add_packages("imgui", "spdlog", "jsoncpp", "reflect-cpp", {public=true})
-    add_syslinks("stdc++exp", {tools = {"gcc", "gxx"}}) -- 用于支持stackstrace
+    if is_plat("linux") then
+        add_syslinks("stdc++exp") -- 用于支持stackstrace
+    end 
     add_includedirs("include", {public = true})
 
 -- 测试

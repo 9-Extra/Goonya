@@ -9,6 +9,7 @@
 #include <functional>
 #include <generator>
 #include <utility>
+#include <array>
 
 namespace Craft {
 

@@ -4,6 +4,7 @@
 #include "vector.h"
 #include <cassert>
 #include <cstddef>
+#include <optional>
 
 namespace Goonya {
 
@@ -166,7 +167,7 @@ struct Matrix4 {
     /**
      * @brief 取矩阵的第i行
      */
-    constexpr Vector4f &operator[](size_t i) noexcept {
+    Vector4f &operator[](size_t i) noexcept {
         static_assert(sizeof(Matrix4) == sizeof(Vector4f[4]), "意想不到的内存布局");
         assert(i < 4);
         return reinterpret_cast<Vector4f &>(m[i]);

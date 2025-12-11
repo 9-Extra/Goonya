@@ -51,7 +51,7 @@ struct Quaternion {
 
     constexpr Quaternion conjugate() const { return Quaternion{-x, -y, -z, w}; }
 
-    Quaternion operator*(this const Quaternion lhs, Quaternion rhs) noexcept {
+    constexpr Quaternion operator*(this const Quaternion lhs, Quaternion rhs) noexcept {
         Vector3f lv{lhs.x, lhs.y, lhs.z}, rv{rhs.x, rhs.y, rhs.z};
         Vector3f v = lv.cross(rv) + lv * rhs.w + rv * lhs.w;
         return Quaternion{v.x, v.y, v.z, lhs.w * rhs.w - lv.dot(rv)};

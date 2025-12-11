@@ -15,6 +15,7 @@
 #include "HardcodeAssets.h"
 #include "core/format_exception.h"
 #include "core/log/Log.h"
+#include "core/path_formatter.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
 #include "platform/graphics/PipelineSetting.h"
@@ -161,7 +162,6 @@ static void parse_material_paramter(Resource::MaterialBuilder &mat_builder, cons
 }
 
 void RenderResource::try_load(const std::filesystem::path &path) {
-
     std::ifstream file(path, std::ios::binary | std::ios::in);
     if (!file) {
         throw RuntimeError("打开文件失败");
@@ -182,7 +182,7 @@ void RenderResource::try_load(const std::filesystem::path &path) {
     if (res_type == "Texture") {
         const Json::Value &texture_desc = content;
 
-        Graphics::Texture2DDesc desc = {.path = base_dir / texture_desc["image"].asString()};
+        Graphics::Texture2DDesc desc = {.path = base_dir / as_u8string_view(texture_desc["image"].asString())};
 
         desc.is_color = texture_desc.get("is_color", false).asBool();
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
@@ -314,7 +314,7 @@ void RenderResource::try_load(const std::filesystem::path &path) {
 
         resources.materials.add(key, mat_builder.build());
     } else {
-        throw RuntimeError(std::format("加载{}时遇到未知资源类型{}", path.generic_string(), res_type));
+        throw RuntimeError(std::format("加载{}时遇到未知资源类型{}", path, res_type));
     }
 }
 } // namespace Goonya

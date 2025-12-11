@@ -187,7 +187,7 @@ CursorMode Display::get_cursor_mode() noexcept {
     case GLFW_CURSOR_DISABLED:
         return CursorMode::CAPTURED | CursorMode::HIDDEN;
     default:
-        assert(false);
+        std::unreachable();
     }
 }
 

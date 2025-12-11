@@ -13,14 +13,14 @@ struct Transform {
     constexpr explicit Transform(Vector3f position = {0, 0, 0}, Quaternion rotation = Quaternion::identity(),
                                  Vector3f scale = {1, 1, 1})
         : position(position), rotation(rotation), scale(scale) {}
-    static constexpr Transform from_matrix(const Matrix4 &matrix) {
+    static Transform from_matrix(const Matrix4 &matrix) {
         Vector3f pos = matrix.resolve_position();
         Vector3f scale = matrix.resolve_scale();
         Matrix4 normalized = Matrix4::identity().scale({1 / scale.x, 1 / scale.y, 1 / scale.z}) * matrix;
         Quaternion rotation = normalized.resolve_rotation_normalized();
         return Transform{pos, rotation, scale};
     }
-    static constexpr Transform from_matrix(const Matrix3 &matrix) {
+    static Transform from_matrix(const Matrix3 &matrix) {
         Vector3f scale = matrix.resolve_scale();
         Matrix3 normalized = matrix.scale({1 / scale.x, 1 / scale.y, 1 / scale.z});
         Quaternion rotation = normalized.resolve_rotation_normalized();

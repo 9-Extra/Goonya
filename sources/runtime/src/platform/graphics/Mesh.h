@@ -88,7 +88,7 @@ public:
         assert(!layout.attributes.contains(location));
 
         uint32_t offset = layout.vertex_size[current_buffer_id];
-        layout.vertex_size[current_buffer_id] += Meta::sizeof_field_type(type);
+        layout.vertex_size[current_buffer_id] += (uint32_t)Meta::sizeof_field_type(type);
         layout.attributes[location] = {type, current_buffer_id, offset};
 
         return *this;

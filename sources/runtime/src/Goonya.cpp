@@ -13,6 +13,7 @@
 #include "core/events.h"
 #include "core/input/input.h"
 #include "core/log/Log.h"
+#include "core/path_formatter.h"
 #include "function/renderer/Renderer.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
@@ -35,7 +36,7 @@ void init_engine() {
     std::locale::global(std::locale("")); // 使用系统指定的本地化
     set_current_thread_name("game");
 
-    LOG_INFO("Running on pwd: {}", std::filesystem::current_path().string());
+    LOG_INFO("Running on pwd: {}", std::filesystem::current_path());
 
     EventBus::initalize();
     Input::initalize();

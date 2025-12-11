@@ -1,9 +1,12 @@
 #pragma once
 
 #include <string>
-#include <pthread.h>
 #if defined(_WIN32)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#elif defined(__linux__)
+#include <pthread.h>
 #endif
 
 
@@ -24,9 +27,9 @@ inline void set_current_thread_name(const std::string& name) {
     pthread_setname_np(pthread_self(), name.substr(0, 15).c_str());
     #elif defined(_WIN32)
     // Windows
-    int len = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, nullptr, 0);
+    int len = MultiByteToWideChar(CP_UTF8, 0, name.c_str(), -1, nullptr, 0);
     wchar_t* buffer = new wchar_t[len];
-    MultiByteToWideChar(CP_UTF8, 0, str.c_str(), -1, buffer, len);
+    MultiByteToWideChar(CP_UTF8, 0, name.c_str(), -1, buffer, len);
 
     SetThreadDescription(GetCurrentThread(), buffer);
     delete [] buffer;

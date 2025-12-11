@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <array>
 
 #include <filesystem>
 
@@ -47,24 +48,25 @@ Image Image::resize(int target_width, int target_height, ResizeMethod method) co
     return Image{};
 };
 
-int Image::save(const std::string &path) const {
+int Image::save(const std::filesystem::path &path) const {
     int result = -1;
-    std::string ext = std::filesystem::path(path).extension();
+    std::string path_str = path.string();
+    std::string ext = path.extension().string();
     if (ext == ".bmp") {
         assert(!is_float());
-        result = stbi_write_bmp(path.c_str(), width, height, channel, data);
+        result = stbi_write_bmp(path_str.c_str(), width, height, channel, data);
     } else if (ext == ".png") {
         assert(!is_float());
-        result = stbi_write_png(path.c_str(), width, height, channel, data, width * channel);
+        result = stbi_write_png(path_str.c_str(), width, height, channel, data, width * channel);
     } else if (ext == ".tga") {
         assert(!is_float());
-        result = stbi_write_tga(path.c_str(), width, height, channel, data);
+        result = stbi_write_tga(path_str.c_str(), width, height, channel, data);
     } else if (ext == ".jpg") {
         assert(!is_float());
-        result = stbi_write_jpg(path.c_str(), width, height, channel, data, 90);
+        result = stbi_write_jpg(path_str.c_str(), width, height, channel, data, 90);
     } else if (ext == ".hdr") {
         assert(is_float());
-        result = stbi_write_hdr(path.c_str(), width, height, channel, (float *)data);
+        result = stbi_write_hdr(path_str.c_str(), width, height, channel, (float *)data);
     }
     return result;
 }
@@ -80,19 +82,20 @@ const static std::array<uint8_t, 256> gamma_lut = [] {
     return lut;
 }();
 
-Image Image::load(const std::string &path, bool to_srgb_linear) {
+Image Image::load(const std::filesystem::path &path, bool to_srgb_linear) {
     // STB加载的图像存放方式默认是从上到下的，原点在左上角
     // 理想情况下颜色图像使用线性空间及hdr存储，非颜色图像使用非hdr方式存储
     // 但实际上很多时候颜色图像也使用sRGB空间，非hdr方式
     Image image;
-    if (stbi_is_hdr(path.c_str())) {
+    std::string path_str = path.string();
+    if (stbi_is_hdr(path_str.c_str())) {
         assert(!to_srgb_linear); // 不应该使用hdr格式存储非颜色信息
         // 会自动转换到线性空间（gamma变换）
-        image.data = stbi_loadf(path.c_str(), &image.width, &image.height, &image.channel, 0);
+        image.data = stbi_loadf(path_str.c_str(), &image.width, &image.height, &image.channel, 0);
         image._is_float = true;
     } else {
         // 不会自动转换，因此如果需要颜色数据则手动转换
-        image.data = stbi_load(path.c_str(), &image.width, &image.height, &image.channel, 0);
+        image.data = stbi_load(path_str.c_str(), &image.width, &image.height, &image.channel, 0);
         image._is_float = false;
         if (image.data == nullptr) {
             return image;
@@ -109,10 +112,10 @@ Image Image::load(const std::string &path, bool to_srgb_linear) {
     return image;
 }
 
-Image Image::loadf(const std::string& path, bool to_srgb_linear){
+Image Image::loadf(const std::filesystem::path &path, bool to_srgb_linear){
     Image image;
     assert(to_srgb_linear == true); // stb 内部写死的。。。。。
-    image.data = stbi_loadf(path.c_str(), &image.width, &image.height, &image.channel, 0);
+    image.data = stbi_loadf(path.string().c_str(), &image.width, &image.height, &image.channel, 0);
     image._is_float = true;
     return image;
 }
