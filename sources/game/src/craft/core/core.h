@@ -134,6 +134,11 @@ struct ChunkPos : public Vector3i {
     constexpr ChunkPos operator+(Vector3i offset) const noexcept { return {x + offset.x, y + offset.y, z + offset.z}; }
     constexpr ChunkPos operator-(Vector3i offset) const noexcept { return {x - offset.x, y - offset.y, z - offset.z}; }
 
+    constexpr ChunkPos move(Direction direction, int32_t step = 1) const noexcept {
+        Vector3i vec = this->Vector3i::move(direction, step);
+        return ChunkPos{vec.x, vec.y, vec.z};
+    }
+
     constexpr BlockPos get_start_pos() const noexcept {
         return {x << CHUNK_WIDTH_OFFSET, y << CHUNK_WIDTH_OFFSET, z << CHUNK_WIDTH_OFFSET};
     }

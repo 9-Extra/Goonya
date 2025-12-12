@@ -1,8 +1,6 @@
 #pragma once
 
 #include "craft/core/core.h"
-#include "craft/level/LevelRenderer.h"
-#include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>

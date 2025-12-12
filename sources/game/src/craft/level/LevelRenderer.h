@@ -163,12 +163,7 @@ public:
         return all;
     }
 
-    void notify_chunk_update(const Ref<Chunk> &chunk) noexcept // NOLINT
-    {
-        if (auto section = get_section(chunk->chunk_pos)) {
-            section->is_dirty = true;
-        }
-    }
+    void notify_block_update(BlockPos pos, BlockState *state) noexcept;
 
     void render_frame();
 

@@ -24,7 +24,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
     auto receiver = [section_ptr = this->weak_from_this(), &render_scene = render_scene,
                      terrain_material = terrain_material](ComplieResult &&result, uint32_t version) {
         ASSERT_RENDER_THREAD();
-        
+
         using namespace Goonya::Graphics;
         std::shared_ptr<RenderSection> section = section_ptr.lock();
         if (section == nullptr) {
@@ -36,7 +36,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
         section->version = version; // 更新版本号
         if (result.indices.size() == 0) {
             // 对于没有东西需要渲染的区块，则其mesh_proxy都不需要存在
-            if (section->mesh_proxy){
+            if (section->mesh_proxy) {
                 auto iter = render_scene.mesh_proxys.find(section->mesh_proxy);
                 assert(iter != render_scene.mesh_proxys.end());
                 render_scene.mesh_proxys.erase(iter);
@@ -100,8 +100,10 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
 LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
     Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
     terrain_material = create_ref<Goonya::Graphics::Material>(shader);
-    terrain_material->set_pipeline_setting("_depth_test", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));
-    terrain_material->set_pipeline_setting("_cull_mode", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::CullFaceMode::BACK));
+    terrain_material->set_pipeline_setting(
+        "_depth_test", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));
+    terrain_material->set_pipeline_setting(
+        "_cull_mode", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::CullFaceMode::BACK));
     terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());
 }
 
@@ -122,6 +124,49 @@ void LevelRenderer::do_cull() {
     for (const auto &[pos, section] : render_chunks) {
         if (has_all_neighbors(pos)) {
             visible_chunk.push_back(section.get());
+        }
+    }
+}
+
+void LevelRenderer::notify_block_update(BlockPos pos, BlockState *state) noexcept // NOLINT
+{
+    ChunkPos chunk_pos{pos};
+    if (auto current_section = get_section(chunk_pos)) {
+
+        // 更新当前的section
+        current_section->is_dirty = true;
+
+        // 如果方块位于区块边缘，则有可能需要更新旁边的区块
+        BlockPos inner_pos = BlockInnerPos{pos}.as_offset();
+        if (inner_pos.x == 0 && !state->can_hide_face(Direction::WEST)) {
+            if (auto section = get_section(chunk_pos.move(Direction::WEST))) {
+                section->is_dirty = true;
+            }
+        }
+        if (inner_pos.x == CHUNK_WIDTH - 1 && !state->can_hide_face(Direction::EAST)) {
+            if (auto section = get_section(chunk_pos.move(Direction::EAST))) {
+                section->is_dirty = true;
+            }
+        }
+        if (inner_pos.y == 0 && !state->can_hide_face(Direction::DOWN)) {
+            if (auto section = get_section(chunk_pos.move(Direction::DOWN))) {
+                section->is_dirty = true;
+            }
+        }
+        if (inner_pos.y == CHUNK_WIDTH - 1 && !state->can_hide_face(Direction::UP)) {
+            if (auto section = get_section(chunk_pos.move(Direction::UP))) {
+                section->is_dirty = true;
+            }
+        }
+        if (inner_pos.z == 0 && !state->can_hide_face(Direction::NORTH)) {
+            if (auto section = get_section(chunk_pos.move(Direction::NORTH))) {
+                section->is_dirty = true;
+            }
+        }
+        if (inner_pos.z == CHUNK_WIDTH - 1 && !state->can_hide_face(Direction::SOUTH)) {
+            if (auto section = get_section(chunk_pos.move(Direction::SOUTH))) {
+                section->is_dirty = true;
+            }
         }
     }
 }

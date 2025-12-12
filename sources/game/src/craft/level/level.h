@@ -7,6 +7,7 @@
 #include "craft/level/LevelRenderer.h"
 #include "craft/level/Player.h"
 #include "craft/level/RayCast.h"
+#include "craft/level/WireFrame.h"
 #include "craft/level/chunk.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
@@ -28,7 +29,8 @@ private:
     Player player;
     bool is_breaking_block = false;
     uint64_t last_break_block_tick = 0;
-    constexpr static int8_t BLOCK_BREAK_INTERVAL = 4;
+    constexpr static int8_t BLOCK_BREAK_INTERVAL = 2;
+    WireFrame wire_frame;
 
     int32_t chunk_load_distance = 6;
 
@@ -61,7 +63,7 @@ public:
         }
         BlockState* old = chunk->set_block_state(pos, state);
         if (old != state){
-            level_renderer.notify_chunk_update(chunk);
+            level_renderer.notify_block_update(pos, state);
         }
         return true;
     }

@@ -1,0 +1,12 @@
+{
+    "type": "UberShader",
+    "name": "WireFrame",
+    "content": {
+        "sources": {
+            "vertex_shader": "wire_frame.vert",
+            "pixel_shader": "wire_frame.frag"
+        },
+        "global_variants": [],
+        "local_variants": []
+    }
+}

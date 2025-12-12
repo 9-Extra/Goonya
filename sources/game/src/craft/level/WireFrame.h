@@ -1,0 +1,33 @@
+#pragma once
+#include "core/RefCount.h"
+#include "core/cgmath/aabb.h"
+#include "core/cgmath/vector.h"
+#include "function/renderer/RenderProxy/StaticMesh.h"
+#include "function/renderer/RenderScene.h"
+#include "platform/graphics/Material.h"
+#include "platform/graphics/Mesh.h"
+
+#include <cassert>
+
+namespace Craft {
+
+// 玩家看向的方块线框
+class WireFrame {
+private:
+    Ref<Goonya::Graphics::Material> material;
+    Ref<Goonya::Graphics::Mesh> mesh;
+
+    Goonya::Graphics::MeshRenderProxy *mesh_proxy;
+
+public:
+    explicit WireFrame(Goonya::Graphics::RenderScene &render_scene);
+    ~WireFrame() {};
+
+    void draw_at(Goonya::Vector3f pos);
+
+    void hide() {
+        mesh_proxy->aabbs[0] = Goonya::BoundingBox{{0, 0, 0}, {0, 0, 0}}; // 不可见
+    }
+};
+
+} // namespace Craft
