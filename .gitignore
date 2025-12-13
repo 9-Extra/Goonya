@@ -12,10 +12,7 @@
 
 /.cache/
 
-# 保留bin作为空文件夹
-/bin/*
-!/bin/.gitkeep
-
+/bin
 # vs
 /.vs
 
