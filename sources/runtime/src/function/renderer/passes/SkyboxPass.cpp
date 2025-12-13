@@ -27,7 +27,7 @@ void SkyBoxPass::run(const PassRenderInfo& info) {
         return; // 没有合适的天空盒，跳过
     }
 
-    Matrix4 skybox_view_perspective_matrix = info.camera->get_skybox_view_perspective_matrix(info.width_height_ratio);
+    Matrix4 skybox_view_perspective_matrix = info.camera->get_skybox_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
 
     // 绑定天空盒材质
     skybox_material->bind();

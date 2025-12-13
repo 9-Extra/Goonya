@@ -10,6 +10,7 @@
 #include "craft/level/Player.h"
 #include "craft/level/RayCast.h"
 #include "craft/level/chunk.h"
+#include "craft/model_manager.h"
 #include "function/world/World.h"
 #include <cassert>
 
@@ -26,7 +27,9 @@ void Level::tick() {
 
     BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
     if (hit_result) {
-        wire_frame.draw_at(hit_result.position);
+        // 在Minecraft，绘制方块的Outline使用的是代码中定义的物体形状（使用Block.getShape方法获取，默认返回立方体，铁砧等方块通过重载此函数实现特殊形状）
+        // 这里先用方块的模型生成Outline
+        wire_frame.draw_at(hit_result.position, ModelManager::get().get_baked_model(hit_result.block_state, hit_result.position));
     } else {
         wire_frame.hide();
     }

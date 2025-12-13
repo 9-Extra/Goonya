@@ -40,10 +40,11 @@ struct Vector2f {
     constexpr Vector2f() : x(0), y(0) {}
     constexpr Vector2f(float x, float y) : x(x), y(y) {}
 
+    constexpr float &operator[](unsigned int i) noexcept { return v[i]; }
+    constexpr const float &operator[](unsigned int i) const noexcept { return v[i]; }
+
     constexpr Vector2f operator+(const Vector2f b) const { return {x + b.x, y + b.y}; }
-
     constexpr Vector2f operator-(const Vector2f b) const { return {x - b.x, y - b.y}; }
-
     constexpr Vector2f operator*(const float s) const { return {x * s, y * s}; }
 
     constexpr float squared() const { return x * x + y * y; }
@@ -91,7 +92,7 @@ struct Vector3f {
     constexpr const float &operator[](unsigned int i) const noexcept { return v[i]; }
 
     constexpr Vector3f operator+(float b) const { return Vector3f{x + b, y + b, z + b}; }
-    constexpr Vector3f operator-(float b) const { return Vector3f{x + b, y + b, z + b}; }
+    constexpr Vector3f operator-(float b) const { return Vector3f{x - b, y - b, z - b}; }
     constexpr Vector3f operator+(Vector3f b) const { return Vector3f{x + b.x, y + b.y, z + b.z}; }
     constexpr Vector3f operator-(Vector3f b) const { return Vector3f{x - b.x, y - b.y, z - b.z}; }
     constexpr Vector3f operator-() const { return Vector3f{-x, -y, -z}; }

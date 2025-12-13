@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/cgmath/cgmath.h"
+#include <cmath>
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
@@ -43,7 +44,9 @@ struct Vector3i {
     Vector3i() noexcept = default;
     constexpr Vector3i(int32_t x, int32_t y, int32_t z) noexcept : x(x), y(y), z(z) {}
     constexpr explicit Vector3i(Goonya::Vector3f vec_pos) noexcept
-        : x((int32_t)vec_pos.x), y((int32_t)vec_pos.y), z((int32_t)vec_pos.z) {}
+        : x(std::floor(vec_pos.x)), y(std::floor(vec_pos.y)), z(std::floor(vec_pos.z)) {
+            // 我们需要向下取整而不是向0取整
+        }
 
     constexpr bool operator==(const Vector3i &pos) const noexcept = default;
 

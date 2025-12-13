@@ -17,6 +17,7 @@ layout(binding = 0, std140) uniform per_frame
     float fog_min_distance;
     float fog_density;
     float time;
+    vec2 screen_size;
     uint pointlight_num; // 4
     PointLight pointlight_list[POINTLIGNT_MAX];
 };
@@ -32,7 +33,7 @@ out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类
 
 void main()
 {
-    vec3 color = vec3(1, 1, 1);
+    vec3 color = vec3(0, 0, 0);
     out_color = vec4(color, 1.0f);
     // out_color = vec4(abs(surface.normal), 1);
 }

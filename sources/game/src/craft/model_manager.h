@@ -3,6 +3,8 @@
 #include "TextureArrayAllocator.h"
 #include "block/block_model.h"
 #include "block/blockstate.h"
+#include "craft/core/core.h"
+#include "craft/core/craft_math.h"
 #include "platform/graphics/Texture.h"
 
 #include <algorithm>
@@ -61,6 +63,11 @@ private:
 
 public:
     ModelManager() { load_all_models(); };
+
+    const BakedBlockModel &get_baked_model(const BlockState *state, BlockPos pos) {
+        uint32_t seed = (uint32_t)splitmix64((uint64_t)get_seed(pos.x, pos.y, pos.z));
+        return get_baked_model(state, seed);
+    }
 
     const BakedBlockModel &get_baked_model(const BlockState *state, uint32_t rand) {
         if (auto iter = blockstate_model_map.find(state); iter != blockstate_model_map.end()) {

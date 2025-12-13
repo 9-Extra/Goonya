@@ -1,5 +1,6 @@
 #pragma once
 #include "core/cgmath/cgmath.h"
+#include "core/cgmath/vector.h"
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Buffer.h"
 
@@ -19,6 +20,7 @@ private:
         alignas(4) float fog_min_distance;
         alignas(4) float fog_density;
         alignas(4) float time;
+        alignas(4) Vector2f screen_size;
         alignas(4) uint32_t pointlight_num;
         PointLightData pointlight_list[POINTLIGHT_MAX];
     };

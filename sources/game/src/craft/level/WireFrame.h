@@ -2,6 +2,7 @@
 #include "core/RefCount.h"
 #include "core/cgmath/aabb.h"
 #include "core/cgmath/vector.h"
+#include "craft/block/block_model.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Material.h"
@@ -23,7 +24,7 @@ public:
     explicit WireFrame(Goonya::Graphics::RenderScene &render_scene);
     ~WireFrame() {};
 
-    void draw_at(Goonya::Vector3f pos);
+    void draw_at(Goonya::Vector3f pos, const BakedBlockModel& model);
 
     void hide() {
         mesh_proxy->aabbs[0] = Goonya::BoundingBox{{0, 0, 0}, {0, 0, 0}}; // 不可见

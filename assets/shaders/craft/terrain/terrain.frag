@@ -17,6 +17,7 @@ layout(binding = 0, std140) uniform per_frame
     float fog_min_distance;
     float fog_density;
     float time;
+    vec2 screen_size;
     uint pointlight_num; // 4
     PointLight pointlight_list[POINTLIGNT_MAX];
 };

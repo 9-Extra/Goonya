@@ -5,6 +5,7 @@
 
 #include <array>
 #include <cstdint>
+#include <generator>
 #include <ranges>
 #include <vector>
 
@@ -44,6 +45,13 @@ struct BakedQuad{ // NOLINT
     Direction normal;
     uint32_t color_texture_index = 0; // 颜色纹理在对应纹理数组中的下标
     int32_t tintindex = -1; // 染色索引，需要blockstate文件中设置了对应的tintindex
+
+    std::generator<std::tuple<Goonya::Vector3f, Goonya::Vector3f>> for_all_edges() const noexcept {
+        co_yield {vertices[0].position, vertices[1].position};
+        co_yield {vertices[1].position, vertices[2].position};
+        co_yield {vertices[2].position, vertices[3].position};
+        co_yield {vertices[3].position, vertices[0].position};
+    }
 };
 
 struct BakedBlockModel{
@@ -55,6 +63,17 @@ struct BakedBlockModel{
             this_quads.insert(this_quads.end(), another_quads.begin(), another_quads.end());           
         }
         unculled_quads.insert(unculled_quads.end(), another.unculled_quads.begin(), another.unculled_quads.end());
+    }
+
+    std::generator<std::tuple<Goonya::Vector3f, Goonya::Vector3f>> for_all_edges() const noexcept {
+        for(const auto& quad_list: culled_quads){
+            for(const BakedQuad& quad: quad_list){
+                co_yield std::ranges::elements_of(quad.for_all_edges());
+            }
+        }
+        for(const BakedQuad& quad: unculled_quads){
+            co_yield std::ranges::elements_of(quad.for_all_edges());
+        }
     }
 };
 

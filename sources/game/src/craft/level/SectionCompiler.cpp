@@ -86,27 +86,12 @@ void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, B
     }
 }
 
-static int64_t get_seed(int32_t x, int32_t y, int32_t z) noexcept {
-    int64_t i = ((int64_t)x * 3129871) ^ (int64_t)z * 116129781 ^ (int64_t)y;
-    i = i * i * 42317861 + i * 11;
-    return i >> 16;
-}
-
-// splitmix64算法，使随机数更加均匀
-static uint64_t splitmix64(uint64_t x) noexcept {
-    uint64_t z = x + 0x9e3779b97f4a7c15; // 黄金分割常数
-    z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9;
-    z = (z ^ (z >> 27)) * 0x94d049bb133111eb;
-    return z ^ (z >> 31);
-}
-
 ComplieResult ComplieTask::compile_mesh(ChunkPos pos) const {
     ComplieResult result;
 
     for (BlockPos pos : Vector3i::iterate_region(pos.get_start_pos(), pos.get_end_pos())) {
         BlockState *state = region.get_block_state(pos);
-        uint32_t seed = (uint32_t)splitmix64((uint64_t)get_seed(pos.x, pos.y, pos.z));
-        const BakedBlockModel &model = ModelManager::get().get_baked_model(state, seed);
+        const BakedBlockModel &model = ModelManager::get().get_baked_model(state, pos);
         // 在每个方向上根据是否被遮挡计算未被遮挡的面
         for (Direction direction : DIRECTION_VALUES) {
             BlockState *opposite = region.get_block_state(BlockPos{pos.move(direction)});

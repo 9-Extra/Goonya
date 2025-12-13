@@ -74,7 +74,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
     Vector3f camera_pos = info.camera->get_position();
     RenderScene& scene = *info.camera->scene;
 
-    const Matrix4 view_perspective = info.camera->get_view_perspective_matrix(info.width_height_ratio);
+    const Matrix4 view_perspective = info.camera->get_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
 
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(0);
@@ -90,6 +90,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
         data->fog_density = scene.fog_density;
         data->fog_min_distance = scene.fog_min_distance;
         data->time = info.time;
+        data->screen_size = info.screen_size;
         // 灯光参数
         data->ambient_light = scene.ambient_light;
         if (scene.pointlights.size() > POINTLIGHT_MAX) {

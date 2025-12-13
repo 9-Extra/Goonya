@@ -3,6 +3,7 @@
 #pragma GYA_INJECT
 
 layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 normal; // 实际上的线的朝向
 
 #define POINTLIGNT_MAX 8
 
@@ -19,6 +20,7 @@ layout(binding = 0, std140) uniform per_frame
     float fog_min_distance;
     float fog_density;
     float time;
+    vec2 screen_size;
     uint pointlight_num; // 4
     PointLight pointlight_list[POINTLIGNT_MAX];
 };
@@ -36,6 +38,25 @@ out VS_OUT
 
 void main()
 {
-    vs_out.model_position = position;
-    gl_Position = vec4(position.xyz, 1.0f) * model_matrix * view_perspective_matrix;
+    const float line_width = 2.5;
+    vec4 line_start = vec4(position, 1.0f) * model_matrix * view_perspective_matrix; 
+    vec4 line_end = vec4((position + normal), 1.0f) * model_matrix * view_perspective_matrix;
+
+    vec3 ndc_line_start = line_start.xyz / line_start.w;
+    vec3 ndc_line_end = line_end.xyz / line_end.w; 
+
+    // 在屏幕空间中线的方向
+    vec2 line_direction_screen = normalize((ndc_line_end.xy - ndc_line_start.xy) * screen_size);
+    // 取线方向的垂直方向，放大线宽倍数，最后除以屏幕大小，保证在任意屏幕大小下宽度一致
+    vec2 ndc_line_offset = vec2(-line_direction_screen.y, line_direction_screen.x) * line_width / screen_size;
+
+    // 尽管这里实际上已经求出ndc坐标了，但是为了不破坏opengl的透视矫正，需要将其还原为齐次坐标
+    float w = line_start.w; 
+    if (gl_VertexID % 2 == 0){
+        vec3 ndc_postion = ndc_line_start + vec3(ndc_line_offset, 0);
+        gl_Position = vec4(ndc_postion * w, w);
+    } else {
+        vec3 ndc_postion = ndc_line_start - vec3(ndc_line_offset, 0);
+        gl_Position = vec4(ndc_postion * w, w);
+    }
 }

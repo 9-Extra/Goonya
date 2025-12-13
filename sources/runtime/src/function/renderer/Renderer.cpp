@@ -69,7 +69,7 @@ void Renderer::render() {
         PassRenderInfo info{
             .camera = camera.get(),
             .viewport = viewport,
-            .width_height_ratio = (float)viewport.width / viewport.height,
+            .screen_size = {(float)viewport.width, (float)viewport.height},
             .time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(GAME_CLOCK.total()).count(),
         };
 
