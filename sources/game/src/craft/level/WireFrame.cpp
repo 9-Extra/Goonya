@@ -40,7 +40,7 @@ WireFrame::WireFrame(Goonya::Graphics::RenderScene &render_scene) {
     // 创建网格体，其中数据在渲染时通过方块模型动态生成并写入
     mesh = Goonya::Graphics::graphics_api->create_mesh(WIRE_FRAME_LAYOUT);
     mesh->submeshes.resize(1);
-    // 只有index_count需要动态改变
+    // 只有index_count需要动态改变，另外Topology::LINE因为线宽不能大于1，因此在调试之外就别用了
     mesh->submeshes[0] = Goonya::Graphics::SubMesh{
         .start_index = 0, .index_count = 0, .base_vertex_offset = 0, .topology = Goonya::Graphics::Topology::TRIANGLE};
 
@@ -60,9 +60,11 @@ WireFrame::WireFrame(Goonya::Graphics::RenderScene &render_scene) {
     render_scene.mesh_proxys.emplace(std::unique_ptr<Goonya::Graphics::MeshRenderProxy>{mesh_proxy});
 }
 void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
+    // 现在画线都是用画平面来实现的
     std::vector<WireFrameVertex> vertices;
     std::vector<uint32_t> indices;
-    vertices.reserve(16); // 方块模型会生成16个顶点和索引
+    vertices.reserve(48); // 一条线需要4个顶点和6个索引，则方块模型会生成48个顶点和72个索引
+    vertices.reserve(72);
 
     for (const auto &[i, edge] : std::views::enumerate(model.for_all_edges())) {
         const auto &[start, end] = edge;
@@ -72,15 +74,13 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
         vertices.emplace_back(WireFrameVertex{.position = end, .normal = dir});
         vertices.emplace_back(WireFrameVertex{.position = end, .normal = dir});
 
-    }
+        indices.emplace_back(i * 4 + 0);
+        indices.emplace_back(i * 4 + 1);
+        indices.emplace_back(i * 4 + 2);
+        indices.emplace_back(i * 4 + 3);
+        indices.emplace_back(i * 4 + 2);
+        indices.emplace_back(i * 4 + 1);
 
-    uint32_t index_count = vertices.size() * 2;
-    indices.reserve(index_count);
-    for (uint32_t i = 0; i < index_count; i++) {
-        // 0 1 2 3 2 1
-        uint32_t id = i / 6 * 4;
-        const uint32_t map[] = {0, 1, 2, 3, 2, 1};
-        indices.emplace_back(id + map[i % 6]);
     }
 
     mesh->set_vertices(0, std::as_bytes(std::span(vertices)));

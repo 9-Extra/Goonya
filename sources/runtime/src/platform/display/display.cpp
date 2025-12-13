@@ -71,6 +71,11 @@ static void glfw_key_callback(GLFWwindow *window, int key, int scancode, int act
     if (action == GLFW_REPEAT)
         return;
 
+    const ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureKeyboard && action == GLFW_PRESS){
+        return; // 在Imgui捕获键盘消息时忽略按下的键盘消息，但抬起的不忽略，防止有些情况下已经抬起的按键被认为一直按着
+    }
+
     Input::KeyCode vkCode = glfw_key2goonya_keycode(key); // virtual-key code
     if (vkCode == Input::KeyCode::UNKNOWN)
         return;
@@ -80,6 +85,11 @@ static void glfw_key_callback(GLFWwindow *window, int key, int scancode, int act
 
 static void glfw_mouse_button_callback(GLFWwindow *window, int button, int action, int mods) {
     // The action is one of GLFW_PRESS or GLFW_RELEASE，不会有GLFW_REPEAT
+    const ImGuiIO& io = ImGui::GetIO();
+    if (io.WantCaptureMouse && action == GLFW_PRESS){
+        return;
+    }
+    
     Input::MouseKey key = Input::MouseKey::LEFT;
     switch (button) {
     case GLFW_MOUSE_BUTTON_LEFT:
