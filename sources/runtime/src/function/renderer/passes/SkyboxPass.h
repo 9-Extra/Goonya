@@ -21,7 +21,7 @@ private:
 public:
     SkyBoxPass()
         : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
-          mesh(resources.meshes.get("skybox_cube")) {}
+          mesh(resources.load_resource<Mesh>("skybox_cube")) {}
 
     void run(const PassRenderInfo& info) override;
 };

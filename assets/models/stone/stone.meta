@@ -1,0 +1,7 @@
+{
+    "type": "glTF",
+    "name": "stone",
+    "content": {
+        "file": "stone.gltf"
+    }
+}

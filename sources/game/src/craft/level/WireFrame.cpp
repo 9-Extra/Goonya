@@ -44,7 +44,7 @@ WireFrame::WireFrame(Goonya::Graphics::RenderScene &render_scene) {
     mesh->submeshes[0] = Goonya::Graphics::SubMesh{
         .start_index = 0, .index_count = 0, .base_vertex_offset = 0, .topology = Goonya::Graphics::Topology::TRIANGLE};
 
-    Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(WIREFRAME_SHADER_NAME);
+    Goonya::Graphics::UberShader *shader = Goonya::resources.load_resource<Goonya::Graphics::UberShader>(WIREFRAME_SHADER_NAME).get();
     material = create_ref<Goonya::Graphics::Material>(shader);
     material->set_pipeline_setting("_depth_test",
                                    Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));

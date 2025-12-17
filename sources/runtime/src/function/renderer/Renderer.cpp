@@ -1,6 +1,5 @@
 #include "Renderer.h"
 
-#include "core/ThreadUtils.h"
 #include "core/cgmath/cgmath.h"
 #include "core/clock/GameClock.h"
 #include "core/log/Log.h"
@@ -9,7 +8,6 @@
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/RenderTarget.h"
-#include "resource/ResMng.h"
 #include <cassert>
 #include <chrono>
 #include <cstdint>
@@ -20,11 +18,6 @@ namespace Goonya::Graphics {
 Renderer renderer; // global renderer
 
 void Renderer::init() {
-    current_thread_type = ThreadType::RENDER; // 目前先不拆分线程，资源加载的问题没有解决
-    Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
-
-    resources.init(u8"../assets/");
-
     geometry_pass = std::make_unique<GeometryPass>();
     skybox_pass = std::make_unique<SkyBoxPass>();
 }
@@ -100,8 +93,6 @@ void Renderer::clear() {
 
     geometry_pass.reset();
     skybox_pass.reset();
-
-    Graphics::drop();
 }
 
 } // namespace Goonya::Graphics

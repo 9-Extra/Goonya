@@ -1,20 +1,22 @@
 #include "UberShader.h"
 
+#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
-#include "resource/ResMng.h"
 #include <cstdint>
 #include <limits>
 #include <memory>
 
 namespace Goonya::Graphics {
 
+GlobalVariantKeyCollect GLOBAL_VARIANT_KEY;
+
 void VariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_keys) {
     if (group_keys.size() < 2) {
         throw RuntimeError("每个组至少有2个成员");
     }
 
-    if (variants_key_map.size() > std::numeric_limits<uint8_t>::max()){
+    if (variants_key_map.size() > std::numeric_limits<uint8_t>::max()) {
         throw RuntimeError("变体组太多");
     }
 
@@ -117,7 +119,6 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->vs_src = std::move(desc.vs_src);
     this->ps_src = std::move(desc.ps_src);
     this->pipeline_setting = desc.pipeline_setting;
-    this->global_variant_key_collect = VariantKeyCollect(std::move(desc.global_variant_keys));
     this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
 
     // 立即编译变体码为0的版本用于反射
@@ -125,22 +126,13 @@ UberShader::UberShader(UberShaderDesc &&desc) {
 
     std::unique_ptr<ShaderIntrospector> introspector = graphics_api->create_shader_introspect(shader.get());
     auto buffer_info = introspector->get_constant_buffer_info();
-    
+
     // 反射获取着色器信息
     this->per_material = buffer_info["per_material"];
     this->per_frame = buffer_info.at("per_frame");
     this->per_object = buffer_info["per_object"];
     this->uniform_info = buffer_info;
     this->texture_units = introspector->get_texture_info();
-
-    // 设置现有的全局变体键
-    for (const std::string &key : resources.shader_lib->get_global_variant_keys()) {
-        this->global_variant_key_collect.set_variant_code(this->global_key_code, key);
-    }
-}
-
-void ShaderLib::add_uber_shader(const AssetKey &name, UberShaderDesc &&desc) {
-    uber_shaders.emplace(name, new UberShader{std::move(desc)});
 }
 
 Ref<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
@@ -158,4 +150,5 @@ Ref<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
 
     return shader;
 }
+
 } // namespace Goonya::Graphics

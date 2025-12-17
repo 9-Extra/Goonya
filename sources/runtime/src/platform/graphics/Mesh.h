@@ -1,6 +1,5 @@
 #pragma once
 
-#include "core/RefCount.h"
 #include "core/cgmath/aabb.h"
 #include "core/metatype/metatype.h"
 #include "resource/Resource.h"
@@ -154,7 +153,7 @@ struct MeshDesc {
           sub_meshes({{0, static_cast<uint32_t>(this->indices.size()), 0, topology, aabb}}) {}
 };
 
-class Mesh : public RefCount {
+class Mesh : public Resource {
 public:
     std::vector<SubMesh> submeshes;
 
@@ -178,13 +177,6 @@ public:
 
 protected:
     virtual void _set_debug_label(const std::string &name) const noexcept = 0;
-};
-
-class MeshContainer final : public Resource::ResourceContainer<MeshContainer, Graphics::MeshDesc, Graphics::Mesh> {
-public:
-    MeshContainer() : Resource::ResourceContainer<MeshContainer, Graphics::MeshDesc, Graphics::Mesh>("网格") {}
-
-    Ref<Mesh> load(const MeshDesc &desc) const;
 };
 
 } // namespace Goonya::Graphics

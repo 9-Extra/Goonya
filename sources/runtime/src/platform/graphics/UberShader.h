@@ -1,18 +1,23 @@
 #pragma once
 
-#include "core/assets.h"
-#include "core/hash_helper.h"
 #include "core/RefCount.h"
+#include "core/hash_helper.h"
+#include "core/log/Log.h"
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/Shader.h"
-#include "runtime/GoonyaException.h"
+#include "resource/Resource.h"
+
+#include <array>
+#include <bitset>
 #include <cassert>
-#include <memory>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 namespace Goonya::Graphics {
@@ -96,18 +101,84 @@ public:
     bool is_key_defined(VariantCode code, std::string_view variant_key) const noexcept;
 };
 
+class GlobalVariantKeyCollect final {
+public:
+    const static uint32_t MAX_GLOVAL_KEY_COUNR = std::numeric_limits<VariantCode>::digits;
+    static_assert(MAX_GLOVAL_KEY_COUNR < std::numeric_limits<uint16_t>::max());
+
+protected:
+    std::bitset<MAX_GLOVAL_KEY_COUNR> key_mask;
+    std::array<std::string, MAX_GLOVAL_KEY_COUNR> id_to_key;
+    std::unordered_map<std::string, uint16_t, StringHash, StringEqual> key_to_id; // 全局着色器变体定义
+public:
+    bool is_key_set(std::string_view key) const noexcept { 
+        if (auto iter = key_to_id.find(key); iter != key_to_id.end()) {
+            return key_mask[iter->second];
+        } else {
+            return false;
+        }
+    }
+
+    std::span<const std::string> get_global_variant_keys() const noexcept {
+        return {id_to_key.begin(), id_to_key.begin() + key_to_id.size()};
+    }
+
+    void get_variant_key_names(std::vector<std::string> &out_result) const noexcept {
+        uint16_t size = key_to_id.size();
+        for (uint16_t i = 0; i < size; i++) {
+            if (key_mask[i]) {
+                out_result.emplace_back(id_to_key[i]);
+            }
+        }
+    }
+
+    void set_key(std::string_view key) noexcept {
+        uint16_t id = register_key(key);
+        if (!key_mask[id]) {
+            key_mask[id] = true;
+        }
+    }
+
+    void reset_key(std::string_view key) noexcept {
+        uint16_t id = register_key(key);
+        if (key_mask[id]) {
+            key_mask[id] = false;
+        }
+    }
+
+    VariantCode get_global_code() noexcept { return (VariantCode)key_mask.to_ullong(); }
+
+private:
+    uint16_t register_key(std::string_view key) noexcept {
+        if (auto iter = key_to_id.find(key); iter != key_to_id.end()) {
+            return iter->second;
+        }
+
+        uint16_t id = (uint16_t)key_to_id.size();
+        if (id >= MAX_GLOVAL_KEY_COUNR) {
+            LOG_ERROR("全局着色器变体超过上限");
+            return MAX_GLOVAL_KEY_COUNR;
+        }
+
+        key_to_id.emplace(key, id);
+        id_to_key[id] = key;
+
+        return id;
+    }
+};
+
+extern GlobalVariantKeyCollect GLOBAL_VARIANT_KEY;
+
 class Shader;
-class UberShader final {
+class UberShader final : public Resource {
 protected:
     // 创建后会变的
-    VariantCode global_key_code = 0;                                       // 当前元着色器的全局变体定义编码
     std::unordered_map<VariantCodeSet, Ref<Shader>> shaders; // 此元着色器的变体缓存
     // 不会变的
     std::string vs_src;
     std::string ps_src;
     PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
 
-    VariantKeyCollect global_variant_key_collect; // 全局变体编码器
     VariantKeyCollect local_variant_key_collect;
 
     // 几个特殊的UniformBuffer内存布局
@@ -115,26 +186,26 @@ protected:
     ShaderUniformBlockInfo per_frame;
     ShaderUniformBlockInfo per_object;
     std::unordered_map<std::string, ShaderUniformBlockInfo> uniform_info; // 全部uniform的内存布局和绑定点
-    std::unordered_map<std::string, uint32_t> texture_units; // 纹理名称及对应的纹理单元
+    std::unordered_map<std::string, uint32_t> texture_units;              // 纹理名称及对应的纹理单元
 public:
+    explicit UberShader(UberShaderDesc &&desc);
     UberShader(const UberShader &) = delete;
     UberShader(UberShader &&) = delete;
 
-    const PipelineSetting& get_pipeline_setting() const noexcept{
-        return pipeline_setting;
-    }
+    const PipelineSetting &get_pipeline_setting() const noexcept { return pipeline_setting; }
 
-    VariantCode get_global_key_code() const noexcept { return global_key_code; }
     const ShaderUniformBlockInfo &per_material_block() const noexcept { return per_material; }
     const ShaderUniformBlockInfo &per_frame_block() const noexcept { return per_frame; }
     const ShaderUniformBlockInfo &per_object_block() const noexcept { return per_object; }
     const std::unordered_map<std::string, uint32_t> &get_texture_units() const noexcept { return texture_units; }
-    const std::unordered_map<std::string, ShaderUniformBlockInfo> &get_uniform_info() const noexcept { return uniform_info; }
+    const std::unordered_map<std::string, ShaderUniformBlockInfo> &get_uniform_info() const noexcept {
+        return uniform_info;
+    }
     Ref<Shader> query_variant(VariantCodeSet variant_code);
 
     void get_variant_key_names(VariantCodeSet code, std::vector<std::string> &out_names) const noexcept {
         local_variant_key_collect.get_variant_key_names(code.local_code, out_names);
-        global_variant_key_collect.get_variant_key_names(code.global_code, out_names);
+        GLOBAL_VARIANT_KEY.get_variant_key_names(out_names);
     }
 
     bool set_local_variant_key(VariantCode local_code, const std::string &variant_key) const noexcept {
@@ -143,48 +214,11 @@ public:
     bool reset_local_variant_key(VariantCode local_code, const std::string &variant_key) const noexcept {
         return local_variant_key_collect.reset_variant_code(local_code, variant_key);
     }
-
-private:
-    friend class ShaderLib;
-    explicit UberShader(UberShaderDesc &&desc);
 };
 
-class ShaderLib final {
-protected:
-    std::unordered_set<std::string, StringHash, StringEqual> global_variant_key_names;               // 全局着色器变体定义
-    std::unordered_map<AssetKey, std::unique_ptr<UberShader>, StringHash, StringEqual> uber_shaders; // 从名称到UberShader
-public:
-    void add_uber_shader(const AssetKey &name, UberShaderDesc &&desc);
-
-    bool is_global_variant_key_set(std::string_view key) const noexcept {
-        return global_variant_key_names.contains(key);
-    }
-    const std::unordered_set<std::string, StringHash, StringEqual> &get_global_variant_keys() const noexcept { return global_variant_key_names; }
-    void set_global_variant_key(std::string_view key) noexcept {
-        auto [_, is_update] = global_variant_key_names.emplace(key);
-        if (is_update) {
-            for (auto &[name, uber] : uber_shaders) {
-                uber->global_variant_key_collect.set_variant_code(uber->global_key_code, key);
-            }
-        }
-    }
-
-    void reset_global_variant_key(std::string_view key) noexcept {
-        if (auto iter = global_variant_key_names.find(key); iter != global_variant_key_names.end()) {
-            global_variant_key_names.erase(iter);
-            for (auto &[name, uber] : uber_shaders) {
-                uber->global_variant_key_collect.reset_variant_code(uber->global_key_code, key);
-            }
-        }
-    }
-
-    UberShader *query_uber_shader(std::string_view uber_shader_name) const {
-        if (auto iter = uber_shaders.find(uber_shader_name);iter != uber_shaders.end()){
-            return iter->second.get();
-        } else {
-            throw RuntimeError(std::format("元着色器\"{}\"未注册", uber_shader_name));
-        }
-    }
+struct GlobalKeyChangeEvent {
+    std::vector<std::string> key_set_current_frame;
+    std::vector<std::string> key_reset_current_frame;
 };
 
 } // namespace Goonya::Graphics

@@ -11,6 +11,8 @@
 #include "function/world/Component.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
+#include "platform/graphics/Texture.h"
+#include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 
 #include <platform/graphics/Shader.h>
@@ -44,16 +46,15 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('F')) {
         const std::string_view key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
-        Graphics::ShaderLib *shader_lib = resources.shader_lib.get();
-        if (!shader_lib->is_global_variant_key_set(key_name)) {
-            shader_lib->set_global_variant_key(key_name);
+        if (!Graphics::GLOBAL_VARIANT_KEY.is_key_set(key_name)) {
+            Graphics::GLOBAL_VARIANT_KEY.set_key(key_name);
         } else {
-            shader_lib->reset_global_variant_key(key_name);
+            Graphics::GLOBAL_VARIANT_KEY.reset_key(key_name);
         }
     }
 
     // 按下LALT时，切换光标模式
-    if (Input::is_key_click(Input::KeyCode::LALT)){
+    if (Input::is_key_click(Input::KeyCode::LALT)) {
         if (!contain(Display::get_cursor_mode(), CursorMode::CAPTURED)) {
             Display::set_cursor_mode(CursorMode::CAPTURED | CursorMode::HIDDEN);
         } else {
@@ -63,7 +64,7 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('P')) {
         LOG_DEBUG("正在进行图像导出");
-        Ref<Graphics::Texture> skybox = resources.cubemaps.get("skybox_valley_color");
+        Ref<Graphics::Texture> skybox = resources.load_resource<Graphics::Texture>("skybox_valley_color");
         stb::Image image = skybox->export_image(0);
         image.save("output.hdr");
     }
@@ -125,33 +126,34 @@ void MoveSystem::on_register() {
     teapot = get_owner()->get_child_by_name("teapot");
     assert(teapot);
 
-    Goonya::World* world = get_owner()->get_world();
+    Goonya::World *world = get_owner()->get_world();
     register_ticker(world);
 
     level = create_ref<Craft::Level>(world, camera);
     level_ticker[0] = std::make_unique<LevelTicker>(level);
     level_ticker[1] = std::make_unique<LevelFixedTicker>(level);
-    for(auto&& t: level_ticker){
+    for (auto &&t : level_ticker) {
         t->register_ticker(world);
     }
 }
 
 void MoveSystem::on_unregister() {
-    for(auto&& t: level_ticker){
+    for (auto &&t : level_ticker) {
         t->unregister_ticker();
-    } 
+    }
     unregister_ticker();
 }
 
 void MoveSystem::tick() {
-    float delta_time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.delta()).count();
-    float total_time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.total()).count();
+    float delta_time =
+        std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.delta()).count();
+    float total_time =
+        std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(Goonya::GAME_CLOCK.total()).count();
     handle_keyboard(delta_time);
     handle_mouse();
 
     teapot->rotate_global_axis(Goonya::Vector3f({0, delta_time * 0.001f, 0}));
-    Goonya::Quaternion r =
-        Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
+    Goonya::Quaternion r = Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
     light1->set_local_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
 }

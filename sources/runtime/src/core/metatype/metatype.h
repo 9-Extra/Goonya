@@ -90,7 +90,7 @@ struct DynamicData {
     explicit DynamicData(const T &value) {
         type = CType2FieldType<T>::Type;
         if (is_internal()) {
-            *(T *)&storage.value = value;
+            memcpy(&storage.value, &value, sizeof(T));
         } else {
             storage.ptr = malloc(size_bytes());
             *(T *)storage.ptr = value;
@@ -127,7 +127,7 @@ struct DynamicData {
         reset();
         type = CType2FieldType<T>::Type;
         if (is_internal()) {
-            *(T *)&storage.value = value;
+            memcpy(&storage.value, &value, sizeof(T));
         } else {
             storage.ptr = malloc(size_bytes());
             memcpy(storage.ptr, &value, size_bytes());
@@ -160,7 +160,7 @@ struct DynamicData {
             return false;
         }
         if (is_internal()) {
-            return this->storage.value == other.storage.value; // 不考虑vaule所占位数问题
+            return this->storage.value == other.storage.value; // 不考虑value所占位数问题
         } else {
             return memcmp(this->storage.ptr, this->storage.ptr, size_bytes());
         }
@@ -190,8 +190,8 @@ private:
     }
 
     union Storage {
+        size_t value;
         void *ptr;
-        void *value;
     } storage{};
 
     FieldType type;

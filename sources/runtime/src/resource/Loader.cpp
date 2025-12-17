@@ -1,0 +1,21 @@
+#include "Loader.h"
+
+#include "resource/ResMng.h"
+#include "resource/loader/MaterialLoader.h"
+#include "resource/loader/ShaderLoader.h"
+#include "resource/loader/TextureLoader.h"
+#include "resource/loader/glTFLoader.h"
+
+#include <cassert>
+#include <memory>
+
+namespace Goonya {
+
+void register_all_loaders() {
+    resources.register_loader(std::make_shared<TextureLoader>());
+    resources.register_loader(std::make_shared<ShaderLoader>());
+    resources.register_loader(std::make_shared<MateriaLoader>());
+    resources.register_loader(std::make_shared<GlTFLoader>());
+}
+
+} // namespace Goonya

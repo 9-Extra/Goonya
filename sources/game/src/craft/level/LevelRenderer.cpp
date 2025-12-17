@@ -9,6 +9,7 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
+#include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 #include <cassert>
 #include <cstdint>
@@ -98,7 +99,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
 }
 
 LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
-    Goonya::Graphics::UberShader *shader = Goonya::resources.shader_lib->query_uber_shader(TERRAIN_SHADER_NAME);
+    Goonya::Graphics::UberShader *shader = Goonya::resources.load_resource<Goonya::Graphics::UberShader>(TERRAIN_SHADER_NAME).get();
     terrain_material = create_ref<Goonya::Graphics::Material>(shader);
     terrain_material->set_pipeline_setting(
         "_depth_test", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));

@@ -17,7 +17,11 @@
 #include "function/renderer/Renderer.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
+#include "platform/graphics/Graphics.h"
+#include "platform/graphics/Mesh.h"
 #include "platform/imgui/imgui_module.h"
+#include "resource/HardcodeAssets.h"
+#include "resource/ResMng.h"
 
 namespace Goonya {
 
@@ -26,10 +30,36 @@ static uint32_t calculate_fps(GameClock::ClockType::duration delta) {
     static Clock::duration average_frame_time = Clock::duration::zero();
     const float smoothing_factor = 0.05f;
 
-    average_frame_time = Clock::duration(
-        (Clock::duration::rep)std::lerp(average_frame_time.count(), delta.count(), smoothing_factor));
+    average_frame_time =
+        Clock::duration((Clock::duration::rep)std::lerp(average_frame_time.count(), delta.count(), smoothing_factor));
 
     return static_cast<uint32_t>(std::chrono::seconds(1) / average_frame_time);
+}
+
+static void init_buildin_resource() {
+    // 部分硬编码的mesh
+    std::span<const std::byte> plane_vertex_span = std::as_bytes(std::span(Assets::plane_vertices));
+    Ref<Graphics::Mesh> plane = Graphics::graphics_api->create_mesh(Assets::plane_vertices_vertex_layout);
+    plane->set_vertices(0, plane_vertex_span);
+    plane->set_indices(Assets::plane_indices);
+    plane->submeshes.emplace_back(Graphics::SubMesh{.start_index = 0,
+                                                    .index_count = (uint32_t)Assets::plane_indices.size(),
+                                                    .base_vertex_offset = 0,
+                                                    .topology = Graphics::Topology::TRIANGLE,
+                                                    .aabb = Assets::plane_aabb});
+    resources.put_resource("plane", plane);
+
+    // 添加天空盒的mesh，因为格式不一样所以单独处理
+    std::span<const std::byte> skybox_cube_vertex_span = std::as_bytes(std::span(Assets::skybox_cube_vertices));
+    Ref<Graphics::Mesh> skybox_cube = Graphics::graphics_api->create_mesh(Assets::skybox_cube_vertex_layout);
+    skybox_cube->set_vertices(0, skybox_cube_vertex_span);
+    skybox_cube->set_indices(Assets::skybox_cube_indices);
+    skybox_cube->submeshes.emplace_back(Graphics::SubMesh{.start_index = 0,
+                                                    .index_count = (uint32_t)Assets::skybox_cube_indices.size(),
+                                                    .base_vertex_offset = 0,
+                                                    .topology = Graphics::Topology::TRIANGLE,
+                                                    .aabb = Assets::skybox_cube_aabb});
+    resources.put_resource("skybox_cube", skybox_cube);
 }
 
 void init_engine() {
@@ -41,6 +71,12 @@ void init_engine() {
     EventBus::initalize();
     Input::initalize();
     Display::initialize(1080, 720);
+
+    current_thread_type = ThreadType::RENDER; // 目前先不拆分线程，资源加载的问题没有解决
+    Graphics::initialize(Graphics::GraphicsAPIType::OPENGL);
+
+    resources.init(u8"../assets/");
+    init_buildin_resource();
 
     Graphics::renderer.init();
 
@@ -121,6 +157,7 @@ void drop_engine() {
     World::world_list.clear();
     Graphics::renderer.clear();
     resources.clear(); // 在设备drop之前清理资源
+    Graphics::drop();
     ImguiMng::drop();
 
     Display::drop();

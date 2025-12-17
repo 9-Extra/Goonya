@@ -1,11 +1,9 @@
 #pragma once
 
-#include "core/RefCount.h"
 #include "platform/image/image.h"
 #include "resource/Resource.h"
 #include <cstdint>
 
-#include <filesystem>
 #include <tuple>
 
 namespace Goonya::Graphics {
@@ -65,21 +63,7 @@ struct TextureCreateDesc {
     std::tuple<uint32_t, uint32_t, uint32_t> shape;
 };
 
-struct Texture2DDesc {
-    std::filesystem::path path;
-    bool is_color;
-    TextureFilterMode filter_mode = TextureFilterMode::TRILINEAR;
-    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
-};
-
-struct TextureCubeMapDesc {
-    std::array<std::filesystem::path, 6> path;
-    bool is_color = false;
-    TextureFilterMode filter_mode = TextureFilterMode::TRILINEAR;
-    TextureWarpMode warp_mode = TextureWarpMode::REPEAT;
-};
-
-class Texture : public RefCount {
+class Texture : public Resource {
 protected:
     TextureType type;
     TextureStorageFormat format;
@@ -99,24 +83,31 @@ public:
 
     std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
 
+    static Graphics::TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept {
+        Graphics::TextureStorageFormat storage_type = Graphics::TextureStorageFormat::UNKNOWN;
+        switch (image.get_channel()) {
+        case 1: {
+            storage_type =
+                image.is_float() ? Graphics::TextureStorageFormat::R_f32 : Graphics::TextureStorageFormat::R_f8;
+            break;
+        }
+        case 2:
+        case 3: {
+            storage_type =
+                image.is_float() ? Graphics::TextureStorageFormat::RGB_f32 : Graphics::TextureStorageFormat::RGB_f8;
+            break;
+        }
+        case 4: {
+            storage_type =
+                image.is_float() ? Graphics::TextureStorageFormat::RGBA_f32 : Graphics::TextureStorageFormat::RGBA_f8;
+            break;
+        }
+        }
+        return storage_type;
+    }
+
 protected:
     explicit Texture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {}
-};
-
-class Texture2DContainer final : public Resource::ResourceContainer<Texture2DContainer, Texture2DDesc, Texture> {
-public:
-    Texture2DContainer() : ResourceContainer<Texture2DContainer, Texture2DDesc, Texture>("纹理") {}
-
-    Ref<Texture> load(const Texture2DDesc &desc) const;
-};
-
-class TextureCubeMapContainer final
-    : public Resource::ResourceContainer<TextureCubeMapContainer, TextureCubeMapDesc, Texture> {
-public:
-    TextureCubeMapContainer()
-        : Resource::ResourceContainer<TextureCubeMapContainer, TextureCubeMapDesc, Texture>("纹理") {}
-
-    Ref<Texture> load(const TextureCubeMapDesc &desc) const;
 };
 
 } // namespace Goonya::Graphics

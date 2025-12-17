@@ -1,7 +1,8 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/assets.h"
+#include "resource/Loader.h"
+#include "resource/Resource.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
 #include "platform/graphics/PipelineSetting.h"
@@ -17,7 +18,6 @@
 #include <tuple>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
 namespace Goonya::Graphics {
 
@@ -115,16 +115,7 @@ public:
     }
 };
 
-struct MaterialDesc {
-    std::unordered_map<std::string, PipelineSettingParamType> override_pipeline_setting;
-    std::unordered_map<std::string, Meta::DynamicData> parameters;
-    std::vector<std::tuple<std::string, TextureType, AssetKey>> textures; // (着色器中名称, 纹理类型，资源键)
-
-    AssetKey uber_shader_name;
-    std::vector<std::string> local_variant_keys;
-};
-
-class Material final : public RefCount {
+class Material final : public Resource {
 protected:
     // 着色器设置
     UberShader *const uber_shader;
@@ -160,14 +151,22 @@ public:
     UberShader *get_uber_shader() const noexcept { return uber_shader; }
 
     void set_pipeline_setting(const std::string &name, PipelineSettingParamType value);
+
     void set_param(const std::string &name, const Meta::DynamicData &value);
+    template<Meta::meta_type T>
+    void set_param(const std::string &name, const T &value){
+        set_param(name, Meta::DynamicData(value));
+    }
+    
     void set_external_buffer(const std::string &name, const Ref<Buffer> &buffer) {
+        assert(buffer);
         auto &info = uber_shader->get_uniform_info().at(name);
         external_buffer[info.binding] = {buffer, info.binding_type};
     }
 
     void set_texture(const std::string &name, const Ref<Texture> &texture) {
         // texture slot可能被优化掉了
+        assert(texture);
         if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
             this->textures[iter->second] = texture;
         }
@@ -187,13 +186,6 @@ protected:
     void update_parameter();
 
 private:
-};
-
-class MaterialContainer final : public Resource::ResourceContainer<MaterialContainer, MaterialDesc, Material> {
-public:
-    MaterialContainer() : ResourceContainer<MaterialContainer, MaterialDesc, Material>("材质") {}
-
-    Ref<Material> load(const MaterialDesc &desc) const;
 };
 
 } // namespace Goonya::Graphics

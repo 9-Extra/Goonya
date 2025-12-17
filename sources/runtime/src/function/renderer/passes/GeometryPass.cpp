@@ -1,8 +1,10 @@
 #include "GeometryPass.h"
 #include "core/cgmath/cgmath.h"
+#include "core/cgmath/transform.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/Material.h"
 #include "resource/ResMng.h"
 
 #include <array>
@@ -108,7 +110,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
     // ------------------------------------------------------
     const std::array<Plane, 6> worldspace_frustum = create_frustum_planes(view_perspective);
 
-    Ref<Material> default_material = resources.materials.get("materials/default");
+    Ref<Material> default_material = resources.load_resource<Material>("materials/default");
 
     struct alignas(256) PerObjectData final {
         Matrix4 model_matrix;

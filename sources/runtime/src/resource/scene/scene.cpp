@@ -1,13 +1,15 @@
 #include "scene.h"
 
-#include "core/cgmath/cgmath.h"
 #include "core/RefCount.h"
+#include "core/cgmath/cgmath.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntSkybox.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/Mesh.h"
+#include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
 #include <fstream>
 #include <json/json.h>
@@ -48,12 +50,12 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
             if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->set_mesh(resources.meshes.get(cpnt_desc["mesh"].asString()));
+                cpnt_ptr->set_mesh(resources.load_resource<Graphics::Mesh>(cpnt_desc["mesh"].asString()));
             }
             if (cpnt_desc.isMember("material")) {
                 std::vector<Ref<Graphics::Material>> materials;
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    materials.emplace_back(resources.materials.get(material_name.asString()));
+                    materials.emplace_back(resources.load_resource<Graphics::Material>(material_name.asString()));
                 }
                 cpnt_ptr->set_materials(std::span(materials));
             }
@@ -67,15 +69,14 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             float near_z = cpnt_desc["near_z"].asFloat();
             float far_z = cpnt_desc["far_z"].asFloat();
             float fov = cpnt_desc["fov"].asFloat();
-            std::unique_ptr<Graphics::CpntCamera> camera =
-                std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov);
-            if (is_main){
+            std::unique_ptr<Graphics::CpntCamera> camera = std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov);
+            if (is_main) {
                 camera->render_target = Graphics::graphics_api->get_rendertarget_screen();
             }
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
             Ref<Graphics::Material> material =
-                resources.materials.get(cpnt_desc["material"].asString());
+                resources.load_resource<Graphics::Material>(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
             if (cpnt_desc.isMember("bbox")) {
@@ -93,6 +94,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
 // 从json递归加载节点
 std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
     const std::string &name = json.get("name", "").asString();
+
     std::shared_ptr<GObject> node = std::make_shared<GObject>(load_transform(json), name);
 
     load_conponents_from_json(node.get(), json["components"]);
@@ -101,22 +103,27 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
         node->attach_child(load_node_from_json(child_desc));
     }
 
+    if (json.isMember("scene")) {
+        // todo: copy
+        node->attach_child(resources.load_resource<Scene>(json["scene"].asString())->root);
+    }
+
     return node;
 }
 
 // 从json文件加载场景
-Scene load_scene_from_json(const std::string &path) {
-    Scene scene;
+Ref<Scene> load_scene_from_json(const std::string &path) {
+    Ref<Scene> scene = create_ref<Scene>();
     Json::Value json;
     {
         Json::Reader reader;
         std::ifstream file(path);
         reader.parse(file, json, false);
     }
-    
-    scene.name = json.get("name", "未命名").asString();
+
+    scene->name = json.get("name", "未命名").asString();
     // 加载物体
-    scene.root = load_node_from_json(json["root"]);
+    scene->root = load_node_from_json(json["root"]);
 
     return scene;
 }

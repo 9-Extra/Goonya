@@ -10,7 +10,15 @@ inline std::u8string_view as_u8string_view(const std::string& str) noexcept{
     return {(char8_t*)str.data(), str.size()};
 }
 
+inline std::u8string_view as_u8string_view(std::string_view str) noexcept{
+    return {(char8_t*)str.data(), str.size()};
+}
+
 inline std::string_view as_string_view(const std::u8string& str) noexcept{
+    return {(char*)str.data(), str.size()};
+}
+
+inline std::string_view as_string_view(std::u8string_view str) noexcept{
     return {(char*)str.data(), str.size()};
 }
 

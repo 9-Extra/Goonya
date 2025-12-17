@@ -5,49 +5,28 @@
 #include <json/json.h>
 #include <json/value.h>
 #include <string>
-#include <type_traits>
 #include <unordered_map>
-#include <utility>
 
 #include "core/RefCount.h"
-#include "core/assets.h"
-#include "core/log/Log.h"
-#include "runtime/GoonyaException.h"
+#include "core/hash_helper.h"
 
-namespace Goonya::Resource {
+namespace Goonya {
 
-template <typename Derived, typename TDesc, typename TAsset>
-class ResourceContainer {
-protected:
-    std::string name;
-    std::unordered_map<AssetKey, std::tuple<Ref<TAsset>, TDesc>> container;
+using AssetKey = std::string;
 
+class Resource: public RefCount{
 public:
-    explicit ResourceContainer(std::string name) : name(std::move(name)) {}
-    template <typename T>
-        requires std::is_convertible_v<T, TDesc>
-    void add(const AssetKey &key, T &&desc) {
-        auto [_, ok] = container.emplace(key, std::tuple<Ref<TAsset>, TDesc>{nullptr, std::forward<T>(desc)});
-        if (!ok) {
-            throw RuntimeError(std::format("资源\"{}\"重复注册", key));
-        }
+    virtual bool is_pack() const noexcept{
+        return false;
     }
-    bool contains(const AssetKey &key) const { return container.contains(key); }
+};
 
-    Ref<TAsset> get(const AssetKey &key) {
-        if (auto iter = container.find(key); iter != container.end()) {
-            auto &[asset, desc] = iter->second;
-            if (!asset) [[unlikely]] {
-                LOG_TRACE("正在加载{}：\"{}\"", name, key);
-                asset = static_cast<const Derived *>(this)->load(desc); // crtp
-            }
-            return asset;
-        } else {
-            throw RuntimeError(std::format("{}\"{}\"未注册", name, key));
-        }
+class ResourcePack: public Resource{
+public:
+    std::unordered_map<AssetKey, Ref<Resource>, StringHash, StringEqual> contents;
+    bool is_pack() const noexcept override {
+        return true;
     }
-
-    void clear() { container.clear(); }
 };
 
 } // namespace Goonya::Resource

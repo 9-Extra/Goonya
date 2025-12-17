@@ -1,0 +1,7 @@
+{
+    "type": "glTF",
+    "name": "teapot",
+    "content": {
+        "file": "teapot.gltf"
+    }
+}

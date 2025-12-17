@@ -4,9 +4,13 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/Shader.h"
+#include "platform/graphics/Texture.h"
+#include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
+#include "rfl/enums.hpp"
 #include "runtime/GoonyaException.h"
 #include <cassert>
+#include <regex>
 #include <utility>
 
 namespace Goonya::Graphics {
@@ -37,11 +41,11 @@ void Material::bind() {
     }
 }
 
-void Material::set_pipeline_setting(const std::string &name, PipelineSettingParamType value){
-    if (!PipelineSettingSetter::is_pipeline_setting(name)){
+void Material::set_pipeline_setting(const std::string &name, PipelineSettingParamType value) {
+    if (!PipelineSettingSetter::is_pipeline_setting(name)) {
         throw RuntimeError(std::format("渲染管线状态{}不存在", name));
     }
-    if (value >= 0){
+    if (value >= 0) {
         // 更新pipeline_setting，不需要加脏标记
         PipelineSettingSetter::set_pipeline_setting(name, value, pipeline_setting);
         override_pipeline_setting.emplace(name, value);
@@ -68,7 +72,7 @@ void Material::set_param(const std::string &name, const Meta::DynamicData &value
 
 Material::Material(UberShader *uber_shader)
     : uber_shader(uber_shader), local_variant_code(0), pipeline_setting(uber_shader->get_pipeline_setting()),
-      current_variant_code(uber_shader->get_global_key_code(), local_variant_code) {
+      current_variant_code(GLOBAL_VARIANT_KEY.get_global_code(), local_variant_code) {
 
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
@@ -90,7 +94,7 @@ Ref<Material> Material::clone() const noexcept {
 }
 
 void Material::update_shader_variant() {
-    VariantCodeSet code{uber_shader->get_global_key_code(), local_variant_code};
+    VariantCodeSet code{GLOBAL_VARIANT_KEY.get_global_code(), local_variant_code};
     if (current_variant_code != code) {
         shader = uber_shader->query_variant(code);
         current_variant_code = code;
@@ -113,36 +117,4 @@ void Material::update_parameter() {
     is_parameters_dirty = false;
 }
 
-Ref<Material> MaterialContainer::load(const MaterialDesc &desc) const {
-    Ref<Graphics::Material> mat =
-        create_ref<Graphics::Material>(resources.shader_lib->query_uber_shader(desc.uber_shader_name));
-
-    for (const auto &[name, value] : desc.override_pipeline_setting) {
-        mat->set_pipeline_setting(name, value);
-    }
-
-    for (const auto &[name, value] : desc.parameters) {
-        mat->set_param(name, value);
-    }
-    for (const auto &[name, texture_type, texture_key] : desc.textures) {
-        switch (texture_type) {
-
-        case Graphics::TextureType::UNKNOWN: {
-            throw RuntimeError(std::format("纹理资源\"{}\"类型未指定", texture_key));
-        }
-        case Graphics::TextureType::TEXTURE_2D: {
-            mat->set_texture(name, resources.texture2ds.get(texture_key));
-            break;
-        }
-        case Graphics::TextureType::TEXTURE_CUBEMAP: {
-            mat->set_texture(name, resources.cubemaps.get(texture_key));
-            break;
-        }
-        default: {
-            assert(false); // todo
-        }
-        }
-    }
-    return mat;
-};
 } // namespace Goonya::Graphics
