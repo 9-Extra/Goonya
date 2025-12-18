@@ -58,7 +58,6 @@ public:
     }
 
     std::optional<BlockModel> load_block_model(const ResourceLocation &location) {
-        LOG_TRACE("加载方块模型{}", location);
         const Json::Value *json = fetch_model_json(std::format("{}", location));
         if (!json) {
             return std::nullopt;
@@ -247,6 +246,7 @@ void ModelManager::load_all_models() {
 
     for (const auto &[block, _] : REGISTRY_BLOCK) {
         ResourceLocation location = ResourceLocation::parse(REGISTRY_BLOCK.find_key(block));
+        LOG_TRACE("加载方块模型{}", location);
         std::filesystem::path path =
             resource_path / std::format("{}/blockstates/{}.json", location.name_space, location.key);
         std::ifstream file(path, std::ios::binary | std::ios::in);

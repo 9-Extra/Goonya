@@ -13,12 +13,8 @@ Ref<Resource> ShaderLoader::load(std::string_view type, const std::filesystem::p
     Graphics::UberShaderDesc desc{.vs_src = read_whole_file(base_dir / shader_sources["vertex_shader"].asString()),
                                   .ps_src = read_whole_file(base_dir / shader_sources["pixel_shader"].asString())};
 
-    for (const auto &group : shader_desc["global_variants"]) {
-        std::vector<std::string> desc_group;
-        for (const auto &variant_key : group) {
-            desc_group.emplace_back(variant_key.asString());
-        }
-        desc.global_variant_keys.emplace_back(std::move(desc_group));
+    for (const auto &key : shader_desc["global_variants"]) {
+        desc.global_variant_keys.emplace_back(key.asString());
     }
 
     for (const auto &group : shader_desc["local_variants"]) {

@@ -13,7 +13,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <span>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -36,8 +35,8 @@ struct UberShaderDesc final {
      *
      * 每个外层vector是一个组，内层是组内的变体（每组中有且只有一个变体启用）
      */
-    std::vector<std::vector<std::string>> global_variant_keys; // 相关的变体定义
-    std::vector<std::vector<std::string>> local_variant_keys;  // 仅此UberShader使用的所有变体定义
+    std::vector<std::string> global_variant_keys;             // 相关的变体定义
+    std::vector<std::vector<std::string>> local_variant_keys; // 仅此UberShader使用的所有变体定义
 };
 
 using VariantCode = uint32_t;
@@ -67,7 +66,7 @@ struct std::hash<Goonya::Graphics::VariantCodeSet> {
 
 namespace Goonya::Graphics {
 
-class VariantKeyCollect final {
+class LocalVariantKeyCollect final {
 private:
     // 着色器组及其组的基
     std::vector<std::tuple<uint32_t, std::vector<std::string>>> variants_key_groups;
@@ -76,8 +75,8 @@ private:
     uint32_t variant_count = 1;
 
 public:
-    VariantKeyCollect() = default;
-    explicit VariantKeyCollect(std::vector<std::vector<std::string>> &&group_keys) {
+    LocalVariantKeyCollect() = default;
+    explicit LocalVariantKeyCollect(std::vector<std::vector<std::string>> &&group_keys) {
         for (std::vector<std::string> &g : group_keys) {
             add_variant_key_group(std::move(g));
         }
@@ -111,16 +110,12 @@ protected:
     std::array<std::string, MAX_GLOVAL_KEY_COUNR> id_to_key;
     std::unordered_map<std::string, uint16_t, StringHash, StringEqual> key_to_id; // 全局着色器变体定义
 public:
-    bool is_key_set(std::string_view key) const noexcept { 
+    bool is_key_set(std::string_view key) const noexcept {
         if (auto iter = key_to_id.find(key); iter != key_to_id.end()) {
             return key_mask[iter->second];
         } else {
             return false;
         }
-    }
-
-    std::span<const std::string> get_global_variant_keys() const noexcept {
-        return {id_to_key.begin(), id_to_key.begin() + key_to_id.size()};
     }
 
     void get_variant_key_names(std::vector<std::string> &out_result) const noexcept {
@@ -134,6 +129,9 @@ public:
 
     void set_key(std::string_view key) noexcept {
         uint16_t id = register_key(key);
+        if (id == MAX_GLOVAL_KEY_COUNR) {
+            return;
+        }
         if (!key_mask[id]) {
             key_mask[id] = true;
         }
@@ -141,12 +139,31 @@ public:
 
     void reset_key(std::string_view key) noexcept {
         uint16_t id = register_key(key);
+        if (id == MAX_GLOVAL_KEY_COUNR) {
+            return;
+        }
         if (key_mask[id]) {
             key_mask[id] = false;
         }
     }
 
-    VariantCode get_global_code() noexcept { return (VariantCode)key_mask.to_ullong(); }
+    VariantCode get_global_code() noexcept {
+        // 不要直接使用此结果作为global_code，还需要与UberShader中的effective_global_key_mask进行掩码操作
+        return (VariantCode)key_mask.to_ullong();
+    }
+
+    VariantCode get_shader_global_key_mask(const std::vector<std::string> &global_keys) noexcept {
+        std::bitset<MAX_GLOVAL_KEY_COUNR> mask;
+        for (const std::string &key : global_keys) {
+            uint16_t id = register_key(key);
+            if (id == MAX_GLOVAL_KEY_COUNR) {
+                continue;
+                ;
+            }
+            mask[id] = true;
+        }
+        return (VariantCode)mask.to_ullong();
+    }
 
 private:
     uint16_t register_key(std::string_view key) noexcept {
@@ -154,6 +171,9 @@ private:
             return iter->second;
         }
 
+        if (key.empty()) {
+            LOG_ERROR("全局着色器变体名不应该为空，因为其本身设计就是要么空值，要么有值的二元选择");
+        }
         uint16_t id = (uint16_t)key_to_id.size();
         if (id >= MAX_GLOVAL_KEY_COUNR) {
             LOG_ERROR("全局着色器变体超过上限");
@@ -179,7 +199,8 @@ protected:
     std::string ps_src;
     PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
 
-    VariantKeyCollect local_variant_key_collect;
+    LocalVariantKeyCollect local_variant_key_collect;
+    VariantCode effective_global_key_mask;
 
     // 几个特殊的UniformBuffer内存布局
     ShaderUniformBlockInfo per_material;
@@ -201,6 +222,8 @@ public:
     const std::unordered_map<std::string, ShaderUniformBlockInfo> &get_uniform_info() const noexcept {
         return uniform_info;
     }
+
+    VariantCode get_effective_global_key_code() const noexcept {return GLOBAL_VARIANT_KEY.get_global_code() & effective_global_key_mask;}
     Ref<Shader> query_variant(VariantCodeSet variant_code);
 
     void get_variant_key_names(VariantCodeSet code, std::vector<std::string> &out_names) const noexcept {

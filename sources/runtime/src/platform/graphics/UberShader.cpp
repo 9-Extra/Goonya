@@ -3,6 +3,7 @@
 #include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "platform/graphics/Graphics.h"
+#include <cassert>
 #include <cstdint>
 #include <limits>
 #include <memory>
@@ -11,7 +12,7 @@ namespace Goonya::Graphics {
 
 GlobalVariantKeyCollect GLOBAL_VARIANT_KEY;
 
-void VariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_keys) {
+void LocalVariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_keys) {
     if (group_keys.size() < 2) {
         throw RuntimeError("每个组至少有2个成员");
     }
@@ -38,7 +39,8 @@ void VariantKeyCollect::add_variant_key_group(std::vector<std::string> &&group_k
     variant_count *= group_key_count;
     assert(variant_count >= group_key_count); // 越界检测
 }
-void VariantKeyCollect::get_variant_key_names(VariantCode code, std::vector<std::string> &out_result) const noexcept {
+void LocalVariantKeyCollect::get_variant_key_names(VariantCode code,
+                                                   std::vector<std::string> &out_result) const noexcept {
     for (const auto &[base, group] : variants_key_groups) {
         const std::string &key = group[code / base % static_cast<uint32_t>(group.size())];
         if (!key.empty()) { // 空字符串视为不进行定义
@@ -46,7 +48,7 @@ void VariantKeyCollect::get_variant_key_names(VariantCode code, std::vector<std:
         }
     }
 }
-bool VariantKeyCollect::set_variant_code(VariantCode &code, std::string_view variant_key) const noexcept {
+bool LocalVariantKeyCollect::set_variant_code(VariantCode &code, std::string_view variant_key) const noexcept {
     if (auto iter = variants_key_map.find(variant_key); iter != variants_key_map.end()) {
         auto [group_index, index] = iter->second;
         const auto &[base, group] = variants_key_groups[group_index];
@@ -61,7 +63,7 @@ bool VariantKeyCollect::set_variant_code(VariantCode &code, std::string_view var
         return false;
     }
 }
-bool VariantKeyCollect::reset_variant_code(VariantCode &code, std::string_view variant_key) const noexcept {
+bool LocalVariantKeyCollect::reset_variant_code(VariantCode &code, std::string_view variant_key) const noexcept {
     if (auto iter = variants_key_map.find(variant_key); iter != variants_key_map.end()) {
         auto [group_index, _] = iter->second;
         const auto &[base, group] = variants_key_groups[group_index];
@@ -75,7 +77,7 @@ bool VariantKeyCollect::reset_variant_code(VariantCode &code, std::string_view v
         return false;
     }
 }
-bool VariantKeyCollect::is_key_defined(VariantCode code, std::string_view key) const noexcept {
+bool LocalVariantKeyCollect::is_key_defined(VariantCode code, std::string_view key) const noexcept {
     if (auto iter = variants_key_map.find(key); iter != variants_key_map.end()) {
         auto [group_index, index] = iter->second;
         const auto &[base, group] = variants_key_groups[group_index];
@@ -119,7 +121,8 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->vs_src = std::move(desc.vs_src);
     this->ps_src = std::move(desc.ps_src);
     this->pipeline_setting = desc.pipeline_setting;
-    this->local_variant_key_collect = VariantKeyCollect(std::move(desc.local_variant_keys));
+    this->local_variant_key_collect = LocalVariantKeyCollect(std::move(desc.local_variant_keys));
+    this->effective_global_key_mask = GLOBAL_VARIANT_KEY.get_shader_global_key_mask(desc.global_variant_keys);
 
     // 立即编译变体码为0的版本用于反射
     Ref<Shader> shader = query_variant(VariantCodeSet{0});
@@ -139,6 +142,9 @@ Ref<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
     if (auto iter = shaders.find(variant_code); iter != shaders.end()) {
         return iter->second;
     }
+
+    // 获取global_code时，记得先进行effective_global_key_mask掩码操作
+    assert(((!effective_global_key_mask) & variant_code.global_code) == 0);
 
     std::vector<std::string> variant_keys;
     get_variant_key_names(variant_code, variant_keys);

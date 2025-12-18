@@ -34,21 +34,6 @@ void Renderer::render() {
             is_screen_painted = true;
         }
 
-        // static Ref<FrameBuffer> test_target;
-        // static Ref<Texture> render_texture;
-        // if (!test_target){
-        //     test_target = graphics_api->create_rendertarget({1024, 1024});
-        //     test_target->set_depth_renderbuffer(RenderBufferPixelFormat::DEPTH24_STENCIL8);
-        // }
-        // if (!render_texture){
-        //     TextureCreateDesc desc{TextureType::TEXTURE_2D, TextureStorageFormat::RGBA_f32, {1024, 1024, 0}};
-        //     render_texture = graphics_api->create_texture(desc);
-        //     test_target->attach_color_texture(0, render_texture);
-        // }
-        // camera->render_target = test_target;
-        // camera->render_target->check_status();
-
-        // todo: ViewPort的大小计算不完善
         auto [w, h] = camera->render_target->get_size();
         const Viewport viewport{(int32_t)(camera->rect.x * w), (int32_t)(camera->rect.y * h),
                                 (int32_t)(camera->rect.z * w), (int32_t)(camera->rect.w * h)};
@@ -69,15 +54,6 @@ void Renderer::render() {
         geometry_pass->run(info);
         skybox_pass->run(info);
 
-        // FIBITMAP *image = render_texture->export_image();
-        // assert(image);
-
-        // static int i = 0;
-        // if (!FreeImage_Save(FIF_PNG, image, std::format("output{}.png", i).c_str())) {
-        //     LOG_ERROR("导出图像失败");
-        // }
-        // i++;
-        // EventBus::dispatch_event(Events::EngineStop{});
     }
 
     if (!is_screen_painted) {

@@ -55,10 +55,10 @@ static void init_buildin_resource() {
     skybox_cube->set_vertices(0, skybox_cube_vertex_span);
     skybox_cube->set_indices(Assets::skybox_cube_indices);
     skybox_cube->submeshes.emplace_back(Graphics::SubMesh{.start_index = 0,
-                                                    .index_count = (uint32_t)Assets::skybox_cube_indices.size(),
-                                                    .base_vertex_offset = 0,
-                                                    .topology = Graphics::Topology::TRIANGLE,
-                                                    .aabb = Assets::skybox_cube_aabb});
+                                                          .index_count = (uint32_t)Assets::skybox_cube_indices.size(),
+                                                          .base_vertex_offset = 0,
+                                                          .topology = Graphics::Topology::TRIANGLE,
+                                                          .aabb = Assets::skybox_cube_aabb});
     resources.put_resource("skybox_cube", skybox_cube);
 }
 

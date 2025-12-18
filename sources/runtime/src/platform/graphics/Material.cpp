@@ -70,7 +70,7 @@ void Material::set_param(const std::string &name, const Meta::DynamicData &value
 
 Material::Material(UberShader *uber_shader)
     : uber_shader(uber_shader), local_variant_code(0), pipeline_setting(uber_shader->get_pipeline_setting()),
-      current_variant_code(GLOBAL_VARIANT_KEY.get_global_code(), local_variant_code) {
+      current_variant_code(uber_shader->get_effective_global_key_code(), local_variant_code) {
 
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
@@ -92,7 +92,7 @@ Ref<Material> Material::clone() const noexcept {
 }
 
 void Material::update_shader_variant() {
-    VariantCodeSet code{GLOBAL_VARIANT_KEY.get_global_code(), local_variant_code};
+    VariantCodeSet code{uber_shader->get_effective_global_key_code(), local_variant_code};
     if (current_variant_code != code) {
         shader = uber_shader->query_variant(code);
         current_variant_code = code;

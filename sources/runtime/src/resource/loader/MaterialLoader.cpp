@@ -7,6 +7,7 @@
 #include "resource/ResMng.h"
 #include "rfl/enums.hpp"
 
+#include <format>
 #include <regex>
 
 namespace Goonya {
@@ -82,18 +83,25 @@ Ref<Resource> MateriaLoader::load(std::string_view type, const std::filesystem::
                                   const Json::Value &content) {
     const Json::Value &material_desc = content;
 
-    Ref<Graphics::Material> mat = create_ref<Graphics::Material>(
-        resources.load_resource<Graphics::UberShader>(material_desc["uber_shader"].asString()).get());
-    if (!mat) {
-        throw RuntimeError("初始化材质失败");
+    if (!material_desc.isMember("uber_shader")){
+        throw RuntimeError("元着色器名称uber_shader字段缺失");
     }
+    const std::string shader_name = material_desc["uber_shader"].asString();
+    Ref<Graphics::UberShader> shader = resources.load_resource<Graphics::UberShader>(shader_name);
+    if (!shader){
+        throw RuntimeError(std::format("元着色器{}加载失败", shader_name));
+    }
+    
+    // 初始化材质
+    Ref<Graphics::Material> mat = create_ref<Graphics::Material>(shader.get());
 
+    // 变体
     for (const auto &variant_key : material_desc["variant_keys"]) {
         mat->set_local_variant_key(variant_key.asString());
     }
 
+    // 材质覆盖的渲染管线设置
     const Json::Value &config = material_desc["config"];
-
     {
         Graphics::PipelineSettingParamType value;
         const Json::Value &cull_mode = config["cull_mode"];
@@ -133,11 +141,14 @@ NEXT: {
     mat->set_pipeline_setting("_depth_test", value);
 }
 NEXT2:
+
+    // 材质参数
     for (auto param_iter = material_desc["parameters"].begin(); param_iter != material_desc["parameters"].end();
          ++param_iter) {
         parse_material_paramter(mat, param_iter.name(), param_iter->asString());
     }
 
+    // 纹理
     for (auto sampler_iter = material_desc["samplers"].begin(); sampler_iter != material_desc["samplers"].end();
          ++sampler_iter) {
         const std::string &name = sampler_iter.name();

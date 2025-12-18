@@ -107,6 +107,7 @@ Ref<Resource> RenderResource::try_load(const std::filesystem::path &path) {
     Ref<Resource> res = loader->load(res_type, base_dir, meta["name"].asString(), meta["content"]);
 
     if (!res) {
+        // 加载器出错时应该抛异常
         throw RuntimeError("未知原因");
     }
 
