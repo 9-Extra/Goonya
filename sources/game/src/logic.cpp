@@ -15,6 +15,9 @@
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 
+#include <algorithm>
+#include <cmath>
+#include <numbers>
 #include <platform/graphics/Shader.h>
 #include <resource/Resource.h>
 
@@ -29,14 +32,18 @@ void MoveSystem::handle_mouse() const {
         lights->disable();
     }
 
-    // 如何光标已捕获，使用鼠标移动旋转视角
+    // 如果光标已捕获，根据鼠标移动旋转视角
     // 左上角为(0,0)，右下角为(w,h)
     if (contain(Display::get_cursor_mode(), CursorMode::CAPTURED)) {
         auto [dx, dy] = Input::get_mouse_move();
         // 鼠标向右拖拽，相机沿全局坐标系y轴逆时针旋转。鼠标向下拖拽时，相机沿局部坐标系x轴逆时针旋转
         const float rotate_speed = 0.006f;
-        camera->rotate_local_axis({-dy * rotate_speed, 0, 0});
         camera->rotate_global_axis({0, -dx * rotate_speed, 0});
+        // 同时，要约束绕x轴旋转角度在(-90, 90)度之间
+        const float limit = std::numbers::pi_v<float> / 2 - 0.01;
+        float y_dir = std::asin(camera->get_local_transform().forward_direction().y);
+        float y_dir_target = std::clamp(y_dir - dy * rotate_speed, -limit , limit);
+        camera->rotate_local_axis({y_dir_target - y_dir, 0, 0});
     }
 }
 void MoveSystem::handle_keyboard(float delta) const {

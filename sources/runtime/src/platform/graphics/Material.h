@@ -1,7 +1,6 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "resource/Loader.h"
 #include "resource/Resource.h"
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Buffer.h"
@@ -10,6 +9,7 @@
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/UberShader.h"
 #include "resource/Resource.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cstdint>

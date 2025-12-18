@@ -6,11 +6,9 @@
 #include "platform/graphics/Shader.h"
 #include "platform/graphics/Texture.h"
 #include "platform/graphics/UberShader.h"
-#include "resource/ResMng.h"
-#include "rfl/enums.hpp"
 #include "runtime/GoonyaException.h"
+
 #include <cassert>
-#include <regex>
 #include <utility>
 
 namespace Goonya::Graphics {

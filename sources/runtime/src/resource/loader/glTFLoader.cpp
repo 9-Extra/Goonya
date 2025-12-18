@@ -3,7 +3,6 @@
 #include "core/RefCount.h"
 #include "core/as_u8string.h"
 #include "core/cgmath/cgmath.h"
-#include "core/log/Log.h"
 #include "core/path_formatter.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/world/Component.h"

@@ -57,15 +57,14 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
             return res;
         }
 
-        storage.emplace(pack_key, pack);
         std::string_view inner_key = key.substr(split + 1);
         auto iter = pack->contents.find(inner_key);
         if (iter == pack->contents.end()) {
-            LOG_ERROR("资源包{}内不存在资源", pack_key, inner_key);
+            LOG_ERROR("资源包{}内不存在资源{}", pack_key, inner_key);
             return res;
         }
         res = iter->second;
-        storage.emplace(key, res);
+        storage.emplace(key, res); // 添加直接使用key访问的捷径
     } else {
         // 普通资源
         try {
