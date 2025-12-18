@@ -37,7 +37,7 @@ void MoveSystem::handle_mouse() const {
     if (contain(Display::get_cursor_mode(), CursorMode::CAPTURED)) {
         auto [dx, dy] = Input::get_mouse_move();
         // 鼠标向右拖拽，相机沿全局坐标系y轴逆时针旋转。鼠标向下拖拽时，相机沿局部坐标系x轴逆时针旋转
-        const float rotate_speed = 0.006f;
+        const float rotate_speed = 0.002f;
         camera->rotate_global_axis({0, -dx * rotate_speed, 0});
         // 同时，要约束绕x轴旋转角度在(-90, 90)度之间
         const float limit = std::numbers::pi_v<float> / 2 - 0.01;

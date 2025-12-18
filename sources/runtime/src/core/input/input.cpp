@@ -41,8 +41,9 @@ void initalize() {
         return false;
     });
     EventBus::subscribe_event<Events::SysMousePos>(0, [](Events::SysMousePos &e) {
-        mouse_delta_x = (int32_t)e.x - mouse_pos_x;
-        mouse_delta_y = (int32_t)e.y - mouse_pos_y;
+        // 鼠标移动较快时，此事件可能在一帧中发布多次
+        mouse_delta_x += (int32_t)e.x - mouse_pos_x;
+        mouse_delta_y += (int32_t)e.y - mouse_pos_y;
         mouse_pos_x = (int32_t)e.x;
         mouse_pos_y = (int32_t)e.y;
         return false;
