@@ -48,19 +48,20 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
 
     Ref<Resource> res = {};
     size_t split = key.find(':');
-    if (split != std::string::npos) {
+    bool pack_loading = split != std::string::npos;
+    if (pack_loading) {
         // 读取包内资源
         std::string_view pack_key = key.substr(0, split);
         Ref<ResourcePack> pack = load_resource<ResourcePack>(pack_key);
         if (!pack) {
-            LOG_ERROR("加载资源包{}时出错", pack_key);
+            LOG_ERROR("加载资源包\"{}\"时出错", pack_key);
             return res;
         }
 
         std::string_view inner_key = key.substr(split + 1);
         auto iter = pack->contents.find(inner_key);
         if (iter == pack->contents.end()) {
-            LOG_ERROR("资源包{}内不存在资源{}", pack_key, inner_key);
+            LOG_ERROR("资源包\"{}\"内不存在资源\"{}\"", pack_key, inner_key);
             return res;
         }
         res = iter->second;
@@ -68,13 +69,14 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
     } else {
         // 普通资源
         try {
-            LOG_TRACE("加载资源{}", key);
+            LOG_TRACE("加载资源\"{}\"", key);
             res = try_load(resource_dir / as_u8string_view(std::format("{}.meta", key)));
             assert(res);
-            storage.emplace(key, res);
         } catch (const std::exception &e) {
-            LOG_ERROR("加载资源{}时出现异常{}", key, format_exception(e));
+            LOG_ERROR("加载资源\"{}\"时出现异常{}", key, format_exception(e));
         }
+
+        storage.emplace(key, res); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
     }
 
     return res;

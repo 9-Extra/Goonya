@@ -11,28 +11,6 @@
 #include <vector>
 
 namespace Goonya::Graphics {
-
-// template<typename T>
-// class GHandle{
-//     T* ptr = nullptr;
-// public:
-//     explicit GHandle(T* ptr) noexcept : ptr(ptr) {}
-
-//     explicit operator bool() const noexcept{
-//         return ptr != nullptr;
-//     }
-//     bool operator==(const GHandle<T>& ptr) noexcept{
-//         return this->ptr == ptr.ptr;
-//     }
-//     bool operator==(const T* ptr) noexcept{
-//         return this->ptr == ptr;
-//     }
-
-//     T* get() noexcept{
-//         return ptr;
-//     }
-// };
-
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
@@ -42,7 +20,7 @@ private:
 // passes
     std::unique_ptr<GeometryPass> geometry_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
-public:
+public: 
     RenderScene* create_scene() {
         RenderScene* scene = new RenderScene();
         scene_set.emplace_back(scene);

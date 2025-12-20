@@ -3,6 +3,7 @@
 #include "core/RefCount.h"
 #include "core/cgmath/cgmath.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
+#include "function/renderer/RenderScene.h"
 #include "function/renderer/RendererBasic.h"
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
@@ -14,6 +15,7 @@
 #include <cstdint>
 #include <memory>
 #include <ranges>
+#include <vector>
 
 namespace Goonya::Graphics {
 // 渲染mesh的组件，可以渲染出物体
@@ -39,12 +41,8 @@ public:
         for (SubMesh &sub_mesh : mesh->submeshes) {
             mesh_proxy->aabbs.push_back(sub_mesh.aabb.transformed(owner.get_world_model_matrix()));
         }
-
-        enqueue_render_task([mesh_proxy = mesh_proxy, &scene = get_owner()->get_world()->main_scene()] mutable {
-            ASSERT_RENDER_THREAD();
-            // mesh_proxy移交给渲染线程，Component中只持有指针，不要在逻辑线程访问它
-            scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
-        });
+        RenderScene& scene = get_owner()->get_world()->main_scene();
+        scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
     }
 
     const Ref<Mesh> &get_mesh() const noexcept { return mesh; }
@@ -53,7 +51,7 @@ public:
     void set_mesh(const Ref<Mesh> &mesh) noexcept {
         this->mesh = mesh;
         if (mesh_proxy) {
-            enqueue_render_task([proxy = mesh_proxy, mesh] mutable { proxy->mesh = mesh; });
+            mesh_proxy->mesh = mesh;
         }
     }
 
@@ -63,17 +61,15 @@ public:
         }
         materials[slot] = material;
         if (mesh_proxy) {
-            enqueue_render_task([proxy = mesh_proxy, slot, material] mutable {
-                proxy->materials.resize(slot + 1, nullptr);
-                proxy->materials[slot] = material;
-            });
+            mesh_proxy->materials.resize(slot + 1, nullptr);
+            mesh_proxy->materials[slot] = material;
         }
     }
 
     void set_materials(std::span<Ref<Material>> materials) noexcept {
-        this->materials.assign(materials.begin(), materials.end());
+        this->materials.assign_range(materials);
         if (mesh_proxy) {
-            enqueue_render_task([proxy = mesh_proxy, mats = this->materials] mutable { proxy->materials = mats; });
+            mesh_proxy->materials.assign_range(materials);
         }
     }
 

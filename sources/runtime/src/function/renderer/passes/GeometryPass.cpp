@@ -150,7 +150,8 @@ void GeometryPass::run(const PassRenderInfo& info) {
                 }
 
                 // 材质未设置时使用默认材质，多出来则无视
-                auto current_material = i < mesh->materials.size() ? mesh->materials[i] : default_material;
+                bool has_material = i < mesh->materials.size() && bool(mesh->materials[i]);
+                auto current_material = has_material ? mesh->materials[i] : default_material;
 
                 Batch batch{m, m->submeshes[i], offset * sizeof(PerObjectData)};
 
