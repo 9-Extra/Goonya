@@ -101,10 +101,6 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
 LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
     Goonya::Graphics::UberShader *shader = Goonya::resources.load_resource<Goonya::Graphics::UberShader>(TERRAIN_SHADER_NAME).get();
     terrain_material = create_ref<Goonya::Graphics::Material>(shader);
-    terrain_material->set_pipeline_setting(
-        "_depth_test", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));
-    terrain_material->set_pipeline_setting(
-        "_cull_mode", Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::CullFaceMode::BACK));
     terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());
 }
 

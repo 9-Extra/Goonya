@@ -122,6 +122,9 @@ static GLenum gl_blend_op(BlendOp op) noexcept {
         return GL_MIN;
     case BlendOp::MAX:
         return GL_MAX;
+    case BlendOp::MAX_:
+        assert(false);
+        break;
     }
     std::unreachable();
 }
@@ -148,6 +151,9 @@ static GLenum gl_blend_param(BlendFactor factor) noexcept {
         return GL_ONE_MINUS_SRC_ALPHA;
     case BlendFactor::ONE_MINUS_DST_ALPHA:
         return GL_ONE_MINUS_DST_ALPHA;
+    case BlendFactor::MAX_:
+        assert(false);
+        break;
     }
     std::unreachable();
 }
@@ -291,9 +297,11 @@ void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
                              submesh.base_vertex_offset); // 绘制
 }
 
-void OpenGLGraphicsAPI::draw_multidraw(Topology topology, int32_t* count_array, size_t* index_offset_array, int32_t* base_vertex_array, int32_t count) const {
+void OpenGLGraphicsAPI::draw_multidraw(Topology topology, int32_t *count_array, size_t *index_offset_array,
+                                       int32_t *base_vertex_array, int32_t count) const {
     ASSERT_RENDER_THREAD();
-    glMultiDrawElementsBaseVertex(Topology2OpenGL(topology), count_array, GL_UNSIGNED_INT, reinterpret_cast<const void *const *>(index_offset_array), count, count_array);
+    glMultiDrawElementsBaseVertex(Topology2OpenGL(topology), count_array, GL_UNSIGNED_INT,
+                                  reinterpret_cast<const void *const *>(index_offset_array), count, count_array);
 }
 
 // -----------------------bind-------------------------------

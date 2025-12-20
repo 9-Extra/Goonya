@@ -6,6 +6,10 @@
             "vertex_shader": "terrain.vert",
             "pixel_shader": "terrain.frag"
         },
+        "pipeline_setting": {
+            "_depth_test": 1,
+            "_cull_mode": 0
+        },
         "global_variants": [],
         "local_variants": []
     }

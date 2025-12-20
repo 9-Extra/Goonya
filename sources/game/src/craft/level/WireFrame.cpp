@@ -9,7 +9,6 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/Mesh.h"
-#include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 
@@ -46,10 +45,6 @@ WireFrame::WireFrame(Goonya::Graphics::RenderScene &render_scene) {
 
     Goonya::Graphics::UberShader *shader = Goonya::resources.load_resource<Goonya::Graphics::UberShader>(WIREFRAME_SHADER_NAME).get();
     material = create_ref<Goonya::Graphics::Material>(shader);
-    material->set_pipeline_setting("_depth_test",
-                                   Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::DepthTestMode::LESS_EQUAL));
-    material->set_pipeline_setting("_cull_mode",
-                                   Goonya::Graphics::PipelineSettingParamType(Goonya::Graphics::CullFaceMode::DISABLE));
 
     mesh_proxy = new Goonya::Graphics::MeshRenderProxy(); // 不需要由WireFrame销毁
     mesh_proxy->mesh = mesh;

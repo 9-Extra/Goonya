@@ -6,6 +6,10 @@
             "vertex_shader": "wire_frame.vert",
             "pixel_shader": "wire_frame.frag"
         },
+        "pipeline_setting": {
+            "_depth_test": 1,
+            "_cull_mode": 3
+        },
         "global_variants": [],
         "local_variants": []
     }

@@ -10,110 +10,13 @@
 #include "platform/graphics/UberShader.h"
 #include "resource/Resource.h"
 
-#include <algorithm>
 #include <cassert>
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <tuple>
 #include <unordered_map>
-#include <utility>
 
 namespace Goonya::Graphics {
-
-/**
- * @brief PipelineSetting中的条目保存在Material中的parameters中的类型
- */
-using PipelineSettingParamType = int32_t;
-
-class PipelineSettingSetter {
-    struct Entry {
-        std::string_view name;
-        void (*setter)(PipelineSetting &, PipelineSettingParamType);
-        PipelineSettingParamType (*getter)(const PipelineSetting &);
-    };
-
-    static constexpr Entry setter_table[] = {
-        {"_depth_test",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(DepthTestMode::DISABLE));
-             s.depth_test = DepthTestMode(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.depth_test); }},
-        {"_cull_mode",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(CullFaceMode::DISABLE));
-             s.cull_mode = CullFaceMode(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.cull_mode); }},
-        {"_is_blend_enable",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= 1);
-             s.is_blend_enable = bool(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.is_blend_enable); }},
-        {"_blendop_color",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(BlendOp::MAX));
-             s.blendop_color = BlendOp(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.blendop_color); }},
-        {"_blendop_alpha",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(BlendOp::MAX));
-             s.blendop_alpha = BlendOp(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.blendop_alpha); }},
-        {"_src_color_factor",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(BlendFactor::ONE_MINUS_DST_ALPHA));
-             s.src_color_factor = BlendFactor(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.src_color_factor); }},
-        {"_dst_color_factor",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(BlendFactor::ONE_MINUS_DST_ALPHA));
-             s.dst_color_factor = BlendFactor(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.dst_color_factor); }},
-        {"_src_alpha_factor",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(BlendFactor::ONE_MINUS_DST_ALPHA));
-             s.src_alpha_factor = BlendFactor(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.src_alpha_factor); }},
-        {"_dst_alpha_factor",
-         [](PipelineSetting &s, PipelineSettingParamType v) {
-             assert(v <= std::to_underlying(BlendFactor::ONE_MINUS_DST_ALPHA));
-             s.dst_alpha_factor = BlendFactor(v);
-         },
-         [](const PipelineSetting &s) { return PipelineSettingParamType(s.dst_alpha_factor); }}};
-
-public:
-    PipelineSettingSetter() = delete;
-
-    static void set_pipeline_setting(std::string_view param, uint8_t v, PipelineSetting &setting) {
-        for (const auto &entry : setter_table) {
-            if (entry.name == param) {
-                entry.setter(setting, v);
-            }
-        }
-    }
-
-    static void replace_pipeline_setting(std::string_view param, const PipelineSetting &reference,
-                                             PipelineSetting &setting) {
-        for (const auto &entry : setter_table) {
-            if (entry.name == param) {
-                entry.setter(setting, entry.getter(reference));
-                return;
-            }
-        }
-    }
-
-    static bool is_pipeline_setting(std::string_view param) {
-        return std::ranges::any_of(setter_table, [param](auto &&t) { return t.name == param; });
-    }
-};
 
 class Material final : public Resource {
 protected:
