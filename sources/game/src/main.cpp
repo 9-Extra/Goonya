@@ -23,9 +23,6 @@ int main() {
         {
             Ref<Goonya::Scene::Scene> scene =
                 Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
-            // std::shared_ptr<Goonya::GObject> k = Goonya::resources.scenes.at("科拉莉.Scene").root;
-            // k->set_position({2, 0, 0});
-            // scene.root->attach_child(k);
             world->set_root(scene->root);
         }
         // 初始捕获鼠标不方便调试

@@ -158,7 +158,6 @@ public:
             uint16_t id = register_key(key);
             if (id == MAX_GLOVAL_KEY_COUNR) {
                 continue;
-                ;
             }
             mask[id] = true;
         }

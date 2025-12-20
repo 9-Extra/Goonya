@@ -93,7 +93,7 @@ Ref<Material> Material::clone() const noexcept {
 
 void Material::update_shader_variant() {
     VariantCodeSet code{uber_shader->get_effective_global_key_code(), local_variant_code};
-    if (current_variant_code != code) {
+    if (current_variant_code != code) [[unlikely]] {
         shader = uber_shader->query_variant(code);
         current_variant_code = code;
     }
