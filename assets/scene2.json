@@ -48,7 +48,7 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "plane",
+                                "mesh": "buildin:plane",
                                 "material": [
                                     "models/crafting_table/crafting_table:front"
                                 ]
@@ -71,7 +71,7 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "plane",
+                                "mesh": "buildin:plane",
                                 "material": [
                                     "models/crafting_table/crafting_table:side"
                                 ]
@@ -94,7 +94,7 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "plane",
+                                "mesh": "buildin:plane",
                                 "material": [
                                     "models/crafting_table/crafting_table:top"
                                 ]
@@ -117,7 +117,7 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "plane",
+                                "mesh": "buildin:plane",
                                 "material": [
                                     "models/gold/gold:gold"
                                 ]
@@ -140,7 +140,7 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "plane",
+                                "mesh": "buildin:plane",
                                 "material": [
                                     "models/crafting_table/crafting_table:side"
                                 ]
@@ -163,7 +163,7 @@
                         },
                         "components": {
                             "mesh_render": {
-                                "mesh": "plane",
+                                "mesh": "buildin:plane",
                                 "material": [
                                     "models/crafting_table/crafting_table:side"
                                 ]
@@ -251,6 +251,34 @@
                 "scene": "禁止二次配布/龙娘科拉莉2.0/科拉莉:Scene"
             },
             {
+                "name": "纳西妲",
+                "transform": {
+                    "position": [
+                        0,
+                        5,
+                        -20
+                    ],
+                    "rotation": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "scale": [
+                        5,
+                        5,
+                        5
+                    ]
+                },
+                "components":{
+                    "mesh_render":{
+                        "mesh":"禁止二次配布/Nahida/纳西妲:纳西妲.001",
+                        "material":[
+                            "models/wood_floor_deck/wood_floor_deck_1k:wood_floor_deck" // face
+                        ]
+                    }
+                }
+            },
+            {
                 "name": "测试片",
                 "transform": {
                     "position": [
@@ -271,7 +299,7 @@
                 },
                 "components": {
                     "mesh_render": {
-                        "mesh": "plane",
+                        "mesh": "buildin:plane",
                         "material": [
                             "materials/test_material"
                         ]
@@ -298,7 +326,7 @@
                 },
                 "components": {
                     "mesh_render": {
-                        "mesh": "plane",
+                        "mesh": "buildin:plane",
                         "material": [
                             "models/stone/stone:stone"
                         ]

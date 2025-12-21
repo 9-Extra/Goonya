@@ -334,16 +334,20 @@ struct GlTFLoadingContext {
             if (material.isMember("normalTexture")) {
                 normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
             } else {
-                normal_texture = resources.load_resource<Graphics::Texture>("textures/normal");
+                normal_texture = resources.load_resource<Graphics::Texture>("buildin:normal");
             }
-            Ref<Graphics::Texture> basecolor_texture =
-                load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
+            Ref<Graphics::Texture> basecolor_texture;
+            if (material["pbrMetallicRoughness"].isMember("baseColorTexture")) {
+                basecolor_texture = load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
+            } else {
+                basecolor_texture = resources.load_resource<Graphics::Texture>("buildin:missing");
+            }
             Ref<Graphics::Texture> metallic_roughness_texture;
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
                 metallic_roughness_texture =
                     load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
             } else {
-                metallic_roughness_texture = resources.load_resource<Graphics::Texture>("textures/white");
+                metallic_roughness_texture = resources.load_resource<Graphics::Texture>("buildin:white");
             }
 
             float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();

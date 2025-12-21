@@ -5,6 +5,7 @@
 #include "core/log/Log.h"
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/Shader.h"
+#include "platform/graphics/Texture.h"
 #include "resource/Resource.h"
 
 #include <array>
@@ -196,7 +197,11 @@ protected:
     // 不会变的
     std::string vs_src;
     std::string ps_src;
+
+    // 默认材质参数
     PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
+    std::unordered_map<std::string, Meta::DynamicData> parameters; // 默认材质参数
+    std::unordered_map<uint32_t, Ref<Texture>> textures; // 默认纹理绑定
 
     LocalVariantKeyCollect local_variant_key_collect;
     VariantCode effective_global_key_mask;
