@@ -13,7 +13,7 @@
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 #include "resource/Resource.h"
-#include "resource/scene/scene.h"
+#include <resource/loader/SceneLoader.h>
 
 #include "runtime/GoonyaException.h"
 #include "json/value.h"
@@ -427,7 +427,7 @@ struct GlTFLoadingContext {
 
     void load_gltf_scene() {
         for (const auto &[id, scene_json] : std::ranges::enumerate_view(json["scenes"])) {
-            Ref<Scene::Scene> scene = create_ref<Scene::Scene>();
+            Ref<Scene> scene = create_ref<Scene>();
             // 默认使用其自定义的名称，否则使用下标生成名称，重名会导致错误
             if (scene_json.isMember("name")) {
                 scene->name = scene_json["name"].asString();

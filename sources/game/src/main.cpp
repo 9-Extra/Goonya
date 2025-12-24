@@ -3,7 +3,7 @@
 #include <iostream>
 #include <memory>
 #include <print>
-#include <resource/scene/scene.h>
+#include <resource/loader/SceneLoader.h>
 #include <runtime/Goonya.h>
 
 #include "core/format_exception.h"
@@ -21,8 +21,8 @@ int main() {
         Goonya::World* world = Goonya::World::create_world();
 
         {
-            Ref<Goonya::Scene::Scene> scene =
-                Goonya::Scene::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
+            Ref<Goonya::Scene> scene =
+                Goonya::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
             world->set_root(scene->root);
         }
         // 初始捕获鼠标不方便调试

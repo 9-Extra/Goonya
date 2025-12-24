@@ -269,14 +269,7 @@
                         5
                     ]
                 },
-                "components":{
-                    "mesh_render":{
-                        "mesh":"禁止二次配布/Nahida/纳西妲:纳西妲.001",
-                        "material":[
-                            "models/wood_floor_deck/wood_floor_deck_1k:wood_floor_deck" // face
-                        ]
-                    }
-                }
+                "scene": "禁止二次配布/Nahida/纳西妲Scene"
             },
             {
                 "name": "测试片",

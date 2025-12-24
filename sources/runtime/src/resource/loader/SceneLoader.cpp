@@ -1,4 +1,4 @@
-#include "scene.h"
+#include "SceneLoader.h"
 
 #include "core/RefCount.h"
 #include "core/cgmath/cgmath.h"
@@ -11,12 +11,14 @@
 #include "platform/graphics/Mesh.h"
 #include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
+#include "core/path_formatter.h"
+
 #include <fstream>
 #include <json/json.h>
 #include <memory>
 #include <vector>
 
-namespace Goonya::Scene {
+namespace Goonya {
 // 从json加载一个Vector3f
 Vector3f load_vec3(const Json::Value &json) {
     assert(json.isArray());
@@ -105,7 +107,12 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
 
     if (json.isMember("scene")) {
         // todo: copy
-        node->attach_child(resources.load_resource<Scene>(json["scene"].asString())->root);
+        Ref<Scene> sub_scene = resources.load_resource<Scene>(json["scene"].asString());
+        if (sub_scene){
+            node->attach_child(sub_scene->root);
+        } else {
+            throw RuntimeError(std::format("子场景\"{}\"加载失败",json["scene"].asString()));
+        }
     }
 
     return node;
@@ -118,6 +125,9 @@ Ref<Scene> load_scene_from_json(const std::string &path) {
     {
         Json::Reader reader;
         std::ifstream file(path);
+        if (!file.is_open()){
+            throw RuntimeError(std::format("打开文件\"{}\"失败", path));
+        }
         reader.parse(file, json, false);
     }
 
@@ -128,4 +138,4 @@ Ref<Scene> load_scene_from_json(const std::string &path) {
     return scene;
 }
 
-} // namespace Goonya::Scene
+} // namespace Goonya
