@@ -16,7 +16,6 @@ using Goonya::Color;
 class OpenGLGraphicsAPI final {
 public:
     std::shared_ptr<spdlog::logger> logger;
-    bool initialized = false;
 
     void initialize();
     void drop() noexcept;
@@ -50,6 +49,7 @@ public:
 
 private:
     Ref<RenderTarget> rendertarget_screen;
+    bool initialized = false;
 };
 
 } // namespace Goonya

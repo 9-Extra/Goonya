@@ -4,6 +4,7 @@
 #include "core/cgmath/transform.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/passes/UniformBufferStructure.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
@@ -113,11 +114,6 @@ void GeometryPass::run(const PassRenderInfo& info) {
     const std::array<Plane, 6> worldspace_frustum = create_frustum_planes(view_perspective);
 
     Ref<Material> default_material = resources.load_resource<Material>("materials/default");
-
-    struct alignas(256) PerObjectData final {
-        Matrix4 model_matrix;
-        Matrix4 normal_matrix; // 内存对齐
-    };
 
     struct Batch { // NOLINT
         const GLMesh *mesh;

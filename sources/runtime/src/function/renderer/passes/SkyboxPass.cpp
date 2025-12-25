@@ -1,6 +1,7 @@
 #include "SkyboxPass.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/passes/UniformBufferStructure.h"
 
 namespace Goonya {
 
@@ -28,14 +29,16 @@ void SkyBoxPass::run(const PassRenderInfo& info) {
     }
 
     Matrix4 skybox_view_perspective_matrix = info.camera->get_skybox_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
-
-    // 绑定天空盒材质
-    skybox_material->bind();
+    Ref<GLBuffer> skybox_uniform = create_ref<GLBuffer>(sizeof(PerObjectData), BufferType::STREAM);
     {
         // 填充天空盒需要的参数（透视投影矩阵）
-        StructBufferWriter<SkyBoxData> data(skybox_uniform, BufferMapOption::WRITE_DISCARD);
-        data->skybox_view_perspective_matrix = skybox_view_perspective_matrix.transpose();
+        StructBufferWriter<PerObjectData> data(skybox_uniform, BufferMapOption::WRITE_DISCARD);
+        data->model_matrix = skybox_view_perspective_matrix.transpose();
+        // 不需要normal_matrix
     }
+    
+    // 绑定天空盒材质
+    skybox_material->bind();
     skybox_uniform->bind_uniform(0);
     mesh->bind();
     GL.draw_submesh(mesh->submeshes.at(0));
