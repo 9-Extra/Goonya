@@ -6,7 +6,7 @@
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 
 #include <cassert>
 
@@ -15,13 +15,13 @@ namespace Craft {
 // 玩家看向的方块线框
 class WireFrame {
 private:
-    Ref<Goonya::Graphics::Material> material;
-    Ref<Goonya::Graphics::Mesh> mesh;
+    Ref<Goonya::Material> material;
+    Ref<Goonya::GLMesh> mesh;
 
-    Goonya::Graphics::MeshRenderProxy *mesh_proxy;
+    Goonya::MeshRenderProxy *mesh_proxy;
 
 public:
-    explicit WireFrame(Goonya::Graphics::RenderScene &render_scene);
+    explicit WireFrame(Goonya::RenderScene &render_scene);
     ~WireFrame() {};
 
     void draw_at(Goonya::Vector3f pos, const BakedBlockModel& model);

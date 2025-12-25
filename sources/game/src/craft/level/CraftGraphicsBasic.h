@@ -1,6 +1,6 @@
 #pragma once
 
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 
 #include <cstdint>
 #include <string_view>
@@ -35,10 +35,10 @@ struct PointLight {
 //     PointLight pointlight_list[2];
 // };
 
-inline const Goonya::Graphics::VertexLayout VERTEX_LAYOUT_PLANE =
-    Goonya::Graphics::VertexLayoutBuilder()
-        .add_attribute(Goonya::Graphics::VertexAttribute::POSITION)
-        .add_attribute(Goonya::Graphics::VertexAttribute::UV)
+inline const Goonya::VertexLayout VERTEX_LAYOUT_PLANE =
+    Goonya::VertexLayoutBuilder()
+        .add_attribute(Goonya::VertexAttribute::POSITION)
+        .add_attribute(Goonya::VertexAttribute::UV)
         .build();
 
 constexpr std::string_view TERRAIN_SHADER_NAME = "shaders/craft/terrain/terrain";

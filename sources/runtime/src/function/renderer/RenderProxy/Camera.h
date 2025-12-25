@@ -3,9 +3,9 @@
 #include "core/cgmath/cgmath.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/RenderTarget.h"
+#include "platform/graphics/opengl/OpenGLAPI.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 class CameraRenderProxy {
 public:
@@ -16,9 +16,9 @@ public:
     float fov = 1.57f;
     float near_z = 1000.0f, far_z = 1.0f;
 
-    Vector4f rect = {0, 0, 1, 1}; // 按照比例计算，其实是[x, y, w, h]
-    Ref<RenderTarget> render_target;   // 相机绘制的目标
-    RenderScene *scene = nullptr;      // 绘制的场景
+    Vector4f rect = {0, 0, 1, 1};    // 按照比例计算，其实是[x, y, w, h]
+    Ref<RenderTarget> render_target; // 相机绘制的目标
+    RenderScene *scene = nullptr;    // 绘制的场景
 
 public:
     CameraRenderProxy() = default;
@@ -28,7 +28,7 @@ public:
     Matrix4 get_view_matrix() const noexcept { return view_matrix; }
     Matrix4 get_perspective_matrix(float ratio) const noexcept {
         bool render_to_texture = render_target ? !render_target->is_screen() : true;
-        return graphics_api->compute_perspective_matrix(ratio, fov, near_z, far_z, render_to_texture);
+        return GL.compute_perspective_matrix(ratio, fov, near_z, far_z, render_to_texture);
     }
     Matrix4 get_view_perspective_matrix(float ratio) const noexcept {
         // 先转换到相机坐标系，再投影
@@ -45,4 +45,4 @@ public:
     }
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

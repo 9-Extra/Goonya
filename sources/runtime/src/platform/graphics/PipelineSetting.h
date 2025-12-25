@@ -6,7 +6,7 @@
 #include <string_view>
 #include <utility>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 enum class CullFaceMode : uint8_t {
     BACK = 0,
@@ -153,4 +153,4 @@ public:
         return std::ranges::any_of(ENTRY_TABLE, [key](auto &&t) { return t.key == key; });
     }
 };
-}; // namespace Goonya::Graphics
+}; // namespace Goonya

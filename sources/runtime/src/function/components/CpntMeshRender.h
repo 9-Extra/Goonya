@@ -10,18 +10,18 @@
 #include "function/world/World.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include <cassert>
 #include <cstdint>
 #include <memory>
 #include <ranges>
 #include <vector>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 // 渲染mesh的组件，可以渲染出物体
 class CpntMeshRender : public Component {
 protected:
-    Ref<Mesh> mesh;
+    Ref<GLMesh> mesh;
     std::vector<Ref<Material>> materials;
 
     MeshRenderProxy *mesh_proxy;
@@ -45,10 +45,10 @@ public:
         scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
     }
 
-    const Ref<Mesh> &get_mesh() const noexcept { return mesh; }
+    const Ref<GLMesh> &get_mesh() const noexcept { return mesh; }
     const std::vector<Ref<Material>> &get_materials() const noexcept { return materials; }
 
-    void set_mesh(const Ref<Mesh> &mesh) noexcept {
+    void set_mesh(const Ref<GLMesh> &mesh) noexcept {
         this->mesh = mesh;
         if (mesh_proxy) {
             mesh_proxy->mesh = mesh;
@@ -102,4 +102,4 @@ public:
     }
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

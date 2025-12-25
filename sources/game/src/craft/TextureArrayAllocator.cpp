@@ -1,9 +1,9 @@
 #include "TextureArrayAllocator.h"
 
+#include "core/RefCount.h"
 #include "core/cgmath/vector.h"
 #include "core/log/Log.h"
-#include "platform/graphics/Graphics.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
 #include "craft/core/resource.h"
 
@@ -58,20 +58,19 @@ uint32_t TextureArrayAllocator::alloc_texture(std::string_view texture_location)
     return id;
 }
 
-Ref<Goonya::Graphics::Texture> TextureArrayAllocator::generate_texture_array(){
-    using namespace Goonya::Graphics;
+Ref<Goonya::GLTexture> TextureArrayAllocator::generate_texture_array(){
     size_t texture_count = texture_storage.size();
-    TextureCreateDesc desc{
-        .type = TextureType::TEXTURE_2D_ARRAY,
-        .format = TextureStorageFormat::RGBA_f16,
+    Goonya::TextureCreateDesc desc{
+        .type = Goonya::TextureType::TEXTURE_2D_ARRAY,
+        .format = Goonya::TextureStorageFormat::RGBA_f16,
         .shape = {this->width, this->height, (uint32_t)texture_count}
     };
-    Ref<Goonya::Graphics::Texture> texture_array = Goonya::Graphics::graphics_api->create_texture(desc);
+    Ref<Goonya::GLTexture> texture_array = create_ref<Goonya::GLTexture>(desc);
     for(size_t i = 0;i < texture_count;i++){
         texture_array->import_image(texture_storage[i], 0, 0, 0, i);
     }
 
-    texture_array->set_filter_mode(TextureFilterMode::NEAREST);
+    texture_array->set_filter_mode(Goonya::TextureFilterMode::NEAREST);
 
     return texture_array;
 }

@@ -1,36 +1,36 @@
 #include "TextureLoader.h"
 
+#include "core/RefCount.h"
 #include "core/path_formatter.h"
-#include "platform/graphics/Graphics.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
 
-static std::tuple<Graphics::TextureFilterMode, Graphics::TextureWarpMode>
+static std::tuple<TextureFilterMode, TextureWarpMode>
 parse_texture_profile(const Json::Value &texture_desc) {
-    Graphics::TextureFilterMode filter_mode;
-    Graphics::TextureWarpMode warp_mode;
+    TextureFilterMode filter_mode;
+    TextureWarpMode warp_mode;
     const Json::Value &filter_mode_name = texture_desc["filter_mode"];
     const Json::Value &warp_mode_name = texture_desc["warp_mode"];
 
     if (!filter_mode_name || filter_mode_name == "trilinear") {
-        filter_mode = Graphics::TextureFilterMode::TRILINEAR;
+        filter_mode = TextureFilterMode::TRILINEAR;
     } else if (filter_mode_name == "point") {
-        filter_mode = Graphics::TextureFilterMode::BILINEAR;
+        filter_mode = TextureFilterMode::BILINEAR;
     } else if (filter_mode_name == "bilinear") {
-        filter_mode = Graphics::TextureFilterMode::NEAREST;
+        filter_mode = TextureFilterMode::NEAREST;
     } else {
         throw RuntimeError(std::format("未知的纹理过滤模式：{}", filter_mode_name.asString()));
     }
 
     if (!warp_mode_name || warp_mode_name == "repeat") {
-        warp_mode = Graphics::TextureWarpMode::REPEAT;
+        warp_mode = TextureWarpMode::REPEAT;
     } else if (warp_mode_name == "clamp") {
-        warp_mode = Graphics::TextureWarpMode::ClAMP;
+        warp_mode = TextureWarpMode::ClAMP;
     } else if (warp_mode_name == "mirror") {
-        warp_mode = Graphics::TextureWarpMode::MIRROR;
+        warp_mode = TextureWarpMode::MIRROR;
     } else {
         throw RuntimeError(std::format("未知的纹理重复模式：{}", warp_mode_name.asString()));
     }
@@ -54,14 +54,14 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
         uint32_t width = image.get_width();
         uint32_t height = image.get_height();
 
-        Graphics::TextureStorageFormat storage_type = Graphics::Texture::get_proper_storage_type(image);
+        TextureStorageFormat storage_type = GLTexture::get_proper_storage_type(image);
 
-        if (storage_type == Graphics::TextureStorageFormat::UNKNOWN) {
+        if (storage_type == TextureStorageFormat::UNKNOWN) {
             throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_path));
         }
-        Graphics::TextureCreateDesc create_desc{Graphics::TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
+        TextureCreateDesc create_desc{TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
 
-        Ref<Graphics::Texture> texture = Graphics::graphics_api->create_texture(create_desc);
+        Ref<GLTexture> texture = create_ref<GLTexture>(create_desc);
 
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
         texture->set_filter_mode(filter_mode);
@@ -82,7 +82,6 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
         bool is_color = cubemap_desc.get("is_color", false).asBool();
         auto [filter_mode, warp_mode] = parse_texture_profile(cubemap_desc);
 
-        using Graphics::TextureStorageFormat;
         // 使用第一张图像的宽高信息分配纹理空间
         stb::Image image = stb::Image::load(image_dirs[0], is_color);
         if (!image) {
@@ -92,13 +91,13 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
         int width = image.get_width();
         int height = image.get_height();
 
-        TextureStorageFormat storage_type = Graphics::Texture::get_proper_storage_type(image);
+        TextureStorageFormat storage_type = GLTexture::get_proper_storage_type(image);
         if (storage_type == TextureStorageFormat::UNKNOWN) {
             throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_dirs[0]));
         }
-        Graphics::TextureCreateDesc texture_desc{
-            Graphics::TextureType::TEXTURE_CUBEMAP, storage_type, {(uint32_t)width, (uint32_t)height, 0}};
-        Ref<Graphics::Texture> texture = Graphics::graphics_api->create_texture(texture_desc);
+        TextureCreateDesc texture_desc{
+            TextureType::TEXTURE_CUBEMAP, storage_type, {(uint32_t)width, (uint32_t)height, 0}};
+        Ref<GLTexture> texture = create_ref<GLTexture>(texture_desc);
         texture->set_filter_mode(filter_mode);
 
         texture->import_image(image, 0, 0, 0, 0);

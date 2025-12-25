@@ -8,9 +8,9 @@
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/UberShader.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "resource/ResMng.h"
 #include "resource/Resource.h"
 #include <resource/loader/SceneLoader.h>
@@ -78,11 +78,11 @@ struct glTFVertex {
     Vector2f uv;
 };
 
-const Graphics::VertexLayout GLTF_VERTEX_LAYOUT = Graphics::VertexLayoutBuilder()
-                                                      .add_attribute(Graphics::VertexAttribute::POSITION)
-                                                      .add_attribute(Graphics::VertexAttribute::NORMAL)
-                                                      .add_attribute(Graphics::VertexAttribute::TANGENT)
-                                                      .add_attribute(Graphics::VertexAttribute::UV)
+const VertexLayout GLTF_VERTEX_LAYOUT = VertexLayoutBuilder()
+                                                      .add_attribute(VertexAttribute::POSITION)
+                                                      .add_attribute(VertexAttribute::NORMAL)
+                                                      .add_attribute(VertexAttribute::TANGENT)
+                                                      .add_attribute(VertexAttribute::UV)
                                                       .build();
 
 struct GlTFLoadingContext {
@@ -90,8 +90,8 @@ struct GlTFLoadingContext {
     std::filesystem::path path;
     Json::Value json;
 
-    std::vector<Ref<Graphics::Texture>> texture_list;
-    std::vector<Ref<Graphics::Material>> material_list;
+    std::vector<Ref<GLTexture>> texture_list;
+    std::vector<Ref<Material>> material_list;
 
     GlTFLoadingContext(Ref<ResourcePack> pack, std::filesystem::path path)
         : pack(std::move(pack)), path(std::move(path)) {
@@ -215,7 +215,7 @@ struct GlTFLoadingContext {
             // 通过顶点和索引总数预先分配内存
             std::vector<std::byte> raw_vertices(total_vertex_count * sizeof(glTFVertex));
             std::vector<uint32_t> indices(total_indices_count);
-            std::vector<Graphics::SubMesh> sub_meshes;
+            std::vector<SubMesh> sub_meshes;
             sub_meshes.reserve(primitive_info.size());
 
             std::span<glTFVertex> vertices = std::span((glTFVertex *)raw_vertices.data(), total_vertex_count);
@@ -235,8 +235,8 @@ struct GlTFLoadingContext {
                     indices[index_offset + i + 2] = info.indices_ptr[i + 0];
                 }
 
-                sub_meshes.emplace_back(Graphics::SubMesh{index_offset, info.indices_count, vertex_offset,
-                                                          Graphics::Topology::TRIANGLE,
+                sub_meshes.emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset,
+                                                          Topology::TRIANGLE,
                                                           BoundingBox{info.pos_min, info.pos_max}});
 
                 vertex_offset += info.vertex_count;
@@ -245,7 +245,7 @@ struct GlTFLoadingContext {
 
             assert(vertex_offset == total_vertex_count && index_offset == total_indices_count);
             // 用收集完成的数据构建MeshDesc并添加资源
-            Ref<Graphics::Mesh> device_mesh = Graphics::graphics_api->create_mesh(GLTF_VERTEX_LAYOUT);
+            Ref<GLMesh> device_mesh = create_ref<GLMesh>(GLTF_VERTEX_LAYOUT);
             device_mesh->set_vertices(0, raw_vertices);
             device_mesh->set_indices(indices);
             device_mesh->submeshes = std::move(sub_meshes);
@@ -258,7 +258,7 @@ struct GlTFLoadingContext {
         std::filesystem::path root = path.parent_path();
 
         // 加载纹理（在加载材质时加载需要的纹理）
-        auto load_texture = [&](uint32_t index, bool is_color) -> Ref<Graphics::Texture> {
+        auto load_texture = [&](uint32_t index, bool is_color) -> Ref<GLTexture> {
             if (index < texture_list.size() && texture_list[index]) {
                 return texture_list[index];
             }
@@ -278,24 +278,24 @@ struct GlTFLoadingContext {
             uint32_t width = image.get_width();
             uint32_t height = image.get_height();
 
-            Graphics::TextureStorageFormat storage_type = Graphics::Texture::get_proper_storage_type(image);
+            TextureStorageFormat storage_type = GLTexture::get_proper_storage_type(image);
 
-            if (storage_type == Graphics::TextureStorageFormat::UNKNOWN) {
+            if (storage_type == TextureStorageFormat::UNKNOWN) {
                 throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_path));
             }
-            Graphics::TextureCreateDesc create_desc{
-                Graphics::TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
+            TextureCreateDesc create_desc{
+                TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
 
-            Ref<Graphics::Texture> texture = Graphics::graphics_api->create_texture(create_desc);
+            Ref<GLTexture> texture = create_ref<GLTexture>(create_desc);
 
-            Graphics::TextureFilterMode filter_mode = Graphics::TextureFilterMode::BILINEAR;
+            TextureFilterMode filter_mode = TextureFilterMode::BILINEAR;
             // 不严格支持glTF标准
             if (sampler_info.isMember("magFilter")) {
                 uint32_t value = sampler_info["magFilter"].asUInt();
                 if (value == 9728) {
-                    filter_mode = Graphics::TextureFilterMode::NEAREST;
+                    filter_mode = TextureFilterMode::NEAREST;
                 } else if (value == 9729) {
-                    filter_mode = Graphics::TextureFilterMode::BILINEAR;
+                    filter_mode = TextureFilterMode::BILINEAR;
                 } else {
                     throw RuntimeError(std::format("无效的sampler.magFilter: {}", value));
                 }
@@ -304,11 +304,11 @@ struct GlTFLoadingContext {
             if (sampler_info.isMember("minFilter")) {
                 uint32_t value = sampler_info["minFilter"].asUInt();
                 if (value == 9728) {
-                    filter_mode = Graphics::TextureFilterMode::NEAREST;
+                    filter_mode = TextureFilterMode::NEAREST;
                 } else if (value == 9729) {
-                    filter_mode = Graphics::TextureFilterMode::BILINEAR;
+                    filter_mode = TextureFilterMode::BILINEAR;
                 } else if (value == 9987 || value == 9984 || value == 9985 || value == 9986) {
-                    filter_mode = Graphics::TextureFilterMode::TRILINEAR; // 不严格
+                    filter_mode = TextureFilterMode::TRILINEAR; // 不严格
                 } else {
                     throw RuntimeError(std::format("无效的sampler.minFilter: {}", value));
                 }
@@ -330,31 +330,31 @@ struct GlTFLoadingContext {
         for (const Json::Value &material : json["materials"]) {
             const std::string &key = material["name"].asString();
 
-            Ref<Graphics::Texture> normal_texture;
+            Ref<GLTexture> normal_texture;
             if (material.isMember("normalTexture")) {
                 normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
             } else {
-                normal_texture = resources.load_resource<Graphics::Texture>("buildin:normal");
+                normal_texture = resources.load_resource<GLTexture>("buildin:normal");
             }
-            Ref<Graphics::Texture> basecolor_texture;
+            Ref<GLTexture> basecolor_texture;
             if (material["pbrMetallicRoughness"].isMember("baseColorTexture")) {
                 basecolor_texture = load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
             } else {
-                basecolor_texture = resources.load_resource<Graphics::Texture>("buildin:missing");
+                basecolor_texture = resources.load_resource<GLTexture>("buildin:missing");
             }
-            Ref<Graphics::Texture> metallic_roughness_texture;
+            Ref<GLTexture> metallic_roughness_texture;
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
                 metallic_roughness_texture =
                     load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
             } else {
-                metallic_roughness_texture = resources.load_resource<Graphics::Texture>("buildin:white");
+                metallic_roughness_texture = resources.load_resource<GLTexture>("buildin:white");
             }
 
             float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();
             float roughnessFactor = material["pbrMetallicRoughness"].get("roughnessFactor", 1.0).asFloat();
 
-            Ref<Graphics::Material> device_material =
-                create_ref<Graphics::Material>(resources.load_resource<Graphics::UberShader>("shaders/pbr/pbr").get());
+            Ref<Material> device_material =
+                create_ref<Material>(resources.load_resource<UberShader>("shaders/pbr/pbr").get());
             device_material->set_param("metallic_factor", metallicFactor);
             device_material->set_param("roughness_factor", roughnessFactor);
             device_material->set_texture("basecolor_texture", basecolor_texture);
@@ -389,13 +389,13 @@ struct GlTFLoadingContext {
         // 加载额外属性
         if (node_json.isMember("mesh")) {
 
-            std::unique_ptr<Graphics::CpntMeshRender> mesh_render = std::make_unique<Graphics::CpntMeshRender>();
+            std::unique_ptr<CpntMeshRender> mesh_render = std::make_unique<CpntMeshRender>();
 
             // 加载Mesh
             uint32_t mesh_id = node_json["mesh"].asUInt();
             const Json::Value &mesh_json = json["meshes"][mesh_id];
             AssetKey mesh_key = mesh_json["name"].asString();
-            Ref<Graphics::Mesh> mesh = Ref<Graphics::Mesh>::cast_from(pack->contents.at(mesh_key));
+            Ref<GLMesh> mesh = Ref<GLMesh>::cast_from(pack->contents.at(mesh_key));
             mesh_render->set_mesh(mesh);
 
             /*

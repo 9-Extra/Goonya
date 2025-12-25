@@ -6,9 +6,8 @@
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
-#include "platform/graphics/RenderTarget.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 // 相机组件，可以设置为主相机，使相机跟随其owner object移动
 class CpntCamera final : public Component {
 public:
@@ -54,4 +53,4 @@ public:
         }
     }
 };
-} // namespace Goonya::Graphics
+} // namespace Goonya

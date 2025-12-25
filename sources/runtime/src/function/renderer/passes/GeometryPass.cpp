@@ -1,10 +1,12 @@
 #include "GeometryPass.h"
+#include "core/RefCount.h"
 #include "core/cgmath/cgmath.h"
 #include "core/cgmath/transform.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 
 #include <array>
@@ -13,10 +15,10 @@
 #include <cstdint>
 #include <ranges>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 GeometryPass::GeometryPass() {
-    per_frame_uniform = graphics_api->create_buffer(sizeof(PerFrameData), BufferType::DYNAMIC);
+    per_frame_uniform = create_ref<GLBuffer>(sizeof(PerFrameData), BufferType::DYNAMIC);
     per_frame_uniform->set_debug_label("Lambert Per Frame");
 }
 
@@ -118,7 +120,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
     };
 
     struct Batch { // NOLINT
-        const Mesh *mesh;
+        const GLMesh *mesh;
         SubMesh sub_mesh;
         size_t per_object_data_offset;
     };
@@ -126,8 +128,8 @@ void GeometryPass::run(const PassRenderInfo& info) {
     std::unordered_map<Material *, std::vector<Batch>> batcher;
 
     // 把所有用于一般渲染每帧变化的数据收集到一个buffer中
-    Ref<Buffer> per_object_uniform =
-        graphics_api->create_buffer(scene.mesh_proxys.size() * sizeof(PerObjectData), BufferType::STREAM);
+    Ref<GLBuffer> per_object_uniform =
+        create_ref<GLBuffer>(scene.mesh_proxys.size() * sizeof(PerObjectData), BufferType::STREAM);
     per_object_uniform->set_debug_label("Lambert Per Object");
 
     {
@@ -135,7 +137,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
 
         // 遍历所有part，绘制每一个part
         for (const auto [offset, mesh] : std::views::enumerate(scene.mesh_proxys)) {
-            const Mesh *m = mesh->mesh.get();
+            const GLMesh *m = mesh->mesh.get();
 
             // 填充PerObject参数
             per_object_data[offset]->model_matrix = mesh->model_matrix.transpose();
@@ -166,9 +168,9 @@ void GeometryPass::run(const PassRenderInfo& info) {
         for (Batch &item : batch) {
             per_object_uniform->bind_uniform_ranged(1, item.per_object_data_offset, sizeof(PerObjectData));
             item.mesh->bind();
-            graphics_api->draw_submesh(item.sub_mesh);
+            GL.draw_submesh(item.sub_mesh);
         }
     }
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

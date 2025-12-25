@@ -5,7 +5,6 @@
 #include "block/blockstate.h"
 #include "craft/core/core.h"
 #include "craft/core/craft_math.h"
-#include "platform/graphics/Texture.h"
 
 #include <algorithm>
 #include <cassert>
@@ -59,7 +58,7 @@ private:
     BakedBlockModel missing_block_model;
 
     // 既然BakedBlockModel中包含了对texture_array下标的引用，那么把texture放在ModelManager里也不过分吧
-    Ref<Goonya::Graphics::Texture> block_texture_array;
+    Ref<Goonya::GLTexture> block_texture_array;
 
 public:
     ModelManager() { load_all_models(); };
@@ -77,7 +76,7 @@ public:
         }
     }
 
-    Ref<Goonya::Graphics::Texture> get_textures() const noexcept { return block_texture_array; }
+    Ref<Goonya::GLTexture> get_textures() const noexcept { return block_texture_array; }
 
     static ModelManager &get() noexcept {
         assert(instance.has_value());

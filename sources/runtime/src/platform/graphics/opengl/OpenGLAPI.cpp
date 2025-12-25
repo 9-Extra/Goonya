@@ -8,31 +8,27 @@
 #include <spdlog/async.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
-#include <string>
 #include <utility>
 
-#include "GLBuffer.h"
 #include "GLRenderTarget.h"
 #include "core/RefCount.h"
 #include "function/renderer/RendererBasic.h"
 #include "platform/display/display.h"
-#include "platform/graphics/Buffer.h"
-#include "platform/graphics/Mesh.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLMesh.h"
-#include "platform/graphics/opengl/GLShader.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
-OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
+void OpenGLGraphicsAPI::initialize() {
     ASSERT_RENDER_THREAD();
 
     // 初始化日志
     {
         const auto &sinks = Logger::get_sinks();
-        logger = std::make_shared<spdlog::async_logger>("OpenGL", sinks.begin(), sinks.end(), spdlog::thread_pool());
-        logger->set_level(spdlog::level::trace);
-        spdlog::register_logger(logger);
+        this->logger =
+            std::make_shared<spdlog::async_logger>("OpenGL", sinks.begin(), sinks.end(), spdlog::thread_pool());
+        this->logger->set_level(spdlog::level::trace);
+        spdlog::register_logger(this->logger);
     }
     // 创建OpenGL上下文
     glfwMakeContextCurrent(Display::window);
@@ -41,15 +37,17 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
     {
         GLenum err = gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress));
         if (err != GL_TRUE) {
-            logger->error("gladLoadGL Error: {}", err);
+            this->logger->error("gladLoadGL Error: {}", err);
         }
     }
+
+    initialized = true;
 
     // 显示显卡驱动信息
     {
         const char *vendorName = reinterpret_cast<const char *>(glGetString(GL_VENDOR));
         const char *version = reinterpret_cast<const char *>(glGetString(GL_VERSION));
-        logger->info("vendor: {}, version: {}", vendorName, version);
+        this->logger->info("vendor: {}, version: {}", vendorName, version);
     }
 
     // 注册消息回调
@@ -73,7 +71,7 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
 
         glClearColor(0.0, 0.0, 0.0, 0.0);
         /*
-         * 启动无缝立方体贴图，允许硬件在立方体贴图边界“相邻”的纹理上跨界采样
+         * 启动无缝立方体贴图，允许硬件在立方体贴图边界"相邻"的纹理上跨界采样
          * 立方体贴图的warp_mode将被无视，参考https://registry.khronos.org/OpenGL/extensions/ARB/ARB_seamless_cube_map.txt
          */
         glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -82,32 +80,13 @@ OpenGLGraphicsAPI::OpenGLGraphicsAPI() {
     }
 }
 
-OpenGLGraphicsAPI::~OpenGLGraphicsAPI() {
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void OpenGLGraphicsAPI::drop() noexcept {
+    initialized = false;
     ASSERT_RENDER_THREAD();
     // 取消消息回调防止logger在销毁后被使用
     glDebugMessageCallback(nullptr, nullptr); // 文档没写怎么反注册消息回调，猜是这样
     glfwMakeContextCurrent(nullptr);          // 清除OpenGL上下文
-}
-
-// -------------加载资源到设备，仅包括最底层的资源，高级别的资源由Renderer负责------------------
-Ref<Mesh> OpenGLGraphicsAPI::create_mesh(VertexLayout layout) {
-    ASSERT_RENDER_THREAD();
-    return create_ref<GLMesh>(std::move(layout));
-}
-
-Ref<Buffer> OpenGLGraphicsAPI::create_buffer(uint32_t size, BufferType type) {
-    ASSERT_RENDER_THREAD();
-    return Ref<GLBuffer>(new GLBuffer(size, type));
-}
-
-Ref<FrameBuffer> OpenGLGraphicsAPI::create_rendertarget(std::tuple<uint32_t, uint32_t> size) {
-    ASSERT_RENDER_THREAD();
-    return create_ref<GLFrameBuffer>(size);
-}
-
-Ref<Shader> OpenGLGraphicsAPI::compile_shader_program(const std::string &vs_src, const std::string &ps_src) const {
-    ASSERT_RENDER_THREAD();
-    return create_ref<GLShader>(vs_src, ps_src);
 }
 
 static GLenum gl_blend_op(BlendOp op) noexcept {
@@ -157,7 +136,7 @@ static GLenum gl_blend_param(BlendFactor factor) noexcept {
     }
     std::unreachable();
 }
-
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::set_pipeline_state(const PipelineSetting &state) const noexcept {
     ASSERT_RENDER_THREAD();
     // 深度测试
@@ -252,9 +231,10 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipelineSetting &state) const n
     } else {
         glDisable(GL_BLEND);
     }
-};
+}
 
 // ---------------------------------绘制调用-------------------------------------------------------------
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::optional<float> depth,
                                             std::optional<int> stencil) noexcept {
     ASSERT_RENDER_THREAD();
@@ -269,6 +249,7 @@ void OpenGLGraphicsAPI::set_clear_parameter(std::optional<Color> color, std::opt
         glClearStencil(*stencil);
     }
 };
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::clear(bool color, bool depth, bool stencil) const noexcept {
     ASSERT_RENDER_THREAD();
     GLbitfield bit = 0;
@@ -290,13 +271,14 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
     return GL_INVALID_VALUE;
 }
 
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {
     ASSERT_RENDER_THREAD();
     glDrawElementsBaseVertex(Topology2OpenGL(submesh.topology), submesh.index_count, GL_UNSIGNED_INT,
                              reinterpret_cast<void *>((size_t)submesh.start_index * sizeof(uint32_t)),
                              submesh.base_vertex_offset); // 绘制
 }
-
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::draw_multidraw(Topology topology, int32_t *count_array, size_t *index_offset_array,
                                        int32_t *base_vertex_array, int32_t count) const {
     ASSERT_RENDER_THREAD();
@@ -305,11 +287,12 @@ void OpenGLGraphicsAPI::draw_multidraw(Topology topology, int32_t *count_array, 
 }
 
 // -----------------------bind-------------------------------
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
     ASSERT_RENDER_THREAD();
     glViewport(view_port.x, view_port.y, view_port.width, view_port.height);
 }
-
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
                                                       bool render_to_texture) const noexcept {
     assert(near_z < far_z); // 不要写反了！！！！！！！！！！
@@ -352,4 +335,4 @@ Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, fl
                        0.0f};
     }
 }
-} // namespace Goonya::Graphics
+} // namespace Goonya

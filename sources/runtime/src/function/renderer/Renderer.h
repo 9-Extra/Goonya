@@ -10,7 +10,7 @@
 #include <memory>
 #include <vector>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
@@ -51,4 +51,4 @@ public:
 };
 
 extern Renderer renderer;
-} // namespace Goonya::Graphics
+} // namespace Goonya

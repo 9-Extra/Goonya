@@ -1,9 +1,8 @@
 #include "GLShader.h"
-#include "platform/graphics/Shader.h"
 #include <cstdint>
 #include <vector>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 // -------------------------编译-------------------------------
 
@@ -207,4 +206,4 @@ std::unordered_map<std::string, GLuint> GLShaderIntrospector::get_texture_info()
     return result;
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

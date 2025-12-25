@@ -18,6 +18,12 @@
 
 namespace Craft {
 
+using Goonya::RenderScene;
+using Goonya::MeshRenderProxy;
+using Goonya::Material;
+using Goonya::enqueue_render_task;
+
+
 /*
 Minecraft世界Level被分为16 * height *
 16大小的区块Chunk，而区块内有进一步分为16*16*16的区段LevelChunkSection进行存储和渲染。
@@ -96,10 +102,10 @@ public:
     uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
     bool is_dirty = true; // 是否需要重新编译
 
-    Goonya::Graphics::RenderScene &render_scene;
-    Goonya::Graphics::MeshRenderProxy *mesh_proxy = nullptr;
+    RenderScene &render_scene;
+    MeshRenderProxy *mesh_proxy = nullptr;
 
-    RenderSection(Ref<Chunk> chunk, Goonya::Graphics::RenderScene &render_scene)
+    RenderSection(Ref<Chunk> chunk, RenderScene &render_scene)
         : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
         assert(origin_chunk);
     }
@@ -109,7 +115,7 @@ public:
             complie_task->cancel();
         }
         // 异步销毁mesh_proxy
-        Goonya::Graphics::enqueue_render_task([&render_scene = render_scene, mesh_proxy = mesh_proxy]() mutable {
+        enqueue_render_task([&render_scene = render_scene, mesh_proxy = mesh_proxy]() mutable {
             if (mesh_proxy) {
                 auto iter = render_scene.mesh_proxys.find(mesh_proxy);
                 assert(iter != render_scene.mesh_proxys.end());
@@ -118,20 +124,20 @@ public:
         });
     }
 
-    void complie_async(RenderRegionCache &region_cache, const Ref<Goonya::Graphics::Material> &terrain_material);
+    void complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material);
 };
 
 class LevelRenderer {
 public:
-    Ref<Goonya::Graphics::Material> terrain_material;
+    Ref<Material> terrain_material;
 
 private:
-    Goonya::Graphics::RenderScene &render_scene;
+    RenderScene &render_scene;
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块
 
     std::vector<RenderSection *> visible_chunk; // 当前帧可见的区块
 public:
-    explicit LevelRenderer(Goonya::Graphics::RenderScene &render_scene);
+    explicit LevelRenderer(RenderScene &render_scene);
     ~LevelRenderer() {
         render_chunks.clear(); // 提前销毁render_chunks，保证所有ComplieTask已结束
     }

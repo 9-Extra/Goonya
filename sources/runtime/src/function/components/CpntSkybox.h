@@ -8,7 +8,7 @@
 #include "function/world/GObject.h"
 #include "function/world/World.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 // 渲染mesh的组件，可以渲染出物体
 class CpntSkybox : public Component {
 
@@ -46,4 +46,4 @@ public:
         }
     }
 };
-} // namespace Goonya::Graphics
+} // namespace Goonya

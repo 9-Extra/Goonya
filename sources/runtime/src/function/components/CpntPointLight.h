@@ -6,7 +6,7 @@
 #include "function/world/World.h"
 #include "platform/graphics/Graphics.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 // 光源组件
 class CpntPointLight : public Component {
 private:
@@ -38,4 +38,4 @@ public:
     }
 
 };
-} // namespace Goonya::Graphics
+} // namespace Goonya

@@ -7,14 +7,14 @@
 #include "function/renderer/passes/GeometryPass.h"
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/RenderTarget.h"
+
 #include <cassert>
 #include <chrono>
 #include <cstdint>
 #include <memory>
 #include <ratio>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 Renderer renderer; // global renderer
 
 void Renderer::init() {
@@ -37,12 +37,12 @@ void Renderer::render() {
         auto [w, h] = camera->render_target->get_size();
         const Viewport viewport{(int32_t)(camera->rect.x * w), (int32_t)(camera->rect.y * h),
                                 (int32_t)(camera->rect.z * w), (int32_t)(camera->rect.w * h)};
-        graphics_api->set_viewport(viewport);
+        GL.set_viewport(viewport);
         camera->render_target->bind_draw();
 
         // 清除旧画面
-        graphics_api->set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
-        graphics_api->clear(true, true, true);
+        GL.set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
+        GL.clear(true, true, true);
         
         PassRenderInfo info{
             .camera = camera.get(),
@@ -71,4 +71,4 @@ void Renderer::clear() {
     skybox_pass.reset();
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

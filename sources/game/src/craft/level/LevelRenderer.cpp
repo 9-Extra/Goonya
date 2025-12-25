@@ -4,12 +4,10 @@
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/model_manager.h"
-#include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RendererBasic.h"
-#include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
 #include "platform/graphics/UberShader.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 #include <cassert>
 #include <cstdint>
@@ -18,15 +16,12 @@
 
 namespace Craft {
 
-void RenderSection::complie_async(RenderRegionCache &region_cache,
-                                  const Ref<Goonya::Graphics::Material> &terrain_material) {
+void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material) {
     assert(is_dirty);
 
     auto receiver = [section_ptr = this->weak_from_this(), &render_scene = render_scene,
                      terrain_material = terrain_material](ComplieResult &&result, uint32_t version) {
         ASSERT_RENDER_THREAD();
-
-        using namespace Goonya::Graphics;
         std::shared_ptr<RenderSection> section = section_ptr.lock();
         if (section == nullptr) {
             return; // 区块已被销毁
@@ -46,17 +41,16 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
             return;
         }
 
-        Ref<Mesh> updated_mesh = graphics_api->create_mesh(VERTEX_LAYOUT_PLANE);
-        updated_mesh->submeshes.emplace_back(SubMesh{.start_index = 0,
-                                                     .index_count = (uint32_t)result.indices.size(),
-                                                     .topology = Goonya::Graphics::Topology::TRIANGLE});
+        Ref<Goonya::GLMesh> updated_mesh = create_ref<Goonya::GLMesh>(VERTEX_LAYOUT_PLANE);
+        updated_mesh->submeshes.emplace_back(Goonya::SubMesh{
+            .start_index = 0, .index_count = (uint32_t)result.indices.size(), .topology = Goonya::Topology::TRIANGLE});
 
         updated_mesh->set_vertices(0, std::as_bytes(std::span(result.vertices)));
         updated_mesh->set_indices(result.indices);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
-        Ref<Buffer> updated_per_surface_buffer =
-            graphics_api->create_buffer(per_surface_data.size_bytes(), BufferType::STATIC);
+        Ref<Goonya::GLBuffer> updated_per_surface_buffer =
+            create_ref<Goonya::GLBuffer>(per_surface_data.size_bytes(), Goonya::BufferType::STATIC);
         updated_per_surface_buffer->write(per_surface_data, 0);
 
         // LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
@@ -98,9 +92,9 @@ void RenderSection::complie_async(RenderRegionCache &region_cache,
     is_dirty = false;
 }
 
-LevelRenderer::LevelRenderer(Goonya::Graphics::RenderScene &render_scene) : render_scene(render_scene) {
-    Goonya::Graphics::UberShader *shader = Goonya::resources.load_resource<Goonya::Graphics::UberShader>(TERRAIN_SHADER_NAME).get();
-    terrain_material = create_ref<Goonya::Graphics::Material>(shader);
+LevelRenderer::LevelRenderer(RenderScene &render_scene) : render_scene(render_scene) {
+    Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(TERRAIN_SHADER_NAME).get();
+    terrain_material = create_ref<Material>(shader);
     terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());
 }
 

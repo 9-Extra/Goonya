@@ -2,7 +2,7 @@
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/RenderScene.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 // 渲染天空盒
 void SkyBoxPass::run(const PassRenderInfo& info) {
@@ -38,7 +38,7 @@ void SkyBoxPass::run(const PassRenderInfo& info) {
     }
     skybox_uniform->bind_uniform(0);
     mesh->bind();
-    graphics_api->draw_submesh(mesh->submeshes.at(0));
+    GL.draw_submesh(mesh->submeshes.at(0));
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

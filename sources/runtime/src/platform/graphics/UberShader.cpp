@@ -2,13 +2,13 @@
 
 #include "core/RefCount.h"
 #include "core/log/Log.h"
-#include "platform/graphics/Graphics.h"
+#include "platform/graphics/opengl/GLShader.h"
+
 #include <cassert>
 #include <cstdint>
 #include <limits>
-#include <memory>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 GlobalVariantKeyCollect GLOBAL_VARIANT_KEY;
 
@@ -125,20 +125,20 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->effective_global_key_mask = GLOBAL_VARIANT_KEY.get_shader_global_key_mask(desc.global_variant_keys);
 
     // 立即编译变体码为0的版本用于反射
-    Ref<Shader> shader = query_variant(VariantCodeSet{0});
+    Ref<GLShader> shader = query_variant(VariantCodeSet{0});
 
-    std::unique_ptr<ShaderIntrospector> introspector = graphics_api->create_shader_introspect(shader.get());
-    auto buffer_info = introspector->get_constant_buffer_info();
+    GLShaderIntrospector introspector{shader.get()};
+    auto buffer_info = introspector.get_constant_buffer_info();
 
     // 反射获取着色器信息
     this->per_material = buffer_info["per_material"];
     this->per_frame = buffer_info.at("per_frame");
     this->per_object = buffer_info["per_object"];
     this->uniform_info = buffer_info;
-    this->texture_units = introspector->get_texture_info();
+    this->texture_units = introspector.get_texture_info();
 }
 
-Ref<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
+Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
     if (auto iter = shaders.find(variant_code); iter != shaders.end()) {
         return iter->second;
     }
@@ -151,10 +151,10 @@ Ref<Shader> UberShader::query_variant(VariantCodeSet variant_code) {
     std::string mixed_vs = shader_source_inject(vs_src, variant_keys);
     std::string mixed_ps = shader_source_inject(ps_src, variant_keys);
 
-    Ref<Shader> shader = graphics_api->compile_shader_program(mixed_vs, mixed_ps);
+    Ref<GLShader> shader = create_ref<GLShader>(mixed_vs, mixed_ps);
     shaders.emplace(variant_code, shader);
 
     return shader;
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

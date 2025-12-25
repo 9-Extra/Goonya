@@ -2,11 +2,10 @@
 
 #include "core/cgmath/cgmath.h"
 #include "function/renderer/passes/Passes.h"
-#include "platform/graphics/Graphics.h"
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 class SkyBoxPass : public Pass {
 private:
@@ -15,14 +14,14 @@ private:
         Matrix4 skybox_view_perspective_matrix;
     };
 
-    Ref<Buffer> skybox_uniform;
-    Ref<Mesh> mesh;
+    Ref<GLBuffer> skybox_uniform;
+    Ref<GLMesh> mesh;
 
 public:
     SkyBoxPass()
-        : skybox_uniform(graphics_api->create_buffer(sizeof(SkyBoxData), BufferType::DYNAMIC)),
-          mesh(resources.load_resource<Mesh>("buildin:skybox_cube")) {}
+        : skybox_uniform(create_ref<GLBuffer>(sizeof(SkyBoxData), BufferType::DYNAMIC)),
+          mesh(resources.load_resource<GLMesh>("buildin:skybox_cube")) {}
 
-    void run(const PassRenderInfo& info) override;
+    void run(const PassRenderInfo &info) override;
 };
-} // namespace Goonya::Graphics
+} // namespace Goonya

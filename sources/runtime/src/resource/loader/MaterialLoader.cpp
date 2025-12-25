@@ -19,7 +19,7 @@ namespace Goonya {
  * @param name 参数在着色器中的名称
  * @param parameter_string 字符串格式的参数
  */
-static void parse_material_paramter(Ref<Graphics::Material> &material, const std::string &name,
+static void parse_material_paramter(Ref<Material> &material, const std::string &name,
                                     const std::string &parameter_string) {
     // 解析形如"vec3(1.0, 0, 2.0)"这样的参数
     const std::regex pattern(R"(^\s*(\w+)\s*\((.*)\)$)");
@@ -87,13 +87,13 @@ Ref<Resource> MateriaLoader::load(std::string_view type, const std::filesystem::
         throw RuntimeError("元着色器名称uber_shader字段缺失");
     }
     const std::string shader_name = material_desc["uber_shader"].asString();
-    Ref<Graphics::UberShader> shader = resources.load_resource<Graphics::UberShader>(shader_name);
+    Ref<UberShader> shader = resources.load_resource<UberShader>(shader_name);
     if (!shader){
         throw RuntimeError(std::format("元着色器{}加载失败", shader_name));
     }
     
     // 初始化材质
-    Ref<Graphics::Material> mat = create_ref<Graphics::Material>(shader.get());
+    Ref<Material> mat = create_ref<Material>(shader.get());
 
     // 变体
     for (const auto &variant_key : material_desc["variant_keys"]) {
@@ -103,38 +103,38 @@ Ref<Resource> MateriaLoader::load(std::string_view type, const std::filesystem::
     // 材质覆盖的渲染管线设置
     const Json::Value &config = material_desc["config"];
     {
-        Graphics::PipelineSettingParamType value;
+        PipelineSettingParamType value;
         const Json::Value &cull_mode = config["cull_mode"];
         if (!cull_mode) {
             goto NEXT;
         } else if (cull_mode == "back") {
-            value = Graphics::PipelineSettingParamType(Graphics::CullFaceMode::BACK);
+            value = PipelineSettingParamType(CullFaceMode::BACK);
         } else if (cull_mode == "front") {
-            value = Graphics::PipelineSettingParamType(Graphics::CullFaceMode::FRONT);
+            value = PipelineSettingParamType(CullFaceMode::FRONT);
         } else if (cull_mode == "front_back") {
-            value = Graphics::PipelineSettingParamType(Graphics::CullFaceMode::FRONT_AND_BACK);
+            value = PipelineSettingParamType(CullFaceMode::FRONT_AND_BACK);
         } else {
             throw RuntimeError(std::format("不支持的面裁剪模式：\"{}\"", cull_mode.asString()));
         }
         mat->set_pipeline_setting("_cull_mode", value);
     }
 NEXT: {
-    Graphics::PipelineSettingParamType value;
+    PipelineSettingParamType value;
     const Json::Value &depth_test_mode = config["depth_func"];
     if (!depth_test_mode) {
         goto NEXT2;
     } else if (depth_test_mode == "less") {
-        value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::LESS);
+        value = PipelineSettingParamType(DepthTestMode::LESS);
     } else if (depth_test_mode == "never") {
-        value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::NEVER);
+        value = PipelineSettingParamType(DepthTestMode::NEVER);
     } else if (depth_test_mode == "less_equal") {
-        value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::LESS_EQUAL);
+        value = PipelineSettingParamType(DepthTestMode::LESS_EQUAL);
     } else if (depth_test_mode == "greater") {
-        value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::GREATER);
+        value = PipelineSettingParamType(DepthTestMode::GREATER);
     } else if (depth_test_mode == "greater_equal") {
-        value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::GREATER_EQUAL);
+        value = PipelineSettingParamType(DepthTestMode::GREATER_EQUAL);
     } else if (depth_test_mode == "always") {
-        value = Graphics::PipelineSettingParamType(Graphics::DepthTestMode::ALWAYS);
+        value = PipelineSettingParamType(DepthTestMode::ALWAYS);
     } else {
         throw RuntimeError(std::format("不支持的深度测试方法：\"{}\"", depth_test_mode.asString()));
     }
@@ -156,18 +156,18 @@ NEXT2:
         const static std::regex pattern(R"(^\s*(\w+)\s*\((.+)\)$)");
         std::smatch matches;
         if (std::regex_match(texture, matches, pattern)) {
-            Graphics::TextureType type = Graphics::TextureType::UNKNOWN;
+            TextureType type = TextureType::UNKNOWN;
             const auto type_name = matches[1];
 
             if (type_name.compare("texture2d") == 0) {
-                type = Graphics::TextureType::TEXTURE_2D;
+                type = TextureType::TEXTURE_2D;
             } else if (type_name.compare("cubemap") == 0) {
-                type = Graphics::TextureType::TEXTURE_CUBEMAP;
+                type = TextureType::TEXTURE_CUBEMAP;
             } else {
                 throw RuntimeError(std::format("未知纹理类型\"{}\"", type_name.str()));
             }
 
-            Ref<Graphics::Texture> texture = resources.load_resource<Graphics::Texture>(matches[2].str());
+            Ref<GLTexture> texture = resources.load_resource<GLTexture>(matches[2].str());
             if (!texture) {
                 throw RuntimeError(std::format("加载纹理{}失败", matches[2].str()));
             }

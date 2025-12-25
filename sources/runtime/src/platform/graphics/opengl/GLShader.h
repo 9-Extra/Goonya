@@ -1,35 +1,50 @@
 #pragma once
 
-#include "platform/graphics/Shader.h"
+#include "core/RefCount.h"
+#include "core/metatype/metatype.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include <cassert>
+#include <string>
+#include <unordered_map>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
-class GLShader final : public Shader {
-protected:
+enum class BufferBindingType {
+    UNIFORM,
+    SHADER_STORAGE
+};
+
+struct ShaderUniformBlockInfo final {
+    Meta::LayoutInfo layout;
+    uint32_t binding = 0;
+    BufferBindingType binding_type = BufferBindingType::UNIFORM;
+};
+
+
+class GLShader final : public RefCount {
+private:
     GLuint id = 0;
 
 public:
     GLShader(const std::string &vs_src, const std::string &ps_src);
-    ~GLShader() override { glDeleteProgram(id); }
+    ~GLShader() { glDeleteProgram(id); }
 
-    void bind() override { glUseProgram(id); }
+    void bind() const noexcept { glUseProgram(id); }
     GLuint get_id() const { return id; }
 };
 
-class GLShaderIntrospector final : public ShaderIntrospector {
+class GLShaderIntrospector final {
 private:
     GLuint id;
+
 public:
-    explicit GLShaderIntrospector(Shader *shader) {
-        GLShader *s = dynamic_cast<GLShader *>(shader);
-        assert(s);
-        id = s->get_id();
+    explicit GLShaderIntrospector(GLShader *shader) {
+        assert(shader);
+        id = shader->get_id();
     }
 
-    std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept override;
-    std::unordered_map<std::string, uint32_t> get_texture_info() const noexcept override;
+    std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept;
+    std::unordered_map<std::string, uint32_t> get_texture_info() const noexcept;
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

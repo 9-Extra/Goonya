@@ -12,7 +12,7 @@ Ref<Resource> ShaderLoader::load(std::string_view type, const std::filesystem::p
     const Json::Value &shader_desc = content;
 
     const Json::Value &shader_sources = shader_desc["sources"];
-    Graphics::UberShaderDesc desc{.vs_src = read_whole_file(base_dir / shader_sources["vertex_shader"].asString()),
+    UberShaderDesc desc{.vs_src = read_whole_file(base_dir / shader_sources["vertex_shader"].asString()),
                                   .ps_src = read_whole_file(base_dir / shader_sources["pixel_shader"].asString())};
 
     for (const auto &key : shader_desc["global_variants"]) {
@@ -28,14 +28,14 @@ Ref<Resource> ShaderLoader::load(std::string_view type, const std::filesystem::p
     }
 
     for (const auto &key : shader_desc["pipeline_setting"].getMemberNames()) {
-        if (!Graphics::PipelineSettingSetter::is_pipeline_setting(key)){
+        if (!PipelineSettingSetter::is_pipeline_setting(key)){
             throw RuntimeError(std::format("未知渲染管线设置{}", key));
         }
         const Json::Value &value = shader_desc["pipeline_setting"][key];
-        Graphics::PipelineSettingSetter::set_pipeline_setting(key, value.asInt(), desc.pipeline_setting);
+        PipelineSettingSetter::set_pipeline_setting(key, value.asInt(), desc.pipeline_setting);
     }
 
-    return Ref<Graphics::UberShader>(new Graphics::UberShader(std::move(desc)));
+    return Ref<UberShader>(new UberShader(std::move(desc)));
 }
 
 } // namespace Goonya

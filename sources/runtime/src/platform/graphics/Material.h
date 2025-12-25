@@ -1,12 +1,12 @@
 #pragma once
 
 #include "core/RefCount.h"
+#include "platform/graphics/opengl/GLBuffer.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "resource/Resource.h"
 #include "core/metatype/metatype.h"
-#include "platform/graphics/Buffer.h"
 #include "platform/graphics/PipelineSetting.h"
-#include "platform/graphics/Shader.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/UberShader.h"
 #include "resource/Resource.h"
 
@@ -16,7 +16,7 @@
 #include <tuple>
 #include <unordered_map>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 class Material final : public Resource {
 protected:
@@ -27,8 +27,8 @@ protected:
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, PipelineSettingParamType> override_pipeline_setting;
     std::unordered_map<std::string, Meta::DynamicData> parameters;
-    std::unordered_map<uint32_t, Ref<Texture>> textures; // slot -> texture
-    std::unordered_map<uint32_t, std::tuple<Ref<Buffer>, BufferBindingType>>
+    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // slot -> texture
+    std::unordered_map<uint32_t, std::tuple<Ref<GLBuffer>, BufferBindingType>>
         external_buffer; // slot -> (buffer, bindingtype)
 
     // 脏标记
@@ -37,8 +37,8 @@ protected:
     // 设备侧
     PipelineSetting pipeline_setting;
     VariantCodeSet current_variant_code; // 当前绑定的着色器的变体码
-    Ref<Shader> shader;
-    Ref<Buffer> per_material; // 显存中的材质参数
+    Ref<GLShader> shader;
+    Ref<GLBuffer> per_material; // 显存中的材质参数
 
 public:
     // Material在创建是就对应特定的UberShader，且之后不能更改
@@ -61,13 +61,13 @@ public:
         set_param(name, Meta::DynamicData(value));
     }
     
-    void set_external_buffer(const std::string &name, const Ref<Buffer> &buffer) {
+    void set_external_buffer(const std::string &name, const Ref<GLBuffer> &buffer) {
         assert(buffer);
         auto &info = uber_shader->get_uniform_info().at(name);
         external_buffer[info.binding] = {buffer, info.binding_type};
     }
 
-    void set_texture(const std::string &name, const Ref<Texture> &texture) {
+    void set_texture(const std::string &name, const Ref<GLTexture> &texture) {
         // texture slot可能被优化掉了
         assert(texture);
         if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
@@ -91,4 +91,4 @@ protected:
 private:
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

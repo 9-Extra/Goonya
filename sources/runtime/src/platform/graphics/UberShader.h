@@ -4,8 +4,8 @@
 #include "core/hash_helper.h"
 #include "core/log/Log.h"
 #include "platform/graphics/PipelineSetting.h"
-#include "platform/graphics/Shader.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLShader.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "resource/Resource.h"
 
 #include <array>
@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 struct UberShaderDesc final {
     std::string vs_src;
@@ -58,14 +58,14 @@ union VariantCodeSet {
 // 检测VariantCodeSet以希望的方式对齐
 static_assert(offsetof(VariantCodeSet, global_code) == 0 && offsetof(VariantCodeSet, local_code) == 4);
 
-} // namespace Goonya::Graphics
+} // namespace Goonya
 
 template <>
-struct std::hash<Goonya::Graphics::VariantCodeSet> {
-    size_t operator()(Goonya::Graphics::VariantCodeSet code) const noexcept { return code.full_code; }
+struct std::hash<Goonya::VariantCodeSet> {
+    size_t operator()(Goonya::VariantCodeSet code) const noexcept { return code.full_code; }
 };
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 class LocalVariantKeyCollect final {
 private:
@@ -189,19 +189,19 @@ private:
 
 extern GlobalVariantKeyCollect GLOBAL_VARIANT_KEY;
 
-class Shader;
+class GLShader;
 class UberShader final : public Resource {
 protected:
     // 创建后会变的
-    std::unordered_map<VariantCodeSet, Ref<Shader>> shaders; // 此元着色器的变体缓存
+    std::unordered_map<VariantCodeSet, Ref<GLShader>> shaders; // 此元着色器的变体缓存
     // 不会变的
     std::string vs_src;
     std::string ps_src;
 
     // 默认材质参数
-    PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
+    PipelineSetting pipeline_setting;                              // 着色器默认的渲染管线设置
     std::unordered_map<std::string, Meta::DynamicData> parameters; // 默认材质参数
-    std::unordered_map<uint32_t, Ref<Texture>> textures; // 默认纹理绑定
+    std::unordered_map<uint32_t, Ref<GLTexture>> textures;         // 默认纹理绑定
 
     LocalVariantKeyCollect local_variant_key_collect;
     VariantCode effective_global_key_mask;
@@ -227,8 +227,10 @@ public:
         return uniform_info;
     }
 
-    VariantCode get_effective_global_key_code() const noexcept {return GLOBAL_VARIANT_KEY.get_global_code() & effective_global_key_mask;}
-    Ref<Shader> query_variant(VariantCodeSet variant_code);
+    VariantCode get_effective_global_key_code() const noexcept {
+        return GLOBAL_VARIANT_KEY.get_global_code() & effective_global_key_mask;
+    }
+    Ref<GLShader> query_variant(VariantCodeSet variant_code);
 
     void get_variant_key_names(VariantCodeSet code, std::vector<std::string> &out_names) const noexcept {
         local_variant_key_collect.get_variant_key_names(code.local_code, out_names);
@@ -248,4 +250,4 @@ struct GlobalKeyChangeEvent {
     std::vector<std::string> key_reset_current_frame;
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

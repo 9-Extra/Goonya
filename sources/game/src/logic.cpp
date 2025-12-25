@@ -11,14 +11,11 @@
 #include "function/world/Component.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
-#include "platform/graphics/Texture.h"
 #include "platform/graphics/UberShader.h"
-#include "resource/ResMng.h"
 
 #include <algorithm>
 #include <cmath>
 #include <numbers>
-#include <platform/graphics/Shader.h>
 #include <resource/Resource.h>
 
 void MoveSystem::handle_mouse() const {
@@ -42,7 +39,7 @@ void MoveSystem::handle_mouse() const {
         // 同时，要约束绕x轴旋转角度在(-90, 90)度之间
         const float limit = std::numbers::pi_v<float> / 2 - 0.01;
         float y_dir = std::asin(camera->get_local_transform().forward_direction().y);
-        float y_dir_target = std::clamp(y_dir - dy * rotate_speed, -limit , limit);
+        float y_dir_target = std::clamp(y_dir - dy * rotate_speed, -limit, limit);
         camera->rotate_local_axis({y_dir_target - y_dir, 0, 0});
     }
 }
@@ -53,10 +50,10 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('F')) {
         const std::string_view key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
-        if (!Graphics::GLOBAL_VARIANT_KEY.is_key_set(key_name)) {
-            Graphics::GLOBAL_VARIANT_KEY.set_key(key_name);
+        if (!Goonya::GLOBAL_VARIANT_KEY.is_key_set(key_name)) {
+            Goonya::GLOBAL_VARIANT_KEY.set_key(key_name);
         } else {
-            Graphics::GLOBAL_VARIANT_KEY.reset_key(key_name);
+            Goonya::GLOBAL_VARIANT_KEY.reset_key(key_name);
         }
     }
 
@@ -71,7 +68,7 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('P')) {
         LOG_DEBUG("正在进行图像导出");
-        Ref<Graphics::Texture> skybox = resources.load_resource<Graphics::Texture>("skybox_valley_color");
+        Ref<Goonya::GLTexture> skybox = resources.load_resource<Goonya::GLTexture>("skybox_valley_color");
         stb::Image image = skybox->export_image(0);
         image.save("output.hdr");
     }

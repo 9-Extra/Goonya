@@ -1,14 +1,13 @@
 #include "GLRenderTarget.h"
 #include "core/RefCount.h"
 #include "core/log/Log.h"
-#include "platform/graphics/RenderTarget.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include <cassert>
 #include <spdlog/details/circular_q.h>
 #include <variant>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 // --------------------------GLRenderTargetScreen------------------------------------
 void GLRenderTargetScreen::bind_draw() const {
@@ -20,7 +19,7 @@ void GLRenderTargetScreen::bind_read() const { glBindFramebuffer(GL_READ_FRAMEBU
 
 // --------------------------GLFrameBuffer------------------------------------
 
-GLFrameBuffer::GLFrameBuffer(std::tuple<uint32_t, uint32_t> size) : FrameBuffer(size) { glCreateFramebuffers(1, &id); }
+GLFrameBuffer::GLFrameBuffer(std::tuple<uint32_t, uint32_t> size) : size(size) { glCreateFramebuffers(1, &id); }
 
 void GLFrameBuffer::bind_read() const {
     glBindFramebuffer(GL_READ_FRAMEBUFFER, id);
@@ -35,12 +34,12 @@ void GLFrameBuffer::bind_draw() const {
 }
 
 // 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
-void GLFrameBuffer::attach_color_texture(uint32_t location, Ref<Texture> texture, int32_t level) {
+void GLFrameBuffer::attach_color_texture(uint32_t location, Ref<GLTexture> texture, int32_t level) {
     assert(texture);
     glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level);
     attached_color_texture[location] = texture;
 }
-void GLFrameBuffer::attach_color_texture_layer(uint32_t location, Ref<Texture> texture, int32_t layer,
+void GLFrameBuffer::attach_color_texture_layer(uint32_t location, Ref<GLTexture> texture, int32_t layer,
                                                int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level,
@@ -54,11 +53,11 @@ void GLFrameBuffer::detach_color_texture(uint32_t location) noexcept {
 };
 
 // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
-void GLFrameBuffer::set_depth_texture(Ref<Texture> texture, int32_t level) {
+void GLFrameBuffer::set_depth_texture(Ref<GLTexture> texture, int32_t level) {
     glNamedFramebufferTexture(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     depth_buffer = texture;
 }
-void GLFrameBuffer::set_depth_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level) {
+void GLFrameBuffer::set_depth_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level) {
     glNamedFramebufferTextureLayer(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     depth_buffer = texture;
 }
@@ -69,12 +68,12 @@ void GLFrameBuffer::set_depth_renderbuffer(RenderBufferPixelFormat format) {
     depth_buffer = renderbuffer;
 }
 
-void GLFrameBuffer::set_stencil_texture(Ref<Texture> texture, int32_t level) {
+void GLFrameBuffer::set_stencil_texture(Ref<GLTexture> texture, int32_t level) {
     assert(texture);
     glNamedFramebufferTexture(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_stencil_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level) {
+void GLFrameBuffer::set_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     stencil_buffer = texture;
@@ -86,13 +85,13 @@ void GLFrameBuffer::set_stencil_renderbuffer(RenderBufferPixelFormat format) {
     stencil_buffer = renderbuffer;
 }
 
-void GLFrameBuffer::set_depth_stencil_texture(Ref<Texture> texture, int32_t level) {
+void GLFrameBuffer::set_depth_stencil_texture(Ref<GLTexture> texture, int32_t level) {
     assert(texture);
     glNamedFramebufferTexture(id, GL_DEPTH_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     depth_buffer = texture;
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_depth_stencil_texture_layer(Ref<Texture> texture, int32_t layer, int32_t level) {
+void GLFrameBuffer::set_depth_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level) {
     assert(texture);
     glNamedFramebufferTextureLayer(id, GL_DEPTH_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level,
                                    layer);
@@ -144,4 +143,4 @@ bool GLFrameBuffer::check_status() const noexcept {
     return false;
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

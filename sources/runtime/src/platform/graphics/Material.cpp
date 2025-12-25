@@ -3,20 +3,21 @@
 #include "core/metatype/metatype.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/PipelineSetting.h"
-#include "platform/graphics/Shader.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLBuffer.h"
+#include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/UberShader.h"
+#include "platform/graphics/opengl/OpenGLAPI.h"
 #include "runtime/GoonyaException.h"
 
 #include <cassert>
 #include <utility>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 void Material::bind() {
     this->update();
 
-    graphics_api->set_pipeline_state(pipeline_setting);
+    GL.set_pipeline_state(pipeline_setting);
     shader->bind(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
     if (per_material->get_size() != 0) {
@@ -75,7 +76,7 @@ Material::Material(UberShader *uber_shader)
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
     // 创建此材质的ConstantBuffer
-    per_material = graphics_api->create_buffer(uber_shader->per_material_block().layout.size, BufferType::DYNAMIC);
+    per_material = create_ref<GLBuffer>(uber_shader->per_material_block().layout.size, BufferType::DYNAMIC);
     is_parameters_dirty = true;
 };
 
@@ -115,4 +116,4 @@ void Material::update_parameter() {
     is_parameters_dirty = false;
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

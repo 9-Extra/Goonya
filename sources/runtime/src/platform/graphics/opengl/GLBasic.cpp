@@ -1,10 +1,11 @@
 #include "GLBasic.h"
 
+#include "OpenGLAPI.h"
 #include "platform/graphics/Graphics.h"
 #include <spdlog/common.h>
 #include <string_view>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 void APIENTRY _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
                                      const GLchar *message, const void *userParam) {
@@ -104,7 +105,7 @@ void APIENTRY _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
         message_string.remove_suffix(1); // 不要重复换行
     }
 
-    graphics_api->logger->log(level, "{}{}{}: {}", source_name, type_name, id, message_string);
+    GL.logger->log(level, "{}{}{}: {}", source_name, type_name, id, message_string);
 }
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

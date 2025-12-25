@@ -2,9 +2,8 @@
 #include "core/cgmath/cgmath.h"
 #include "core/cgmath/vector.h"
 #include "function/renderer/passes/Passes.h"
-#include "platform/graphics/Buffer.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 class GeometryPass : public Pass {
 private:
@@ -25,11 +24,11 @@ private:
         PointLightData pointlight_list[POINTLIGHT_MAX];
     };
 
-    Ref<Buffer> per_frame_uniform; // 用于一般渲染每帧变化的数据
+    Ref<GLBuffer> per_frame_uniform; // 用于一般渲染每帧变化的数据
 public:
     GeometryPass();
 
     void run(const PassRenderInfo& info) override;
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

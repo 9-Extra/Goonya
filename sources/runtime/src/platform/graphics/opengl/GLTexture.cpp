@@ -1,6 +1,5 @@
 #include "GLTexture.h"
 
-#include "platform/graphics/Texture.h"
 #include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
 
@@ -8,7 +7,7 @@
 #include <cmath>
 #include <cstdint>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 inline GLsizei max_mipmap_level(size_t width) { return static_cast<GLsizei>(std::log2(width)) + 1; }
 inline GLsizei max_mipmap_level(size_t width, size_t height) {
@@ -80,15 +79,15 @@ static GLenum texture_format_to_gl_format(TextureStorageFormat format) {
     return 0;
 };
 
-GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
-    const auto &[width, height, depth] = shape;
-    const GLenum gl_format = texture_format_to_gl_format(format);
+GLTexture::GLTexture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {
+    const auto &[width, height, depth] = this->shape;
+    const GLenum gl_format = texture_format_to_gl_format(this->format);
 
     if (gl_format == 0) {
         throw RuntimeError("不能创建格式为UNKNOWN纹理");
     }
 
-    switch (type) {
+    switch (this->type) {
 
     case TextureType::UNKNOWN:
         throw RuntimeError("不能创建类型为UNKNOWN纹理");
@@ -133,6 +132,7 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : Texture(desc) {
     }
 }
 
+// NOLINTNEXTLINE(readability-make-member-function-const)
 void GLTexture::set_warp_mode(TextureWarpMode warp_mode) noexcept {
     GLenum gl_warp_mode;
     if (warp_mode == TextureWarpMode::REPEAT) {
@@ -150,6 +150,7 @@ void GLTexture::set_warp_mode(TextureWarpMode warp_mode) noexcept {
     glTextureParameteri(id, GL_TEXTURE_WRAP_T, gl_warp_mode);
 }
 
+// NOLINTNEXTLINE(readability-make-member-function-const)
 void GLTexture::set_filter_mode(TextureFilterMode filter_mode) noexcept {
     GLenum min_filter, mag_filter;
     if (filter_mode == TextureFilterMode::NEAREST) {
@@ -205,7 +206,7 @@ void GLTexture::import_image(const stb::Image &image, uint32_t mipmap_level, uin
         throw RuntimeError("不支持的图像像素格式");
     }
 
-    switch (type) {
+    switch (this->type) {
     case TextureType::TEXTURE_1D_ARRAY:
     case TextureType::TEXTURE_2D: {
         glTextureSubImage2D(id, mipmap_level, xoffset, yoffset, width, height, source_format, source_type,
@@ -241,13 +242,13 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
     int channel = 0;
     bool is_float = false;
 
-    switch (type) {
+    switch (this->type) {
 
     case TextureType::TEXTURE_CUBEMAP:
     case TextureType::TEXTURE_2D:
     case TextureType::TEXTURE_2D_ARRAY:
     case TextureType::TEXTURE_3D: {
-        switch (format) {
+        switch (this->format) {
         case TextureStorageFormat::RGBA_f32:
         case TextureStorageFormat::RGBA_i32:
         case TextureStorageFormat::RGBA_u32:
@@ -329,4 +330,4 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
     return image;
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

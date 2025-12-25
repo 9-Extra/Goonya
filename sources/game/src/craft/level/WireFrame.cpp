@@ -1,5 +1,6 @@
 #include "WireFrame.h"
 
+#include "core/RefCount.h"
 #include "core/cgmath/aabb.h"
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/vector.h"
@@ -8,7 +9,7 @@
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 
@@ -27,32 +28,32 @@ struct WireFrameVertex {
 
 constexpr std::string_view WIREFRAME_SHADER_NAME = "shaders/craft/wireframe/wire_frame";
 
-WireFrame::WireFrame(Goonya::Graphics::RenderScene &render_scene) {
-    assert(Goonya::Graphics::graphics_api); // 不能太早初始化
+WireFrame::WireFrame(Goonya::RenderScene &render_scene) {
+    assert(Goonya::GL.is_initialized()); // 不能太早初始化
 
-    const Goonya::Graphics::VertexLayout WIRE_FRAME_LAYOUT =
-        Goonya::Graphics::VertexLayoutBuilder()
-            .add_attribute(Goonya::Graphics::VertexAttribute::POSITION)
-            .add_attribute(Goonya::Graphics::VertexAttribute::NORMAL)
+    const Goonya::VertexLayout WIRE_FRAME_LAYOUT =
+        Goonya::VertexLayoutBuilder()
+            .add_attribute(Goonya::VertexAttribute::POSITION)
+            .add_attribute(Goonya::VertexAttribute::NORMAL)
             .build();
 
     // 创建网格体，其中数据在渲染时通过方块模型动态生成并写入
-    mesh = Goonya::Graphics::graphics_api->create_mesh(WIRE_FRAME_LAYOUT);
+    mesh = create_ref<Goonya::GLMesh>(WIRE_FRAME_LAYOUT);
     mesh->submeshes.resize(1);
     // 只有index_count需要动态改变，另外Topology::LINE因为线宽不能大于1，因此在调试之外就别用了
-    mesh->submeshes[0] = Goonya::Graphics::SubMesh{
-        .start_index = 0, .index_count = 0, .base_vertex_offset = 0, .topology = Goonya::Graphics::Topology::TRIANGLE};
+    mesh->submeshes[0] = Goonya::SubMesh{
+        .start_index = 0, .index_count = 0, .base_vertex_offset = 0, .topology = Goonya::Topology::TRIANGLE};
 
-    Goonya::Graphics::UberShader *shader = Goonya::resources.load_resource<Goonya::Graphics::UberShader>(WIREFRAME_SHADER_NAME).get();
-    material = create_ref<Goonya::Graphics::Material>(shader);
+    Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(WIREFRAME_SHADER_NAME).get();
+    material = create_ref<Goonya::Material>(shader);
 
-    mesh_proxy = new Goonya::Graphics::MeshRenderProxy(); // 不需要由WireFrame销毁
+    mesh_proxy = new Goonya::MeshRenderProxy(); // 不需要由WireFrame销毁
     mesh_proxy->mesh = mesh;
     mesh_proxy->materials.emplace_back(material);
     mesh_proxy->aabbs.resize(1);
     mesh_proxy->aabbs[0] = Goonya::BoundingBox{{0, 0, 0}, {0, 0, 0}}; // 不可见
 
-    render_scene.mesh_proxys.emplace(std::unique_ptr<Goonya::Graphics::MeshRenderProxy>{mesh_proxy});
+    render_scene.mesh_proxys.emplace(std::unique_ptr<Goonya::MeshRenderProxy>{mesh_proxy});
 }
 void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     // 现在画线都是用画平面来实现的

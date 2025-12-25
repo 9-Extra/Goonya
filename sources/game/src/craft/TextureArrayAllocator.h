@@ -2,7 +2,7 @@
 
 #include "core/hash_helper.h"
 #include "core/RefCount.h"
-#include "platform/graphics/Texture.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
 
 #include <cstdint>
@@ -24,7 +24,7 @@ public:
     TextureArrayAllocator(TextureArrayAllocator&) = delete;
     TextureArrayAllocator(std::filesystem::path resource_path, uint32_t width, uint32_t height);
     uint32_t alloc_texture(std::string_view texture_location);
-    Ref<Goonya::Graphics::Texture> generate_texture_array();
+    Ref<Goonya::GLTexture> generate_texture_array();
 };
 
 } // namespace Craft

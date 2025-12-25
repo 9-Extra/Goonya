@@ -5,7 +5,7 @@
 #include "core/RefCount.h"
 #include "platform/graphics/Material.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 struct PointLight {
     Vector3f position;
@@ -33,4 +33,4 @@ struct PerObjectBuffer{
     Matrix4 normal_matrix;
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

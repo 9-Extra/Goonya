@@ -2,9 +2,8 @@
 
 #include "core/cgmath/vector.h"
 #include "function/renderer/RenderProxy/Camera.h"
-#include "platform/graphics/RenderTarget.h"
 
-namespace Goonya::Graphics {
+namespace Goonya {
 // Pass 基类
 struct PassRenderInfo // NOLINT
 {
@@ -22,4 +21,4 @@ public:
     virtual ~Pass() = default;
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

@@ -2,10 +2,10 @@
 
 #include "core/cgmath/cgmath.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include <vector>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 /**
  * @brief 用于记录一个网格体绘制需要的信息
@@ -21,11 +21,11 @@ namespace Goonya::Graphics {
  * Component发生更新时通知Renderer更新RenderProxy数据
  */
 struct MeshRenderProxy {
-    Ref<Mesh> mesh;
+    Ref<GLMesh> mesh;
     std::vector<Ref<Material>> materials;
     
     Matrix4 model_matrix;
     Matrix3 normal_matrix;
     std::vector<BoundingBox> aabbs; // 每个submesh经过变换的包围盒
 };
-} // namespace Goonya::Graphics
+} // namespace Goonya

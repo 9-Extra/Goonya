@@ -9,7 +9,7 @@
 #include <memory>
 #include <unordered_set>
 
-namespace Goonya::Graphics {
+namespace Goonya {
 
 class RenderScene {
 public:
@@ -37,4 +37,4 @@ private:
 
 };
 
-} // namespace Goonya::Graphics
+} // namespace Goonya

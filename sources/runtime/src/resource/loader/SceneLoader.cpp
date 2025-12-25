@@ -8,7 +8,7 @@
 #include "function/components/CpntSkybox.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/Mesh.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
 #include "core/path_formatter.h"
@@ -50,14 +50,14 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
     for (const auto &cpnt_name : json.getMemberNames()) {
         const Json::Value &cpnt_desc = json[cpnt_name];
         if (cpnt_name == "mesh_render") {
-            std::unique_ptr<Graphics::CpntMeshRender> cpnt_ptr = std::make_unique<Graphics::CpntMeshRender>();
+            std::unique_ptr<CpntMeshRender> cpnt_ptr = std::make_unique<CpntMeshRender>();
             if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->set_mesh(resources.load_resource<Graphics::Mesh>(cpnt_desc["mesh"].asString()));
+                cpnt_ptr->set_mesh(resources.load_resource<GLMesh>(cpnt_desc["mesh"].asString()));
             }
             if (cpnt_desc.isMember("material")) {
-                std::vector<Ref<Graphics::Material>> materials;
+                std::vector<Ref<Material>> materials;
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    materials.emplace_back(resources.load_resource<Graphics::Material>(material_name.asString()));
+                    materials.emplace_back(resources.load_resource<Material>(material_name.asString()));
                 }
                 cpnt_ptr->set_materials(std::span(materials));
             }
@@ -65,20 +65,20 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
         } else if (cpnt_name == "point_light") {
             Vector3f color = load_vec3(cpnt_desc["color"]);
             float radius = cpnt_desc["factor"].asFloat();
-            obj->add_component(std::make_unique<Graphics::CpntPointLight>(color, radius));
+            obj->add_component(std::make_unique<CpntPointLight>(color, radius));
         } else if (cpnt_name == "camera") {
             bool is_main = cpnt_desc.isMember("is_main") && cpnt_desc["is_main"].asBool();
             float near_z = cpnt_desc["near_z"].asFloat();
             float far_z = cpnt_desc["far_z"].asFloat();
             float fov = cpnt_desc["fov"].asFloat();
-            std::unique_ptr<Graphics::CpntCamera> camera = std::make_unique<Graphics::CpntCamera>(near_z, far_z, fov);
+            std::unique_ptr<CpntCamera> camera = std::make_unique<CpntCamera>(near_z, far_z, fov);
             if (is_main) {
-                camera->render_target = Graphics::graphics_api->get_rendertarget_screen();
+                camera->render_target = GL.get_rendertarget_screen();
             }
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
-            Ref<Graphics::Material> material =
-                resources.load_resource<Graphics::Material>(cpnt_desc["material"].asString());
+            Ref<Material> material =
+                resources.load_resource<Material>(cpnt_desc["material"].asString());
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
             if (cpnt_desc.isMember("bbox")) {
@@ -86,7 +86,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             } else if (!ignore_range) {
                 throw RuntimeError("带范围的天空盒必须指定包围盒");
             }
-            obj->add_component(std::make_unique<Graphics::CpntSkybox>(material, ignore_range, bbox));
+            obj->add_component(std::make_unique<CpntSkybox>(material, ignore_range, bbox));
         } else {
             throw RuntimeError(std::format("未知组件：{}", cpnt_name));
         }
