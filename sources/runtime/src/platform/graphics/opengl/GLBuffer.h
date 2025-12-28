@@ -58,8 +58,8 @@ public:
         assert(data.size_bytes() + offset <= size);
         glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
     };
-    void *map(BufferMapOption option) const noexcept { return map_range(option, 0, size); };
-    void *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept {
+    std::byte *map(BufferMapOption option) const noexcept { return map_range(option, 0, size); };
+    std::byte *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept {
         if (size == 0) {
             return nullptr;
         }
@@ -89,7 +89,7 @@ public:
         }
         void *ptr = glMapNamedBufferRange(id, offset, size, access);
         assert(ptr);
-        return ptr;
+        return reinterpret_cast<std::byte *>(ptr);
     };
 
     void unmap() const noexcept {
@@ -129,11 +129,11 @@ private:
 
 public:
     StructBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option)
-        : buffer(buffer.get()), ptr(static_cast<T *>(buffer->map(option))) {
+        : buffer(buffer.get()), ptr(reinterpret_cast<T *>(buffer->map(option))) {
         assert(buffer);
     }
     StructBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option, size_t offset)
-        : buffer(buffer.get()), ptr(static_cast<T *>(buffer->map_range(option, offset, sizeof(T)))) {
+        : buffer(buffer.get()), ptr(reinterpret_cast<T *>(buffer->map_range(option, offset, sizeof(T)))) {
         assert(buffer);
     }
     StructBufferWriter(StructBufferWriter &other) = delete;
@@ -156,7 +156,7 @@ public:
     ArrayBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option)
         : buffer(buffer.get()), element_count(buffer->get_size() / sizeof(T)) {
         assert(buffer);
-        ptr = static_cast<T *>(buffer->map(option));
+        ptr = reinterpret_cast<T *>(buffer->map(option));
     }
 
     // 映射指定范围的缓冲区

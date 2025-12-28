@@ -5,6 +5,7 @@
 #include "block/blockstates.h"
 #include "core/divsions.h"
 #include "core/log/Log.h"
+#include "core/path_formatter.h"
 #include "craft/core/core.h"
 #include "craft/core/registry.h"
 #include "craft/core/resource.h"
@@ -250,14 +251,14 @@ void ModelManager::load_all_models() {
         std::filesystem::path path =
             resource_path / std::format("{}/blockstates/{}.json", location.name_space, location.key);
         std::ifstream file(path, std::ios::binary | std::ios::in);
-        if (!file) {
-            LOG_ERROR("读取ModelState\"{}\"失败, 文件{}不存在", location, path.generic_string());
+        if (!file.is_open()) {
+            LOG_ERROR("读取ModelState\"{}\"失败, 打不开文件{}", location, path);
             continue;
         }
 
         Json::Value blockstate_json;
         if (!Json::parseFromStream(Json::CharReaderBuilder(), file, &blockstate_json, nullptr)) {
-            LOG_ERROR("读取ModelState\"{}\"失败, 解析{}出错", location, path.generic_string());
+            LOG_ERROR("读取ModelState\"{}\"失败, 解析json文件{}出错", location, path);
             continue;
         }
 

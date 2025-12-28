@@ -44,7 +44,6 @@ void MoveSystem::handle_mouse() const {
     }
 }
 void MoveSystem::handle_keyboard(float delta) const {
-    // wasd移动
     using namespace Goonya;
     const float move_speed = delta * (Input::is_key_pressing(Input::KeyCode::LCTRL) ? 0.06f : 0.02f);
 
@@ -68,15 +67,21 @@ void MoveSystem::handle_keyboard(float delta) const {
 
     if (Input::is_key_click('P')) {
         LOG_DEBUG("正在进行图像导出");
-        Ref<Goonya::GLTexture> skybox = resources.load_resource<Goonya::GLTexture>("skybox_valley_color");
-        stb::Image image = skybox->export_image(0);
-        image.save("output.hdr");
+        const std::string_view key = "buildin:missing_texture";
+        Ref<Goonya::GLTexture> skybox = resources.load_resource<Goonya::GLTexture>(key);
+        if (skybox) {
+            stb::Image image = skybox->export_image(0);
+            image.save("output.hdr");
+        } else {
+            LOG_ERROR("导出失败, 未找到资源\"{}\"", key);
+        }
     }
 
     if (Goonya::Input::is_key_click(Input::KeyCode::ESCAPE)) {
         EventBus::dispatch_event(Events::EngineStop{});
     }
 
+    // wasd移动
     const Transform &trans = camera->get_local_transform();
     if (Input::is_key_pressing('W')) {
         Vector3f ori = trans.forward_direction();

@@ -134,7 +134,7 @@ static void init_buildin_resource() {
             }
         }
         missing->import_image(image);
-        buildin->contents.emplace("missing", missing);
+        buildin->contents.emplace("missing_texture", missing);
     }
 }
 

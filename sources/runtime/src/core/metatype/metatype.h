@@ -219,16 +219,16 @@ struct LayoutInfo {
 class DynamicStructWriter {
 private:
     const LayoutInfo &layout_info;
-    uint8_t *ptr;
+    std::byte *ptr;
 
 public:
-    explicit DynamicStructWriter(const LayoutInfo &layout_info, void *ptr = nullptr)
-        : layout_info(layout_info), ptr((uint8_t *)ptr) {}
-    void set_base_ptr(void *ptr) noexcept { this->ptr = (uint8_t *)ptr; }
+    explicit DynamicStructWriter(const LayoutInfo &layout_info, std::byte *ptr = nullptr)
+        : layout_info(layout_info), ptr(ptr) {}
+    void set_base_ptr(std::byte *ptr) noexcept { this->ptr = ptr; }
 
     size_t get_size() const noexcept { return layout_info.size; }
-    uint8_t *get_ptr(const std::string &name) noexcept { return ptr + layout_info.fields.at(name).offset; }
-    const uint8_t *get_ptr(const std::string &name) const noexcept { return ptr + layout_info.fields.at(name).offset; }
+    std::byte *get_ptr(const std::string &name) noexcept { return ptr + layout_info.fields.at(name).offset; }
+    const std::byte *get_ptr(const std::string &name) const noexcept { return ptr + layout_info.fields.at(name).offset; }
 
     template <Meta::meta_type T>
     void set_field(const std::string &name, const T &value) noexcept {

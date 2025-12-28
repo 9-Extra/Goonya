@@ -340,7 +340,7 @@ struct GlTFLoadingContext {
             if (material["pbrMetallicRoughness"].isMember("baseColorTexture")) {
                 basecolor_texture = load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
             } else {
-                basecolor_texture = resources.load_resource<GLTexture>("buildin:missing");
+                basecolor_texture = resources.load_resource<GLTexture>("buildin:missing_texture");
             }
             Ref<GLTexture> metallic_roughness_texture;
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {

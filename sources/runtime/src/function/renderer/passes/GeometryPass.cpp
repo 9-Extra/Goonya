@@ -75,11 +75,12 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
     return true;
 }
 // 一般物体渲染
-void GeometryPass::run(const PassRenderInfo& info) {
+void GeometryPass::run(const PassRenderInfo &info) {
     Vector3f camera_pos = info.camera->get_position();
-    RenderScene& scene = *info.camera->scene;
+    RenderScene &scene = *info.camera->scene;
 
-    const Matrix4 view_perspective = info.camera->get_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
+    const Matrix4 view_perspective =
+        info.camera->get_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
 
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(0);
@@ -102,7 +103,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
             LOG_WARN("点光源数量({})超出上限({})", scene.pointlights.size(), POINTLIGHT_MAX);
         }
         uint32_t count = static_cast<uint32_t>(std::min<size_t>(scene.pointlights.size(), POINTLIGHT_MAX));
-        for (const auto& [i, l]: std::views::enumerate(scene.pointlights)) {
+        for (const auto &[i, l] : std::views::enumerate(scene.pointlights)) {
             data->pointlight_list[i].position = l.position;
             data->pointlight_list[i].intensity = l.color * l.factor;
         }
@@ -115,7 +116,7 @@ void GeometryPass::run(const PassRenderInfo& info) {
 
     Ref<Material> default_material = resources.load_resource<Material>("materials/default");
 
-    struct Batch { // NOLINT
+    struct Batch {
         const GLMesh *mesh;
         SubMesh sub_mesh;
         size_t per_object_data_offset;
