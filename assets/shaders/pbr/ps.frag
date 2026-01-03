@@ -183,6 +183,7 @@ vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
 
 vec3 caculate_normal(){
     const vec3 normal = normalize(vs_out.normal);
+#ifdef USE_NORMAL_MAP
     // 施密特正交化
     const vec3 tangent = normalize(vs_out.tangent.xyz - normal * dot(normal, vs_out.tangent.xyz));
     // 规定死的副切线计算方法
@@ -190,6 +191,9 @@ vec3 caculate_normal(){
  
     vec3 h = texture(normal_texture, vs_out.tex_coords).xyz * 2 - 1;
     vec3 world_normal = tangent * h.x + bitangent * h.y + normal * h.z;
+#else
+    vec3 world_normal = normal;
+#endif
     return world_normal;
 }
 
@@ -203,12 +207,18 @@ void main()
     const vec3 dielectric_specular = vec3(0.04);//一般电解质的基础反射率
 
     const vec3 N = caculate_normal();//法线
-    const vec3 metallic_roughness = texture(metallic_roughness_texture, vs_out.tex_coords).xyz;
     const vec3 V = normalize(camera_position - vs_out.world_position); // 观察方向
+    
+#ifdef USE_METALLIC_ROUGHNESS_TEXTURE
+    const vec3 metallic_roughness = texture(metallic_roughness_texture, vs_out.tex_coords).xyz;
+    const float roughness = roughness_factor * metallic_roughness.y;//粗糙度
+    const float metallic = metallic_factor * metallic_roughness.x;//金属度
+#else
+    const float roughness = roughness_factor;//粗糙度
+    const float metallic = metallic_factor;//金属度
+#endif
 
     const vec3 albedo = texture(basecolor_texture, vs_out.tex_coords).xyz;//基础色
-    const float roughness = metallic_roughness.y * roughness_factor;//粗糙度
-    const float metallic = metallic_roughness.x * metallic_factor;//金属度
     // 对于金属，其反射率就是albedo。对于一般电介质，其反射率取一般值0.04。不考虑半导体。
     // 反射率F用于计算Fresnel反射
     const vec3 F0 = mix(dielectric_specular, albedo, metallic);
@@ -249,5 +259,5 @@ void main()
 # endif
     
     out_color = post_process(result_color);
-    //out_color = vec4(BRDF(L, V, N, pixel_attribute) / 2, 1);
+    // out_color = vec4(abs(N), 1);
 }

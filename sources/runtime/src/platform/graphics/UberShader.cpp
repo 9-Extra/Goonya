@@ -3,10 +3,13 @@
 #include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "platform/graphics/opengl/GLShader.h"
+#include "platform/graphics/opengl/GLTexture.h"
+#include "runtime/GoonyaException.h"
 
 #include <cassert>
 #include <cstdint>
 #include <limits>
+#include <ranges>
 
 namespace Goonya {
 
@@ -123,19 +126,23 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->pipeline_setting = desc.pipeline_setting;
     this->local_variant_key_collect = LocalVariantKeyCollect(std::move(desc.local_variant_keys));
     this->effective_global_key_mask = GLOBAL_VARIANT_KEY.get_shader_global_key_mask(desc.global_variant_keys);
+     
+    // 不使用Opengl默认的纹理单元绑定，而是手动分配纹理单元
+    for (auto &&[i, default_texture] : std::views::enumerate(std::move(desc.textures))) {
+        auto &&[name, texture_res] = std::move(default_texture);
+        // 纹理单元从0开始编号，纹理类型信息在反射具体的变体时再获取
+        texture_units.emplace(name, TextureParameterInfo{TextureType::UNKNOWN, (uint32_t)i});
+        textures.emplace(i, std::move(texture_res));
+    }
 
     // 立即编译变体码为0的版本用于反射
     Ref<GLShader> shader = query_variant(VariantCodeSet{0});
 
     GLShaderIntrospector introspector{shader.get()};
-    auto buffer_info = introspector.get_constant_buffer_info();
-
     // 反射获取着色器信息
-    this->per_material = buffer_info["per_material"];
-    this->per_frame = buffer_info.at("per_frame");
-    this->per_object = buffer_info["per_object"];
-    this->uniform_info = buffer_info;
-    this->texture_units = introspector.get_texture_info();
+    this->material_parameters = introspector.get_per_material_uniform_info();
+    this->uniform_binding_info = introspector.get_uniform_binding_info();
+    // 不同变体的纹理单元绑定可能不同，需要在每次编译时手动设置，保证每个变体的纹理单元绑定是一致的
 }
 
 Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
@@ -152,6 +159,26 @@ Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
     std::string mixed_ps = shader_source_inject(ps_src, variant_keys);
 
     Ref<GLShader> shader = create_ref<GLShader>(mixed_vs, mixed_ps);
+
+    // 手动覆盖纹理单元绑定。这是因为不同变体的纹理单元绑定可能不同，需要手动保证每个变体的纹理单元绑定是一致的
+    GLShaderIntrospector introspector{shader.get()};
+    std::unordered_map<std::string, TextureType> texture_info = introspector.get_texture_info();
+    for (auto &&[name, type] : texture_info) {
+        if (auto iter = texture_units.find(name); iter != texture_units.end()) {
+            shader->set_texture_binding(name, iter->second.unit);
+            if (iter->second.type == TextureType::UNKNOWN) {
+                iter->second.type = type;
+            } else {
+                if (iter->second.type != type) {
+                    throw RuntimeError(std::format("纹理\"{}\"在不同的变体中定义为了不同的类型", name));
+                }
+            }
+        } else {
+            // 纹理没有在.meta中定义，却在着色器中使用
+            throw RuntimeError(std::format("纹理\"{}\"在.meta中未定义，却在着色器中使用", name));
+        }
+    }
+    
     shaders.emplace(variant_code, shader);
 
     return shader;

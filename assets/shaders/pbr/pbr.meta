@@ -6,10 +6,23 @@
             "vertex_shader": "vs.vert",
             "pixel_shader": "ps.frag"
         },
+        "parameters": {
+            "metallic_factor": "f32(1.0f)",
+            "roughness_factor": "f32(1.0f)"
+        },
+        "samplers": {
+            "basecolor_texture": "buildin:missing_texture",
+            "normal_texture": "buildin:normal",
+            "metallic_roughness_texture": "buildin:white",
+            "skybox_specular_texture": "buildin:black"
+        },
         "global_variants": [
             "GYA_IBL_ENVIRONMENT_LIGHT",
             "GYA_FOG_EXP"
         ],
-        "local_variants": []
+        "local_variants": [
+            ["", "USE_NORMAL_MAP"],
+            ["", "USE_METALLIC_ROUGHNESS_TEXTURE"]
+        ]
     }
 }

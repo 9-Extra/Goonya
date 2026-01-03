@@ -10,6 +10,9 @@
             "_depth_test": 1,
             "_cull_mode": 0
         },
+        "samplers": {
+            "basecolor_texture": "buildin:missing_texture"
+        },
         "global_variants": [],
         "local_variants": []
     }

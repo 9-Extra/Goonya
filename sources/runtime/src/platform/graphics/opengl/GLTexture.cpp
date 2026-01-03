@@ -1,6 +1,5 @@
 #include "GLTexture.h"
 
-#include "platform/graphics/opengl/GLBasic.h"
 #include "runtime/GoonyaException.h"
 
 #include <cassert>

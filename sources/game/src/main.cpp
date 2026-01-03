@@ -37,7 +37,7 @@ int main() {
         Goonya::drop_engine();
     } catch (const std::exception &e) {
         LOG_ERROR(Goonya::format_exception(e));
-        Goonya::core_logger->flush();
+        Goonya::drop_engine();
     }
 
     std::println(std::cerr, "正常关闭");

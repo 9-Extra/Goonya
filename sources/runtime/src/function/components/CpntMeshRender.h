@@ -75,13 +75,15 @@ public:
 
     void on_unregister() override {
         assert(get_owner() != nullptr);
+        if (!mesh_proxy) {
+            return; // 未注册
+        }
+
         RenderScene *scene = &get_owner()->get_world()->main_scene();
-        enqueue_render_task([proxy = mesh_proxy, scene] {
-            auto &container = scene->mesh_proxys;
-            auto iter = container.find(proxy);
-            assert(iter != container.end());
-            container.erase(iter);
-        });
+        auto &container = scene->mesh_proxys;
+        auto iter = container.find(mesh_proxy);
+        assert(iter != container.end());
+        container.erase(iter);
     }
 
     void on_update(ComponentUpdateFlag flag) override {

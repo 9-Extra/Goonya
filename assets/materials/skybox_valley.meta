@@ -9,7 +9,7 @@
         "variant_keys": [],
         "parameters": {},
         "samplers": {
-            "skybox_specular_texture": "cubemap(skybox/valley/valley)"
+            "skybox_specular_texture": "skybox/valley/valley"
         }
     }
 }

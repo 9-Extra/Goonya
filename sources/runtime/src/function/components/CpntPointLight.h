@@ -2,6 +2,7 @@
 
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"
+#include "function/renderer/RenderScene.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
 #include "platform/graphics/Graphics.h"

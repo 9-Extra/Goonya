@@ -43,13 +43,32 @@ void Renderer::render() {
         // 清除旧画面
         GL.set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         GL.clear(true, true, true);
-        
+
+        // 寻找包含且最小，接近中心的天空盒
+        Skybox* skybox = nullptr;
+        float min_distance = std::numeric_limits<float>::infinity();
+        for (auto&& s : camera->scene->skyboxs) {
+            if (!s.ignore_range && !s.bbox.contains(camera->get_position())) {
+                continue;
+            }
+            float d = s.ignore_range ? std::numeric_limits<float>::max() : (s.bbox.center() - camera->get_position()).square();
+            if (d < min_distance) {
+                skybox = &s;
+                min_distance = d;
+            }
+        }
+            
         PassRenderInfo info{
             .camera = camera.get(),
             .viewport = viewport,
             .screen_size = {(float)viewport.width, (float)viewport.height},
             .time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(GAME_CLOCK.total()).count(),
         };
+
+        if (skybox) {
+            info.env_map = skybox->env_map;
+            info.skybox_material = skybox->skybox_material;
+        }
 
         geometry_pass->run(info);
         skybox_pass->run(info);
@@ -63,7 +82,7 @@ void Renderer::render() {
 
 void Renderer::clear() {
     renderer_thread_process();
-
+    // todo: 我们无法确认在清空这些资源时，是否会有其他的对象还持有引用
     camera_set.clear();
     scene_set.clear();
 

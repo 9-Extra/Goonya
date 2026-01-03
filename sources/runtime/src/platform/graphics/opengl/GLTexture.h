@@ -1,12 +1,12 @@
 #pragma once
 
-#include "platform/graphics/opengl/GLBasic.h"
 #include "platform/image/image.h"
 #include "resource/Resource.h"
 
+#include <glad/glad.h>
+
 #include <cassert>
 #include <cstdint>
-#include <glad/glad.h>
 #include <tuple>
 
 namespace Goonya {

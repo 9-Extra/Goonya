@@ -1,9 +1,14 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/metatype/metatype.h"
-#include "platform/graphics/opengl/GLBasic.h"
+#include "core/hash_helper.h"
+#include "core/log/Log.h"
+#include "platform/graphics/MaterialParameter.h"
+#include "platform/graphics/opengl/GLTexture.h"
+
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 
@@ -14,10 +19,20 @@ enum class BufferBindingType {
     SHADER_STORAGE
 };
 
-struct ShaderUniformBlockInfo final {
-    Meta::LayoutInfo layout;
+struct MaterialParameterInfo{
+    MaterialParameter type_and_default_value;
+    size_t offset;
+};
+
+struct MaterialParameterBlockInfo {
+    std::unordered_map<std::string, MaterialParameterInfo> fields; // name -> (type, default value, offset)
+    uint32_t total_size = 0;
     uint32_t binding = 0;
-    BufferBindingType binding_type = BufferBindingType::UNIFORM;
+};
+
+struct TextureParameterInfo{
+    TextureType type = TextureType::UNKNOWN;
+    uint32_t unit = 0;
 };
 
 
@@ -30,6 +45,18 @@ public:
     ~GLShader() { glDeleteProgram(id); }
 
     void bind() const noexcept { glUseProgram(id); }
+
+    void set_texture_binding(const std::string &name, uint32_t unit) const noexcept{
+        GLint location = glGetUniformLocation(id, name.c_str());
+        if (location != -1){
+            glProgramUniform1i(id, location, unit);
+        } else {
+            LOG_WARN("着色器中未找到纹理{}", name);
+        }
+    }
+    void set_texture_binding(uint32_t location, uint32_t unit) const noexcept{
+        glProgramUniform1i(id, location, unit);
+    }
     GLuint get_id() const { return id; }
 };
 
@@ -43,8 +70,9 @@ public:
         id = shader->get_id();
     }
 
-    std::unordered_map<std::string, ShaderUniformBlockInfo> get_constant_buffer_info() const noexcept;
-    std::unordered_map<std::string, uint32_t> get_texture_info() const noexcept;
+    MaterialParameterBlockInfo get_per_material_uniform_info() const noexcept;
+    std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual> get_uniform_binding_info() const noexcept;
+    std::unordered_map<std::string, TextureType>  get_texture_info() const noexcept;
 };
 
 } // namespace Goonya

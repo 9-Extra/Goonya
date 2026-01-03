@@ -1,13 +1,12 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "platform/graphics/opengl/GLBuffer.h"
-#include "platform/graphics/opengl/GLTexture.h"
-#include "resource/Resource.h"
-#include "core/metatype/metatype.h"
+#include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/PipelineSetting.h"
-#include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/UberShader.h"
+#include "platform/graphics/opengl/GLBuffer.h"
+#include "platform/graphics/opengl/GLShader.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "resource/Resource.h"
 
 #include <cassert>
@@ -26,7 +25,7 @@ protected:
 
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, PipelineSettingParamType> override_pipeline_setting;
-    std::unordered_map<std::string, Meta::DynamicData> parameters;
+    std::unordered_map<std::string, MaterialParameter> parameters;
     std::unordered_map<uint32_t, Ref<GLTexture>> textures; // slot -> texture
     std::unordered_map<uint32_t, std::tuple<Ref<GLBuffer>, BufferBindingType>>
         external_buffer; // slot -> (buffer, bindingtype)
@@ -55,31 +54,39 @@ public:
 
     void set_pipeline_setting(const std::string &name, PipelineSettingParamType value);
 
-    void set_param(const std::string &name, const Meta::DynamicData &value);
-    template<Meta::meta_type T>
-    void set_param(const std::string &name, const T &value){
-        set_param(name, Meta::DynamicData(value));
-    }
-    
+    void set_param(const std::string &name, const MaterialParameter &value);
+
     void set_external_buffer(const std::string &name, const Ref<GLBuffer> &buffer) {
         assert(buffer);
-        auto &info = uber_shader->get_uniform_info().at(name);
-        external_buffer[info.binding] = {buffer, info.binding_type};
+        auto info = uber_shader->get_uniform_info(name);
+        if (info.has_value()) {
+            auto [binding, type] = info.value();
+            external_buffer[binding] = {buffer, type};
+        } else {
+            // Maybe optimized out?
+        }
     }
 
     void set_texture(const std::string &name, const Ref<GLTexture> &texture) {
         // texture slot可能被优化掉了
-        assert(texture);
+        // 允许传入texture为空，表示使用默认纹理。但this->textures不应包含空指针
         if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
-            this->textures[iter->second] = texture;
+            uint32_t unit = iter->second.unit; // 在bind时再进行texture类型检查
+            if (texture){
+                this->textures[unit] = texture;
+            } else {
+                this->textures.erase(unit);
+            }
+        } else {
+            // 允许设置不存在的纹理，会被忽略
         }
     }
 
-    void set_local_variant_key(const std::string &key) {
-        local_variant_code = uber_shader->set_local_variant_key(local_variant_code, key);
+    bool set_local_variant_key(const std::string &key) {
+        return uber_shader->set_local_variant_key(local_variant_code, key);
     }
-    void remove_local_variant_key(const std::string &key) {
-        local_variant_code = uber_shader->reset_local_variant_key(local_variant_code, key);
+    bool remove_local_variant_key(const std::string &key) {
+        return uber_shader->reset_local_variant_key(local_variant_code, key);
     }
     // 复制材质
     Ref<Material> clone() const noexcept;

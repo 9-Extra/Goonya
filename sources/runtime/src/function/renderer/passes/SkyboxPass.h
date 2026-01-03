@@ -15,6 +15,6 @@ private:
 public:
     SkyBoxPass() : mesh(resources.load_resource<GLMesh>("buildin:skybox_cube")) {}
 
-    void run(const PassRenderInfo &info) override;
+    void run(PassRenderInfo &info) override;
 };
 } // namespace Goonya

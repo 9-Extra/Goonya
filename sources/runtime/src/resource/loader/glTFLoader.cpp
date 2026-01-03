@@ -8,8 +8,8 @@
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/UberShader.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/ResMng.h"
 #include "resource/Resource.h"
@@ -36,18 +36,14 @@ namespace Goonya {
 // 将单个转义三元组 %HH 解码成一个字节
 static char hex_to_char(char c1, char c2) {
     auto hex = [](char ch) -> int {
-        if (ch >= '0' && ch <= '9')
-            return ch - '0';
-        if (ch >= 'A' && ch <= 'F')
-            return ch - 'A' + 10;
-        if (ch >= 'a' && ch <= 'f')
-            return ch - 'a' + 10;
+        if (ch >= '0' && ch <= '9') return ch - '0';
+        if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+        if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
         return -1; // 非法十六进制字符
     };
     int h1 = hex(c1);
     int h2 = hex(c2);
-    if (h1 < 0 || h2 < 0)
-        return '\0'; // 非法则返回 0
+    if (h1 < 0 || h2 < 0) return '\0'; // 非法则返回 0
     return static_cast<char>((h1 << 4) | h2);
 }
 
@@ -79,11 +75,11 @@ struct glTFVertex {
 };
 
 const VertexLayout GLTF_VERTEX_LAYOUT = VertexLayoutBuilder()
-                                                      .add_attribute(VertexAttribute::POSITION)
-                                                      .add_attribute(VertexAttribute::NORMAL)
-                                                      .add_attribute(VertexAttribute::TANGENT)
-                                                      .add_attribute(VertexAttribute::UV)
-                                                      .build();
+                                            .add_attribute(VertexAttribute::POSITION)
+                                            .add_attribute(VertexAttribute::NORMAL)
+                                            .add_attribute(VertexAttribute::TANGENT)
+                                            .add_attribute(VertexAttribute::UV)
+                                            .build();
 
 struct GlTFLoadingContext {
     Ref<ResourcePack> pack;
@@ -235,9 +231,8 @@ struct GlTFLoadingContext {
                     indices[index_offset + i + 2] = info.indices_ptr[i + 0];
                 }
 
-                sub_meshes.emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset,
-                                                          Topology::TRIANGLE,
-                                                          BoundingBox{info.pos_min, info.pos_max}});
+                sub_meshes.emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset, Topology::TRIANGLE,
+                                                BoundingBox{info.pos_min, info.pos_max}});
 
                 vertex_offset += info.vertex_count;
                 index_offset += info.indices_count;
@@ -283,8 +278,7 @@ struct GlTFLoadingContext {
             if (storage_type == TextureStorageFormat::UNKNOWN) {
                 throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_path));
             }
-            TextureCreateDesc create_desc{
-                TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
+            TextureCreateDesc create_desc{TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
 
             Ref<GLTexture> texture = create_ref<GLTexture>(create_desc);
 
@@ -329,37 +323,35 @@ struct GlTFLoadingContext {
         // 加载材质
         for (const Json::Value &material : json["materials"]) {
             const std::string &key = material["name"].asString();
+            Ref<Material> device_material =
+                create_ref<Material>(resources.load_resource<UberShader>("shaders/pbr/pbr").get());
 
-            Ref<GLTexture> normal_texture;
-            if (material.isMember("normalTexture")) {
-                normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
-            } else {
-                normal_texture = resources.load_resource<GLTexture>("buildin:normal");
-            }
             Ref<GLTexture> basecolor_texture;
             if (material["pbrMetallicRoughness"].isMember("baseColorTexture")) {
-                basecolor_texture = load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
+                basecolor_texture =
+                    load_texture(material["pbrMetallicRoughness"]["baseColorTexture"]["index"].asUInt(), true);
             } else {
                 basecolor_texture = resources.load_resource<GLTexture>("buildin:missing_texture");
             }
-            Ref<GLTexture> metallic_roughness_texture;
+            device_material->set_texture("basecolor_texture", basecolor_texture);
+
+            if (material.isMember("normalTexture")) {
+                device_material->set_local_variant_key("USE_NORMAL_MAP");
+                Ref<GLTexture> normal_texture = load_texture(material["normalTexture"]["index"].asUInt(), false);
+                device_material->set_texture("normal_texture", normal_texture);
+            }
+
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
-                metallic_roughness_texture =
+                device_material->set_local_variant_key("USE_METALLIC_ROUGHNESS_TEXTURE");
+                Ref<GLTexture> metallic_roughness_texture =
                     load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
-            } else {
-                metallic_roughness_texture = resources.load_resource<GLTexture>("buildin:white");
+                device_material->set_texture("metallic_roughness_texture", metallic_roughness_texture);
             }
 
             float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();
             float roughnessFactor = material["pbrMetallicRoughness"].get("roughnessFactor", 1.0).asFloat();
-
-            Ref<Material> device_material =
-                create_ref<Material>(resources.load_resource<UberShader>("shaders/pbr/pbr").get());
             device_material->set_param("metallic_factor", metallicFactor);
             device_material->set_param("roughness_factor", roughnessFactor);
-            device_material->set_texture("basecolor_texture", basecolor_texture);
-            device_material->set_texture("normal_texture", normal_texture);
-            device_material->set_texture("metallic_roughness_texture", metallic_roughness_texture);
 
             pack->contents.emplace(key, device_material);
             material_list.emplace_back(device_material);

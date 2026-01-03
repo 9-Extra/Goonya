@@ -2,8 +2,8 @@
 
 #include "core/RefCount.h"
 #include "platform/display/display.h"
-#include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLTexture.h"
+
 #include <cstddef>
 #include <cstdint>
 

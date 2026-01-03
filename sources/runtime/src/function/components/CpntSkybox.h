@@ -13,6 +13,7 @@ namespace Goonya {
 class CpntSkybox : public Component {
 
 private:
+    Ref<GLTexture> env_map;
     Ref<Material> skybox_material;
     bool ignore_range;
     BoundingBox bbox;
@@ -27,10 +28,11 @@ public:
         assert(get_owner() != nullptr);
         Vector3f pos = get_owner()->get_world_model_matrix().resolve_position();
 
-        Skybox skybox{skybox_material, ignore_range, bbox.offset(pos)};
+        Skybox skybox{env_map, skybox_material, ignore_range, bbox.offset(pos)};
 
         RenderScene *scene = &get_owner()->get_world()->main_scene();
         skybox_proxy = scene->skyboxs.emplace(std::move(skybox));
+        // scene->skyboxs.erase(skybox_proxy);
     }
 
     void on_unregister() override {
@@ -41,8 +43,7 @@ public:
     void on_update(ComponentUpdateFlag flag) override {
         if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {
             Vector3f position = get_owner()->get_world_model_matrix().resolve_position();
-            enqueue_render_task(
-                [skybox_proxy = skybox_proxy, new_bbox = bbox.offset(position)] { skybox_proxy->bbox = new_bbox; });
+            skybox_proxy->bbox = bbox.offset(position);
         }
     }
 };

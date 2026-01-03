@@ -29,8 +29,8 @@ GeometryPass::GeometryPass() {
  * @param mat 任意可以投影到OpenGL裁剪空间的矩阵（乘在右边的版本，Y轴翻转没有实际影响）
  * @return 视锥体的6个平面，法线向视椎体内，没有归一化
  */
-std::array<Plane, 6> create_frustum_planes(const Matrix4 &mat) noexcept {
-    Matrix4 col = mat.transpose();
+std::array<Plane, 6> create_frustum_planes(const Matrix4f &mat) noexcept {
+    Matrix4f col = mat.transpose();
 
     Plane p0 = Plane{col[3] + col[0]};
     Plane p1 = Plane{col[3] - col[0]};
@@ -75,11 +75,11 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
     return true;
 }
 // 一般物体渲染
-void GeometryPass::run(const PassRenderInfo &info) {
+void GeometryPass::run(PassRenderInfo &info) {
     Vector3f camera_pos = info.camera->get_position();
     RenderScene &scene = *info.camera->scene;
 
-    const Matrix4 view_perspective =
+    const Matrix4f view_perspective =
         info.camera->get_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
 
     // 绑定per_frame uniform buffer
@@ -138,7 +138,7 @@ void GeometryPass::run(const PassRenderInfo &info) {
 
             // 填充PerObject参数
             per_object_data[offset]->model_matrix = mesh->model_matrix.transpose();
-            per_object_data[offset]->normal_matrix = Matrix4{mesh->normal_matrix.transpose()};
+            per_object_data[offset]->normal_matrix = Matrix4f{mesh->normal_matrix.transpose()};
 
             for (uint32_t i = 0; i < m->submeshes.size(); i++) {
                 if (m->submeshes[i].index_count == 0) {
@@ -161,6 +161,7 @@ void GeometryPass::run(const PassRenderInfo &info) {
 
     for (auto &[material, batch] : batcher) {
         material->bind();
+        material->set_texture("skybox_specular_texture", info.env_map);
 
         for (Batch &item : batch) {
             per_object_uniform->bind_uniform_ranged(1, item.per_object_data_offset, sizeof(PerObjectData));

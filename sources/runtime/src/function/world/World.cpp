@@ -1,12 +1,13 @@
 #include "World.h"
 #include "core/ThreadPool.h"
+#include "function/renderer/Renderer.h"
 #include <cassert>
 
 namespace Goonya {
 
 std::forward_list<World> World::world_list;
 
-void TickFunction::register_ticker(World* world) noexcept {
+void TickFunction::register_ticker(World *world) noexcept {
     assert(world != nullptr);
     if (world == owner_world) {
         return;
@@ -21,8 +22,18 @@ void TickFunction::unregister_ticker() noexcept {
     }
 }
 
-TickFunction::~TickFunction() {
-    unregister_ticker();
+TickFunction::~TickFunction() { unregister_ticker(); }
+
+// -------------------------World-------------------------------
+World::World() : _main_scene(*renderer.create_scene()) {
+    root = std::make_shared<GObject>("__root__");
+    root->set_world(this);
+}
+World::~World() {
+    root->set_world(nullptr);
+    root.reset();
+    tick_count = 0;
+    renderer.drop_scene(&_main_scene);
 }
 
 void World::tick() {
@@ -74,5 +85,4 @@ void World::unregister_ticker(TickFunction *function) {
     }
     function->owner_world = nullptr;
 }
-
 } // namespace Goonya

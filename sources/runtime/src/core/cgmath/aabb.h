@@ -25,13 +25,13 @@ struct BoundingBox {
     /**
      * @brief 获取变换后后的保守包围盒
      */
-    constexpr BoundingBox transformed(const Matrix4 &transform) const noexcept {
+    constexpr BoundingBox transformed(const Matrix4f &transform) const noexcept {
         /*
         此函数源自 [Godot] (https://github.com/godotengine/godot)
         版权归 [Juan Linietsky, Ariel Manzur] 所有
         遵循 MIT 许可证
         */
-        Matrix3 rotation_scale = transform.to_matrix3().transpose();
+        Matrix3f rotation_scale = transform.to_matrix3().transpose();
         Vector3f position = transform.resolve_position();
 
         Vector3f tmin, tmax;

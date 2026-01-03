@@ -114,14 +114,12 @@ public:
         if (complie_task) {
             complie_task->cancel();
         }
-        // 异步销毁mesh_proxy
-        enqueue_render_task([&render_scene = render_scene, mesh_proxy = mesh_proxy]() mutable {
-            if (mesh_proxy) {
-                auto iter = render_scene.mesh_proxys.find(mesh_proxy);
-                assert(iter != render_scene.mesh_proxys.end());
-                render_scene.mesh_proxys.erase(iter);
-            }
-        });
+        // 销毁mesh_proxy
+        if (mesh_proxy) {
+            auto iter = render_scene.mesh_proxys.find(mesh_proxy);
+            assert(iter != render_scene.mesh_proxys.end());
+            render_scene.mesh_proxys.erase(iter);
+        }
     }
 
     void complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material);

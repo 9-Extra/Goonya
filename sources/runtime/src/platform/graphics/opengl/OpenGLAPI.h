@@ -1,13 +1,12 @@
 #pragma once
 
-#include "../Graphics.h"
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
+#include "spdlog/logger.h"
 
 #include <cstddef>
 #include <cstdint>
-#include <memory>
 
 namespace Goonya {
 
@@ -44,7 +43,7 @@ public:
     void set_viewport(const Viewport &view_port) noexcept;
 
     // --------------------其他------------------------------
-    Matrix4 compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
+    Matrix4f compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
                                        bool render_to_texture) const noexcept;
 
 private:

@@ -13,7 +13,7 @@ struct PointLightData final {
 };
 
 struct PerFrameData final { // NOLINT：不需要初始化
-    Matrix4 view_perspective_matrix;
+    Matrix4f view_perspective_matrix;
     alignas(16) Vector3f ambient_light;
     alignas(16) Vector3f camera_position;
     alignas(4) float fog_min_distance;
@@ -25,8 +25,8 @@ struct PerFrameData final { // NOLINT：不需要初始化
 };
 
 struct alignas(256) PerObjectData final {
-        Matrix4 model_matrix;
-        Matrix4 normal_matrix; // 内存对齐
-    };
+    Matrix4f model_matrix;
+    Matrix4f normal_matrix; // 内存对齐
+};
 
 } // namespace Goonya

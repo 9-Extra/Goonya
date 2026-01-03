@@ -46,6 +46,9 @@ struct Vector2f {
     constexpr Vector2f operator+(const Vector2f b) const { return {x + b.x, y + b.y}; }
     constexpr Vector2f operator-(const Vector2f b) const { return {x - b.x, y - b.y}; }
     constexpr Vector2f operator*(const float s) const { return {x * s, y * s}; }
+    constexpr bool operator==(Vector2f rhs) const noexcept {
+        return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y);
+    }
 
     constexpr float squared() const { return x * x + y * y; }
 
@@ -71,8 +74,8 @@ struct Color {
     constexpr bool operator!=(const Color &ps) const { return !(*this == ps); }
 };
 
-struct Matrix3;
-struct Matrix4;
+struct Matrix3f;
+struct Matrix4f;
 struct Quaternion;
 
 struct Vector3f {
@@ -103,7 +106,7 @@ struct Vector3f {
     constexpr bool operator==(Vector3f rhs) const noexcept {
         return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y) && is_nearly_equal(y, rhs.y);
     }
-    friend constexpr Vector3f operator*(Vector3f left, Matrix3 right) noexcept;
+    friend constexpr Vector3f operator*(Vector3f left, Matrix3f right) noexcept;
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }
 
     constexpr Vector3f cross(const Vector3f b) const {
@@ -145,7 +148,11 @@ struct Vector4f {
     constexpr Vector4f operator*(const float n) const noexcept { return {x * n, y * n, z * n, w * n}; }
     constexpr Vector4f operator/(const float n) const noexcept { return *this * (1.0f / n); }
 
-    friend constexpr Vector4f operator*(Vector4f left, Matrix4 right) noexcept;
+    friend constexpr Vector4f operator*(Vector4f left, Matrix4f right) noexcept;
+
+    constexpr bool operator==(Vector4f rhs) const noexcept {
+        return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y) && is_nearly_equal(z, rhs.z);
+    }
 };
 
 } // namespace Goonya

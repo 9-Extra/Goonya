@@ -12,6 +12,7 @@
 #include "function/world/World.h"
 #include "platform/display/display.h"
 #include "platform/graphics/UberShader.h"
+#include "resource/ResMng.h"
 
 #include <algorithm>
 #include <cmath>

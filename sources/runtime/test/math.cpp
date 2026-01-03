@@ -53,25 +53,25 @@ TEST(Quaternion, to_matrix_and_resolve) {
     Vector3f point{0, 0, -1};
     Quaternion q1 = Quaternion::from_eular(Vector3f(to_radian(23), to_radian(45), to_radian(90)));
     Quaternion q2 = Quaternion::from_eular(Vector3f(to_radian(108), to_radian(23), to_radian(80)));
-    EXPECT_EQ(point * Matrix3::from_quaternion(q1), point.apply(q1));
-    EXPECT_EQ(Matrix3::from_quaternion(q1) * Matrix3::from_quaternion(q2), Matrix3::from_quaternion(q1.apply(q2)));
+    EXPECT_EQ(point * Matrix3f::from_quaternion(q1), point.apply(q1));
+    EXPECT_EQ(Matrix3f::from_quaternion(q1) * Matrix3f::from_quaternion(q2), Matrix3f::from_quaternion(q1.apply(q2)));
 
-    EXPECT_EQ(Matrix3::from_quaternion(q1).resolve_rotation_normalized(), q1);
-    EXPECT_EQ(Matrix4{Matrix3::from_quaternion(q1)}.resolve_rotation_normalized(), q1);
-    EXPECT_EQ(Matrix4{Matrix3::from_quaternion(q1)}.transpose().resolve_rotation_normalized(), q1.conjugate());
+    EXPECT_EQ(Matrix3f::from_quaternion(q1).resolve_rotation_normalized(), q1);
+    EXPECT_EQ(Matrix4f{Matrix3f::from_quaternion(q1)}.resolve_rotation_normalized(), q1);
+    EXPECT_EQ(Matrix4f{Matrix3f::from_quaternion(q1)}.transpose().resolve_rotation_normalized(), q1.conjugate());
 
-    EXPECT_EQ((Matrix4::identity().translate({123, 1, 0}).rotate(q1).translate({115, 514, 221}))
+    EXPECT_EQ((Matrix4f::identity().translate({123, 1, 0}).rotate(q1).translate({115, 514, 221}))
                   .resolve_rotation_normalized(),
               q1);
 
     // resolve_rotation_normalized不支持没有归一化的矩阵
-    Matrix4 unnormalized_matrix = Matrix4::identity().scale({123, 1, 1}).rotate(q1);
+    Matrix4f unnormalized_matrix = Matrix4f::identity().scale({123, 1, 1}).rotate(q1);
     EXPECT_NE(unnormalized_matrix.resolve_rotation_normalized(), q1);
     // 用Transform分解
     EXPECT_EQ(Transform::from_matrix(unnormalized_matrix).rotation, q1);
 
     // 因为误差导致接近0的情况
-    Matrix4 mat{-0.999999523,
+    Matrix4f mat{-0.999999523,
                 -0.000418676762,
                 0.000213881052,
                 0,
@@ -92,24 +92,24 @@ TEST(Quaternion, to_matrix_and_resolve) {
 }
 
 TEST(Matrix, determinant_and_inverse) {
-    Matrix3 mat3{5, 6, 7, 10, 9, 8, 3, 3, 3};
+    Matrix3f mat3{5, 6, 7, 10, 9, 8, 3, 3, 3};
     EXPECT_FLOAT_EQ(mat3.determinant(), 0);
     EXPECT_FALSE(mat3.inverse());
 
     mat3.m[2][2] = 5;
     EXPECT_FLOAT_EQ(mat3.determinant(), -30.0f);
-    EXPECT_EQ(mat3.inverse().value() * mat3, Matrix3::identity());
+    EXPECT_EQ(mat3.inverse().value() * mat3, Matrix3f::identity());
 
-    Matrix4 mat4{1, 2, 3, 4, 5, 1, 7, 8, 9, 10, 1, 12, 13, 14, 15, 1};
+    Matrix4f mat4{1, 2, 3, 4, 5, 1, 7, 8, 9, 10, 1, 12, 13, 14, 15, 1};
     EXPECT_FLOAT_EQ(mat4.determinant(), -4350.f);
-    EXPECT_EQ(mat4 * mat4.inverse().value(), Matrix4::identity());
+    EXPECT_EQ(mat4 * mat4.inverse().value(), Matrix4f::identity());
 }
 
 TEST(Matrix, translate_scale) {
     const Vector3f t1{95.7264f, 40.8074f, 0.1644f};
     const Vector3f t2{-1.f, -0.41863245f, -0.3396743f}; 
     const float scale = 2.f / 191.1696014404297f;
-    Goonya::Matrix4 transform = Goonya::Matrix4::identity()
+    Goonya::Matrix4f transform = Goonya::Matrix4f::identity()
                                     .translate(t1)
                                     .scale(scale)
                                     .translate(t2);

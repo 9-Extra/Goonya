@@ -293,14 +293,14 @@ void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
     glViewport(view_port.x, view_port.y, view_port.width, view_port.height);
 }
 //  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
+Matrix4f OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
                                                       bool render_to_texture) const noexcept {
     assert(near_z < far_z); // 不要写反了！！！！！！！！！！
     float c = 1.0f / std::tan(fov / 2);
 
     if (render_to_texture) {
         // 翻转Y轴
-        return Matrix4{c / ratio,
+        return Matrix4f{c / ratio,
                        0.0f,
                        0.0f,
                        0.0f,
@@ -317,7 +317,7 @@ Matrix4 OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, fl
                        -2 * far_z * near_z / (far_z - near_z),
                        0.0f};
     } else {
-        return Matrix4{c / ratio,
+        return Matrix4f{c / ratio,
                        0.0f,
                        0.0f,
                        0.0f,

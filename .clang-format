@@ -3,3 +3,4 @@ AccessModifierOffset: -4
 ColumnLimit: 120
 
 AlwaysBreakTemplateDeclarations: Yes
+AllowShortIfStatementsOnASingleLine: WithoutElse # 没有else的短if不换行

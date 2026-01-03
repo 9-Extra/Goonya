@@ -64,8 +64,8 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
             MeshRenderProxy *proxy = new MeshRenderProxy{};
             proxy->mesh = updated_mesh;
             proxy->materials = {material};
-            proxy->model_matrix = Goonya::Matrix4::identity();
-            proxy->normal_matrix = Goonya::Matrix3::identity();
+            proxy->model_matrix = Goonya::Matrix4f::identity();
+            proxy->normal_matrix = Goonya::Matrix3f::identity();
             proxy->aabbs = {Goonya::BoundingBox{start_pos, end_pos}};
 
             section->mesh_proxy = proxy;

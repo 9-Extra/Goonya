@@ -7,6 +7,7 @@
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/Resource.h"
+#include "runtime/GoonyaException.h"
 
 #include <array>
 #include <bitset>
@@ -14,6 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -38,6 +40,8 @@ struct UberShaderDesc final {
      */
     std::vector<std::string> global_variant_keys;             // 相关的变体定义
     std::vector<std::vector<std::string>> local_variant_keys; // 仅此UberShader使用的所有变体定义
+    std::unordered_map<std::string, MaterialParameter> parameters;
+    std::unordered_map<std::string, Ref<GLTexture>> textures;
 };
 
 using VariantCode = uint32_t;
@@ -199,19 +203,16 @@ protected:
     std::string ps_src;
 
     // 默认材质参数
-    PipelineSetting pipeline_setting;                              // 着色器默认的渲染管线设置
-    std::unordered_map<std::string, Meta::DynamicData> parameters; // 默认材质参数
-    std::unordered_map<uint32_t, Ref<GLTexture>> textures;         // 默认纹理绑定
+    PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
+    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
+    MaterialParameterBlockInfo material_parameters;               // 默认材质参数
 
     LocalVariantKeyCollect local_variant_key_collect;
     VariantCode effective_global_key_mask;
 
-    // 几个特殊的UniformBuffer内存布局
-    ShaderUniformBlockInfo per_material;
-    ShaderUniformBlockInfo per_frame;
-    ShaderUniformBlockInfo per_object;
-    std::unordered_map<std::string, ShaderUniformBlockInfo> uniform_info; // 全部uniform的内存布局和绑定点
-    std::unordered_map<std::string, uint32_t> texture_units;              // 纹理名称及对应的纹理单元
+    std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
+        uniform_binding_info;                                // 全部uniform buffer的绑定点和类型
+    std::unordered_map<std::string, TextureParameterInfo> texture_units; // 纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)
 public:
     explicit UberShader(UberShaderDesc &&desc);
     UberShader(const UberShader &) = delete;
@@ -219,12 +220,22 @@ public:
 
     const PipelineSetting &get_pipeline_setting() const noexcept { return pipeline_setting; }
 
-    const ShaderUniformBlockInfo &per_material_block() const noexcept { return per_material; }
-    const ShaderUniformBlockInfo &per_frame_block() const noexcept { return per_frame; }
-    const ShaderUniformBlockInfo &per_object_block() const noexcept { return per_object; }
-    const std::unordered_map<std::string, uint32_t> &get_texture_units() const noexcept { return texture_units; }
-    const std::unordered_map<std::string, ShaderUniformBlockInfo> &get_uniform_info() const noexcept {
-        return uniform_info;
+    const MaterialParameterBlockInfo &per_material_block() const noexcept { return material_parameters; }
+    const std::unordered_map<std::string, TextureParameterInfo> &get_texture_units() const noexcept { return texture_units; }
+    Ref<GLTexture> get_default_texture(uint32_t unit) const {
+        if (auto iter = textures.find(unit); iter != textures.end()) {
+            return iter->second;
+        } else {
+            throw RuntimeError(std::format("UberShader没有定义纹理单元 {}", unit));
+        }
+    }
+    std::optional<std::tuple<uint32_t, BufferBindingType>>
+    get_uniform_info(std::string_view uniform_name) const noexcept {
+        auto iter = uniform_binding_info.find(uniform_name);
+        if (iter == uniform_binding_info.end()) {
+            return std::nullopt;
+        }
+        return iter->second;
     }
 
     VariantCode get_effective_global_key_code() const noexcept {
@@ -237,10 +248,10 @@ public:
         GLOBAL_VARIANT_KEY.get_variant_key_names(out_names);
     }
 
-    bool set_local_variant_key(VariantCode local_code, const std::string &variant_key) const noexcept {
+    bool set_local_variant_key(VariantCode& local_code, const std::string &variant_key) const noexcept {
         return local_variant_key_collect.set_variant_code(local_code, variant_key);
     }
-    bool reset_local_variant_key(VariantCode local_code, const std::string &variant_key) const noexcept {
+    bool reset_local_variant_key(VariantCode& local_code, const std::string &variant_key) const noexcept {
         return local_variant_key_collect.reset_variant_code(local_code, variant_key);
     }
 };

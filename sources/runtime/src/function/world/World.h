@@ -1,13 +1,12 @@
 #pragma once
 
 #include "GObject.h"
-#include "function/renderer/RenderScene.h"
-#include "function/renderer/Renderer.h"
 #include "function/world/Component.h"
-#include "platform/graphics/Graphics.h"
+
 #include <cassert>
 #include <forward_list>
 #include <memory>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -33,11 +32,13 @@ public:
 
     TickType get_tick_type() const noexcept { return tick_type; }
     bool is_registered() const noexcept { return owner_world != nullptr; }
-    void register_ticker(World* world) noexcept;
+    void register_ticker(World *world) noexcept;
     void unregister_ticker() noexcept;
 
     virtual void tick() = 0;
 };
+
+class RenderScene;
 
 class World final {
 public:
@@ -53,15 +54,8 @@ private:
     std::vector<std::weak_ptr<GObject>> deferred_update_list;
 
 public:
-    World() : _main_scene(*renderer.create_scene()) {
-        root = std::make_shared<GObject>("__root__");
-        root->set_world(this);
-    }
-    ~World() {
-        root.reset();
-        tick_count = 0;
-        enqueue_render_task([&scene = _main_scene] { renderer.drop_scene(&scene); });
-    }
+    World();
+    ~World();
 
 public:
     static World *create_world() { return &world_list.emplace_front(); }
@@ -75,6 +69,7 @@ public:
     std::shared_ptr<GObject> get_root() const noexcept { return root; }
 
     std::shared_ptr<GObject> set_root(const std::shared_ptr<GObject> &new_root) noexcept {
+        root->set_world(nullptr);
         new_root->set_world(this);
         return std::exchange(root, new_root);
     }

@@ -19,7 +19,8 @@ struct DirectionalLight {
 };
 
 struct Skybox {
-    Ref<Material> material;
+    Ref<GLTexture> env_map;
+    Ref<Material> skybox_material;
     bool ignore_range;
     BoundingBox bbox;
 };
@@ -29,8 +30,8 @@ struct Skybox {
  * 
  */
 struct PerObjectBuffer{
-    Matrix4 model_matrix;
-    Matrix4 normal_matrix;
+    Matrix4f model_matrix;
+    Matrix4f normal_matrix;
 };
 
 } // namespace Goonya

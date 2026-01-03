@@ -5,6 +5,9 @@
         "sources": {
             "vertex_shader": "vs.vert",
             "pixel_shader": "ps.frag"
+        },
+        "samplers": {
+            "skybox_specular_texture": "buildin:missing_texture"
         }
     }
 }

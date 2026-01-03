@@ -99,7 +99,7 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
 
     // 设置模型变换矩阵，将线框从局部坐标系转换到世界坐标系
     // 不需要normal_matrix，因为线框渲染不依赖于法线变换
-    mesh_proxy->model_matrix = Goonya::Matrix4::identity().translate(pos);
+    mesh_proxy->model_matrix = Goonya::Matrix4f::identity().translate(pos);
     mesh_proxy->aabbs[0] = Goonya::BoundingBox{pos, pos + 1};  // 更新边界框为1x1x1的立方体
 }
 } // namespace Craft

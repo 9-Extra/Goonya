@@ -10,7 +10,6 @@
 
 #include "core/RefCount.h"
 #include "core/as_u8string.h"
-#include "core/format_exception.h"
 #include "core/log/Log.h"
 #include "core/path_formatter.h"
 #include "resource/Loader.h"
@@ -43,6 +42,10 @@ void RenderResource::scan() {
 
 Ref<Resource> RenderResource::load_resource(std::string_view key) {
     if (auto iter = storage.find(key); iter != storage.end()) {
+        if (!iter->second) {
+            throw RuntimeError(std::format("加载资源\"{}\"时存在错误，见之前的异常", key));
+        }
+        assert(iter->second); 
         return iter->second;
     }
 
@@ -54,15 +57,14 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         std::string_view pack_key = key.substr(0, split);
         Ref<ResourcePack> pack = load_resource<ResourcePack>(pack_key);
         if (!pack) {
-            LOG_ERROR("加载资源包\"{}\"时出错", pack_key);
-            return res;
+            storage.emplace(key, pack); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
+            throw RuntimeError(std::format("加载资源包\"{}\"时出错", pack_key));
         }
 
         std::string_view inner_key = key.substr(split + 1);
         auto iter = pack->contents.find(inner_key);
         if (iter == pack->contents.end()) {
-            LOG_ERROR("资源包\"{}\"内不存在资源\"{}\"", pack_key, inner_key);
-            return res;
+            throw RuntimeError(std::format("资源包\"{}\"内不存在资源\"{}\"", pack_key, inner_key));
         }
         res = iter->second;
         storage.emplace(key, res); // 添加直接使用key访问的捷径
@@ -71,14 +73,14 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         try {
             LOG_TRACE("加载资源\"{}\"", key);
             res = try_load(resource_dir / as_u8string_view(std::format("{}.meta", key)));
-            assert(res);
+            storage.emplace(key, res); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
         } catch (const std::exception &e) {
-            LOG_ERROR("加载资源\"{}\"时出现异常{}", key, format_exception(e));
+            storage.emplace(key, res); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
+            std::throw_with_nested(RuntimeErrorNest(std::format("加载资源\"{}\"时出现异常", key)));
         }
-
-        storage.emplace(key, res); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
     }
 
+    assert(res); // 走到这里说明资源加载成功
     return res;
 }
 

@@ -1,16 +1,20 @@
 #include "Material.h"
 #include "core/RefCount.h"
-#include "core/metatype/metatype.h"
+
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/PipelineSetting.h"
+#include "platform/graphics/UberShader.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLShader.h"
-#include "platform/graphics/UberShader.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
 #include "runtime/GoonyaException.h"
 
 #include <cassert>
+#include <cstddef>
+#include <cstring>
 #include <utility>
+#include <variant>
 
 namespace Goonya {
 
@@ -24,8 +28,20 @@ void Material::bind() {
         per_material->bind_uniform(uber_shader->per_material_block().binding);
     }
     // 绑定所有纹理
-    for (const auto &[unit, t] : textures) {
-        t->bind(unit);
+    for (const auto &[name, info] : get_uber_shader()->get_texture_units()) {
+        if (auto iter = textures.find(info.unit); iter != textures.end()) {
+            assert(iter->second);
+            /*
+            if (iter->second->get_type() != info.type) {
+                LOG_ERROR("材质绑定的纹理{}类型与着色器要求的类型不一致", name);
+                iter->second = get_uber_shader()->get_default_texture(info.unit); // 重置为默认纹理
+            }
+            */
+            iter->second->bind(info.unit); // 绑定材质设定的纹理
+        } else {
+            // 绑定默认纹理
+            get_uber_shader()->get_default_texture(info.unit)->bind(info.unit);
+        }
     }
     // 绑定其他buffer
     for (const auto &[binding, buffer_with_type] : external_buffer) {
@@ -55,9 +71,9 @@ void Material::set_pipeline_setting(const std::string &name, PipelineSettingPara
     }
 }
 
-void Material::set_param(const std::string &name, const Meta::DynamicData &value) {
+void Material::set_param(const std::string &name, const MaterialParameter &value) {
     // 一般的材质属性
-    assert(uber_shader->per_material_block().layout.fields.contains(name));
+    assert(uber_shader->per_material_block().fields.contains(name));
     if (auto iter = parameters.find(name); iter != parameters.end()) {
         if (iter->second != value) {
             iter->second = value;
@@ -76,7 +92,7 @@ Material::Material(UberShader *uber_shader)
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
     // 创建此材质的ConstantBuffer
-    per_material = create_ref<GLBuffer>(uber_shader->per_material_block().layout.size, BufferType::DYNAMIC);
+    per_material = create_ref<GLBuffer>(uber_shader->per_material_block().total_size, BufferType::DYNAMIC);
     is_parameters_dirty = true;
 };
 
@@ -101,16 +117,27 @@ void Material::update_shader_variant() {
 }
 
 void Material::update_parameter() {
-    if (!is_parameters_dirty)
-        return;
+    if (!is_parameters_dirty) return;
 
     {
-        const auto &layout = uber_shader->per_material_block().layout;
+        const auto &fields = uber_shader->per_material_block().fields;
         // 所有的参数都写一遍
-        auto w = DynamicBufferWriter(per_material, layout, BufferMapOption::WRITE_DISCARD);
-        for (const auto &[name, value] : parameters) {
-            w.set_field(name, value);
+        std::byte *base_ptr = per_material->map(BufferMapOption::WRITE_DISCARD);
+        for (const auto &[name, field_info] : fields) {
+            const MaterialParameter &param =
+                parameters.contains(name) ? parameters.at(name) : field_info.type_and_default_value;
+            assert(param.index() == field_info.type_and_default_value.index()); // 保证类型一致
+            std::visit(
+                [=](auto &&arg) {
+                    if constexpr (!std::is_same_v<decltype(arg), std::monostate>) {
+                        memcpy(base_ptr + field_info.offset, &arg, sizeof(arg));
+                    } else {
+                        std::unreachable();
+                    }
+                },
+                param);
         }
+        per_material->unmap();
     }
 
     is_parameters_dirty = false;

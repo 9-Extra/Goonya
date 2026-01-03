@@ -179,8 +179,7 @@ void Display::initialize(uint32_t width, uint32_t height) {
 }
 
 void Display::drop() {
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    glfwTerminate(); // 自带关闭窗口的功能，并且可以反复调用
 }
 
 void Display::set_title(const std::string &title) { glfwSetWindowTitle(window, title.c_str()); }

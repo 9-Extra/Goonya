@@ -77,8 +77,20 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             }
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
-            Ref<Material> material =
-                resources.load_resource<Material>(cpnt_desc["material"].asString());
+            Ref<Material> material;
+            if (cpnt_desc.isMember("material")){
+                material = resources.load_resource<Material>(cpnt_desc["material"].asString());
+            } else {
+                throw RuntimeError("天空盒必须指定材质");
+            }
+
+            Ref<GLTexture> env_map;
+            if (cpnt_desc.isMember("env_map")){
+                env_map = resources.load_resource<GLTexture>(cpnt_desc["env_map"].asString());
+            } else {
+                env_map = resources.load_resource<GLTexture>("buildin:black");
+            }
+
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
             BoundingBox bbox;
             if (cpnt_desc.isMember("bbox")) {

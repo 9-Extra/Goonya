@@ -1,8 +1,8 @@
 #include "GLRenderTarget.h"
 #include "core/RefCount.h"
 #include "core/log/Log.h"
-#include "platform/graphics/opengl/GLBasic.h"
 #include "platform/graphics/opengl/GLTexture.h"
+
 #include <cassert>
 #include <spdlog/details/circular_q.h>
 #include <variant>

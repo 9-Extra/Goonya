@@ -228,6 +228,7 @@ void main_loop() {
 }
 
 void drop_engine() {
+    // 需要保证此函数在没有初始化或者初始化到一半的情况下也能正常工作
     LOG_WARN("退出");
 
     World::world_list.clear();

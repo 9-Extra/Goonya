@@ -24,8 +24,8 @@ struct MeshRenderProxy {
     Ref<GLMesh> mesh;
     std::vector<Ref<Material>> materials;
     
-    Matrix4 model_matrix;
-    Matrix3 normal_matrix;
+    Matrix4f model_matrix;
+    Matrix3f normal_matrix;
     std::vector<BoundingBox> aabbs; // 每个submesh经过变换的包围盒
 };
 } // namespace Goonya

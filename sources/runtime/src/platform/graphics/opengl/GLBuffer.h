@@ -5,7 +5,8 @@
 #include <cstdint>
 #include <span>
 
-#include "GLBasic.h"
+#include <glad/glad.h>
+
 #include "core/RefCount.h"
 #include "core/metatype/metatype.h"
 #include "runtime/GoonyaException.h"

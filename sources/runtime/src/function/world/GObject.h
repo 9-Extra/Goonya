@@ -31,8 +31,8 @@ private:
 
     Transform transform; // 相对父节点的变换
 
-    Matrix4 world_model_matrix;  // 世界根节点的变换
-    Matrix3 world_normal_matrix; // 世界根节点的法线变换
+    Matrix4f world_model_matrix;  // 世界根节点的变换
+    Matrix3f world_normal_matrix; // 世界根节点的法线变换
 
     std::vector<std::unique_ptr<Component>> components;
     std::weak_ptr<GObject> parent;
@@ -51,10 +51,9 @@ public:
         : name(std::move(name)), transform(transform) {};
 
     ~GObject() {
-        if (_is_registered) {
-            do_unregister();
-        }
-        assert(!parent.lock()); // 必须没有父节点
+        // 因为parent指针在析构时已经失效，而一些组件可能会在注销时访问到父节点，所以必须先注销后析构
+        assert(!_is_registered);
+        // 析构是自上而下的
     };
 
     std::string_view get_name() const noexcept { return name; }
@@ -143,7 +142,7 @@ public:
 
     void set_global_position(Vector3f pos) noexcept {
         if (auto parent = this->parent.lock(); parent) {
-            Matrix4 parent_space = parent->get_world_model_matrix();
+            Matrix4f parent_space = parent->get_world_model_matrix();
             if (auto inv = parent_space.inverse(); inv) {
                 // 此位置在其父节点定义的空间中的坐标
                 Vector4f pos_parent_space = Vector4f{pos, 1.0f} * inv.value();
@@ -207,13 +206,13 @@ public:
         return world_model_matrix.resolve_scale();
     }
 
-    const Matrix4 &get_world_model_matrix() noexcept {
+    const Matrix4f &get_world_model_matrix() noexcept {
         if (is_world_transform_dirty) {
             recaculate_world_transform();
         }
         return world_model_matrix;
     }
-    const Matrix3 &get_world_normal_matrix() noexcept {
+    const Matrix3f &get_world_normal_matrix() noexcept {
         if (is_world_transform_dirty) {
             recaculate_world_transform();
         }

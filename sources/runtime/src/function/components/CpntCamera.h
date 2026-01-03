@@ -41,11 +41,11 @@ public:
     void on_update(ComponentUpdateFlag flag) override {
         this->Component::on_update(flag);
         if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {
-            Matrix4 view_matrix = Matrix4::identity();
+            Matrix4f view_matrix = Matrix4f::identity();
             for (GObject *parent = get_owner(); parent->has_parent(); parent = parent->get_parent().lock().get()) {
                 const Transform &t = parent->get_local_transform();
                 // 先将相机平移到原点，然后旋转到-z方向
-                Matrix4 parent_view_matrix = Matrix4::identity().translate(-t.position).rotate(t.rotation.conjugate());
+                Matrix4f parent_view_matrix = Matrix4f::identity().translate(-t.position).rotate(t.rotation.conjugate());
                 view_matrix = parent_view_matrix * view_matrix;
             }
             camera_proxy->view_matrix = view_matrix;

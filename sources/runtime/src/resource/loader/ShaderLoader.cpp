@@ -2,6 +2,8 @@
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/UberShader.h"
 #include "platform/read_file.h"
+#include "resource/ResMng.h"
+#include "resource/loader/MaterialParameterParser.h"
 #include "runtime/GoonyaException.h"
 
 namespace Goonya {
@@ -33,6 +35,26 @@ Ref<Resource> ShaderLoader::load(std::string_view type, const std::filesystem::p
         }
         const Json::Value &value = shader_desc["pipeline_setting"][key];
         PipelineSettingSetter::set_pipeline_setting(key, value.asInt(), desc.pipeline_setting);
+    }
+
+     // 材质参数
+    for (auto param_iter = shader_desc["parameters"].begin(); param_iter != shader_desc["parameters"].end();
+         ++param_iter) {
+        desc.parameters.emplace(param_iter.name(), parse_material_parameters(param_iter->asString()));
+    }
+
+    // 纹理
+    for (auto sampler_iter = shader_desc["samplers"].begin(); sampler_iter != shader_desc["samplers"].end();
+         ++sampler_iter) {
+        const std::string &name = sampler_iter.name();
+        const std::string &texture = sampler_iter->asString();
+        Ref<GLTexture> tex = resources.load_resource<GLTexture>(texture);
+        if (tex){
+            desc.textures.emplace(name, tex);
+        } else {
+            throw RuntimeError(std::format("元着色器必须制定默认纹理{}", name));
+        }
+       
     }
 
     return Ref<UberShader>(new UberShader(std::move(desc)));
