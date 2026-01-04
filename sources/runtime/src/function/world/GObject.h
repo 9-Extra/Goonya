@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -52,7 +52,7 @@ public:
 
     ~GObject() {
         // 因为parent指针在析构时已经失效，而一些组件可能会在注销时访问到父节点，所以必须先注销后析构
-        assert(!_is_registered);
+        GN_ASSERT(!_is_registered);
         // 析构是自上而下的
     };
 
@@ -167,7 +167,7 @@ public:
             recaculate_world_transform();
         }
         Quaternion rotation = Transform::from_matrix(world_model_matrix).rotation;
-        assert(!rotation.isnan());
+        GN_ASSERT(!rotation.isnan());
         return rotation;
     }
 
@@ -232,7 +232,7 @@ public:
     }
 
     void attach_child(const std::shared_ptr<GObject> &child) noexcept {
-        assert(!child->has_parent());
+        GN_ASSERT(!child->has_parent());
         children.push_back(child);
         child->mark_world_transform_dirty();
         child->parent = weak_from_this();
@@ -240,7 +240,7 @@ public:
     }
 
     void remove_child(GObject *child) noexcept {
-        assert(child);
+        GN_ASSERT(child);
         auto it = std::ranges::find_if(children, [child](const auto &c) { return c.get() == child; });
         if (it != children.end()) {
             child->parent.reset();

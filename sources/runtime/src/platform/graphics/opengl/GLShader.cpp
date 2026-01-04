@@ -3,7 +3,7 @@
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "runtime/GoonyaException.h"
-#include <cassert>
+
 #include <cstdint>
 #include <tuple>
 #include <vector>
@@ -131,9 +131,8 @@ MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info()
 
     for (int index = 0; index < uniform_block_num + shader_storage_num; ++index) {
         GLenum interface = index < uniform_block_num ? GL_UNIFORM_BLOCK : GL_SHADER_STORAGE_BLOCK;
-        BufferBindingType binding_type =
+        [[maybe_unused]] BufferBindingType binding_type =
             index < uniform_block_num ? BufferBindingType::UNIFORM : BufferBindingType::SHADER_STORAGE;
-
         int i = index < uniform_block_num ? index : index - uniform_block_num;
 
         GLint values[property_count];
@@ -154,7 +153,7 @@ MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info()
 
         block_info.binding = static_cast<uint32_t>(binding);
         block_info.total_size = static_cast<uint32_t>(size);
-        assert(binding_type == BufferBindingType::UNIFORM);
+        GN_ASSERT(binding_type == BufferBindingType::UNIFORM);
         // 获取块名称
 
         // 获取内部所有字段id

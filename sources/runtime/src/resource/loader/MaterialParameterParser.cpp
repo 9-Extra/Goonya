@@ -29,7 +29,7 @@ MaterialParameter parse_material_parameters(const std::string &parameter_string)
             }
             int param = std::stoi(it->str());
             ++it;
-            assert(it == end);
+            GN_ASSERT(it == end);
             return param;
         } else if (type_name == "vec2") {
             if (it == end) {
@@ -40,7 +40,7 @@ MaterialParameter parse_material_parameters(const std::string &parameter_string)
                 i = std::stof(it->str());
                 ++it;
             }
-            assert(it == end);
+            GN_ASSERT(it == end);
             return param;
         } else if (type_name == "vec3") {
             if (it == end) {
@@ -51,7 +51,7 @@ MaterialParameter parse_material_parameters(const std::string &parameter_string)
                 i = std::stof(it->str());
                 ++it;
             }
-            assert(it == end);
+            GN_ASSERT(it == end);
             return param;
         } else if (type_name == "vec4") {
             if (it == end) {
@@ -62,7 +62,7 @@ MaterialParameter parse_material_parameters(const std::string &parameter_string)
                 i = std::stof(it->str());
                 ++it;
             }
-            assert(it == end);
+            GN_ASSERT(it == end);
             return param;
         } else if (type_name == "f32") {
             if (it == end) {
@@ -70,7 +70,7 @@ MaterialParameter parse_material_parameters(const std::string &parameter_string)
             }
             float param = std::stof(it->str());
             ++it;
-            assert(it == end);
+            GN_ASSERT(it == end);
             return param;
         } else if (type_name == "mat4") {
             if (it == end) {
@@ -82,7 +82,7 @@ MaterialParameter parse_material_parameters(const std::string &parameter_string)
                 std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()),
                 std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str()), std::stof((it++)->str())};
 
-            assert(it == end);
+            GN_ASSERT(it == end);
             return param;
         } else {
             throw RuntimeError(std::format("着色器参数类型\"{}\"不支持", type_name));

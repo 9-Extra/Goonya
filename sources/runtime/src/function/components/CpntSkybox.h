@@ -25,7 +25,7 @@ public:
                         const BoundingBox &bbox = BoundingBox())
         : skybox_material(skybox_material), ignore_range(ignore_range), bbox(bbox) {}
     void on_register() override {
-        assert(get_owner() != nullptr);
+        GN_ASSERT(get_owner() != nullptr);
         Vector3f pos = get_owner()->get_world_model_matrix().resolve_position();
 
         Skybox skybox{env_map, skybox_material, ignore_range, bbox.offset(pos)};

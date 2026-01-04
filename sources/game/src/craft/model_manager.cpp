@@ -9,11 +9,12 @@
 #include "craft/core/core.h"
 #include "craft/core/registry.h"
 #include "craft/core/resource.h"
+#include "runtime/GAssert.h"
 #include "json/config.h"
 #include "json/value.h"
 
 #include <algorithm>
-#include <cassert>
+
 #include <cstdint>
 #include <filesystem>
 #include <format>
@@ -30,8 +31,8 @@ namespace Craft {
 std::optional<ModelManager> ModelManager::instance;
 
 void ModelManager::initalize() {
-    assert(BlockStateMap::get_blockstates().size() != 0); // 在BlockState初始化后
-    assert(!instance.has_value());
+    GN_ASSERT(BlockStateMap::get_blockstates().size() != 0); // 在BlockState初始化后
+    GN_ASSERT(!instance.has_value());
     instance.emplace();
 }
 
@@ -103,7 +104,7 @@ private:
             name = name.substr(1);
         } else {
             // todo: 需要再确认一下这种情况应该如何处理
-            assert(false);
+            GN_ASSERT(false);
         }
 
         const Json::Value *current = &value;
@@ -237,7 +238,7 @@ is_match_block_state(const std::vector<std::tuple<BlockStateProperty *, BlockSta
 }
 
 void ModelManager::load_all_models() {
-    assert(blockstate_model_map.empty());
+    GN_ASSERT(blockstate_model_map.empty());
 
     std::filesystem::path resource_path = "../assets";
     TextureArrayAllocator texture_allocator(resource_path, 16, 16);
@@ -422,7 +423,7 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, int32_t ro
                     v.position = (v.position - Vector3f{0.5, 0.5, 0.5}).apply(q) + Vector3f{0.5, 0.5, 0.5};
                     if (uvlock) {
                         // todo
-                        assert(false);
+                        GN_ASSERT(false);
                     }
                 }
 

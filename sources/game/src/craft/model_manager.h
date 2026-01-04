@@ -5,9 +5,10 @@
 #include "block/blockstate.h"
 #include "craft/core/core.h"
 #include "craft/core/craft_math.h"
+#include "runtime/GAssert.h"
 
 #include <algorithm>
-#include <cassert>
+
 #include <cstdint>
 #include <optional>
 #include <unordered_map>
@@ -29,7 +30,7 @@ public:
     explicit ModelSelector(std::vector<BakedBlockModel> &&m, std::vector<uint32_t> &&w)
         : models(std::move(m)), weights(std::move(w)) {
         // 按权重分配
-        assert(models.size() == weights.size());
+        GN_ASSERT(models.size() == weights.size());
         total_weight = std::ranges::fold_left(weights, 0, std::plus<>{});
     }
 
@@ -79,7 +80,7 @@ public:
     Ref<Goonya::GLTexture> get_textures() const noexcept { return block_texture_array; }
 
     static ModelManager &get() noexcept {
-        assert(instance.has_value());
+        (instance.has_value());
         return instance.value();
     }
 

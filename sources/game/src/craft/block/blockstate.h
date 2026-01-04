@@ -6,7 +6,7 @@
 #include "craft/core/registry.h"
 
 #include <algorithm>
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -51,7 +51,7 @@ public:
 
     bool validate(BlockStatePropertyValue value) const noexcept { return value_to_name.contains(value); }
     std::string_view to_string(BlockStatePropertyValue value) const noexcept {
-        assert(validate(value));
+        GN_ASSERT(validate(value));
         return value_to_name.at(value);
     }
     std::optional<BlockStatePropertyValue> from_string(std::string_view name) const noexcept{
@@ -89,7 +89,7 @@ public:
     static std::unique_ptr<BlockStateProperty> create_enum(std::string name) {
         std::unique_ptr<BlockStateProperty> p{new BlockStateProperty{std::move(name), typeid(T)}};
         for (auto [enum_name, value] : rfl::get_underlying_enumerator_array<T>()) {
-            assert(value <= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::max() && value >= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::min());
+            GN_ASSERT(value <= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::max() && value >= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::min());
             std::string name;
             if constexpr(std::formattable<T, char>){
                 name = std::format("{}", T(value));
@@ -139,7 +139,7 @@ public:
     }
     BlockStatePropertyValue get_property_raw_value(BlockStateProperty *property) const noexcept {
         auto iter = std::ranges::find_if(properties, [=](auto iter){return property == std::get<0>(iter);});
-        assert(iter != properties.end()); // 属性不存在！
+        GN_ASSERT(iter != properties.end()); // 属性不存在！
         return std::get<1>(*iter);
     }
     bool get_property_bool(BlockStateProperty *property) const noexcept {

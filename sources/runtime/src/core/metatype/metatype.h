@@ -2,7 +2,7 @@
 
 #include "core/cgmath/cgmath.h"
 #include "runtime/GoonyaException.h"
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
@@ -233,13 +233,13 @@ public:
     template <Meta::meta_type T>
     void set_field(const std::string &name, const T &value) noexcept {
         auto field_info = layout_info.fields.at(name);
-        assert(Meta::CType2FieldType<T>::Type == field_info.type); // 检测类型一致
+        GN_ASSERT(Meta::CType2FieldType<T>::Type == field_info.type); // 检测类型一致
         *(T *)(ptr + field_info.offset) = value;
     }
 
     void set_field(const std::string &name, const Meta::DynamicData &value) noexcept {
         auto field_info = layout_info.fields.at(name);
-        assert(value.get_type() == field_info.type); // 检测类型一致
+        GN_ASSERT(value.get_type() == field_info.type); // 检测类型一致
         value.copy_to(ptr + field_info.offset);
     }
 
@@ -247,7 +247,7 @@ public:
     void set_if_exist(const std::string &name, const T &value) noexcept {
         if (auto iter = layout_info.fields.find(name); iter != layout_info.fields.end()) {
             auto field_info = iter->second;
-            assert(Meta::CType2FieldType<T>::Type == field_info.type); // 检测类型一致
+            GN_ASSERT(Meta::CType2FieldType<T>::Type == field_info.type); // 检测类型一致
             *(T *)(ptr + field_info.offset) = value;
         }
     }
@@ -255,20 +255,20 @@ public:
     void set_if_exist(const std::string &name, const Meta::DynamicData &value) noexcept {
         if (auto iter = layout_info.fields.find(name); iter != layout_info.fields.end()) {
             auto field_info = iter->second;
-            assert(value.get_type() == field_info.type); // 检测类型一致
+            GN_ASSERT(value.get_type() == field_info.type); // 检测类型一致
             value.copy_to(ptr + field_info.offset);
         }
     }
 
     template <Meta::meta_type T>
     T &operator[](const std::string &name) noexcept {
-        assert(layout_info.fields.at(name).type == Meta::CType2FieldType<T>::Type);
+        GN_ASSERT(layout_info.fields.at(name).type == Meta::CType2FieldType<T>::Type);
         return *(T *)get_ptr(name);
     }
 
     template <Meta::meta_type T>
     const T &operator[](const std::string &name) const noexcept {
-        assert(layout_info.fields.at(name).type == Meta::CType2FieldType<T>::Type);
+        GN_ASSERT(layout_info.fields.at(name).type == Meta::CType2FieldType<T>::Type);
         return *(T *)get_ptr(name);
     }
 

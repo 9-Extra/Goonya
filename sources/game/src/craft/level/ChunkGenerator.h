@@ -41,7 +41,7 @@ private:
     }
 
     void do_process_chunk(Ref<Chunk> chunk) const {
-        assert(chunk->current_state == ChunkState::EMPTY);
+        GN_ASSERT(chunk->current_state == ChunkState::EMPTY);
 
         // LOG_TRACE("正在生成{}处的区块", chunk->chunk_pos);
 

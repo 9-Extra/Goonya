@@ -10,7 +10,7 @@
 #include "platform/graphics/opengl/OpenGLAPI.h"
 #include "runtime/GoonyaException.h"
 
-#include <cassert>
+
 #include <cstddef>
 #include <cstring>
 #include <utility>
@@ -30,7 +30,7 @@ void Material::bind() {
     // 绑定所有纹理
     for (const auto &[name, info] : get_uber_shader()->get_texture_units()) {
         if (auto iter = textures.find(info.unit); iter != textures.end()) {
-            assert(iter->second);
+            GN_ASSERT(iter->second);
             /*
             if (iter->second->get_type() != info.type) {
                 LOG_ERROR("材质绑定的纹理{}类型与着色器要求的类型不一致", name);
@@ -73,7 +73,7 @@ void Material::set_pipeline_setting(const std::string &name, PipelineSettingPara
 
 void Material::set_param(const std::string &name, const MaterialParameter &value) {
     // 一般的材质属性
-    assert(uber_shader->per_material_block().fields.contains(name));
+    GN_ASSERT(uber_shader->per_material_block().fields.contains(name));
     if (auto iter = parameters.find(name); iter != parameters.end()) {
         if (iter->second != value) {
             iter->second = value;
@@ -126,7 +126,7 @@ void Material::update_parameter() {
         for (const auto &[name, field_info] : fields) {
             const MaterialParameter &param =
                 parameters.contains(name) ? parameters.at(name) : field_info.type_and_default_value;
-            assert(param.index() == field_info.type_and_default_value.index()); // 保证类型一致
+            GN_ASSERT(param.index() == field_info.type_and_default_value.index()); // 保证类型一致
             std::visit(
                 [=](auto &&arg) {
                     if constexpr (!std::is_same_v<decltype(arg), std::monostate>) {

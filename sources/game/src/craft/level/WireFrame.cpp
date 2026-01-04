@@ -13,7 +13,7 @@
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 
-#include <cassert>
+
 #include <cstdint>
 #include <ranges>
 #include <span>
@@ -30,7 +30,7 @@ constexpr std::string_view WIREFRAME_SHADER_NAME = "shaders/craft/wireframe/wire
 
 WireFrame::WireFrame(Goonya::RenderScene &render_scene) {
     // 确保OpenGL上下文已初始化，避免过早创建资源导致错误
-    assert(Goonya::GL.is_initialized()); // 不能太早初始化
+    GN_ASSERT(Goonya::GL.is_initialized()); // 不能太早初始化
 
     // 构建线框渲染专用的顶点布局，包含位置(position)和法线(normal)两个属性
     // 这里的法线实际上用于存储线的延伸方向，用于后续的几何着色器处理

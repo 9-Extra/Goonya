@@ -21,7 +21,7 @@
 namespace Goonya {
 // 从json加载一个Vector3f
 Vector3f load_vec3(const Json::Value &json) {
-    assert(json.isArray());
+    GN_ASSERT(json.isArray());
     return {json[0].asFloat(), json[1].asFloat(), json[2].asFloat()};
 }
 // 从json加载transform，对不完整或不存在的取默认值

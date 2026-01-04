@@ -1,6 +1,6 @@
 #include "block.h"
 #include "blockstate.h"
-#include <cassert>
+
 #include <memory>
 #include <ranges>
 
@@ -9,7 +9,7 @@ namespace Craft{
 Registry<Block> REGISTRY_BLOCK;
 
 void Block::build_blockstates() {
-    assert(this->valied_properties.size() < 255);
+    GN_ASSERT(this->valied_properties.size() < 255);
     uint8_t property_count = (uint8_t)this->valied_properties.size();
 
     if (property_count == 0) {
@@ -35,7 +35,7 @@ void Block::build_blockstates() {
         strides.push_back(strides.back() * possible_count);
     }
 
-    assert(possible_states.empty());
+    GN_ASSERT(possible_states.empty());
     const size_t state_count = strides.back();
     possible_states.reserve(state_count);
     for (size_t i = 0; i < state_count; i++) {

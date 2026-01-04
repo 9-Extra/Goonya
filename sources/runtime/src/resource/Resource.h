@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+
 #include <json/config.h>
 #include <json/json.h>
 #include <json/value.h>

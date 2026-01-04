@@ -5,7 +5,7 @@
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
-#include <cassert>
+
 #include <memory>
 #include <unordered_set>
 
@@ -26,9 +26,9 @@ public:
 
     public:
     void clear() /*NOLINT*/ {
-        assert(pointlights.empty());
-        assert(mesh_proxys.empty());
-        assert(skyboxs.empty());
+        GN_ASSERT(pointlights.empty());
+        GN_ASSERT(mesh_proxys.empty());
+        GN_ASSERT(skyboxs.empty());
     }
 
 private:

@@ -11,7 +11,7 @@
 #include "resource/ResMng.h"
 
 #include <array>
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <ranges>
@@ -92,7 +92,7 @@ void GeometryPass::run(PassRenderInfo &info) {
         // 相机位置
         data->camera_position = camera_pos;
         // 雾参数
-        assert(scene.fog_density >= 0.0f);
+        GN_ASSERT(scene.fog_density >= 0.0f);
         data->fog_density = scene.fog_density;
         data->fog_min_distance = scene.fog_min_distance;
         data->time = info.time;

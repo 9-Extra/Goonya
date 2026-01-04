@@ -42,7 +42,7 @@ struct RenderChunkRegion {
 
     static size_t flatten_index(ChunkPos center_chunk_pos, ChunkPos pos) noexcept {
         Vector3i offset = pos - center_chunk_pos;
-        assert(center_chunk_pos.distance_manhattan(pos) <= 1);
+        GN_ASSERT(center_chunk_pos.distance_manhattan(pos) <= 1);
         if (offset.x != 0) {
             return offset.x == -1 ? 1 : 2;
         } else if (offset.y != 0) {

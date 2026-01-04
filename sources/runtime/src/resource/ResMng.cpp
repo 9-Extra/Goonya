@@ -2,7 +2,7 @@
 
 #include "json/reader.h"
 #include "json/value.h"
-#include <cassert>
+
 #include <exception>
 #include <filesystem>
 #include <fstream>
@@ -23,7 +23,7 @@ RenderResource resources; // Global
 namespace fs = std::filesystem;
 
 void RenderResource::scan() {
-    assert(!resource_dir.empty());
+    GN_ASSERT(!resource_dir.empty());
     // for (const fs::directory_entry &dir_entry :
     //      fs::recursive_directory_iterator(resource_dir, fs::directory_options::follow_directory_symlink)) {
     //     if (dir_entry.is_regular_file()) {
@@ -45,7 +45,7 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         if (!iter->second) {
             throw RuntimeError(std::format("加载资源\"{}\"时存在错误，见之前的异常", key));
         }
-        assert(iter->second); 
+        GN_ASSERT(iter->second); 
         return iter->second;
     }
 
@@ -80,7 +80,7 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         }
     }
 
-    assert(res); // 走到这里说明资源加载成功
+    GN_ASSERT(res); // 走到这里说明资源加载成功
     return res;
 }
 

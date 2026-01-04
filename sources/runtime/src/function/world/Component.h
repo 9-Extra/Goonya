@@ -1,8 +1,9 @@
 #pragma once
 
-#include <cassert>
+
 
 #include "core/enum_operator.h"
+#include "runtime/GAssert.h"
 
 namespace Goonya {
 class GObject;
@@ -36,7 +37,7 @@ protected:
      * owner在加入World后进行初始化，过程中调用每个组件的on_register，此时其他组建和物体都加载完成，但可能没有初始化
      */
     virtual void on_register(){
-        assert(owner != nullptr);// 一个Component只能有一个owner
+        GN_ASSERT(owner != nullptr);// 一个Component只能有一个owner
     }
 
     /**
@@ -44,13 +45,13 @@ protected:
      */
     virtual void on_unregister(){
         // 
-        assert(owner != nullptr);
+        GN_ASSERT(owner != nullptr);
         // owner = nullptr 由GObject在detach后执行
     }
 
     virtual void on_update(ComponentUpdateFlag flag) {
-        assert(get_owner() != nullptr); // 而且必然已注册
-        assert(flag != ComponentUpdateFlag::NONE); // 屁事没有则不会更新
+        GN_ASSERT(get_owner() != nullptr); // 而且必然已注册
+        GN_ASSERT(flag != ComponentUpdateFlag::NONE); // 屁事没有则不会更新
     }
 private:    
     friend class GObject;

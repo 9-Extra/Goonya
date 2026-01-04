@@ -2,7 +2,7 @@
 
 #include "craft/block/all_blockstate_properties.h"
 #include "craft/block/block.h"
-#include <cassert>
+
 
 namespace Craft {
 class GrassBlock : public Block {
@@ -14,7 +14,7 @@ public:
     }
 
     Goonya::Vector3f get_tint_color(BlockState *state, BlockPos pos, int32_t tintindex) const noexcept override {
-        assert(tintindex == 0);    // 应该只有0
+        GN_ASSERT(tintindex == 0);    // 应该只有0
         return {0.5f, 0.7f, 0.2f}; // 理论上应该向当前Level请求此位置上草的颜色
     }
 };

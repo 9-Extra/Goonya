@@ -18,7 +18,7 @@
 #include "runtime/GoonyaException.h"
 #include "json/value.h"
 #include <algorithm>
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
@@ -163,8 +163,8 @@ struct GlTFLoadingContext {
                 // 解析索引
                 const Json::Value &indices_accessor = json["accessors"][primitive["indices"].asUInt()];
                 uint32_t indices_count = indices_accessor["count"].asUInt();
-                assert(indices_count % 3 == 0);
-                assert(indices_accessor["componentType"].asUInt() == 5123); // 保证索引类型是uint16_t
+                GN_ASSERT(indices_count % 3 == 0);
+                GN_ASSERT(indices_accessor["componentType"].asUInt() == 5123); // 保证索引类型是uint16_t
                 uint16_t *indices_ptr = reinterpret_cast<uint16_t *>(buffers[indices_buffer["buffer"].asUInt()].ptr +
                                                                      indices_buffer["byteOffset"].asUInt());
 
@@ -238,7 +238,7 @@ struct GlTFLoadingContext {
                 index_offset += info.indices_count;
             }
 
-            assert(vertex_offset == total_vertex_count && index_offset == total_indices_count);
+            GN_ASSERT(vertex_offset == total_vertex_count && index_offset == total_indices_count);
             // 用收集完成的数据构建MeshDesc并添加资源
             Ref<GLMesh> device_mesh = create_ref<GLMesh>(GLTF_VERTEX_LAYOUT);
             device_mesh->set_vertices(0, raw_vertices);

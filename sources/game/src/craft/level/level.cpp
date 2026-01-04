@@ -12,13 +12,13 @@
 #include "craft/level/chunk.h"
 #include "craft/model_manager.h"
 #include "function/world/World.h"
-#include <cassert>
+
 
 namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
     : level_renderer(world->main_scene()), player(player), wire_frame(world->main_scene()) {
-    assert(world != nullptr);
+    GN_ASSERT(world != nullptr);
 }
 
 void Level::tick() {
@@ -121,7 +121,7 @@ void Level::load_chunks() {
 }
 
 BlockHitResult Level::ray_cast(Ray ray, float max_distance) const noexcept {
-    assert(max_distance >= 0);
+    GN_ASSERT(max_distance >= 0);
 
     BlockPos current_pos = BlockPos(ray.origin);
 

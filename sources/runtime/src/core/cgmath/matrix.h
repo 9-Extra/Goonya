@@ -1,8 +1,9 @@
 #pragma once
 
 #include "quaternion.h"
+#include "runtime/GAssert.h"
 #include "vector.h"
-#include <cassert>
+
 #include <cstddef>
 #include <optional>
 
@@ -160,7 +161,7 @@ struct Matrix4f {
     }
 
     constexpr float &operator[](size_t i, size_t j) {
-        assert(i < 4 && j < 4);
+        GN_ASSERT(i < 4 && j < 4);
         return m[i][j];
     }
 
@@ -169,7 +170,7 @@ struct Matrix4f {
      */
     Vector4f &operator[](size_t i) noexcept {
         static_assert(sizeof(Matrix4f) == sizeof(Vector4f[4]), "意想不到的内存布局");
-        assert(i < 4);
+        GN_ASSERT(i < 4);
         return reinterpret_cast<Vector4f &>(m[i]);
     }
 
@@ -195,7 +196,7 @@ struct Matrix4f {
     }
 
     constexpr Matrix4f operator/(float rhs) const noexcept {
-        assert(!is_nearly_equal(rhs, 0.0f));
+        GN_ASSERT(!is_nearly_equal(rhs, 0.0f));
         rhs = 1 / rhs;
         Matrix4f r;
         for (unsigned int i = 0; i < 4; i++) {

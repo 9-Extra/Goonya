@@ -1,7 +1,7 @@
 #include "GObject.h"
 #include "function/world/Component.h"
 #include "function/world/World.h"
-#include <cassert>
+
 
 namespace Goonya {
 
@@ -41,7 +41,7 @@ void GObject::set_world(World *world) noexcept {
     }
 }
 void GObject::recaculate_world_transform() noexcept {
-    assert(is_world_transform_dirty);
+    GN_ASSERT(is_world_transform_dirty);
     if (auto p = parent.lock(); p) {
         // 递归计算父节点的世界变换
         if (p->is_world_transform_dirty) {
@@ -60,7 +60,7 @@ void GObject::recaculate_world_transform() noexcept {
 }
 
 void GObject::do_register() {
-    assert(!_is_registered);
+    GN_ASSERT(!_is_registered);
     _is_registered = true;
 
     for (auto &&component : components) {
@@ -69,7 +69,7 @@ void GObject::do_register() {
     // queue_deferred_update(ComponentUpdateFlag::INITALIZE); 刚注册时不需要更新
 }
 void GObject::do_unregister() {
-    assert(_is_registered);
+    GN_ASSERT(_is_registered);
     _is_registered = false;
     for (auto &&component : components) {
         component->on_unregister();
@@ -83,7 +83,7 @@ void GObject::do_unregister() {
 }
 
 void GObject::do_deferred_update() {
-    assert(_is_registered);
+    GN_ASSERT(_is_registered);
     for (auto &&component : components) {
         component->on_update(cpnt_update_flag);
     }
@@ -91,7 +91,7 @@ void GObject::do_deferred_update() {
 }
 
 void GObject::queue_deferred_update(ComponentUpdateFlag flag) noexcept {
-    assert(flag != ComponentUpdateFlag::NONE);
+    GN_ASSERT(flag != ComponentUpdateFlag::NONE);
     if (!_is_registered) {
         return; // 不在世界中的组件不会收到更新
     }

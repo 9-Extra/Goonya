@@ -4,8 +4,9 @@
 #include "craft/block/all_blockstate_properties.h"
 #include "craft/block/blocks/grass_block.h"
 #include "craft/core/registry.h"
+#include "runtime/GAssert.h"
 
-#include <cassert>
+
 #include <optional>
 
 namespace Craft {
@@ -25,13 +26,13 @@ private:
 public:
     Blocks() // 不要调用，不知道为什么不能声明为private
     {
-        assert(!instance.has_value());
+        GN_ASSERT(!instance.has_value());
     }
     Blocks(Blocks &) = delete;
     Blocks(Blocks &&) = delete;
 
     static const Blocks &get() noexcept {
-        assert(instance.has_value());
+        GN_ASSERT(instance.has_value());
         return instance.value();
     }
 
@@ -40,7 +41,7 @@ public:
 private:
     Block *_register(std::string key, Block *block) noexcept // NOLINT: 不需要static
     {
-        assert(block);
+        GN_ASSERT(block);
         REGISTRY_BLOCK.do_register(std::move(key), std::unique_ptr<Block>(block));
         return block;
     }

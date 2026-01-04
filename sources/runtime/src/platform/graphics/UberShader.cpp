@@ -6,7 +6,7 @@
 #include "platform/graphics/opengl/GLTexture.h"
 #include "runtime/GoonyaException.h"
 
-#include <cassert>
+
 #include <cstdint>
 #include <limits>
 #include <ranges>
@@ -40,7 +40,7 @@ void LocalVariantKeyCollect::add_variant_key_group(std::vector<std::string> &&gr
     uint32_t next_group_base = variant_count;
     variants_key_groups.emplace_back(next_group_base, std::move(group_keys));
     variant_count *= group_key_count;
-    assert(variant_count >= group_key_count); // 越界检测
+    GN_ASSERT(variant_count >= group_key_count); // 越界检测
 }
 void LocalVariantKeyCollect::get_variant_key_names(VariantCode code,
                                                    std::vector<std::string> &out_result) const noexcept {
@@ -151,7 +151,7 @@ Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
     }
 
     // 获取global_code时，记得先进行effective_global_key_mask掩码操作
-    assert(((!effective_global_key_mask) & variant_code.global_code) == 0);
+    GN_ASSERT(((!effective_global_key_mask) & variant_code.global_code) == 0);
 
     std::vector<std::string> variant_keys;
     get_variant_key_names(variant_code, variant_keys);

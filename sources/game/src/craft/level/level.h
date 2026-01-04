@@ -12,7 +12,7 @@
 #include "function/world/GObject.h"
 #include "function/world/World.h"
 
-#include <cassert>
+
 #include <cstdint>
 #include <unordered_map>
 

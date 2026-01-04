@@ -6,7 +6,7 @@
 #include "function/renderer/passes/SkyboxPass.h"
 
 #include <algorithm>
-#include <cassert>
+
 #include <memory>
 #include <vector>
 
@@ -28,7 +28,7 @@ public:
     }
     void drop_scene(RenderScene* scene){
         auto iter = std::ranges::find_if(scene_set, [scene](auto&& a){return a.get() == scene;});
-        assert(iter != scene_set.end());
+        GN_ASSERT(iter != scene_set.end());
 
         scene_set.erase(iter); 
     }
@@ -40,7 +40,7 @@ public:
 
     void drop_camera(CameraRenderProxy* camera){
         auto iter = std::ranges::find_if(camera_set, [camera](auto&& c){return c.get() == camera;});
-        assert(iter != camera_set.end());
+        GN_ASSERT(iter != camera_set.end());
 
         camera_set.erase(iter); 
     }

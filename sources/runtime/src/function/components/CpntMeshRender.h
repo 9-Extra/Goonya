@@ -11,7 +11,7 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
-#include <cassert>
+
 #include <cstdint>
 #include <memory>
 #include <ranges>
@@ -28,7 +28,7 @@ protected:
 
 public:
     void on_register() override {
-        assert(get_owner() != nullptr);
+        GN_ASSERT(get_owner() != nullptr);
         GObject &owner = *get_owner();
 
         // 初始化时更新所有数据
@@ -74,7 +74,7 @@ public:
     }
 
     void on_unregister() override {
-        assert(get_owner() != nullptr);
+        GN_ASSERT(get_owner() != nullptr);
         if (!mesh_proxy) {
             return; // 未注册
         }
@@ -82,12 +82,12 @@ public:
         RenderScene *scene = &get_owner()->get_world()->main_scene();
         auto &container = scene->mesh_proxys;
         auto iter = container.find(mesh_proxy);
-        assert(iter != container.end());
+        GN_ASSERT(iter != container.end());
         container.erase(iter);
     }
 
     void on_update(ComponentUpdateFlag flag) override {
-        assert(get_owner() != nullptr);
+        GN_ASSERT(get_owner() != nullptr);
         GObject &owner = *get_owner();
         
         if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {

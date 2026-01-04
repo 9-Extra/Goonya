@@ -2,7 +2,7 @@
 
 #include "craft/core/core.h"
 #include "function/world/GObject.h"
-#include <cassert>
+
 
 namespace Craft {
 
@@ -12,7 +12,7 @@ struct Player {
     int32_t chunk_load_distance = -1;
 
     explicit Player(const std::shared_ptr<Goonya::GObject> &player) : player(player) {
-        assert(player);
+        GN_ASSERT(player);
         last_chunk_pos = ChunkPos{BlockPos{get_position()}};
     }
 

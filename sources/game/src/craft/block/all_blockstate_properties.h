@@ -3,7 +3,7 @@
 #include "blockstate.h"
 #include "craft/core/core.h"
 
-#include <cassert>
+
 #include <memory>
 #include <optional>
 
@@ -24,19 +24,19 @@ public:
     Properties(Properties&) = delete;
 
     static Properties& get() noexcept {
-        assert(instance.has_value());
+        GN_ASSERT(instance.has_value());
         return instance.value();
     }
 
     static void initalize() {
-        assert(!instance.has_value());
+        GN_ASSERT(!instance.has_value());
         instance.emplace();
     }
 
 private:
     BlockStateProperty* _register(std::unique_ptr<BlockStateProperty>&& property) // NOLINT
     {
-        assert(property && !PROPERTY_REGISTRY.contains(property.get()));
+        GN_ASSERT(property && !PROPERTY_REGISTRY.contains(property.get()));
         
         std::string name{property->get_name()};
         BlockStateProperty* p = property.get();

@@ -9,7 +9,7 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 
-#include <cassert>
+
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -107,7 +107,7 @@ public:
 
     RenderSection(Ref<Chunk> chunk, RenderScene &render_scene)
         : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
-        assert(origin_chunk);
+        GN_ASSERT(origin_chunk);
     }
 
     ~RenderSection() {
@@ -117,7 +117,7 @@ public:
         // 销毁mesh_proxy
         if (mesh_proxy) {
             auto iter = render_scene.mesh_proxys.find(mesh_proxy);
-            assert(iter != render_scene.mesh_proxys.end());
+            GN_ASSERT(iter != render_scene.mesh_proxys.end());
             render_scene.mesh_proxys.erase(iter);
         }
     }

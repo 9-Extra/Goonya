@@ -6,7 +6,7 @@
 #include "resource/Loader.h"
 #include "resource/Resource.h"
 #include "runtime/GoonyaException.h"
-#include <cassert>
+
 #include <concepts>
 #include <filesystem>
 #include <memory>
@@ -38,7 +38,7 @@ public:
     template <std::derived_from<Resource> T>
     Ref<T> load_resource(std::string_view key) {
         Ref<Resource> res = load_resource(key);
-        assert(res);
+        GN_ASSERT(res);
 
         // 进行类型检查
         Ref<T> r = Ref<T>::cast_from(res);
@@ -60,9 +60,9 @@ public:
     }
 
     void register_loader(std::shared_ptr<ResourceLoader> loader) {
-        assert(loader);
+        GN_ASSERT(loader);
         for (auto type : loader->supported_types) {
-            assert(!type.empty());
+            GN_ASSERT(!type.empty());
             auto [_, inserted] = loaders.emplace(type, loader);
             if (!inserted) {
                 LOG_ERROR("类型{}的加载器重复注册", type);

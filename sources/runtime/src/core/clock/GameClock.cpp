@@ -1,4 +1,5 @@
 #include "GameClock.h"
+#include "runtime/GAssert.h"
 
 namespace Goonya {
 GameClock GAME_CLOCK;
@@ -28,7 +29,7 @@ void GameClock::update() noexcept {
     virtual_total += virtual_delta; // 没有精度问题
 
     // ------------------处理fixed_tick-------------------
-    assert(fixed_current_tick == expected_tick);
+    GN_ASSERT(fixed_current_tick == expected_tick);
     uint32_t tick = (virtual_total - last_fixed_tick_time) / FIXED_TICK_INTERVAL;
     last_fixed_tick_time = last_fixed_tick_time + tick * FIXED_TICK_INTERVAL;
 

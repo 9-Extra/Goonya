@@ -8,7 +8,7 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
 
-#include <cassert>
+
 
 namespace Craft {
 

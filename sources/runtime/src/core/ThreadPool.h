@@ -2,9 +2,10 @@
 
 #include "core/LockQueue.h"
 #include "core/ThreadUtils.h"
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
-#include <cassert>
+
 #include <concepts>
 #include <condition_variable>
 #include <functional>
@@ -113,7 +114,7 @@ inline void main_thread_process() {
 }
 
 inline void renderer_thread_process() {
-    assert(current_thread_type == ThreadType::RENDER);
+    GN_ASSERT(current_thread_type == ThreadType::RENDER);
     auto &queue = THREAD_POOL.renderer_thread_tasks;
     for (auto task = queue.pop(); task.has_value(); task = queue.pop()) {
         std::move(task.value())();

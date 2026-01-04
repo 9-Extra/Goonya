@@ -6,7 +6,7 @@
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/opengl/GLTexture.h"
 
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -66,7 +66,7 @@ private:
 
 public:
     explicit GLShaderIntrospector(GLShader *shader) {
-        assert(shader);
+        GN_ASSERT(shader);
         id = shader->get_id();
     }
 

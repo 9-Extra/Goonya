@@ -9,7 +9,7 @@
 #include "platform/graphics/UberShader.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
-#include <cassert>
+
 #include <cstdint>
 #include <memory>
 #include <span>
@@ -17,7 +17,7 @@
 namespace Craft {
 
 void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material) {
-    assert(is_dirty);
+    GN_ASSERT(is_dirty);
 
     auto receiver = [section_ptr = this->weak_from_this(), &render_scene = render_scene,
                      terrain_material = terrain_material](ComplieResult &&result, uint32_t version) {
@@ -34,7 +34,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
             // 对于没有东西需要渲染的区块，则其mesh_proxy都不需要存在
             if (section->mesh_proxy) {
                 auto iter = render_scene.mesh_proxys.find(section->mesh_proxy);
-                assert(iter != render_scene.mesh_proxys.end());
+                GN_ASSERT(iter != render_scene.mesh_proxys.end());
                 render_scene.mesh_proxys.erase(iter);
                 section->mesh_proxy = nullptr;
             }

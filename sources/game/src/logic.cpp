@@ -13,6 +13,7 @@
 #include "platform/display/display.h"
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
+#include "runtime/GAssert.h"
 
 #include <algorithm>
 #include <cmath>
@@ -126,15 +127,15 @@ void MoveSystem::handle_keyboard(float delta) const {
 }
 void MoveSystem::on_register() {
     cube = get_owner()->get_child_by_name("方块");
-    assert(cube);
+    GN_ASSERT(cube);
     lights = get_owner()->get_child_by_name("lights");
-    assert(lights);
+    GN_ASSERT(lights);
     light1 = get_owner()->get_child_by_name("lights")->get_child_by_name("light1");
-    assert(light1);
+    GN_ASSERT(light1);
     camera = get_owner()->get_child_by_name("相机");
-    assert(camera);
+    GN_ASSERT(camera);
     teapot = get_owner()->get_child_by_name("teapot");
-    assert(teapot);
+    GN_ASSERT(teapot);
 
     Goonya::World *world = get_owner()->get_world();
     register_ticker(world);

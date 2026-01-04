@@ -1,7 +1,7 @@
 #pragma once
 
 #include "matrix.h"
-#include <cassert>
+
 
 namespace Goonya {
 
@@ -18,7 +18,7 @@ struct BoundingBox {
 
     constexpr BoundingBox() noexcept : min{0, 0, 0}, max{0, 0, 0} {};
     constexpr BoundingBox(Vector3f min, Vector3f max) noexcept : min(min), max(max) {
-        assert(min.x <= max.x && min.y <= max.y && min.z <= max.z);
+        GN_ASSERT(min.x <= max.x && min.y <= max.y && min.z <= max.z);
     }
 
     constexpr BoundingBox offset(Vector3f pos) const noexcept { return BoundingBox{min + pos, max + pos}; }

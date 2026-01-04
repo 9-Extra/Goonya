@@ -7,7 +7,7 @@
 #include "resource/Resource.h"
 
 #include <array>
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
@@ -80,7 +80,7 @@ public:
     VertexLayoutBuilder() noexcept { select_buffer(0); };
 
     VertexLayoutBuilder &select_buffer(uint32_t stream_id) noexcept {
-        assert(!used);
+        GN_ASSERT(!used);
         if (stream_id >= layout.vertex_size.size()) {
             layout.vertex_size.resize(stream_id + 1);
             current_buffer_id = stream_id;
@@ -89,8 +89,8 @@ public:
     }
 
     VertexLayoutBuilder &add_attribute(uint32_t location, Meta::FieldType type) noexcept {
-        assert(!used);
-        assert(!layout.attributes.contains(location));
+        GN_ASSERT(!used);
+        GN_ASSERT(!layout.attributes.contains(location));
 
         uint32_t offset = layout.vertex_size[current_buffer_id];
         layout.vertex_size[current_buffer_id] += (uint32_t)Meta::sizeof_field_type(type);
@@ -100,7 +100,7 @@ public:
     }
 
     VertexLayoutBuilder &add_attribute(VertexAttribute attribute) noexcept {
-        assert(attribute < VertexAttribute::MAX_ATTRIBUTE);
+        GN_ASSERT(attribute < VertexAttribute::MAX_ATTRIBUTE);
         add_attribute((uint32_t)attribute, VertexAttributeTypeMap[(uint32_t)attribute]);
         return *this;
     }
@@ -131,7 +131,8 @@ public:
     }
 };
 
-enum class Topology { POINT, LINE, TRIANGLE };
+// 点和线应该弃用，只支持三角形
+enum class Topology { TRIANGLE, TRIANGLE_STRIP, TRIANGLE_FAN };
 
 struct SubMesh {
     uint32_t start_index;

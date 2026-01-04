@@ -1,8 +1,9 @@
 #pragma once
 
+#include "runtime/GAssert.h"
 #include "vector.h"
 
-#include <cassert>
+
 #include <cmath>
 
 namespace Goonya {
@@ -15,7 +16,7 @@ struct Quaternion {
 
     // 需要axis长度为1，顺时针旋转（沿着轴看过去）
     static Quaternion from_rotation(Vector3f axis, float angle) {
-        assert(is_nearly_equal(axis.length(), 1.0f));
+        GN_ASSERT(is_nearly_equal(axis.length(), 1.0f));
         angle = angle * 0.5f;
         float sin_theta = sinf(angle), cos_theta = cosf(angle);
         return Quaternion{sin_theta * axis.x, sin_theta * axis.y, sin_theta * axis.z, cos_theta};

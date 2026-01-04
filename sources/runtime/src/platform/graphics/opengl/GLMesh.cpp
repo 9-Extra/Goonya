@@ -1,7 +1,7 @@
 #include "GLMesh.h"
 
 #include "platform/graphics/opengl/GLBuffer.h"
-#include <cassert>
+
 
 namespace Goonya {
 
@@ -52,7 +52,7 @@ GLMesh::GLMesh(VertexLayout layout) noexcept: layout(std::move(layout)) {
 };
 
 void GLMesh::set_vertices(uint32_t stream_id, const std::span<const std::byte> &data) noexcept {
-    assert(stream_id < layout.buffer_count());
+    GN_ASSERT(stream_id < layout.buffer_count());
     Ref<GLBuffer> buffer = create_ref<GLBuffer>(data.size_bytes(), BufferType::STATIC);
     buffer->write(data, 0);
 

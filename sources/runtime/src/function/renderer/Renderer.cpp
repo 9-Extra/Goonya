@@ -1,5 +1,6 @@
 #include "Renderer.h"
 
+#include "core/ThreadUtils.h"
 #include "core/cgmath/cgmath.h"
 #include "core/clock/GameClock.h"
 #include "core/log/Log.h"
@@ -8,7 +9,7 @@
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
 
-#include <cassert>
+
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -81,7 +82,9 @@ void Renderer::render() {
 }
 
 void Renderer::clear() {
-    renderer_thread_process();
+    if (current_thread_type == ThreadType::RENDER) {
+        renderer_thread_process();
+    }
     // todo: 我们无法确认在清空这些资源时，是否会有其他的对象还持有引用
     camera_set.clear();
     scene_set.clear();

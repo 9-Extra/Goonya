@@ -3,7 +3,7 @@
 #include "core/log/Log.h"
 #include "platform/graphics/opengl/GLTexture.h"
 
-#include <cassert>
+
 #include <spdlog/details/circular_q.h>
 #include <variant>
 
@@ -35,13 +35,13 @@ void GLFrameBuffer::bind_draw() const {
 
 // 在不指定layer的情况下，如果Texture有多层（比如CubeMap有6层），就会形成多层帧缓冲，可用于多层渲染
 void GLFrameBuffer::attach_color_texture(uint32_t location, Ref<GLTexture> texture, int32_t level) {
-    assert(texture);
+    GN_ASSERT(texture);
     glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level);
     attached_color_texture[location] = texture;
 }
 void GLFrameBuffer::attach_color_texture_layer(uint32_t location, Ref<GLTexture> texture, int32_t layer,
                                                int32_t level) {
-    assert(texture);
+    GN_ASSERT(texture);
     glNamedFramebufferTextureLayer(id, GL_COLOR_ATTACHMENT0 + location, ((GLTexture *)texture.get())->get_id(), level,
                                    layer);
     attached_color_texture[location] = texture;
@@ -62,44 +62,44 @@ void GLFrameBuffer::set_depth_texture_layer(Ref<GLTexture> texture, int32_t laye
     depth_buffer = texture;
 }
 void GLFrameBuffer::set_depth_renderbuffer(RenderBufferPixelFormat format) {
-    assert(size != std::make_tuple(0, 0));
+    GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;
 }
 
 void GLFrameBuffer::set_stencil_texture(Ref<GLTexture> texture, int32_t level) {
-    assert(texture);
+    GN_ASSERT(texture);
     glNamedFramebufferTexture(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     stencil_buffer = texture;
 }
 void GLFrameBuffer::set_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level) {
-    assert(texture);
+    GN_ASSERT(texture);
     glNamedFramebufferTextureLayer(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     stencil_buffer = texture;
 }
 void GLFrameBuffer::set_stencil_renderbuffer(RenderBufferPixelFormat format) {
-    assert(size != std::make_tuple(0, 0));
+    GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     stencil_buffer = renderbuffer;
 }
 
 void GLFrameBuffer::set_depth_stencil_texture(Ref<GLTexture> texture, int32_t level) {
-    assert(texture);
+    GN_ASSERT(texture);
     glNamedFramebufferTexture(id, GL_DEPTH_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
     depth_buffer = texture;
     stencil_buffer = texture;
 }
 void GLFrameBuffer::set_depth_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level) {
-    assert(texture);
+    GN_ASSERT(texture);
     glNamedFramebufferTextureLayer(id, GL_DEPTH_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level,
                                    layer);
     depth_buffer = texture;
     stencil_buffer = texture;
 }
 void GLFrameBuffer::set_depth_stencil_renderbuffer(RenderBufferPixelFormat format) {
-    assert(size != std::make_tuple(0, 0));
+    GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
     depth_buffer = renderbuffer;

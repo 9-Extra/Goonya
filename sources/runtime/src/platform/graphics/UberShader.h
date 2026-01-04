@@ -11,7 +11,7 @@
 
 #include <array>
 #include <bitset>
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <limits>
@@ -205,14 +205,15 @@ protected:
     // 默认材质参数
     PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
     std::unordered_map<uint32_t, Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
-    MaterialParameterBlockInfo material_parameters;               // 默认材质参数
+    MaterialParameterBlockInfo material_parameters;        // 默认材质参数
 
     LocalVariantKeyCollect local_variant_key_collect;
     VariantCode effective_global_key_mask;
 
     std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
-        uniform_binding_info;                                // 全部uniform buffer的绑定点和类型
-    std::unordered_map<std::string, TextureParameterInfo> texture_units; // 纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)
+        uniform_binding_info; // 全部uniform buffer的绑定点和类型
+    std::unordered_map<std::string, TextureParameterInfo>
+        texture_units; // 纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)
 public:
     explicit UberShader(UberShaderDesc &&desc);
     UberShader(const UberShader &) = delete;
@@ -221,7 +222,9 @@ public:
     const PipelineSetting &get_pipeline_setting() const noexcept { return pipeline_setting; }
 
     const MaterialParameterBlockInfo &per_material_block() const noexcept { return material_parameters; }
-    const std::unordered_map<std::string, TextureParameterInfo> &get_texture_units() const noexcept { return texture_units; }
+    const std::unordered_map<std::string, TextureParameterInfo> &get_texture_units() const noexcept {
+        return texture_units;
+    }
     Ref<GLTexture> get_default_texture(uint32_t unit) const {
         if (auto iter = textures.find(unit); iter != textures.end()) {
             return iter->second;
@@ -248,10 +251,10 @@ public:
         GLOBAL_VARIANT_KEY.get_variant_key_names(out_names);
     }
 
-    bool set_local_variant_key(VariantCode& local_code, const std::string &variant_key) const noexcept {
+    bool set_local_variant_key(VariantCode &local_code, const std::string &variant_key) const noexcept {
         return local_variant_key_collect.set_variant_code(local_code, variant_key);
     }
-    bool reset_local_variant_key(VariantCode& local_code, const std::string &variant_key) const noexcept {
+    bool reset_local_variant_key(VariantCode &local_code, const std::string &variant_key) const noexcept {
         return local_variant_key_collect.reset_variant_code(local_code, variant_key);
     }
 };

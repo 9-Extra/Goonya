@@ -5,7 +5,7 @@
 #include "craft/core/core.h"
 #include "craft/core/registry.h"
 
-#include <cassert>
+
 #include <initializer_list>
 #include <memory>
 #include <vector>
@@ -51,13 +51,13 @@ public:
      * @return Goonya::Vector3f 染色颜色
      */
     virtual Goonya::Vector3f get_tint_color(BlockState *state, BlockPos pos, int32_t tintindex) const noexcept {
-        assert(false); // 重载它！！！
+        GN_ASSERT(false); // 重载它！！！
         return {};
     }
 
 protected:
     void register_default_blockstate(BlockState* state) noexcept { 
-        assert(state && state->block == this);
+        GN_ASSERT(state && state->block == this);
         default_blockstate = state; 
     }
 

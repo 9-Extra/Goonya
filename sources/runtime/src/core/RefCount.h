@@ -7,6 +7,8 @@
 #include <functional>
 #include <utility>
 
+#include "runtime/GAssert.h"
+
 class RefCount {
 private:
     mutable std::atomic<uint32_t> ref_count;
@@ -33,7 +35,7 @@ private:
 
 template <typename T> // requires std::derived_from<RefCount, T> 防止在未定义完成时检查出错
 class Ref final {
-    static_assert(std::derived_from<T, RefCount>);
+    static_assert(std::derived_from<T, RefCount>, "T must be derived from RefCount");
 
 private:
     T *ptr;

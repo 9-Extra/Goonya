@@ -1,7 +1,7 @@
 #include "OpenGLAPI.h"
 #include "core/log/Log.h"
 #include <GLFW/glfw3.h>
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
@@ -82,6 +82,9 @@ void OpenGLGraphicsAPI::initialize() {
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::drop() noexcept {
+    if (!initialized) {
+        return;
+    }
     initialized = false;
     ASSERT_RENDER_THREAD();
     // 取消消息回调防止logger在销毁后被使用
@@ -102,7 +105,7 @@ static GLenum gl_blend_op(BlendOp op) noexcept {
     case BlendOp::MAX:
         return GL_MAX;
     case BlendOp::MAX_:
-        assert(false);
+        GN_ASSERT(false);
         break;
     }
     std::unreachable();
@@ -131,7 +134,7 @@ static GLenum gl_blend_param(BlendFactor factor) noexcept {
     case BlendFactor::ONE_MINUS_DST_ALPHA:
         return GL_ONE_MINUS_DST_ALPHA;
     case BlendFactor::MAX_:
-        assert(false);
+        GN_ASSERT(false);
         break;
     }
     std::unreachable();
@@ -261,14 +264,15 @@ void OpenGLGraphicsAPI::clear(bool color, bool depth, bool stencil) const noexce
 
 static GLenum Topology2OpenGL(Topology t) noexcept {
     switch (t) {
-    case Topology::POINT:
-        return GL_POINTS;
-    case Topology::LINE:
-        return GL_LINES;
     case Topology::TRIANGLE:
         return GL_TRIANGLES;
+    case Topology::TRIANGLE_STRIP:
+        return GL_TRIANGLE_STRIP;
+    case Topology::TRIANGLE_FAN:
+        return GL_TRIANGLE_FAN;
+    default:
+        return GL_INVALID_VALUE;
     }
-    return GL_INVALID_VALUE;
 }
 
 //  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
@@ -295,7 +299,7 @@ void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
 //  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Matrix4f OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
                                                       bool render_to_texture) const noexcept {
-    assert(near_z < far_z); // 不要写反了！！！！！！！！！！
+    GN_ASSERT(near_z < far_z); // 不要写反了！！！！！！！！！！
     float c = 1.0f / std::tan(fov / 2);
 
     if (render_to_texture) {

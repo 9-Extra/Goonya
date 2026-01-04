@@ -17,7 +17,7 @@ constexpr int8_t sign(T x) {
     } else if constexpr (std::is_unsigned_v<T>) {
         return x > 0 ? 1 : 0;
     } else {
-        static_assert(std::is_void_v<T>, "what?!");
+        static_GN_ASSERT(std::is_void_v<T>, "what?!");
     }
 }
 

@@ -1,14 +1,14 @@
 #include "World.h"
 #include "core/ThreadPool.h"
 #include "function/renderer/Renderer.h"
-#include <cassert>
+
 
 namespace Goonya {
 
 std::forward_list<World> World::world_list;
 
 void TickFunction::register_ticker(World *world) noexcept {
-    assert(world != nullptr);
+    GN_ASSERT(world != nullptr);
     if (world == owner_world) {
         return;
     }
@@ -39,7 +39,7 @@ World::~World() {
 void World::tick() {
     tick_count++;
 
-    assert(root && root->get_world() == this);
+    GN_ASSERT(root && root->get_world() == this);
 
     for (const auto &t : tick_functions) {
         t->tick();
@@ -62,7 +62,7 @@ void World::fixed_tick() {
 }
 
 void World::register_ticker(TickFunction *function) {
-    assert(function && !function->TickFunction::is_registered());
+    GN_ASSERT(function && !function->TickFunction::is_registered());
     switch (function->get_tick_type()) {
     case TickType::TICK:
         tick_functions.emplace(function);
@@ -74,7 +74,7 @@ void World::register_ticker(TickFunction *function) {
     function->owner_world = this;
 }
 void World::unregister_ticker(TickFunction *function) {
-    assert(function && function->TickFunction::is_registered());
+    GN_ASSERT(function && function->TickFunction::is_registered());
     switch (function->get_tick_type()) {
     case TickType::TICK:
         tick_functions.erase(function);

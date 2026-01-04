@@ -9,7 +9,7 @@
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/Resource.h"
 
-#include <cassert>
+
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -57,7 +57,7 @@ public:
     void set_param(const std::string &name, const MaterialParameter &value);
 
     void set_external_buffer(const std::string &name, const Ref<GLBuffer> &buffer) {
-        assert(buffer);
+        GN_ASSERT(buffer);
         auto info = uber_shader->get_uniform_info(name);
         if (info.has_value()) {
             auto [binding, type] = info.value();

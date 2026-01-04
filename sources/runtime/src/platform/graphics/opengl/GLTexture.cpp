@@ -2,7 +2,7 @@
 
 #include "runtime/GoonyaException.h"
 
-#include <cassert>
+
 #include <cmath>
 #include <cstdint>
 
@@ -91,39 +91,39 @@ GLTexture::GLTexture(const TextureCreateDesc &desc) : type(desc.type), format(de
     case TextureType::UNKNOWN:
         throw RuntimeError("不能创建类型为UNKNOWN纹理");
     case TextureType::TEXTURE_1D: {
-        assert(width != 0 && height == 0 && depth == 0);
+        GN_ASSERT(width != 0 && height == 0 && depth == 0);
         glCreateTextures(GL_TEXTURE_1D, 1, &id);
         glTextureStorage1D(id, max_mipmap_level(width), gl_format, width);
         break;
     }
     case TextureType::TEXTURE_1D_ARRAY: {
-        assert(false);
+        GN_ASSERT(false);
         break;
     }
     case TextureType::TEXTURE_2D: {
-        assert(width != 0 && height != 0 && depth == 0);
+        GN_ASSERT(width != 0 && height != 0 && depth == 0);
         glCreateTextures(GL_TEXTURE_2D, 1, &id);
         glTextureStorage2D(id, max_mipmap_level(width, height), gl_format, width, height);
         break;
     }
     case TextureType::TEXTURE_2D_ARRAY: {
-        assert(width != 0 && height != 0 && depth != 0);
+        GN_ASSERT(width != 0 && height != 0 && depth != 0);
         glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
         glTextureStorage3D(id, max_mipmap_level(width, height), gl_format, width, height, depth);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP: {
-        assert(width != 0 && height != 0 && depth == 0);
+        GN_ASSERT(width != 0 && height != 0 && depth == 0);
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &id);
         glTextureStorage2D(id, max_mipmap_level(width, height), gl_format, width, height);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP_ARRAY: {
-        assert(false);
+        GN_ASSERT(false);
         break;
     }
     case TextureType::TEXTURE_3D: {
-        assert(width != 0 && height != 0 && depth != 0);
+        GN_ASSERT(width != 0 && height != 0 && depth != 0);
         glCreateTextures(GL_TEXTURE_3D, 1, &id);
         glTextureStorage3D(id, max_mipmap_level(width, height, depth), gl_format, width, height, depth);
         break;

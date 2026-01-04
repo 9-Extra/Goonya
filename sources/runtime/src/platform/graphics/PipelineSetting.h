@@ -1,10 +1,12 @@
 #pragma once
 
 #include <algorithm>
-#include <cassert>
+
 #include <cstdint>
 #include <string_view>
 #include <utility>
+
+#include "runtime/GAssert.h"
 
 namespace Goonya {
 
@@ -102,7 +104,7 @@ class PipelineSettingSetter {
      .setter =                                                                                                         \
          [](PipelineSetting &s, PipelineSettingParamType v) {                                                          \
              using EnumType = decltype(s.field_name);                                                                  \
-             assert(v <= std::to_underlying(EnumType::MAX_));                                                          \
+             GN_ASSERT(v <= std::to_underlying(EnumType::MAX_));                                                          \
              s.field_name = EnumType(v);                                                                               \
          },                                                                                                            \
      .getter = [](const PipelineSetting &s) { return PipelineSettingParamType(s.field_name); }}

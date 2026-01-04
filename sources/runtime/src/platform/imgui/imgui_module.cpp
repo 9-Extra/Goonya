@@ -1,13 +1,18 @@
 #include "imgui_module.h"
 
 #include "platform/display/display.h"
+#include "runtime/GAssert.h"
+
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
 namespace Goonya::ImguiMng {
-void init() {
 
+static bool initialized = false;
+void init() {
+    GN_ASSERT_MSG(!initialized, "Imgui模块重复初始化");
+    initialized = true;
     ImGui::SetCurrentContext(ImGui::CreateContext());
     ImGui_ImplOpenGL3_Init("#version 460");
     ImGui_ImplGlfw_InitForOpenGL(Display::window, true);
@@ -20,6 +25,10 @@ void new_frame() {
 void render() { ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); }
 
 void drop() {
+    if (!initialized) {
+        return;
+    }
+    initialized = false;
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
 }

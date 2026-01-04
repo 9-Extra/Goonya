@@ -2,7 +2,7 @@
 #include "core/input/input.h"
 #include "runtime/GoonyaException.h"
 
-#include <cassert>
+
 #include <cstdint>
 #include <string>
 
@@ -215,7 +215,7 @@ void Display::set_cursor_mode(CursorMode mode) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         break;
     default:
-        assert(false);
+        std::unreachable();
     }
 };
 

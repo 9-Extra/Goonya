@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cassert>
+
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -56,7 +56,7 @@ public:
     // access
     // NOLINTNEXTLINE(readability-make-member-function-const)
     void write(std::span<const std::byte> data, size_t offset = 0) noexcept {
-        assert(data.size_bytes() + offset <= size);
+        GN_ASSERT(data.size_bytes() + offset <= size);
         glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
     };
     std::byte *map(BufferMapOption option) const noexcept { return map_range(option, 0, size); };
@@ -89,7 +89,7 @@ public:
         }
         }
         void *ptr = glMapNamedBufferRange(id, offset, size, access);
-        assert(ptr);
+        GN_ASSERT(ptr);
         return reinterpret_cast<std::byte *>(ptr);
     };
 
@@ -131,11 +131,11 @@ private:
 public:
     StructBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option)
         : buffer(buffer.get()), ptr(reinterpret_cast<T *>(buffer->map(option))) {
-        assert(buffer);
+        GN_ASSERT(buffer);
     }
     StructBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option, size_t offset)
         : buffer(buffer.get()), ptr(reinterpret_cast<T *>(buffer->map_range(option, offset, sizeof(T)))) {
-        assert(buffer);
+        GN_ASSERT(buffer);
     }
     StructBufferWriter(StructBufferWriter &other) = delete;
 
@@ -156,14 +156,14 @@ public:
     // 映射整个缓冲区
     ArrayBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option)
         : buffer(buffer.get()), element_count(buffer->get_size() / sizeof(T)) {
-        assert(buffer);
+        GN_ASSERT(buffer);
         ptr = reinterpret_cast<T *>(buffer->map(option));
     }
 
     // 映射指定范围的缓冲区
     ArrayBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option, size_t start_index, size_t element_count)
         : buffer(buffer.get()), element_count(element_count) {
-        assert(buffer);
+        GN_ASSERT(buffer);
         size_t offset = start_index * sizeof(T);
         size_t size = element_count * sizeof(T);
         ptr = static_cast<T *>(buffer->map_range(option, offset, size));
@@ -175,7 +175,7 @@ public:
 
     // 通过索引访问元素
     T *operator[](size_t index) noexcept {
-        assert(index < element_count);
+        GN_ASSERT(index < element_count);
         return ptr + index;
     }
 
@@ -195,11 +195,11 @@ private:
 public:
     DynamicBufferWriter(Ref<GLBuffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option)
         : Meta::DynamicStructWriter(layout, buffer->map(option)), buffer(buffer.get()) {
-        assert(buffer);
+        GN_ASSERT(buffer);
     }
     DynamicBufferWriter(Ref<GLBuffer> buffer, const Meta::LayoutInfo &layout, BufferMapOption option, size_t offset)
         : Meta::DynamicStructWriter(layout, buffer->map_range(option, offset, layout.size)), buffer(buffer.get()) {
-        assert(buffer);
+        GN_ASSERT(buffer);
     }
     DynamicBufferWriter(DynamicBufferWriter &other) = delete;
 

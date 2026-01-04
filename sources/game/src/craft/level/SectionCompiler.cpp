@@ -6,7 +6,7 @@
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/level/LevelRenderer.h"
 #include "craft/model_manager.h"
-#include <cassert>
+
 #include <cstdint>
 
 namespace Craft {
@@ -25,7 +25,7 @@ RenderChunkRegion RenderRegionCache::create_region(ChunkPos section_pos) {
             region[pos] = iter->second;
         } else {
             RenderSection *section = level.get_section(pos);
-            assert(section);
+            GN_ASSERT(section);
             auto render_chunk = std::make_shared<RenderChunk>(section->origin_chunk);
             cached_render_chunk.emplace(pos, render_chunk);
 
