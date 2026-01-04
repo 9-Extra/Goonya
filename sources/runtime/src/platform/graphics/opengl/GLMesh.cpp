@@ -53,17 +53,14 @@ GLMesh::GLMesh(VertexLayout layout) noexcept: layout(std::move(layout)) {
 
 void GLMesh::set_vertices(uint32_t stream_id, const std::span<const std::byte> &data) noexcept {
     GN_ASSERT(stream_id < layout.buffer_count());
-    Ref<GLBuffer> buffer = create_ref<GLBuffer>(data.size_bytes(), BufferType::STATIC);
-    buffer->write(data, 0);
+    Ref<GLBuffer> buffer = create_ref<GLBuffer>(BufferType::DEVICE_ONLY, data);
 
     vertices_buffers[stream_id] = buffer;
     glVertexArrayVertexBuffer(vao_id, stream_id, buffer->get_id(), 0, layout.vertex_size[stream_id]);
 }
 
 void GLMesh::set_indices(const std::span<const uint32_t> &indices) noexcept {
-    Ref<GLBuffer> buffer = create_ref<GLBuffer>(indices.size_bytes(), BufferType::STATIC);
-    buffer->write(std::as_bytes(indices), 0);
-
+    Ref<GLBuffer> buffer = create_ref<GLBuffer>(BufferType::DEVICE_ONLY, std::as_bytes(indices));
     indices_buffer = buffer;
     glVertexArrayElementBuffer(vao_id, buffer->get_id());
 }

@@ -11,10 +11,10 @@ void SkyBoxPass::run(PassRenderInfo& info) {
     }
 
     Matrix4f skybox_view_perspective_matrix = info.camera->get_skybox_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
-    Ref<GLBuffer> skybox_uniform = create_ref<GLBuffer>(sizeof(PerObjectData), BufferType::STREAM);
+    Ref<GLBuffer> skybox_uniform = create_ref<GLBuffer>(BufferType::MODIFIABLE, sizeof(PerObjectData));
     {
         // 填充天空盒需要的参数（透视投影矩阵）
-        StructBufferWriter<PerObjectData> data(skybox_uniform, BufferMapOption::WRITE_DISCARD);
+        StructBufferAccessor<PerObjectData> data(skybox_uniform, BufferMapOption::WRITE_DISCARD);
         data->model_matrix = skybox_view_perspective_matrix.transpose();
         // 不需要normal_matrix
     }

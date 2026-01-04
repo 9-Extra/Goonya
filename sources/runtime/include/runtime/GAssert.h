@@ -2,6 +2,7 @@
 
 #include <exception>       // IWYU pragma: keep
 #include <format>          // IWYU pragma: keep
+#include <iostream>        // IWYU pragma: keep
 #include <source_location> // IWYU pragma: keep
 #include <stacktrace>      // IWYU pragma: keep
 
@@ -19,7 +20,9 @@
         ::std::stacktrace trace = std::stacktrace::current(0);                                                         \
         LOG_ERROR("{} at {}:{} ({})\nStacktrace:\n{}", ::std::format(__VA_ARGS__), location.file_name(),               \
                   location.line(), location.function_name(), trace);                                                   \
-        spdlog::drop_all(); /*flush */                                                                                 \
+        spdlog::drop_all();                                                                                            \
+        std::cout.flush();                                                                                             \
+        std::cerr.flush();                                                                                             \
         std::terminate();                                                                                              \
     } else                                                                                                             \
         (void(0))

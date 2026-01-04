@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -9,58 +8,90 @@
 
 #include "core/RefCount.h"
 #include "core/metatype/metatype.h"
-#include "runtime/GoonyaException.h"
+#include "runtime/GAssert.h"
 
 namespace Goonya {
 
-enum class BufferType { STATIC, DYNAMIC, STREAM, READBACK };
+enum class BufferType { DEVICE_ONLY, MODIFIABLE, READBACK };
 enum class BufferMapOption {
     WRITE_DISCARD, // 丢弃旧数据，避免复制
     WRITE_MODIFY,  // 修改旧数据，可能导致从显存到内存的复制
     READ_ONLY,     // 用于读
-    READ_WRITE,    // 用于读写
 };
 
 static GLuint GLBufferType(BufferType type) {
     switch (type) {
-    case BufferType::STATIC:
-        return GL_STATIC_DRAW;
-    case BufferType::DYNAMIC:
-        return GL_DYNAMIC_DRAW;
-    case BufferType::STREAM:
-        return GL_STREAM_DRAW;
+    case BufferType::DEVICE_ONLY:
+        return 0;
+    case BufferType::MODIFIABLE:
+        return GL_MAP_WRITE_BIT;
     case BufferType::READBACK:
-        return GL_STATIC_READ;
+        return GL_MAP_READ_BIT;
+    default:
+        std::unreachable();
     }
-
-    throw RuntimeError("Invalid BufferType");
-    return 0;
 }
+
+class GLClientBuffer {
+private:
+    GLuint id = 0;
+    size_t size;
+
+    std::byte *ptr = nullptr;
+
+public:
+    explicit GLClientBuffer(size_t size) : size(size) {
+        glCreateBuffers(1, &id);
+        glNamedBufferStorage(id, size, nullptr,
+                             GL_CLIENT_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
+                                 GL_MAP_COHERENT_BIT);
+        ptr = reinterpret_cast<std::byte *>(
+            glMapNamedBuffer(id, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
+    }
+    ~GLClientBuffer() { glDeleteBuffers(1, &id); }
+    GLuint get_id() const noexcept { return id; }
+    size_t get_size() const noexcept { return size; }
+
+    std::byte *get_ptr() const noexcept { return ptr; }
+};
 
 class GLBuffer final : public RefCount {
 private:
     GLuint id = 0;
-
     size_t size;
     BufferType type;
 
 public:
-    GLBuffer(size_t size, BufferType type) : size(size), type(type) {
-        glCreateBuffers(1, &id);
-        glNamedBufferData(id, size, nullptr, GLBufferType(type));
+    GLBuffer(BufferType type, size_t size) : size(size), type(type) {
+        GN_ASSERT_MSG(type != BufferType::DEVICE_ONLY, "DEVICE_ONLY Buffer必须使用初始化数据");
+        if (size != 0) {
+            glCreateBuffers(1, &id);
+            glNamedBufferStorage(id, size, nullptr, GLBufferType(type));
+        }
     };
+    GLBuffer(BufferType type, std::span<const std::byte> data) : size(data.size_bytes()), type(type) {
+        if (size != 0) {
+            glCreateBuffers(1, &id);
+            glNamedBufferStorage(id, size, data.data(), GLBufferType(type));
+        }
+    };
+
     GLuint get_id() const noexcept { return id; }
     size_t get_size() const noexcept { return size; }
-    BufferType get_type() const noexcept { return type; }
-
     // access
     // NOLINTNEXTLINE(readability-make-member-function-const)
-    void write(std::span<const std::byte> data, size_t offset = 0) noexcept {
-        GN_ASSERT(data.size_bytes() + offset <= size);
-        glNamedBufferSubData(id, offset, data.size_bytes(), data.data());
+    void write(std::span<const std::byte> data, BufferMapOption option, size_t offset = 0) noexcept {
+        GN_ASSERT(type == BufferType::MODIFIABLE);
+        GN_ASSERT(data.size_bytes() + offset <= size && option != BufferMapOption::READ_ONLY);
+        std::byte *ptr = map_range(option, offset, data.size_bytes());
+        memcpy(ptr, data.data(), data.size_bytes());
+        unmap();
     };
     std::byte *map(BufferMapOption option) const noexcept { return map_range(option, 0, size); };
     std::byte *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept {
+        GN_ASSERT((option == BufferMapOption::READ_ONLY && type == BufferType::READBACK) ||
+                  ((option == BufferMapOption::WRITE_DISCARD || option == BufferMapOption::WRITE_MODIFY) &&
+                   type == BufferType::MODIFIABLE));
         if (size == 0) {
             return nullptr;
         }
@@ -83,15 +114,23 @@ public:
             access = GL_MAP_READ_BIT;
             break;
         }
-        case BufferMapOption::READ_WRITE: {
-            access = GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
-            break;
-        }
         }
         void *ptr = glMapNamedBufferRange(id, offset, size, access);
         GN_ASSERT(ptr);
         return reinterpret_cast<std::byte *>(ptr);
     };
+
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    void copy_from(Ref<GLBuffer> &src, size_t size, size_t src_offset = 0, size_t dst_offset = 0) noexcept {
+        GN_ASSERT(src_offset + size <= src->size && dst_offset + size <= this->size);
+        glCopyNamedBufferSubData(src->id, id, src_offset, dst_offset, size);
+    }
+
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    void copy_from(GLClientBuffer &src, size_t size, size_t src_offset = 0, size_t dst_offset = 0) noexcept {
+        GN_ASSERT(src_offset + size <= src.get_size() && dst_offset + size <= this->size);
+        glCopyNamedBufferSubData(src.get_id(), id, src_offset, dst_offset, size);
+    }
 
     void unmap() const noexcept {
         if (size != 0) {
@@ -99,7 +138,10 @@ public:
         }
     };
 
-    void invalidate() noexcept { glNamedBufferData(id, size, nullptr, GLBufferType(type)); }
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    void invalidate() noexcept {
+        if (size != 0) glInvalidateBufferData(id);
+    }
 
     // bind
     void bind_uniform(uint32_t binding) const noexcept { glBindBufferBase(GL_UNIFORM_BUFFER, binding, id); }
@@ -112,36 +154,51 @@ public:
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding, id, offset, size);
     };
 
-    ~GLBuffer() { glDeleteBuffers(1, &id); }
+    ~GLBuffer() {
+        if (size != 0) glDeleteBuffers(1, &id);
+    }
 
     void set_debug_label(const std::string &name) const noexcept {
 #ifdef DEBUG
-        glObjectLabel(GL_BUFFER, id, (GLsizei)name.size(), name.data());
+        if (size != 0) {
+            glObjectLabel(GL_BUFFER, id, (GLsizei)name.size(), name.data());
+        }
 #endif
     }
 };
 
 // 使用c++定义的结构体内存布局进行写入
 template <class T>
-class StructBufferWriter {
+class StructBytesAccessor {
 private:
-    GLBuffer *buffer;
     T *ptr;
 
 public:
-    StructBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option)
-        : buffer(buffer.get()), ptr(reinterpret_cast<T *>(buffer->map(option))) {
-        GN_ASSERT(buffer);
-    }
-    StructBufferWriter(Ref<GLBuffer> buffer, BufferMapOption option, size_t offset)
-        : buffer(buffer.get()), ptr(reinterpret_cast<T *>(buffer->map_range(option, offset, sizeof(T)))) {
-        GN_ASSERT(buffer);
-    }
-    StructBufferWriter(StructBufferWriter &other) = delete;
+    explicit StructBytesAccessor(void *ptr) : ptr(reinterpret_cast<T *>(ptr)) { GN_ASSERT(ptr); }
+
+    StructBytesAccessor(StructBytesAccessor &other) = delete;
 
     T *operator->() noexcept { return ptr; }
+};
 
-    ~StructBufferWriter() noexcept { buffer->unmap(); }
+// 使用c++定义的结构体内存布局进行写入
+template <class T>
+class StructBufferAccessor : public StructBytesAccessor<T> {
+private:
+    GLBuffer *buffer;
+
+public:
+    StructBufferAccessor(Ref<GLBuffer> buffer, BufferMapOption option)
+        : StructBytesAccessor<T>(reinterpret_cast<T *>(buffer->map(option))), buffer(buffer.get()) {
+        GN_ASSERT(buffer);
+    }
+    StructBufferAccessor(Ref<GLBuffer> buffer, BufferMapOption option, size_t offset)
+        : StructBytesAccessor<T>(reinterpret_cast<T *>(buffer->map_range(option, offset, sizeof(T)))),
+          buffer(buffer.get()) {
+        GN_ASSERT(buffer);
+    }
+
+    ~StructBufferAccessor() noexcept { buffer->unmap(); }
 };
 
 // 同上，但支持一个元素类型为T的动态大小的数组

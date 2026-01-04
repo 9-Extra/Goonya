@@ -19,7 +19,7 @@
 namespace Goonya {
 
 GeometryPass::GeometryPass() {
-    per_frame_uniform = create_ref<GLBuffer>(sizeof(PerFrameData), BufferType::DYNAMIC);
+    per_frame_uniform = create_ref<GLBuffer>(BufferType::MODIFIABLE, sizeof(PerFrameData));
     per_frame_uniform->set_debug_label("Lambert Per Frame");
 }
 
@@ -86,7 +86,7 @@ void GeometryPass::run(PassRenderInfo &info) {
     per_frame_uniform->bind_uniform(0);
     {
         // 填充per_frame uniform数据
-        StructBufferWriter<PerFrameData> data(per_frame_uniform, BufferMapOption::WRITE_DISCARD);
+        StructBufferAccessor<PerFrameData> data(per_frame_uniform, BufferMapOption::WRITE_DISCARD);
         // 透视投影矩阵
         data->view_perspective_matrix = view_perspective.transpose();
         // 相机位置
@@ -126,7 +126,7 @@ void GeometryPass::run(PassRenderInfo &info) {
 
     // 把所有用于一般渲染每帧变化的数据收集到一个buffer中
     Ref<GLBuffer> per_object_uniform =
-        create_ref<GLBuffer>(scene.mesh_proxys.size() * sizeof(PerObjectData), BufferType::STREAM);
+        create_ref<GLBuffer>(BufferType::MODIFIABLE, scene.mesh_proxys.size() * sizeof(PerObjectData));
     per_object_uniform->set_debug_label("Lambert Per Object");
 
     {

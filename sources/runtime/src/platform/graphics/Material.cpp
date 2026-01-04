@@ -92,7 +92,7 @@ Material::Material(UberShader *uber_shader)
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
     // 创建此材质的ConstantBuffer
-    per_material = create_ref<GLBuffer>(uber_shader->per_material_block().total_size, BufferType::DYNAMIC);
+    per_material = create_ref<GLBuffer>(BufferType::MODIFIABLE, uber_shader->per_material_block().total_size);
     is_parameters_dirty = true;
 };
 
