@@ -8,6 +8,7 @@
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
 
@@ -73,7 +74,7 @@ void Material::set_pipeline_setting(const std::string &name, PipelineSettingPara
 
 void Material::set_param(const std::string &name, const MaterialParameter &value) {
     // 一般的材质属性
-    GN_ASSERT(uber_shader->per_material_block().fields.contains(name));
+    GN_ASSERT_MSG(uber_shader->per_material_block().fields.contains(name), "材质参数{}不存在", name);
     if (auto iter = parameters.find(name); iter != parameters.end()) {
         if (iter->second != value) {
             iter->second = value;

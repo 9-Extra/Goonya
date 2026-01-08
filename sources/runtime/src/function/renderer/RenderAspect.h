@@ -24,14 +24,4 @@ struct Skybox {
     bool ignore_range;
     BoundingBox bbox;
 };
-
-/**
- * @brief 着色器中物体的Uniform Block的内存布局
- * 
- */
-struct PerObjectBuffer{
-    Matrix4f model_matrix;
-    Matrix4f normal_matrix;
-};
-
 } // namespace Goonya

@@ -5,6 +5,7 @@
 #include <span>
 
 #include <glad/glad.h>
+#include <vector>
 
 #include "core/RefCount.h"
 #include "core/metatype/metatype.h"
@@ -32,29 +33,6 @@ static GLuint GLBufferType(BufferType type) {
     }
 }
 
-class GLClientBuffer {
-private:
-    GLuint id = 0;
-    size_t size;
-
-    std::byte *ptr = nullptr;
-
-public:
-    explicit GLClientBuffer(size_t size) : size(size) {
-        glCreateBuffers(1, &id);
-        glNamedBufferStorage(id, size, nullptr,
-                             GL_CLIENT_STORAGE_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT |
-                                 GL_MAP_COHERENT_BIT);
-        ptr = reinterpret_cast<std::byte *>(
-            glMapNamedBuffer(id, GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT));
-    }
-    ~GLClientBuffer() { glDeleteBuffers(1, &id); }
-    GLuint get_id() const noexcept { return id; }
-    size_t get_size() const noexcept { return size; }
-
-    std::byte *get_ptr() const noexcept { return ptr; }
-};
-
 class GLBuffer final : public RefCount {
 private:
     GLuint id = 0;
@@ -80,45 +58,9 @@ public:
     size_t get_size() const noexcept { return size; }
     // access
     // NOLINTNEXTLINE(readability-make-member-function-const)
-    void write(std::span<const std::byte> data, BufferMapOption option, size_t offset = 0) noexcept {
-        GN_ASSERT(type == BufferType::MODIFIABLE);
-        GN_ASSERT(data.size_bytes() + offset <= size && option != BufferMapOption::READ_ONLY);
-        std::byte *ptr = map_range(option, offset, data.size_bytes());
-        memcpy(ptr, data.data(), data.size_bytes());
-        unmap();
-    };
+    void write(std::span<const std::byte> data, BufferMapOption option, size_t offset = 0) noexcept;
     std::byte *map(BufferMapOption option) const noexcept { return map_range(option, 0, size); };
-    std::byte *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept {
-        GN_ASSERT((option == BufferMapOption::READ_ONLY && type == BufferType::READBACK) ||
-                  ((option == BufferMapOption::WRITE_DISCARD || option == BufferMapOption::WRITE_MODIFY) &&
-                   type == BufferType::MODIFIABLE));
-        if (size == 0) {
-            return nullptr;
-        }
-        GLenum access = 0;
-        switch (option) {
-        case BufferMapOption::WRITE_DISCARD: {
-            access = GL_MAP_WRITE_BIT;
-            if (offset == 0 && size == this->size) {
-                access |= GL_MAP_INVALIDATE_BUFFER_BIT; // 包含整个Buffer
-            } else {
-                access |= GL_MAP_INVALIDATE_RANGE_BIT; // 包含部分Buffer
-            }
-            break;
-        }
-        case BufferMapOption::WRITE_MODIFY: {
-            access = GL_MAP_WRITE_BIT;
-            break;
-        }
-        case BufferMapOption::READ_ONLY: {
-            access = GL_MAP_READ_BIT;
-            break;
-        }
-        }
-        void *ptr = glMapNamedBufferRange(id, offset, size, access);
-        GN_ASSERT(ptr);
-        return reinterpret_cast<std::byte *>(ptr);
-    };
+    std::byte *map_range(BufferMapOption option, size_t offset, size_t size) const noexcept;
 
     // NOLINTNEXTLINE(readability-make-member-function-const)
     void copy_from(Ref<GLBuffer> &src, size_t size, size_t src_offset = 0, size_t dst_offset = 0) noexcept {
@@ -126,12 +68,14 @@ public:
         glCopyNamedBufferSubData(src->id, id, src_offset, dst_offset, size);
     }
 
-    // NOLINTNEXTLINE(readability-make-member-function-const)
-    void copy_from(GLClientBuffer &src, size_t size, size_t src_offset = 0, size_t dst_offset = 0) noexcept {
-        GN_ASSERT(src_offset + size <= src.get_size() && dst_offset + size <= this->size);
-        glCopyNamedBufferSubData(src.get_id(), id, src_offset, dst_offset, size);
+    std::vector<std::byte> read(size_t size, size_t offset = 0) const noexcept{
+        size = std::min(size, this->size - offset);
+        std::vector<std::byte> data(size);
+        if (size != 0){
+            glGetNamedBufferSubData(id, offset, size, data.data()); // 无论初始是否设置为可读，总是可以读取
+        }
+        return data;
     }
-
     void unmap() const noexcept {
         if (size != 0) {
             glUnmapNamedBuffer(id);

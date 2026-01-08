@@ -2,6 +2,7 @@
 
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/vector.h"
+#include <cstdint>
 
 namespace Goonya {
 
@@ -14,6 +15,8 @@ struct PointLightData final {
 
 struct PerFrameData final { // NOLINT：不需要初始化
     Matrix4f view_perspective_matrix;
+    Matrix4f view_matrix;
+    Matrix4f view_matrix_inv;
     alignas(16) Vector3f ambient_light;
     alignas(16) Vector3f camera_position;
     alignas(4) float fog_min_distance;
@@ -24,9 +27,13 @@ struct PerFrameData final { // NOLINT：不需要初始化
     PointLightData pointlight_list[POINTLIGHT_MAX];
 };
 
+constexpr uint32_t PER_FRAME_UNIFORM_BINDING = 0;
+
 struct alignas(256) PerObjectData final {
     Matrix4f model_matrix;
     Matrix4f normal_matrix; // 内存对齐
 };
+
+constexpr uint32_t PER_OBJECT_UNIFORM_BINDING = 1;
 
 } // namespace Goonya

@@ -57,7 +57,8 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             if (cpnt_desc.isMember("material")) {
                 std::vector<Ref<Material>> materials;
                 for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    materials.emplace_back(resources.load_resource<Material>(material_name.asString()));
+                    std::string mat_name = material_name.asString();
+                    materials.emplace_back(mat_name.empty() ? nullptr : resources.load_resource<Material>(mat_name));
                 }
                 cpnt_ptr->set_materials(std::span(materials));
             }

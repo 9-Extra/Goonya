@@ -5,7 +5,6 @@
 #include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
-
 #include <concepts>
 #include <condition_variable>
 #include <functional>
@@ -72,7 +71,8 @@ public:
     }
 
     // 提交任务，但不返回
-    template <typename F> requires std::invocable<F>
+    template <typename F>
+        requires std::invocable<F>
     void enqueue_detached(F &&f) {
         static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
         {
@@ -87,17 +87,19 @@ public:
 
     template <typename F>
         requires std::invocable<F>
-    void enqueue_main_thread(F&& f) noexcept {
+    void enqueue_main_thread(F &&f) noexcept {
         static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
         main_thread_tasks.push(std::forward<F>(f));
     }
 
     template <typename F>
         requires std::invocable<F>
-    void enqueue_renderer_thread(F&& f) noexcept {
+    void enqueue_renderer_thread(F &&f) noexcept {
         static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
         renderer_thread_tasks.push(std::forward<F>(f));
     }
+
+    void stop_all() noexcept;
 
 private:
     friend void main_thread_process();

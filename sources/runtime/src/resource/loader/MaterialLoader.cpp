@@ -1,6 +1,7 @@
 #include "MaterialLoader.h"
 
 #include "core/RefCount.h"
+#include "core/log/Log.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
@@ -14,21 +15,24 @@ Ref<Resource> MateriaLoader::load(std::string_view type, const std::filesystem::
                                   const Json::Value &content) {
     const Json::Value &material_desc = content;
 
-    if (!material_desc.isMember("uber_shader")){
+    if (!material_desc.isMember("uber_shader")) {
         throw RuntimeError("元着色器名称uber_shader字段缺失");
     }
     const std::string shader_name = material_desc["uber_shader"].asString();
     Ref<UberShader> shader = resources.load_resource<UberShader>(shader_name);
-    if (!shader){
+    if (!shader) {
         throw RuntimeError(std::format("元着色器{}加载失败", shader_name));
     }
-    
+
     // 初始化材质
     Ref<Material> mat = create_ref<Material>(shader.get());
 
     // 变体
     for (const auto &variant_key : material_desc["variant_keys"]) {
-        mat->set_local_variant_key(variant_key.asString());
+        bool success = mat->set_local_variant_key(variant_key.asString());
+        if (!success) {
+            LOG_WARN("材质\"{}\"使用的着色器\"{}\"中不存在变体键\"{}\"", name, shader_name, variant_key.asString());
+        }
     }
 
     // 材质覆盖的渲染管线设置

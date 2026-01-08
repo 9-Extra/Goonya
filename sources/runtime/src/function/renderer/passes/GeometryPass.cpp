@@ -83,12 +83,16 @@ void GeometryPass::run(PassRenderInfo &info) {
         info.camera->get_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
 
     // 绑定per_frame uniform buffer
-    per_frame_uniform->bind_uniform(0);
+    per_frame_uniform->bind_uniform(PER_FRAME_UNIFORM_BINDING);
     {
         // 填充per_frame uniform数据
         StructBufferAccessor<PerFrameData> data(per_frame_uniform, BufferMapOption::WRITE_DISCARD);
         // 透视投影矩阵
         data->view_perspective_matrix = view_perspective.transpose();
+        // 视图矩阵
+        data->view_matrix = info.camera->get_view_matrix().transpose();
+        // 视图矩阵的逆矩阵
+        data->view_matrix_inv = info.camera->get_view_matrix().inverse()->transpose();
         // 相机位置
         data->camera_position = camera_pos;
         // 雾参数
@@ -164,7 +168,7 @@ void GeometryPass::run(PassRenderInfo &info) {
         material->set_texture("skybox_specular_texture", info.env_map);
 
         for (Batch &item : batch) {
-            per_object_uniform->bind_uniform_ranged(1, item.per_object_data_offset, sizeof(PerObjectData));
+            per_object_uniform->bind_uniform_ranged(PER_OBJECT_UNIFORM_BINDING, item.per_object_data_offset, sizeof(PerObjectData));
             item.mesh->bind();
             GL.draw_submesh(item.sub_mesh);
         }

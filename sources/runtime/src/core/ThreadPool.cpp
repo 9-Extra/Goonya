@@ -1,11 +1,12 @@
 #include "ThreadPool.h"
 
 #include "ThreadUtils.h"
+#include "runtime/GAssert.h"
 #include <format>
 #include <functional>
 #include <thread>
 
-namespace Goonya{
+namespace Goonya {
 
 ThreadPool::ThreadPool() : stop(false) {
     // 为主线程和渲染线程（暂无）留出空间，并且至少有一个工作线程
@@ -28,23 +29,27 @@ ThreadPool::ThreadPool() : stop(false) {
                     task = std::move(this->tasks.front());
                     this->tasks.pop();
                 }
-        
+
                 task(); // packaged_task抛出的异常会在future.get()时抛出
             }
         });
     }
 }
-ThreadPool::~ThreadPool() {
+
+void ThreadPool::stop_all() noexcept {
+    GN_ASSERT(current_thread_type == ThreadType::RENDER);
     {
         std::unique_lock<std::mutex> lock(queue_mutex);
         stop = true;
     }
     condition.notify_all();
-    for (std::thread &worker : workers) {
+    for (auto &worker : workers) {
         worker.join();
     }
+    renderer_thread_process();
+    main_thread_process();
 }
-
+ThreadPool::~ThreadPool() { GN_ASSERT_MSG(stop, "main返回后的析构顺序是不确定的，需要提前手动关闭线程池"); }
 ThreadPool THREAD_POOL;
 
 } // namespace Goonya
