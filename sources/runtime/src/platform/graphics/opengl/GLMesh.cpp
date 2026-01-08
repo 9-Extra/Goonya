@@ -2,7 +2,6 @@
 
 #include "platform/graphics/opengl/GLBuffer.h"
 
-
 namespace Goonya {
 
 static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldType type) {
@@ -35,15 +34,15 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
     throw RuntimeError("Invalid Field Type");
 }
 
-GLMesh::GLMesh(VertexLayout layout) noexcept: layout(std::move(layout)) {
+GLMesh::GLMesh(VertexLayout layout) noexcept : layout(std::move(layout)) {
     glCreateVertexArrays(1, &vao_id); // 创建空的vao
 
     // 指定顶点格式
-    for(const auto& [location, info]: this->layout.attributes){
+    for (const auto &[location, info] : this->layout.attributes) {
         const auto [type, stream_id, offset] = info;
-            
+
         const auto [num_components, gl_type] = FieldType2OpenGLComponentsAndType(type);
-        
+
         GLuint index = static_cast<GLuint>(location);
         glEnableVertexArrayAttrib(vao_id, index);
         glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);

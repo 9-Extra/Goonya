@@ -20,6 +20,7 @@ class ModelSelector {
     std::vector<BakedBlockModel> models;
     std::vector<uint32_t> weights;
     uint32_t total_weight;
+
 public:
     explicit ModelSelector(BakedBlockModel &&m) : models({std::move(m)}) {
         // 单个模型的情况
@@ -88,7 +89,8 @@ public:
 
 private:
     void load_all_models();
-    static BakedBlockModel bake_model(const BlockModel &model_src, int32_t rotation_x, int32_t rotation_y, bool uvlock, TextureArrayAllocator &texture_allocator);
+    static BakedBlockModel bake_model(const BlockModel &model_src, int32_t rotation_x, int32_t rotation_y, bool uvlock,
+                                      TextureArrayAllocator &texture_allocator);
 };
 
 } // namespace Craft

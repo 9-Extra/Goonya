@@ -168,7 +168,8 @@ void GeometryPass::run(PassRenderInfo &info) {
         material->set_texture("skybox_specular_texture", info.env_map);
 
         for (Batch &item : batch) {
-            per_object_uniform->bind_uniform_ranged(PER_OBJECT_UNIFORM_BINDING, item.per_object_data_offset, sizeof(PerObjectData));
+            per_object_uniform->bind_uniform_ranged(PER_OBJECT_UNIFORM_BINDING, item.per_object_data_offset,
+                                                    sizeof(PerObjectData));
             item.mesh->bind();
             GL.draw_submesh(item.sub_mesh);
         }

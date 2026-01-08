@@ -16,33 +16,35 @@ class Renderer final {
 public:
     std::vector<std::unique_ptr<CameraRenderProxy>> camera_set; // 所有的相机
     std::vector<std::unique_ptr<RenderScene>> scene_set;
+
 private:
-// passes
+    // passes
     std::unique_ptr<GeometryPass> geometry_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
-public: 
-    RenderScene* create_scene() {
-        RenderScene* scene = new RenderScene();
+
+public:
+    RenderScene *create_scene() {
+        RenderScene *scene = new RenderScene();
         scene_set.emplace_back(scene);
         return scene;
     }
-    void drop_scene(RenderScene* scene){
-        auto iter = std::ranges::find_if(scene_set, [scene](auto&& a){return a.get() == scene;});
+    void drop_scene(RenderScene *scene) {
+        auto iter = std::ranges::find_if(scene_set, [scene](auto &&a) { return a.get() == scene; });
         GN_ASSERT(iter != scene_set.end());
 
-        scene_set.erase(iter); 
+        scene_set.erase(iter);
     }
-    CameraRenderProxy* create_camera() {
-        CameraRenderProxy* camera = new CameraRenderProxy();
+    CameraRenderProxy *create_camera() {
+        CameraRenderProxy *camera = new CameraRenderProxy();
         camera_set.emplace_back(camera);
         return camera;
     }
 
-    void drop_camera(CameraRenderProxy* camera){
-        auto iter = std::ranges::find_if(camera_set, [camera](auto&& c){return c.get() == camera;});
+    void drop_camera(CameraRenderProxy *camera) {
+        auto iter = std::ranges::find_if(camera_set, [camera](auto &&c) { return c.get() == camera; });
         GN_ASSERT(iter != camera_set.end());
 
-        camera_set.erase(iter); 
+        camera_set.erase(iter);
     }
 
     void init();

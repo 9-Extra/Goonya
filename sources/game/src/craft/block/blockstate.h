@@ -45,7 +45,8 @@ public:
     std::string_view get_name() const noexcept { return name; }
     std::type_index get_type() const noexcept { return type; }
     // 用于枚举可能的value
-    const std::unordered_map<std::string, BlockStatePropertyValue, ::Goonya::StringHash, ::Goonya::StringEqual>& get_possible_value_and_names() const noexcept {
+    const std::unordered_map<std::string, BlockStatePropertyValue, ::Goonya::StringHash, ::Goonya::StringEqual> &
+    get_possible_value_and_names() const noexcept {
         return name_to_value;
     }
 
@@ -54,8 +55,8 @@ public:
         GN_ASSERT(validate(value));
         return value_to_name.at(value);
     }
-    std::optional<BlockStatePropertyValue> from_string(std::string_view name) const noexcept{
-        if (auto iter = name_to_value.find(name);iter != name_to_value.end()){
+    std::optional<BlockStatePropertyValue> from_string(std::string_view name) const noexcept {
+        if (auto iter = name_to_value.find(name); iter != name_to_value.end()) {
             return iter->second;
         } else {
             return std::nullopt;
@@ -89,9 +90,10 @@ public:
     static std::unique_ptr<BlockStateProperty> create_enum(std::string name) {
         std::unique_ptr<BlockStateProperty> p{new BlockStateProperty{std::move(name), typeid(T)}};
         for (auto [enum_name, value] : rfl::get_underlying_enumerator_array<T>()) {
-            GN_ASSERT(value <= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::max() && value >= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::min());
+            GN_ASSERT(value <= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::max() &&
+                      value >= (intmax_t)std::numeric_limits<BlockStatePropertyValue>::min());
             std::string name;
-            if constexpr(std::formattable<T, char>){
+            if constexpr (std::formattable<T, char>) {
                 name = std::format("{}", T(value));
             } else {
                 name = enum_name;
@@ -115,7 +117,7 @@ class BlockState final {
 private:
     struct Hasher {
         size_t operator()(const std::tuple<BlockStateProperty *, BlockStatePropertyValue> key) const noexcept {
-            return ((size_t)std::get<0>(key) << 2) & std::get<1>(key) ;
+            return ((size_t)std::get<0>(key) << 2) & std::get<1>(key);
         }
     };
 
@@ -127,18 +129,19 @@ private:
     std::unordered_map<std::tuple<BlockStateProperty *, BlockStatePropertyValue>, BlockState *, Hasher> neighbors;
 
     bool can_occlude = true;
+
 public:
     explicit operator bool() const noexcept { return block != nullptr; }
 
     Block *get_block() const noexcept { return block; }
-    const std::vector<std::tuple<BlockStateProperty *, BlockStatePropertyValue>>& get_properties() const noexcept{
+    const std::vector<std::tuple<BlockStateProperty *, BlockStatePropertyValue>> &get_properties() const noexcept {
         return properties;
     }
-    bool has_property(BlockStateProperty *property) const noexcept { 
-        return std::ranges::any_of(properties, [=](auto iter){return property == std::get<0>(iter);});
+    bool has_property(BlockStateProperty *property) const noexcept {
+        return std::ranges::any_of(properties, [=](auto iter) { return property == std::get<0>(iter); });
     }
     BlockStatePropertyValue get_property_raw_value(BlockStateProperty *property) const noexcept {
-        auto iter = std::ranges::find_if(properties, [=](auto iter){return property == std::get<0>(iter);});
+        auto iter = std::ranges::find_if(properties, [=](auto iter) { return property == std::get<0>(iter); });
         GN_ASSERT(iter != properties.end()); // 属性不存在！
         return std::get<1>(*iter);
     }
@@ -158,7 +161,7 @@ public:
             return get_property_raw_value(property);
         }
     }
-    std::string_view get_property_to_string(BlockStateProperty *property) const noexcept{
+    std::string_view get_property_to_string(BlockStateProperty *property) const noexcept {
         return property->to_string(get_property_raw_value(property));
     }
 
@@ -174,8 +177,8 @@ public:
     }
 
     // "修改"属性，实际上是返回修改后对应的blockstate实例指针
-    BlockState* set_property(BlockStateProperty* property, BlockStatePropertyValue value) const noexcept {
-        if (auto iter = neighbors.find(std::make_tuple(property, value));iter != neighbors.end()){
+    BlockState *set_property(BlockStateProperty *property, BlockStatePropertyValue value) const noexcept {
+        if (auto iter = neighbors.find(std::make_tuple(property, value)); iter != neighbors.end()) {
             return iter->second;
         } else {
             LOG_WARN("错误的属性修改，试图将{}修改为{}", property->get_name(), value);
@@ -183,14 +186,13 @@ public:
         }
     }
 
-    template <typename T> requires std::is_scoped_enum_v<T> || std::is_same_v<T, bool>
-    BlockState* set_property(BlockStateProperty* property, T value) const noexcept{
+    template <typename T>
+        requires std::is_scoped_enum_v<T> || std::is_same_v<T, bool>
+    BlockState *set_property(BlockStateProperty *property, T value) const noexcept {
         return set_property(property, (BlockStatePropertyValue)value);
     }
 
-    bool can_hide_face(Direction direction) const noexcept{
-        return can_occlude;
-    }
+    bool can_hide_face(Direction direction) const noexcept { return can_occlude; }
 
 private:
     friend class Block;

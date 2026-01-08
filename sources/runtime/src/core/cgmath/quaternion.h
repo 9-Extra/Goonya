@@ -3,7 +3,6 @@
 #include "runtime/GAssert.h"
 #include "vector.h"
 
-
 #include <cmath>
 
 namespace Goonya {
@@ -75,9 +74,7 @@ struct Quaternion {
                is_nearly_equal(self.w, r.w);
     }
 
-    bool isnan() const noexcept{
-        return std::isnan(x) || std::isnan(y) || std::isnan(z) || std::isnan(w);
-    }
+    bool isnan() const noexcept { return std::isnan(x) || std::isnan(y) || std::isnan(z) || std::isnan(w); }
 };
 
 constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept { return q * (*this); }

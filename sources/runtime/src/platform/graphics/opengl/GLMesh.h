@@ -175,9 +175,7 @@ public:
 
     std::vector<SubMesh> submeshes;
 
-    void bind() const noexcept {
-        glBindVertexArray(vao_id);
-    }
+    void bind() const noexcept { glBindVertexArray(vao_id); }
 
     void set_vertices(uint32_t stream_id, const std::span<const std::byte> &data) noexcept;
     void set_indices(const std::span<const uint32_t> &indices) noexcept;

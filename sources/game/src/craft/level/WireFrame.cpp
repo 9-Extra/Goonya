@@ -9,10 +9,9 @@
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
-#include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/UberShader.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
-
 
 #include <cstdint>
 #include <ranges>
@@ -36,8 +35,8 @@ WireFrame::WireFrame(Goonya::RenderScene &render_scene) {
     // 这里的法线实际上用于存储线的延伸方向，用于后续的几何着色器处理
     const Goonya::VertexLayout WIRE_FRAME_LAYOUT =
         Goonya::VertexLayoutBuilder()
-            .add_attribute(Goonya::VertexAttribute::POSITION)  // 顶点位置信息
-            .add_attribute(Goonya::VertexAttribute::NORMAL)    // 法线信息(实际存储线方向)
+            .add_attribute(Goonya::VertexAttribute::POSITION) // 顶点位置信息
+            .add_attribute(Goonya::VertexAttribute::NORMAL)   // 法线信息(实际存储线方向)
             .build();
 
     // 创建网格体对象，其中顶点数据会在渲染时动态生成并写入
@@ -73,8 +72,8 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     // 遍历方块模型的所有边，为每条边生成两个三角形
     for (const auto &[i, edge] : std::views::enumerate(model.for_all_edges())) {
         const auto &[start, end] = edge;
-        Goonya::Vector3f dir = (end - start).normalize();  // 计算边的方向向量，用于几何着色器
-        
+        Goonya::Vector3f dir = (end - start).normalize(); // 计算边的方向向量，用于几何着色器
+
         // 为每条边创建4个顶点，形成两个三角形的顶点布局
         // 顶点布局：0-1-2 和 2-3-1 形成两个三角形
         vertices.emplace_back(WireFrameVertex{.position = start, .normal = dir});
@@ -89,7 +88,6 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
         indices.emplace_back(i * 4 + 3);
         indices.emplace_back(i * 4 + 2);
         indices.emplace_back(i * 4 + 1);
-
     }
 
     // 将生成的顶点数据上传到GPU
@@ -100,6 +98,6 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     // 设置模型变换矩阵，将线框从局部坐标系转换到世界坐标系
     // 不需要normal_matrix，因为线框渲染不依赖于法线变换
     mesh_proxy->model_matrix = Goonya::Matrix4f::identity().translate(pos);
-    mesh_proxy->aabbs[0] = Goonya::BoundingBox{pos, pos + 1};  // 更新边界框为1x1x1的立方体
+    mesh_proxy->aabbs[0] = Goonya::BoundingBox{pos, pos + 1}; // 更新边界框为1x1x1的立方体
 }
 } // namespace Craft

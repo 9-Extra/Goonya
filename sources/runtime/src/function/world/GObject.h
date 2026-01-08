@@ -60,8 +60,7 @@ public:
     World *get_world() const noexcept { return _world; }
 
     void enable() noexcept { // NOLINT: 手动保证没有循环引用
-        if (!is_disabled())
-            return;
+        if (!is_disabled()) return;
         disabled = false;
         if (get_world()) {
             do_register();
@@ -72,8 +71,7 @@ public:
     }
 
     void disable() noexcept { // NOLINT: 手动保证没有循环引用
-        if (is_disabled())
-            return;
+        if (is_disabled()) return;
         disabled = true;
         if (get_world()) {
             do_unregister();
@@ -195,11 +193,9 @@ public:
     }
 
     // ----------------缩放--------------------
-    Vector3f get_local_scale() const noexcept{
-        return this->transform.scale;
-    }
+    Vector3f get_local_scale() const noexcept { return this->transform.scale; }
 
-    Vector3f get_global_scale() noexcept{
+    Vector3f get_global_scale() noexcept {
         if (is_world_transform_dirty) {
             recaculate_world_transform();
         }
@@ -221,8 +217,7 @@ public:
 
     const std::vector<std::shared_ptr<GObject>> &get_children() const noexcept { return children; }
     std::shared_ptr<GObject> get_child_by_name(const std::string &name) noexcept {
-        if (name.empty())
-            return nullptr;
+        if (name.empty()) return nullptr;
         for (auto &child : children) {
             if (child->name == name) {
                 return child;
@@ -254,8 +249,7 @@ public:
     std::weak_ptr<GObject> get_parent() const noexcept { return parent; }
 
     void attach_parent(const std::shared_ptr<GObject> &new_parent) noexcept {
-        if (new_parent == parent.lock())
-            return;
+        if (new_parent == parent.lock()) return;
         if (new_parent) {
             new_parent->attach_child(shared_from_this());
         } else {

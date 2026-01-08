@@ -4,7 +4,7 @@
 #include <memory>
 #include <ranges>
 
-namespace Craft{
+namespace Craft {
 
 Registry<Block> REGISTRY_BLOCK;
 
@@ -42,7 +42,7 @@ void Block::build_blockstates() {
         BlockState *s = new BlockState(); // 只能一个一个new出来
         s->block = this;
         s->can_occlude = can_occlude;
-        possible_states.emplace_back(s); 
+        possible_states.emplace_back(s);
     }
 
     for (size_t i = 0; i < state_count; i++) {
@@ -54,7 +54,8 @@ void Block::build_blockstates() {
             possible_states[i]->properties.emplace_back(property, property_value_cache[p][p_bias]);
             // 构建邻居表
             for (auto [j, value] : std::views::enumerate(property_value_cache[p])) {
-                possible_states[i]->neighbors.emplace(std::make_tuple(property, value), possible_states[remain_bias + strides[p] * j].get());
+                possible_states[i]->neighbors.emplace(std::make_tuple(property, value),
+                                                      possible_states[remain_bias + strides[p] * j].get());
             }
         }
     }
@@ -68,6 +69,5 @@ void Block::build_blockstates() {
         }
     }
 #endif
-
 }
 } // namespace Craft

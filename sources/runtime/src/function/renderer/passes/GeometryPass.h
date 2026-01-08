@@ -10,7 +10,7 @@ private:
 public:
     GeometryPass();
 
-    void run(PassRenderInfo& info) override;
+    void run(PassRenderInfo &info) override;
 };
 
 } // namespace Goonya

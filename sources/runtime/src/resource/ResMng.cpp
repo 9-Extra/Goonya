@@ -45,7 +45,7 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         if (!iter->second) {
             throw RuntimeError(std::format("加载资源\"{}\"时存在错误，见之前的异常", key));
         }
-        GN_ASSERT(iter->second); 
+        GN_ASSERT(iter->second);
         return iter->second;
     }
 
@@ -57,7 +57,8 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         std::string_view pack_key = key.substr(0, split);
         Ref<ResourcePack> pack = load_resource<ResourcePack>(pack_key);
         if (!pack) {
-            storage.emplace(key, pack); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
+            storage.emplace(key,
+                            pack); // 无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
             throw RuntimeError(std::format("加载资源包\"{}\"时出错", pack_key));
         }
 
@@ -73,9 +74,11 @@ Ref<Resource> RenderResource::load_resource(std::string_view key) {
         try {
             LOG_TRACE("加载资源\"{}\"", key);
             res = try_load(resource_dir / as_u8string_view(std::format("{}.meta", key)));
-            storage.emplace(key, res); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
+            storage.emplace(key,
+                            res); // 无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
         } catch (const std::exception &e) {
-            storage.emplace(key, res); //无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
+            storage.emplace(key,
+                            res); // 无论加载是否成功，都记录资源。出错时记录空资源可以防止反复加载出错资源然后反复报错
             std::throw_with_nested(RuntimeErrorNest(std::format("加载资源\"{}\"时出现异常", key)));
         }
     }

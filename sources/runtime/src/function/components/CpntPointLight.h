@@ -12,6 +12,7 @@ namespace Goonya {
 class CpntPointLight : public Component {
 private:
     plf::colony<PointLight>::iterator pointlight_handle;
+
 public:
     CpntPointLight(Vector3f color, float radius) : color(color), radius(radius) {}
 
@@ -32,11 +33,8 @@ public:
     void on_update(ComponentUpdateFlag flag) override {
         if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {
             Vector3f position = get_owner()->get_world_model_matrix().resolve_position();
-            enqueue_render_task([handle = pointlight_handle, position]{
-                handle->position = position;
-            });
+            enqueue_render_task([handle = pointlight_handle, position] { handle->position = position; });
         }
     }
-
 };
 } // namespace Goonya

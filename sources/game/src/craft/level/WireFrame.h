@@ -8,8 +8,6 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
 
-
-
 namespace Craft {
 
 // 玩家看向的方块线框
@@ -24,7 +22,7 @@ public:
     explicit WireFrame(Goonya::RenderScene &render_scene);
     ~WireFrame() {};
 
-    void draw_at(Goonya::Vector3f pos, const BakedBlockModel& model);
+    void draw_at(Goonya::Vector3f pos, const BakedBlockModel &model);
 
     void hide() {
         mesh_proxy->aabbs[0] = Goonya::BoundingBox{{0, 0, 0}, {0, 0, 0}}; // 不可见

@@ -41,7 +41,7 @@ public:
         for (SubMesh &sub_mesh : mesh->submeshes) {
             mesh_proxy->aabbs.push_back(sub_mesh.aabb.transformed(owner.get_world_model_matrix()));
         }
-        RenderScene& scene = get_owner()->get_world()->main_scene();
+        RenderScene &scene = get_owner()->get_world()->main_scene();
         scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
     }
 
@@ -89,7 +89,7 @@ public:
     void on_update(ComponentUpdateFlag flag) override {
         GN_ASSERT(get_owner() != nullptr);
         GObject &owner = *get_owner();
-        
+
         if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {
             enqueue_render_task([proxy = mesh_proxy, model_matrix = owner.get_world_model_matrix(),
                                  normal_matrix = owner.get_world_normal_matrix()] mutable {

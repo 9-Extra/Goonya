@@ -68,10 +68,10 @@ public:
         glCopyNamedBufferSubData(src->id, id, src_offset, dst_offset, size);
     }
 
-    std::vector<std::byte> read(size_t size, size_t offset = 0) const noexcept{
+    std::vector<std::byte> read(size_t size, size_t offset = 0) const noexcept {
         size = std::min(size, this->size - offset);
         std::vector<std::byte> data(size);
-        if (size != 0){
+        if (size != 0) {
             glGetNamedBufferSubData(id, offset, size, data.data()); // 无论初始是否设置为可读，总是可以读取
         }
         return data;

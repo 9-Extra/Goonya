@@ -3,7 +3,6 @@
 #include "blockstate.h"
 #include "craft/core/core.h"
 
-
 #include <memory>
 #include <optional>
 
@@ -12,18 +11,19 @@ namespace Craft {
 // Property for BlockState
 class Properties {
 public:
-    BlockStateProperty * const DIRECTION = _register(BlockStateProperty::create_enum<Direction>("direction"));
-    BlockStateProperty * const NUMBER = _register(BlockStateProperty::create_int("number", {0, 1, 2}));
-    BlockStateProperty * const BURNING = _register(BlockStateProperty::create_bool("burning"));
-    BlockStateProperty * const SNOWY = _register(BlockStateProperty::create_bool("snowy"));
+    BlockStateProperty *const DIRECTION = _register(BlockStateProperty::create_enum<Direction>("direction"));
+    BlockStateProperty *const NUMBER = _register(BlockStateProperty::create_int("number", {0, 1, 2}));
+    BlockStateProperty *const BURNING = _register(BlockStateProperty::create_bool("burning"));
+    BlockStateProperty *const SNOWY = _register(BlockStateProperty::create_bool("snowy"));
+
 private:
     static std::optional<Properties> instance;
 
 public:
     Properties() = default;
-    Properties(Properties&) = delete;
+    Properties(Properties &) = delete;
 
-    static Properties& get() noexcept {
+    static Properties &get() noexcept {
         GN_ASSERT(instance.has_value());
         return instance.value();
     }
@@ -34,12 +34,12 @@ public:
     }
 
 private:
-    BlockStateProperty* _register(std::unique_ptr<BlockStateProperty>&& property) // NOLINT
+    BlockStateProperty *_register(std::unique_ptr<BlockStateProperty> &&property) // NOLINT
     {
         GN_ASSERT(property && !PROPERTY_REGISTRY.contains(property.get()));
-        
+
         std::string name{property->get_name()};
-        BlockStateProperty* p = property.get();
+        BlockStateProperty *p = property.get();
         PROPERTY_REGISTRY.do_register(std::move(name), std::move(property));
         return p;
     }

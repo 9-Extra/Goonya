@@ -11,7 +11,6 @@
 #include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
-
 #include <cstddef>
 #include <cstring>
 #include <utility>

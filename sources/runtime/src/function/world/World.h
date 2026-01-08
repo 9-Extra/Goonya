@@ -3,7 +3,6 @@
 #include "GObject.h"
 #include "function/world/Component.h"
 
-
 #include <forward_list>
 #include <memory>
 #include <unordered_set>

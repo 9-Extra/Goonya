@@ -11,7 +11,7 @@ template <>
 struct std::formatter<std::filesystem::path> {
     constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
     template <typename FormatContext>
-    auto format(const std::filesystem::path& path, FormatContext &ctx) const {
+    auto format(const std::filesystem::path &path, FormatContext &ctx) const {
         return std::format_to(ctx.out(), "{}", Goonya::as_string_view(path.generic_u8string()));
     }
 };

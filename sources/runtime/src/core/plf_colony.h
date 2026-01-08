@@ -1348,8 +1348,7 @@ public:
                     erasure_groups_head = erasure_groups_head->erasures_list_next_group; // change groups
                 }
 
-                if (size == 0)
-                    return;
+                if (size == 0) return;
             } else // skipblock is larger than remaining number of elements
             {
                 const skipfield_type prev_index = *pointer_cast<skipfield_pointer_type>(
@@ -1559,8 +1558,7 @@ private:
                     erasure_groups_head = erasure_groups_head->erasures_list_next_group;
                 }
 
-                if (size == 0)
-                    return;
+                if (size == 0) return;
             } else {
                 const skipfield_type prev_index = *pointer_cast<skipfield_pointer_type>(element_pointer);
                 range_fill_skipblock(it, element_pointer, skipfield_pointer, static_cast<skipfield_type>(size));
@@ -2373,8 +2371,7 @@ private:
                     total_capacity -= current_group->capacity;
                     deallocate_group(current_group);
 
-                    if (current_group == begin_iterator.group_pointer)
-                        begin_iterator.group_pointer = next_group;
+                    if (current_group == begin_iterator.group_pointer) begin_iterator.group_pointer = next_group;
                 } else {
                     if (previous_group != NULL) {
                         previous_group->next_group = current_group;
@@ -2388,8 +2385,7 @@ private:
 
             previous_group->next_group = NULL;
         } else {
-            if (size > total_capacity)
-                reserve(size);
+            if (size > total_capacity) reserve(size);
 
             // Join all unused_groups to main chain:
             end_iterator.group_pointer->next_group = unused_groups_head;
@@ -2591,8 +2587,7 @@ public:
         PLF_CONSTFUNC plf::limits hard_capacities = block_capacity_hard_limits();
 
         // Truncate the amount to the implementation's hard block capacity max limit:
-        if (num_units > hard_capacities.max)
-            num_units = hard_capacities.max;
+        if (num_units > hard_capacities.max) num_units = hard_capacities.max;
 
         // Adjust num_units downward based on (a) the additional skipfield node necessary per-block in this
         // implementation and (b) any additional memory waste required in order to allocate the skipfield in multiples
@@ -2613,8 +2608,7 @@ public:
                          // element+skipfield sizeof
         }
 
-        if (num_units < hard_capacities.min)
-            num_units = 0;
+        if (num_units < hard_capacities.min) num_units = 0;
 
         return num_units;
     }
@@ -2733,8 +2727,7 @@ public:
     }
 
     void clear() noexcept {
-        if (total_size == 0)
-            return;
+        if (total_size == 0) return;
 
         // Destroy all elements if element type is non-trivial:
         if constexpr (!std::is_trivially_destructible<element_type>::value) {
@@ -2851,13 +2844,11 @@ public:
     }
 
     friend bool operator==(const colony &lh, const colony &rh) noexcept {
-        if (lh.total_size != rh.total_size)
-            return false;
+        if (lh.total_size != rh.total_size) return false;
 
         for (const_iterator lh_iterator = lh.begin_iterator, rh_iterator = rh.begin_iterator;
              lh_iterator != lh.end_iterator; ++lh_iterator, ++rh_iterator) {
-            if (*lh_iterator != *rh_iterator)
-                return false;
+            if (*lh_iterator != *rh_iterator) return false;
         }
 
         return true;
@@ -2881,8 +2872,7 @@ public:
     }
 
     void trim_capacity() noexcept {
-        if (end_iterator.element_pointer == NULL)
-            return; // empty colony
+        if (end_iterator.element_pointer == NULL) return; // empty colony
 
         while (unused_groups_head != NULL) {
             total_capacity -= unused_groups_head->capacity;
@@ -2920,8 +2910,7 @@ public:
                     previous_group->next_group = next_group;
                 }
 
-                if (number_of_elements_to_remove < min_block_capacity)
-                    break;
+                if (number_of_elements_to_remove < min_block_capacity) break;
             } else {
                 previous_group = current_group;
             }
@@ -2956,8 +2945,7 @@ public:
     }
 
     void reserve(size_type new_capacity) {
-        if (new_capacity == 0 || new_capacity <= total_capacity)
-            return; // ie. We already have enough space allocated
+        if (new_capacity == 0 || new_capacity <= total_capacity) return; // ie. We already have enough space allocated
 
         if (new_capacity > max_size()) {
 
@@ -3035,8 +3023,7 @@ public:
             begin_iterator.group_pointer->size =
                 0; // Note: this is set to 1 by default in the initialize function (which is optimised for insert())
 
-            if (number_of_max_groups == 0)
-                return;
+            if (number_of_max_groups == 0) return;
 
             // Make the first allocated unused group:
             const skipfield_type new_block_capacity = (max_block_capacity - negative_remainder < min_block_capacity)
@@ -3173,8 +3160,7 @@ public:
 
         assert(&source != this);
 
-        if (source.total_size == 0)
-            return;
+        if (source.total_size == 0) return;
 
         // Throw if incompatible block capacities found in source:
         if (source.min_block_capacity > max_block_capacity ||
@@ -3403,8 +3389,7 @@ private:
 public:
     template <class comparison_function>
     void sort(comparison_function compare) {
-        if (total_size < 2)
-            return;
+        if (total_size < 2) return;
 
         if constexpr ((std::is_trivially_copyable<element_type>::value ||
                        std::is_move_assignable<element_type>::value) &&
@@ -3504,8 +3489,7 @@ public:
 
     template <class comparison_function>
     size_type unique(comparison_function compare) {
-        if (total_size < 2)
-            return 0;
+        if (total_size < 2) return 0;
 
         size_type count = 0;
         const const_iterator end = end_iterator;
@@ -3525,8 +3509,7 @@ public:
                     current = erase(current);
                 }
 
-                if (last == end)
-                    break;
+                if (last == end) break;
             }
         }
 
@@ -4134,8 +4117,7 @@ public:
 
             assert(!(group_pointer == NULL) && !(last.group_pointer == NULL)); // Check that they are both initialized
 
-            if (last.element_pointer == element_pointer)
-                return 0;
+            if (last.element_pointer == element_pointer) return 0;
 
             difference_type distance = 0;
             colony_iterator iterator1 = *this, iterator2 = last;
@@ -4209,8 +4191,7 @@ public:
                 }
             }
 
-            if (swap_iterators)
-                distance = -distance;
+            if (swap_iterators) distance = -distance;
 
             return distance;
         }
@@ -4359,8 +4340,7 @@ public:
 
             if (--skipfield_pointer >= group_pointer->skipfield) {
                 element_pointer -= static_cast<size_type>(*skipfield_pointer) + 1u;
-                if ((skipfield_pointer -= *skipfield_pointer) >= group_pointer->skipfield)
-                    return *this;
+                if ((skipfield_pointer -= *skipfield_pointer) >= group_pointer->skipfield) return *this;
             }
 
             if (group_pointer->previous_group != NULL) {
@@ -4568,8 +4548,7 @@ public:
                             }
                         }
 
-                        if (group_pointer->next_group == NULL)
-                            return;
+                        if (group_pointer->next_group == NULL) return;
                     }
 
                     group_pointer = group_pointer->next_group;
@@ -4661,8 +4640,7 @@ erase_if(plf::colony<element_type, allocator_type> &container, predicate_functio
                 current = container.erase(current);
             }
 
-            if (last == end)
-                break;
+            if (last == end) break;
         }
     }
 

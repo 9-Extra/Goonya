@@ -233,10 +233,10 @@ void drop_engine() {
 
     World::world_list.clear();
     renderer.clear();
-    
+
     THREAD_POOL.stop_all();
     resources.clear(); // 在设备drop之前清理资源
-    
+
     GL.drop();
     ImguiMng::drop();
 

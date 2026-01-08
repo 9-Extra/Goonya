@@ -35,11 +35,10 @@ struct PointLight {
 //     PointLight pointlight_list[2];
 // };
 
-inline const Goonya::VertexLayout VERTEX_LAYOUT_PLANE =
-    Goonya::VertexLayoutBuilder()
-        .add_attribute(Goonya::VertexAttribute::POSITION)
-        .add_attribute(Goonya::VertexAttribute::UV)
-        .build();
+inline const Goonya::VertexLayout VERTEX_LAYOUT_PLANE = Goonya::VertexLayoutBuilder()
+                                                            .add_attribute(Goonya::VertexAttribute::POSITION)
+                                                            .add_attribute(Goonya::VertexAttribute::UV)
+                                                            .build();
 
 constexpr std::string_view TERRAIN_SHADER_NAME = "shaders/craft/terrain/terrain";
 

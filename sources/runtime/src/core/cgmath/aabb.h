@@ -2,7 +2,6 @@
 
 #include "matrix.h"
 
-
 namespace Goonya {
 
 struct BoundingBox {

@@ -2,7 +2,6 @@
 #include "function/world/Component.h"
 #include "function/world/World.h"
 
-
 namespace Goonya {
 
 bool GObject::remove_component(const std::type_info &t_info) {

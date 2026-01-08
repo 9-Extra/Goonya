@@ -298,45 +298,45 @@ void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
 }
 //  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Matrix4f OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
-                                                      bool render_to_texture) const noexcept {
+                                                       bool render_to_texture) const noexcept {
     GN_ASSERT(near_z < far_z); // 不要写反了！！！！！！！！！！
     float c = 1.0f / std::tan(fov / 2);
 
     if (render_to_texture) {
         // 翻转Y轴
         return Matrix4f{c / ratio,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       -c,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       -(near_z + far_z) / (far_z - near_z),
-                       -1.0f,
-                       0.0f,
-                       0.0f,
-                       -2 * far_z * near_z / (far_z - near_z),
-                       0.0f};
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        -c,
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        -(near_z + far_z) / (far_z - near_z),
+                        -1.0f,
+                        0.0f,
+                        0.0f,
+                        -2 * far_z * near_z / (far_z - near_z),
+                        0.0f};
     } else {
         return Matrix4f{c / ratio,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       c,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       0.0f,
-                       -(near_z + far_z) / (far_z - near_z),
-                       -1.0f,
-                       0.0f,
-                       0.0f,
-                       -2 * far_z * near_z / (far_z - near_z),
-                       0.0f};
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        c,
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        0.0f,
+                        -(near_z + far_z) / (far_z - near_z),
+                        -1.0f,
+                        0.0f,
+                        0.0f,
+                        -2 * far_z * near_z / (far_z - near_z),
+                        0.0f};
     }
 }
 } // namespace Goonya

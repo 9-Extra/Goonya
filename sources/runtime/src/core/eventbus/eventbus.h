@@ -36,8 +36,7 @@ public:
     static void dispatch_event(E event) noexcept(false) {
         for (const Listener<E> &l : EventListeners<E>::listeners) {
             bool handled = l.trigger(event);
-            if (handled)
-                break;
+            if (handled) break;
         }
     }
 
@@ -46,8 +45,7 @@ public:
         try {
             for (const Listener<E> &l : EventListeners<E>::listeners) {
                 bool handled = l.trigger(event);
-                if (handled)
-                    break;
+                if (handled) break;
             }
         } catch (const std::exception &e) {
             LOG_ERROR("在处理事件 {} 时发生异常：{}", typeid(E).name(), Goonya::format_exception(e));

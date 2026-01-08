@@ -3,9 +3,9 @@
 #include "core/RefCount.h"
 #include "core/cgmath/vector.h"
 #include "core/log/Log.h"
+#include "craft/core/resource.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
-#include "craft/core/resource.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -30,23 +30,24 @@ TextureArrayAllocator::TextureArrayAllocator(std::filesystem::path resource_path
         }
     }
     texture_storage.emplace_back(std::move(missing_image)); // 0号图像为缺省图像
-    texture_index_cache.emplace("", 0); // key为空视为缺省图像
+    texture_index_cache.emplace("", 0);                     // key为空视为缺省图像
 }
 
 uint32_t TextureArrayAllocator::alloc_texture(std::string_view texture_location) {
     if (auto iter = texture_index_cache.find(texture_location); iter != texture_index_cache.end()) {
         return iter->second;
-    } 
+    }
 
     ResourceLocation location = ResourceLocation::parse(texture_location);
 
-    std::filesystem::path real_path = resource_path / std::format("{}/textures/{}.png", location.name_space, location.key);
+    std::filesystem::path real_path =
+        resource_path / std::format("{}/textures/{}.png", location.name_space, location.key);
     stb::Image image = stb::Image::loadf(real_path, true);
     if (!image) {
         LOG_ERROR("加载图像{}失败，使用缺省图像", real_path.generic_string());
         return 0;
     }
-    if (image.get_width() != (int)width || image.get_height() != (int)height){
+    if (image.get_width() != (int)width || image.get_height() != (int)height) {
         LOG_ERROR("图像{}大小与预设大小不匹配，使用缺省图像", real_path.generic_string());
         return 0;
     }
@@ -58,15 +59,13 @@ uint32_t TextureArrayAllocator::alloc_texture(std::string_view texture_location)
     return id;
 }
 
-Ref<Goonya::GLTexture> TextureArrayAllocator::generate_texture_array(){
+Ref<Goonya::GLTexture> TextureArrayAllocator::generate_texture_array() {
     size_t texture_count = texture_storage.size();
-    Goonya::TextureCreateDesc desc{
-        .type = Goonya::TextureType::TEXTURE_2D_ARRAY,
-        .format = Goonya::TextureStorageFormat::RGBA_f16,
-        .shape = {this->width, this->height, (uint32_t)texture_count}
-    };
+    Goonya::TextureCreateDesc desc{.type = Goonya::TextureType::TEXTURE_2D_ARRAY,
+                                   .format = Goonya::TextureStorageFormat::RGBA_f16,
+                                   .shape = {this->width, this->height, (uint32_t)texture_count}};
     Ref<Goonya::GLTexture> texture_array = create_ref<Goonya::GLTexture>(desc);
-    for(size_t i = 0;i < texture_count;i++){
+    for (size_t i = 0; i < texture_count; i++) {
         texture_array->import_image(texture_storage[i], 0, 0, 0, i);
     }
 

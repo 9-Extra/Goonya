@@ -8,7 +8,7 @@
 
 #include <cstdint>
 #include <functional>
-#include <future>   
+#include <future>
 
 namespace Craft {
 
@@ -57,10 +57,10 @@ private:
                     if (world_pos.y > terrain_height_x_z) {
                         state = Blocks::get().AIR->get_default_blockstate();
                     } else {
-                        if (world_pos.y == terrain_height_x_z){
-                            state = Blocks::get().GRASS_BLOCK->get_default_blockstate();    
-                        } else if (world_pos.y >= terrain_height_x_z - 3){
-                            state = Blocks::get().DIRT->get_default_blockstate();    
+                        if (world_pos.y == terrain_height_x_z) {
+                            state = Blocks::get().GRASS_BLOCK->get_default_blockstate();
+                        } else if (world_pos.y >= terrain_height_x_z - 3) {
+                            state = Blocks::get().DIRT->get_default_blockstate();
                         } else {
                             state = Blocks::get().STONE->get_default_blockstate();
                         }

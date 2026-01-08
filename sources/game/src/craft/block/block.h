@@ -5,7 +5,6 @@
 #include "craft/core/core.h"
 #include "craft/core/registry.h"
 
-
 #include <initializer_list>
 #include <memory>
 #include <vector>
@@ -56,9 +55,9 @@ public:
     }
 
 protected:
-    void register_default_blockstate(BlockState* state) noexcept { 
+    void register_default_blockstate(BlockState *state) noexcept {
         GN_ASSERT(state && state->block == this);
-        default_blockstate = state; 
+        default_blockstate = state;
     }
 
 private:

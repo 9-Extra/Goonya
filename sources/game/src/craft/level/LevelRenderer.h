@@ -9,7 +9,6 @@
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 
-
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
@@ -18,11 +17,10 @@
 
 namespace Craft {
 
-using Goonya::RenderScene;
-using Goonya::MeshRenderProxy;
-using Goonya::Material;
 using Goonya::enqueue_render_task;
-
+using Goonya::Material;
+using Goonya::MeshRenderProxy;
+using Goonya::RenderScene;
 
 /*
 Minecraft世界Level被分为16 * height *

@@ -6,7 +6,6 @@
 #include "platform/graphics/opengl/GLTexture.h"
 #include "runtime/GoonyaException.h"
 
-
 #include <cstdint>
 #include <limits>
 #include <ranges>
@@ -126,7 +125,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->pipeline_setting = desc.pipeline_setting;
     this->local_variant_key_collect = LocalVariantKeyCollect(std::move(desc.local_variant_keys));
     this->effective_global_key_mask = GLOBAL_VARIANT_KEY.get_shader_global_key_mask(desc.global_variant_keys);
-     
+
     // 不使用Opengl默认的纹理单元绑定，而是手动分配纹理单元
     for (auto &&[i, default_texture] : std::views::enumerate(std::move(desc.textures))) {
         auto &&[name, texture_res] = std::move(default_texture);
@@ -178,7 +177,7 @@ Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
             throw RuntimeError(std::format("纹理\"{}\"在.meta中未定义，却在着色器中使用", name));
         }
     }
-    
+
     shaders.emplace(variant_code, shader);
 
     return shader;

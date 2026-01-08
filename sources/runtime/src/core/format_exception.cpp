@@ -23,7 +23,7 @@ static void format_exception(const std::exception &e, int level, std::string &in
         try {
             if (error) {
                 std::format_to(std::back_inserter(information), "Stacktrace:\n{}", error->get_trace());
-    
+
             } else {
                 std::format_to(std::back_inserter(information), "Get exception type \"{}\". No stacktrace available",
                                typeid(e).name());

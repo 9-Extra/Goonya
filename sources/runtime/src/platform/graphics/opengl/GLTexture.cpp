@@ -2,7 +2,6 @@
 
 #include "runtime/GoonyaException.h"
 
-
 #include <cmath>
 #include <cstdint>
 

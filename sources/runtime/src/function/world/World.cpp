@@ -2,7 +2,6 @@
 #include "core/ThreadPool.h"
 #include "function/renderer/Renderer.h"
 
-
 namespace Goonya {
 
 std::forward_list<World> World::world_list;

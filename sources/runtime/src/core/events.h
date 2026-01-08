@@ -2,7 +2,7 @@
 
 namespace Goonya::Events {
 
-struct PostTick{};
-struct EngineStop{};
+struct PostTick {};
+struct EngineStop {};
 
-}
+} // namespace Goonya::Events

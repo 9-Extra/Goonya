@@ -13,7 +13,8 @@ struct Matrix3f {
     float m[3][3];
 
     constexpr Matrix3f() : m{{0}} {}
-    constexpr Matrix3f(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21, float m22)
+    constexpr Matrix3f(float m00, float m01, float m02, float m10, float m11, float m12, float m20, float m21,
+                       float m22)
         : m{{m00, m01, m02}, {m10, m11, m12}, {m20, m21, m22}} {}
     static constexpr Matrix3f identity() { return Matrix3f{1, 0, 0, 0, 1, 0, 0, 0, 1}; }
     static constexpr Matrix3f zero() { return Matrix3f{}; }
@@ -92,7 +93,7 @@ struct Matrix3f {
     }
 
     // ----------------缩放，旋转--------------------
-    constexpr Matrix3f scale(float scale) const noexcept {return this->scale({scale, scale, scale});}
+    constexpr Matrix3f scale(float scale) const noexcept { return this->scale({scale, scale, scale}); }
     constexpr Matrix3f scale(Vector3f scale) const noexcept {
         return *this * Matrix3f{scale.x, 0, 0, 0, scale.y, 0, 0, 0, scale.z};
     }
@@ -138,8 +139,8 @@ struct Matrix4f {
     float m[4][4]; // 以行主序存储矩阵
 
     constexpr Matrix4f() : m{{0}} {}
-    constexpr Matrix4f(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13, float m20,
-                      float m21, float m22, float m23, float m30, float m31, float m32, float m33)
+    constexpr Matrix4f(float m00, float m01, float m02, float m03, float m10, float m11, float m12, float m13,
+                       float m20, float m21, float m22, float m23, float m30, float m31, float m32, float m33)
         : m{{m00, m01, m02, m03}, {m10, m11, m12, m13}, {m20, m21, m22, m23}, {m30, m31, m32, m33}} {}
     static constexpr Matrix4f identity() {
         return Matrix4f{
@@ -157,7 +158,7 @@ struct Matrix4f {
 
     constexpr Matrix4f transpose() const {
         return Matrix4f{m[0][0], m[1][0], m[2][0], m[3][0], m[0][1], m[1][1], m[2][1], m[3][1],
-                       m[0][2], m[1][2], m[2][2], m[3][2], m[0][3], m[1][3], m[2][3], m[3][3]};
+                        m[0][2], m[1][2], m[2][2], m[3][2], m[0][3], m[1][3], m[2][3], m[3][3]};
     }
 
     constexpr float &operator[](size_t i, size_t j) {
@@ -247,7 +248,7 @@ struct Matrix4f {
     constexpr Matrix4f rotate(Quaternion rotation) const noexcept {
         return *this * Matrix4f{Matrix3f::from_quaternion(rotation)};
     }
-    constexpr Matrix4f scale(float scale) const noexcept {return this->scale({scale, scale, scale});}
+    constexpr Matrix4f scale(float scale) const noexcept { return this->scale({scale, scale, scale}); }
     constexpr Matrix4f scale(Vector3f scale) const noexcept {
         return *this * Matrix4f{scale.x, 0, 0, 0, 0, scale.y, 0, 0, 0, 0, scale.z, 0, 0, 0, 0, 1};
     }

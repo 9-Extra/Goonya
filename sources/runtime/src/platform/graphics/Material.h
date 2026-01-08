@@ -9,7 +9,6 @@
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/Resource.h"
 
-
 #include <cstdint>
 #include <string>
 #include <tuple>
@@ -72,7 +71,7 @@ public:
         // 允许传入texture为空，表示使用默认纹理。但this->textures不应包含空指针
         if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
             uint32_t unit = iter->second.unit; // 在bind时再进行texture类型检查
-            if (texture){
+            if (texture) {
                 this->textures[unit] = texture;
             } else {
                 this->textures.erase(unit);

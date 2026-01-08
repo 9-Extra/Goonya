@@ -19,7 +19,7 @@ public:
         ref_count.store(0, std::memory_order::relaxed);
     };
     virtual ~RefCount() = default;
-    uint32_t get_ref_count() const noexcept { 
+    uint32_t get_ref_count() const noexcept {
         // 这个函数其实没有什么意义，因为引用计数可能下一个瞬间就被改动了，仅用于调试
         return ref_count.load(std::memory_order::relaxed);
     }
@@ -48,41 +48,36 @@ public:
             ptr->add_ref();
         }
     }
-    Ref(const Ref<T> &other) noexcept
-        : ptr(other.ptr) {
+    Ref(const Ref<T> &other) noexcept : ptr(other.ptr) {
         if (ptr) {
             ptr->add_ref();
         }
     }
     Ref(Ref<T> &&other) noexcept : ptr(other.ptr) { other.ptr = nullptr; }
-    ~Ref() {
-        reset();
-    }
-    
+    ~Ref() { reset(); }
+
     // cast
     template <std::derived_from<T> U>
     Ref(const Ref<U> &other) noexcept // NOLINT，向基类可以隐式转换
-        : ptr(const_cast<U*>(other.get())) {
+        : ptr(const_cast<U *>(other.get())) {
         if (ptr != nullptr) {
             ptr->add_ref();
         }
     }
 
-    Ref<T>& operator=(const Ref<T>& other) noexcept { // NOLINT: self-assignment handled
-        if (this->ptr == other.ptr){
+    Ref<T> &operator=(const Ref<T> &other) noexcept { // NOLINT: self-assignment handled
+        if (this->ptr == other.ptr) {
             return *this;
         }
         reset();
         ptr = other.ptr;
-        if (ptr){
+        if (ptr) {
             ptr->add_ref();
         }
         return *this;
     }
 
-    bool operator==(const Ref<T>& other) const noexcept{
-        return this->ptr == other.ptr;
-    }
+    bool operator==(const Ref<T> &other) const noexcept { return this->ptr == other.ptr; }
 
     const T *get() const noexcept { return ptr; }
     T *get() noexcept { return ptr; }
@@ -90,9 +85,7 @@ public:
     T *operator->() noexcept { return ptr; }
 
     explicit operator bool() const noexcept { return ptr != nullptr; }
-    void swap(Ref<T>& other) noexcept {
-        std::swap(ptr, other.ptr);
-    }
+    void swap(Ref<T> &other) noexcept { std::swap(ptr, other.ptr); }
 
     void reset() noexcept {
         if (ptr != nullptr) {
@@ -103,14 +96,14 @@ public:
         }
     }
 
-    template<typename U>
-    static Ref<T> cast_from(const Ref<U>& src){
-        return Ref<T>{dynamic_cast<T*>(const_cast<U*>(src.get()))};
+    template <typename U>
+    static Ref<T> cast_from(const Ref<U> &src) {
+        return Ref<T>{dynamic_cast<T *>(const_cast<U *>(src.get()))};
     }
 };
 
-template<std::derived_from<RefCount> T>
-void swap(Ref<T>& a, Ref<T>& b) noexcept {
+template <std::derived_from<RefCount> T>
+void swap(Ref<T> &a, Ref<T> &b) noexcept {
     a.swap(b);
 }
 
@@ -120,9 +113,7 @@ Ref<T> create_ref(Args... args) {
     return Ref<T>{new T(std::forward<Args>(args)...)};
 }
 
-template<typename T>
-struct std::hash<Ref<T>>{ // NOLINT
-    size_t operator()(const Ref<T>& ref) const noexcept{
-        return ref.get();
-    }
+template <typename T>
+struct std::hash<Ref<T>> { // NOLINT
+    size_t operator()(const Ref<T> &ref) const noexcept { return ref.get(); }
 };

@@ -72,21 +72,21 @@ TEST(Quaternion, to_matrix_and_resolve) {
 
     // 因为误差导致接近0的情况
     Matrix4f mat{-0.999999523,
-                -0.000418676762,
-                0.000213881052,
-                0,
-                -0.000214216896,
-                0.000802397727,
-                -0.999999523,
-                0,
-                0.00041850502,
-                -0.999999403,
-                -0.000802159309,
-                0,
-                0,
-                5,
-                -10,
-                1};
+                 -0.000418676762,
+                 0.000213881052,
+                 0,
+                 -0.000214216896,
+                 0.000802397727,
+                 -0.999999523,
+                 0,
+                 0.00041850502,
+                 -0.999999403,
+                 -0.000802159309,
+                 0,
+                 0,
+                 5,
+                 -10,
+                 1};
     Quaternion quat{-0.0, 0.707390308, -0.706822991, 0.00029901};
     EXPECT_EQ(Transform::from_matrix(mat).rotation, quat);
 }
@@ -107,12 +107,9 @@ TEST(Matrix, determinant_and_inverse) {
 
 TEST(Matrix, translate_scale) {
     const Vector3f t1{95.7264f, 40.8074f, 0.1644f};
-    const Vector3f t2{-1.f, -0.41863245f, -0.3396743f}; 
+    const Vector3f t2{-1.f, -0.41863245f, -0.3396743f};
     const float scale = 2.f / 191.1696014404297f;
-    Goonya::Matrix4f transform = Goonya::Matrix4f::identity()
-                                    .translate(t1)
-                                    .scale(scale)
-                                    .translate(t2);
+    Goonya::Matrix4f transform = Goonya::Matrix4f::identity().translate(t1).scale(scale).translate(t2);
     const Vector3f ori{123, 456, 1000};
     EXPECT_EQ((Vector4f{ori, 1} * transform).perspective_division(), ((ori + t1) * scale + t2));
 }

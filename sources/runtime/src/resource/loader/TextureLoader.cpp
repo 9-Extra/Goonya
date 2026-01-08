@@ -8,8 +8,7 @@
 
 namespace Goonya {
 
-static std::tuple<TextureFilterMode, TextureWarpMode>
-parse_texture_profile(const Json::Value &texture_desc) {
+static std::tuple<TextureFilterMode, TextureWarpMode> parse_texture_profile(const Json::Value &texture_desc) {
     TextureFilterMode filter_mode;
     TextureWarpMode warp_mode;
     const Json::Value &filter_mode_name = texture_desc["filter_mode"];

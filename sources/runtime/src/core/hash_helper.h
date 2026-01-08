@@ -44,6 +44,7 @@ struct PointerHash {
     size_t operator()(const T &ptr) const noexcept {
         return std::hash<const void *>{}(get_pointer(ptr));
     }
+
 private:
     template <typename T>
     static void *get_pointer(const T &ptr) noexcept {
@@ -58,7 +59,7 @@ private:
 struct PointerEqual {
     using is_transparent = void; // 启用透明比较的关键
     template <typename A, typename B>
-    bool operator()(const A& lhs, const B& rhs) const noexcept {
+    bool operator()(const A &lhs, const B &rhs) const noexcept {
         return get_pointer(lhs) == get_pointer(rhs);
     }
 

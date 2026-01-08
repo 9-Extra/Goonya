@@ -13,7 +13,6 @@
 #include "craft/model_manager.h"
 #include "function/world/World.h"
 
-
 namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
@@ -29,7 +28,8 @@ void Level::tick() {
     if (hit_result) {
         // 在Minecraft，绘制方块的Outline使用的是代码中定义的物体形状（使用Block.getShape方法获取，默认返回立方体，铁砧等方块通过重载此函数实现特殊形状）
         // 这里先用方块的模型生成Outline
-        wire_frame.draw_at(hit_result.position, ModelManager::get().get_baked_model(hit_result.block_state, hit_result.position));
+        wire_frame.draw_at(hit_result.position,
+                           ModelManager::get().get_baked_model(hit_result.block_state, hit_result.position));
     } else {
         wire_frame.hide();
     }

@@ -7,7 +7,6 @@
 #include "resource/loader/TextureLoader.h"
 #include "resource/loader/glTFLoader.h"
 
-
 #include <memory>
 
 namespace Goonya {

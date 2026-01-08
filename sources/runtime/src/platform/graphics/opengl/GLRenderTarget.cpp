@@ -3,7 +3,6 @@
 #include "core/log/Log.h"
 #include "platform/graphics/opengl/GLTexture.h"
 
-
 #include <spdlog/details/circular_q.h>
 #include <variant>
 

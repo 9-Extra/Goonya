@@ -51,7 +51,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
         Ref<Goonya::GLBuffer> updated_per_surface_buffer =
             create_ref<Goonya::GLBuffer>(Goonya::BufferType::DEVICE_ONLY, per_surface_data);
-            
+
         // LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
         if (section->mesh_proxy == nullptr) {
             Ref<Material> material = terrain_material->clone();
@@ -103,8 +103,7 @@ void LevelRenderer::render_frame() {
     // 提交所有需要编译的区块
     RenderRegionCache region_cache{*this};
     for (RenderSection *section : visible_chunk) {
-        if (!section->is_dirty)
-            continue;
+        if (!section->is_dirty) continue;
         section->complie_async(region_cache, terrain_material);
     }
 }

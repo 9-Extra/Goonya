@@ -10,7 +10,7 @@
 
 namespace Craft {
 
-std::vector<BlockState*> BlockStateMap::blockstates;
+std::vector<BlockState *> BlockStateMap::blockstates;
 std::unordered_map<BlockState *, uint32_t> BlockStateMap::blockstate_to_id;
 
 void BlockStateMap::initalize() {
@@ -18,8 +18,8 @@ void BlockStateMap::initalize() {
     GN_ASSERT(REGISTRY_BLOCK.entry_count() != 0); // 必须在Blocks初始化之后
 
     for (const Block *const_block : std::views::keys(REGISTRY_BLOCK)) {
-        for(const std::unique_ptr<BlockState>& state: const_block->get_possible_states()){
-            BlockState* s = state.get();
+        for (const std::unique_ptr<BlockState> &state : const_block->get_possible_states()) {
+            BlockState *s = state.get();
             uint32_t id = blockstates.size();
 
             blockstates.push_back(s);

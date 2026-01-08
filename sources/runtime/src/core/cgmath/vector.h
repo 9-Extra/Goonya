@@ -139,7 +139,7 @@ struct Vector4f {
     constexpr Vector4f(Vector3f vec3, float w) : x(vec3.x), y(vec3.y), z(vec3.z), w(w) {}
 
     constexpr Vector3f get_xyz() const noexcept { return Vector3f{x, y, z}; }
-    constexpr Vector3f perspective_division() const noexcept {return get_xyz() / w;}
+    constexpr Vector3f perspective_division() const noexcept { return get_xyz() / w; }
 
     constexpr float &operator[](size_t i) noexcept { return v[i]; }
     constexpr const float &operator[](size_t i) const noexcept { return v[i]; }
@@ -183,4 +183,3 @@ struct std::formatter<Goonya::Vector4f> {
         return std::format_to(ctx.out(), "({}, {}, {}, {})", vec4.x, vec4.y, vec4.z, vec4.w);
     }
 };
-

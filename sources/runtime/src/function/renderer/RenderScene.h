@@ -16,7 +16,7 @@ public:
     // -----------------环境-------------------
     Vector3f ambient_light = {0.02f, 0.02f, 0.02f}; // 环境光
     plf::colony<PointLight> pointlights;            // 点光源
-    
+
     plf::colony<Skybox> skyboxs; // 天空盒
 
     float fog_min_distance = 5.0f; // 雾开始的距离
@@ -24,7 +24,7 @@ public:
     // -----------------物体-------------------
     std::unordered_set<std::unique_ptr<MeshRenderProxy>, PointerHash, PointerEqual> mesh_proxys; // 要渲染的网格
 
-    public:
+public:
     void clear() /*NOLINT*/ {
         GN_ASSERT(pointlights.empty());
         GN_ASSERT(mesh_proxys.empty());
@@ -34,7 +34,6 @@ public:
 private:
     friend class Renderer;
     RenderScene() = default;
-
 };
 
 } // namespace Goonya

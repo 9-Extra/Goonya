@@ -6,12 +6,10 @@
 
 namespace Goonya {
 
-class RenderInstance{
+class RenderInstance {
     Ref<GLMesh> mesh;
     std::vector<Ref<Material>> materials;
-    std::vector<std::byte> per_object_data; 
-
-
+    std::vector<std::byte> per_object_data;
 };
 
-};
+}; // namespace Goonya

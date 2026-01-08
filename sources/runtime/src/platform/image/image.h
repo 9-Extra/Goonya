@@ -6,14 +6,13 @@
 #include <cassert>
 #include <filesystem>
 
-namespace stb{
+namespace stb {
 
-enum class ResizeMethod{
-
+enum class ResizeMethod {
 
 };
 
-class Image final{ // NOLINT 不需要初始化
+class Image final { // NOLINT 不需要初始化
 private:
     void *data = nullptr;
     int width, height, channel;
@@ -22,20 +21,20 @@ private:
     Image() = default; // NOLINT 不要直接构造，不需要初始化
 
 public:
-    Image(Image&& img) noexcept {
+    Image(Image &&img) noexcept {
         data = img.data;
         width = img.width;
         height = img.height;
         channel = img.channel;
         _is_float = img._is_float;
-      
+
         img.data = nullptr;
     }
 
-    Image(const Image& img) = delete; // 不要拷贝
+    Image(const Image &img) = delete; // 不要拷贝
 
-    Image& operator=(Image&& img) noexcept{
-        if (this == &img){
+    Image &operator=(Image &&img) noexcept {
+        if (this == &img) {
             return *this;
         }
 
@@ -49,31 +48,17 @@ public:
         return *this;
     }
 
-    Image& operator=(Image& img) = delete;
+    Image &operator=(Image &img) = delete;
 
-    explicit operator bool() const noexcept{
-        return data != nullptr;
-    }
+    explicit operator bool() const noexcept { return data != nullptr; }
 
-    int get_width() const noexcept{
-        return width;
-    }
-    int get_height() const noexcept{
-        return height;
-    }
-    int get_channel() const noexcept{
-        return channel;
-    }
-    bool is_float() const noexcept{
-        return _is_float;
-    }
-    void* get_data() const noexcept{
-        return data;
-    }
+    int get_width() const noexcept { return width; }
+    int get_height() const noexcept { return height; }
+    int get_channel() const noexcept { return channel; }
+    bool is_float() const noexcept { return _is_float; }
+    void *get_data() const noexcept { return data; }
 
-    unsigned int get_size_byte() const noexcept {
-        return width * height * channel * (_is_float ? 4 : 1);
-    }
+    unsigned int get_size_byte() const noexcept { return width * height * channel * (_is_float ? 4 : 1); }
 
     Image flip_vertical() const noexcept;
     Image resize(int target_width, int target_height, ResizeMethod method) const noexcept;
@@ -86,5 +71,4 @@ public:
     ~Image();
 };
 
-}
-
+} // namespace stb

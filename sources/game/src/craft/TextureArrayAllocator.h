@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/hash_helper.h"
 #include "core/RefCount.h"
+#include "core/hash_helper.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
 
@@ -21,7 +21,7 @@ private:
     std::vector<stb::Image> texture_storage;
 
 public:
-    TextureArrayAllocator(TextureArrayAllocator&) = delete;
+    TextureArrayAllocator(TextureArrayAllocator &) = delete;
     TextureArrayAllocator(std::filesystem::path resource_path, uint32_t width, uint32_t height);
     uint32_t alloc_texture(std::string_view texture_location);
     Ref<Goonya::GLTexture> generate_texture_array();

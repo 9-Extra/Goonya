@@ -12,13 +12,12 @@
 #include "function/world/GObject.h"
 #include "function/world/World.h"
 
-
 #include <cstdint>
 #include <unordered_map>
 
 namespace Craft {
 
-class Level : public RefCount{
+class Level : public RefCount {
 private:
     ChunkGenerator chunk_generator;
     LevelRenderer level_renderer;
@@ -61,8 +60,8 @@ public:
         if (chunk == nullptr) {
             return false;
         }
-        BlockState* old = chunk->set_block_state(pos, state);
-        if (old != state){
+        BlockState *old = chunk->set_block_state(pos, state);
+        if (old != state) {
             level_renderer.notify_block_update(pos, state);
         }
         return true;

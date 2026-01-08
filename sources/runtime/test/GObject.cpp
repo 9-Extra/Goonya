@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <memory>
 
-#include "function/world/GObject.h"
 #include "PrintTo.h"
+#include "function/world/GObject.h"
 
 using namespace Goonya;
-TEST(Transform, intialize){
+TEST(Transform, intialize) {
     std::shared_ptr<GObject> obj = std::make_shared<GObject>();
     EXPECT_EQ(obj->get_local_position(), Vector3f(0, 0, 0));
     EXPECT_EQ(obj->get_local_rotation(), Quaternion::identity());
@@ -16,7 +16,7 @@ TEST(Transform, intialize){
     EXPECT_EQ(obj->get_global_scale(), Vector3f(1, 1, 1));
 }
 
-TEST(Transform, concat){
+TEST(Transform, concat) {
     std::shared_ptr<GObject> parent = std::make_shared<GObject>("parent");
     std::shared_ptr<GObject> child = std::make_shared<GObject>("child");
     parent->attach_child(child);

@@ -96,8 +96,7 @@ ComplieResult ComplieTask::compile_mesh(ChunkPos pos) const {
         for (Direction direction : DIRECTION_VALUES) {
             BlockState *opposite = region.get_block_state(BlockPos{pos.move(direction)});
             bool hide = opposite->can_hide_face(direction_opposite(direction));
-            if (hide)
-                continue;
+            if (hide) continue;
 
             for (const BakedQuad &quad : model.culled_quads[std::to_underlying(direction)]) {
                 compiler_push_quad(result, state, pos, quad);

@@ -9,7 +9,7 @@
 
 namespace Goonya {
 
-std::shared_ptr<spdlog::logger> core_logger; 
+std::shared_ptr<spdlog::logger> core_logger;
 
 Logger logger; // main 函数执行前就初始化
 std::vector<std::shared_ptr<spdlog::sinks::sink>> Logger::sinks;

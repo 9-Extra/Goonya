@@ -8,11 +8,11 @@
 #include <stb/stb_image_resize2.h>
 #include <stb/stb_image_write.h>
 
+#include <array>
 #include <cassert>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
-#include <array>
 
 #include <filesystem>
 
@@ -112,7 +112,7 @@ Image Image::load(const std::filesystem::path &path, bool to_srgb_linear) {
     return image;
 }
 
-Image Image::loadf(const std::filesystem::path &path, bool to_srgb_linear){
+Image Image::loadf(const std::filesystem::path &path, bool to_srgb_linear) {
     Image image;
     assert(to_srgb_linear == true); // stb 内部写死的。。。。。
     image.data = stbi_loadf(path.string().c_str(), &image.width, &image.height, &image.channel, 0);

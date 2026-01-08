@@ -2,6 +2,7 @@
 
 #include "core/RefCount.h"
 #include "core/cgmath/cgmath.h"
+#include "core/path_formatter.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
@@ -11,7 +12,6 @@
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
-#include "core/path_formatter.h"
 
 #include <fstream>
 #include <json/json.h>
@@ -79,14 +79,14 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
             Ref<Material> material;
-            if (cpnt_desc.isMember("material")){
+            if (cpnt_desc.isMember("material")) {
                 material = resources.load_resource<Material>(cpnt_desc["material"].asString());
             } else {
                 throw RuntimeError("天空盒必须指定材质");
             }
 
             Ref<GLTexture> env_map;
-            if (cpnt_desc.isMember("env_map")){
+            if (cpnt_desc.isMember("env_map")) {
                 env_map = resources.load_resource<GLTexture>(cpnt_desc["env_map"].asString());
             } else {
                 env_map = resources.load_resource<GLTexture>("buildin:black");
@@ -121,10 +121,10 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
     if (json.isMember("scene")) {
         // todo: copy
         Ref<Scene> sub_scene = resources.load_resource<Scene>(json["scene"].asString());
-        if (sub_scene){
+        if (sub_scene) {
             node->attach_child(sub_scene->root);
         } else {
-            throw RuntimeError(std::format("子场景\"{}\"加载失败",json["scene"].asString()));
+            throw RuntimeError(std::format("子场景\"{}\"加载失败", json["scene"].asString()));
         }
     }
 
@@ -138,7 +138,7 @@ Ref<Scene> load_scene_from_json(const std::string &path) {
     {
         Json::Reader reader;
         std::ifstream file(path);
-        if (!file.is_open()){
+        if (!file.is_open()) {
             throw RuntimeError(std::format("打开文件\"{}\"失败", path));
         }
         reader.parse(file, json, false);

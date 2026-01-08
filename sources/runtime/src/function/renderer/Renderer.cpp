@@ -9,7 +9,6 @@
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
 
-
 #include <chrono>
 #include <cstdint>
 #include <memory>
@@ -29,8 +28,7 @@ void Renderer::render() {
 
     bool is_screen_painted = false;
     for (auto &&camera : camera_set) {
-        if (!camera->render_target || camera->scene == nullptr)
-            continue;
+        if (!camera->render_target || camera->scene == nullptr) continue;
         if (camera->render_target->is_screen()) {
             is_screen_painted = true;
         }
@@ -46,19 +44,20 @@ void Renderer::render() {
         GL.clear(true, true, true);
 
         // 寻找包含且最小，接近中心的天空盒
-        Skybox* skybox = nullptr;
+        Skybox *skybox = nullptr;
         float min_distance = std::numeric_limits<float>::infinity();
-        for (auto&& s : camera->scene->skyboxs) {
+        for (auto &&s : camera->scene->skyboxs) {
             if (!s.ignore_range && !s.bbox.contains(camera->get_position())) {
                 continue;
             }
-            float d = s.ignore_range ? std::numeric_limits<float>::max() : (s.bbox.center() - camera->get_position()).square();
+            float d = s.ignore_range ? std::numeric_limits<float>::max()
+                                     : (s.bbox.center() - camera->get_position()).square();
             if (d < min_distance) {
                 skybox = &s;
                 min_distance = d;
             }
         }
-            
+
         PassRenderInfo info{
             .camera = camera.get(),
             .viewport = viewport,
@@ -73,7 +72,6 @@ void Renderer::render() {
 
         geometry_pass->run(info);
         skybox_pass->run(info);
-
     }
 
     if (!is_screen_painted) {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/cgmath/cgmath.h"
 #include "core/cgmath/aabb.h"
+#include "core/cgmath/cgmath.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include <cstdint>
 #include <vector>
@@ -37,13 +37,12 @@ inline const std::vector<Vertex> plane_vertices = {
 
 inline const BoundingBox plane_aabb = {{-1.0f, -1.0f, -0.0001f}, {1.0f, 1.0f, 0.0001f}};
 
-inline const VertexLayout plane_vertices_vertex_layout =
-    VertexLayoutBuilder()
-        .add_attribute(VertexAttribute::POSITION)
-        .add_attribute(VertexAttribute::NORMAL)
-        .add_attribute(VertexAttribute::TANGENT)
-        .add_attribute(VertexAttribute::UV)
-        .build();
+inline const VertexLayout plane_vertices_vertex_layout = VertexLayoutBuilder()
+                                                             .add_attribute(VertexAttribute::POSITION)
+                                                             .add_attribute(VertexAttribute::NORMAL)
+                                                             .add_attribute(VertexAttribute::TANGENT)
+                                                             .add_attribute(VertexAttribute::UV)
+                                                             .build();
 
 inline const std::vector<uint32_t> plane_indices = {0, 1, 2, 2, 3, 0};
 } // namespace Goonya::Assets

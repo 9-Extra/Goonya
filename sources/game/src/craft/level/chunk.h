@@ -1,8 +1,8 @@
 #pragma once
 
+#include "core/RefCount.h"
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
-#include "core/RefCount.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -59,7 +59,7 @@ public:
     Chunk(Chunk &) = delete;
 
     BlockState *get_block_state(BlockInnerPos pos) const noexcept { return block_states[pos.as_index()]; }
-    BlockState *get_block_state(BlockPos pos)  const noexcept { return get_block_state(BlockInnerPos(pos)); }
+    BlockState *get_block_state(BlockPos pos) const noexcept { return get_block_state(BlockInnerPos(pos)); }
     BlockState *set_block_state(BlockInnerPos pos, BlockState *state) noexcept {
         BlockState *old = block_states[pos.as_index()];
         block_states[pos.as_index()] = state;

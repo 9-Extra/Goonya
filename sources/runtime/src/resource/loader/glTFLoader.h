@@ -5,7 +5,6 @@
 
 #include <filesystem>
 
-
 namespace Goonya {
 
 class GlTFLoader : public ResourceLoader {
@@ -17,5 +16,4 @@ protected:
                        const Json::Value &content) override;
 };
 
-
-}
+} // namespace Goonya

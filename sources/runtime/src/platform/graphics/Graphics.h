@@ -15,7 +15,7 @@ extern std::thread render_thread;
 
 template <typename T, bool IS_RHI_THREAD = false>
 void enqueue_render_task(T &&task) {
-    if constexpr (IS_RHI_THREAD){
+    if constexpr (IS_RHI_THREAD) {
         task();
     } else {
         THREAD_POOL.enqueue_renderer_thread(std::forward<T>(task));

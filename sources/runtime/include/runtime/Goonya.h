@@ -5,8 +5,4 @@ void init_engine();
 void main_loop();
 void drop_engine();
 
-
-
-
-
-}
+} // namespace Goonya

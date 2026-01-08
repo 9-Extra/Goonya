@@ -6,7 +6,6 @@
 #include "craft/core/registry.h"
 #include "runtime/GAssert.h"
 
-
 #include <optional>
 
 namespace Craft {
