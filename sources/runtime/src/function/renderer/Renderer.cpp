@@ -8,6 +8,9 @@
 #include "function/renderer/passes/GeometryPass.h"
 #include "function/renderer/passes/Passes.h"
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/opengl/GLRenderTarget.h"
+#include "platform/graphics/opengl/GLTexture.h"
+#include "runtime/GAssert.h"
 
 #include <chrono>
 #include <cstdint>
@@ -26,6 +29,11 @@ void Renderer::render() {
 
     renderer_thread_process();
 
+    auto [w, h] = GL.get_rendertarget_screen()->get_size();
+    Ref<GLFrameBuffer> temp_render_target = create_ref<GLFrameBuffer>(std::make_tuple(w, h));
+    temp_render_target->set_depth_stencil_renderbuffer(DepthStencilPixelFormat::DEPTH24_STENCIL8);
+    temp_render_target->set_color_renderbuffer(0, TextureStorageFormat::RGB_f8);
+    GN_ASSERT(temp_render_target->check_status());
     bool is_screen_painted = false;
     for (auto &&camera : camera_set) {
         if (!camera->render_target || camera->scene == nullptr) continue;
@@ -34,12 +42,20 @@ void Renderer::render() {
         }
 
         auto [w, h] = camera->render_target->get_size();
+
         const Viewport viewport{(int32_t)(camera->rect.x * w), (int32_t)(camera->rect.y * h),
                                 (int32_t)(camera->rect.z * w), (int32_t)(camera->rect.w * h)};
         GL.set_viewport(viewport);
-        camera->render_target->bind_draw();
 
-        // 清除旧画面
+        if (camera->render_target == GL.get_rendertarget_screen()) {
+            // 不直接绘制到屏幕，而是绘制到临时渲染目标
+            temp_render_target->bind_draw();
+            // GL.get_rendertarget_screen()->bind_draw();
+        } else {
+            camera->render_target->bind_draw();
+        }
+
+        // 清除旧画面，todo: 根据相机的清除参数来清除
         GL.set_clear_parameter(Color{0.0f, 0.0f, 0.0f, 1.0f});
         GL.clear(true, true, true);
 
@@ -71,10 +87,16 @@ void Renderer::render() {
         }
 
         geometry_pass->run(info);
-        skybox_pass->run(info);
+
+        if (skybox) {
+            skybox_pass->run(info);
+        }
     }
 
-    if (!is_screen_painted) {
+    if (is_screen_painted) {
+        // 将临时渲染目标的内容绘制到屏幕，因为在绘制时Y轴是倒的，所以这里需要翻转Y轴
+        temp_render_target->blit(GL.get_rendertarget_screen(), 0, 0, w, h, 0, h, w, 0);
+    } else {
         LOG_ERROR("没有相机绑定到屏幕！");
     }
 }

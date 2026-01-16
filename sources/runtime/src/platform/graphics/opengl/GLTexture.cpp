@@ -1,5 +1,6 @@
 #include "GLTexture.h"
 
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
 #include <cmath>
@@ -14,68 +15,6 @@ inline GLsizei max_mipmap_level(size_t width, size_t height) {
 inline GLsizei max_mipmap_level(size_t width, size_t height, size_t depth) {
     return static_cast<GLsizei>(std::log2(std::max(std::max(width, height), depth))) + 1;
 }
-
-static GLenum texture_format_to_gl_format(TextureStorageFormat format) {
-    switch (format) {
-    case TextureStorageFormat::RGBA_f32:
-        return GL_RGBA32F;
-    case TextureStorageFormat::RGBA_i32:
-        return GL_RGBA32I;
-    case TextureStorageFormat::RGBA_u32:
-        return GL_RGBA32UI;
-    case TextureStorageFormat::RGBA_f16:
-        return GL_RGBA16;
-    case TextureStorageFormat::RGBA_i16:
-        return GL_RGBA16I;
-    case TextureStorageFormat::RGBA_u16:
-        return GL_RGBA16UI;
-    case TextureStorageFormat::RGBA_f8:
-        return GL_RGBA8;
-    case TextureStorageFormat::RGBA_i8:
-        return GL_RGBA8I;
-    case TextureStorageFormat::RGBA_u8:
-        return GL_RGBA8UI;
-    case TextureStorageFormat::RGB_f32:
-        return GL_RGB32F;
-    case TextureStorageFormat::RGB_i32:
-        return GL_RGB32I;
-    case TextureStorageFormat::RGB_u32:
-        return GL_RGB32UI;
-    case TextureStorageFormat::RGB_f16:
-        return GL_RGB16;
-    case TextureStorageFormat::RGB_i16:
-        return GL_RGB16I;
-    case TextureStorageFormat::RGB_u16:
-        return GL_RGB16UI;
-    case TextureStorageFormat::RGB_f8:
-        return GL_RGB8;
-    case TextureStorageFormat::RGB_i8:
-        return GL_RGB8I;
-    case TextureStorageFormat::RGB_u8:
-        return GL_RGB8UI;
-    case TextureStorageFormat::R_f32:
-        return GL_R32F;
-    case TextureStorageFormat::R_i32:
-        return GL_R32I;
-    case TextureStorageFormat::R_u32:
-        return GL_R32UI;
-    case TextureStorageFormat::R_f16:
-        return GL_R16;
-    case TextureStorageFormat::R_i16:
-        return GL_R16I;
-    case TextureStorageFormat::R_u16:
-        return GL_R16UI;
-    case TextureStorageFormat::R_f8:
-        return GL_R8;
-    case TextureStorageFormat::R_i8:
-        return GL_R8I;
-    case TextureStorageFormat::R_u8:
-        return GL_R8UI;
-    case TextureStorageFormat::UNKNOWN:
-        break;
-    }
-    return 0;
-};
 
 GLTexture::GLTexture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {
     const auto &[width, height, depth] = this->shape;
@@ -328,4 +267,65 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
     return image;
 };
 
+GLenum texture_format_to_gl_format(TextureStorageFormat format) {
+    switch (format) {
+    case TextureStorageFormat::RGBA_f32:
+        return GL_RGBA32F;
+    case TextureStorageFormat::RGBA_i32:
+        return GL_RGBA32I;
+    case TextureStorageFormat::RGBA_u32:
+        return GL_RGBA32UI;
+    case TextureStorageFormat::RGBA_f16:
+        return GL_RGBA16;
+    case TextureStorageFormat::RGBA_i16:
+        return GL_RGBA16I;
+    case TextureStorageFormat::RGBA_u16:
+        return GL_RGBA16UI;
+    case TextureStorageFormat::RGBA_f8:
+        return GL_RGBA8;
+    case TextureStorageFormat::RGBA_i8:
+        return GL_RGBA8I;
+    case TextureStorageFormat::RGBA_u8:
+        return GL_RGBA8UI;
+    case TextureStorageFormat::RGB_f32:
+        return GL_RGB32F;
+    case TextureStorageFormat::RGB_i32:
+        return GL_RGB32I;
+    case TextureStorageFormat::RGB_u32:
+        return GL_RGB32UI;
+    case TextureStorageFormat::RGB_f16:
+        return GL_RGB16;
+    case TextureStorageFormat::RGB_i16:
+        return GL_RGB16I;
+    case TextureStorageFormat::RGB_u16:
+        return GL_RGB16UI;
+    case TextureStorageFormat::RGB_f8:
+        return GL_RGB8;
+    case TextureStorageFormat::RGB_i8:
+        return GL_RGB8I;
+    case TextureStorageFormat::RGB_u8:
+        return GL_RGB8UI;
+    case TextureStorageFormat::R_f32:
+        return GL_R32F;
+    case TextureStorageFormat::R_i32:
+        return GL_R32I;
+    case TextureStorageFormat::R_u32:
+        return GL_R32UI;
+    case TextureStorageFormat::R_f16:
+        return GL_R16;
+    case TextureStorageFormat::R_i16:
+        return GL_R16I;
+    case TextureStorageFormat::R_u16:
+        return GL_R16UI;
+    case TextureStorageFormat::R_f8:
+        return GL_R8;
+    case TextureStorageFormat::R_i8:
+        return GL_R8I;
+    case TextureStorageFormat::R_u8:
+        return GL_R8UI;
+    case TextureStorageFormat::UNKNOWN:
+        break;
+    }
+    return 0;
+};
 } // namespace Goonya

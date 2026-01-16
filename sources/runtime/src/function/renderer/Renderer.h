@@ -31,7 +31,6 @@ public:
     void drop_scene(RenderScene *scene) {
         auto iter = std::ranges::find_if(scene_set, [scene](auto &&a) { return a.get() == scene; });
         GN_ASSERT(iter != scene_set.end());
-
         scene_set.erase(iter);
     }
     CameraRenderProxy *create_camera() {

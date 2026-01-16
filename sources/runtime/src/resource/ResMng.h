@@ -5,6 +5,7 @@
 #include "core/log/Log.h"
 #include "resource/Loader.h"
 #include "resource/Resource.h"
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
 #include <concepts>

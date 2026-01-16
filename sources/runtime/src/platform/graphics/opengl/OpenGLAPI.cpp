@@ -1,4 +1,5 @@
 #include "OpenGLAPI.h"
+#include "core/cgmath/matrix.h"
 #include "core/log/Log.h"
 #include <GLFW/glfw3.h>
 
@@ -68,6 +69,8 @@ void OpenGLGraphicsAPI::initialize() {
     {
         // OpenGL默认renderframe的封装
         rendertarget_screen = new GLRenderTargetScreen();
+        // 设定上以顺时针为正面，但是因为总会在绘制时通过透视投影上下颠倒图像，所以这里设为逆时针
+        glFrontFace(GL_CCW);
 
         glClearColor(0.0, 0.0, 0.0, 0.0);
         /*
@@ -297,46 +300,27 @@ void OpenGLGraphicsAPI::set_viewport(const Viewport &view_port) noexcept {
     glViewport(view_port.x, view_port.y, view_port.width, view_port.height);
 }
 //  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-Matrix4f OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z, float far_z,
-                                                       bool render_to_texture) const noexcept {
+Matrix4f OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, float near_z,
+                                                       float far_z) const noexcept {
     GN_ASSERT(near_z < far_z); // 不要写反了！！！！！！！！！！
     float c = 1.0f / std::tan(fov / 2);
+    Matrix4f perspective = Matrix4f{c / ratio,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    c,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    0.0f,
+                                    -(near_z + far_z) / (far_z - near_z),
+                                    -1.0f,
+                                    0.0f,
+                                    0.0f,
+                                    -2 * far_z * near_z / (far_z - near_z),
+                                    0.0f};
 
-    if (render_to_texture) {
-        // 翻转Y轴
-        return Matrix4f{c / ratio,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        -c,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        -(near_z + far_z) / (far_z - near_z),
-                        -1.0f,
-                        0.0f,
-                        0.0f,
-                        -2 * far_z * near_z / (far_z - near_z),
-                        0.0f};
-    } else {
-        return Matrix4f{c / ratio,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        c,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        0.0f,
-                        -(near_z + far_z) / (far_z - near_z),
-                        -1.0f,
-                        0.0f,
-                        0.0f,
-                        -2 * far_z * near_z / (far_z - near_z),
-                        0.0f};
-    }
+    return perspective.scale({1.0f, -1.0f, 1.0f}); // 在Y轴上进行翻转
 }
 } // namespace Goonya

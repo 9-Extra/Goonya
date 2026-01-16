@@ -7,17 +7,12 @@
 #include <functional>
 #include <utility>
 
-#include "runtime/GAssert.h"
-
 class RefCount {
 private:
     mutable std::atomic<uint32_t> ref_count;
 
 public:
-    RefCount() noexcept {
-        // 对象尚未构建，没有多线程会读这个值
-        ref_count.store(0, std::memory_order::relaxed);
-    };
+    RefCount() noexcept : ref_count(0) {};
     virtual ~RefCount() = default;
     uint32_t get_ref_count() const noexcept {
         // 这个函数其实没有什么意义，因为引用计数可能下一个瞬间就被改动了，仅用于调试
@@ -88,11 +83,12 @@ public:
     void swap(Ref<T> &other) noexcept { std::swap(ptr, other.ptr); }
 
     void reset() noexcept {
-        if (ptr != nullptr) {
-            if (ptr->release() == 0) {
-                delete ptr; // 这里假定RefCount一定是new出来的
+        // 因为gcc会错误地警告，这里先将ptr读入old_ptr，再进行release操作
+        T *old_ptr = std::exchange(ptr, nullptr);
+        if (old_ptr != nullptr) {
+            if (old_ptr->release() == 0) {
+                delete old_ptr;
             }
-            ptr = nullptr;
         }
     }
 

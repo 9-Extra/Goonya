@@ -65,6 +65,8 @@ struct TextureCreateDesc {
     std::tuple<uint32_t, uint32_t, uint32_t> shape;
 };
 
+GLenum texture_format_to_gl_format(TextureStorageFormat format);
+
 class GLTexture final : public Resource {
 private:
     GLuint id = 0;

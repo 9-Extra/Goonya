@@ -27,8 +27,7 @@ public:
 
     Matrix4f get_view_matrix() const noexcept { return view_matrix; }
     Matrix4f get_perspective_matrix(float ratio) const noexcept {
-        bool render_to_texture = render_target ? !render_target->is_screen() : true;
-        return GL.compute_perspective_matrix(ratio, fov, near_z, far_z, render_to_texture);
+        return GL.compute_perspective_matrix(ratio, fov, near_z, far_z);
     }
     Matrix4f get_view_perspective_matrix(float ratio) const noexcept {
         // 先转换到相机坐标系，再投影

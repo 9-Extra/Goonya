@@ -22,7 +22,7 @@ struct Viewport {
 };
 
 // ===============RenderBuffer=============
-enum class RenderBufferPixelFormat {
+enum class DepthStencilPixelFormat {
     // 只用于深度
     DEPTH16,
     DEPTH24,
@@ -57,20 +57,30 @@ public:
     virtual bool has_color_buffer(uint32_t location) const noexcept = 0;
     virtual bool has_depth_buffer() const noexcept = 0;
     virtual bool has_stencil_buffer() const noexcept = 0;
+    void blit(Ref<RenderTarget> target, int32_t src_x, int32_t src_y, int32_t src_x1, int32_t src_y1, int32_t dst_x,
+              int32_t dst_y, int32_t dst_x1, int32_t dst_y1, bool color = true, bool depth = false,
+              bool stencil = false, bool linear_filter = false);
 
     virtual bool check_status() const noexcept = 0;
 
 protected:
     RenderTarget() = default;
+
+    virtual GLuint get_id() const noexcept = 0;
 };
 
 // 用作RenderTarget，类似纹理，但是无法进行采样（只写），但是性能更好
 class GLRenderBuffer : public RefCount {
 public:
-    GLRenderBuffer(std::tuple<uint32_t, uint32_t> size, RenderBufferPixelFormat format) : size(size) {
+    GLRenderBuffer(std::tuple<uint32_t, uint32_t> size, DepthStencilPixelFormat format) : size(size) {
         glCreateRenderbuffers(1, &id);
         auto [w, h] = size;
         glNamedRenderbufferStorage(id, BufferFormat2GL(format), w, h);
+    }
+    GLRenderBuffer(std::tuple<uint32_t, uint32_t> size, TextureStorageFormat format) : size(size) {
+        glCreateRenderbuffers(1, &id);
+        auto [w, h] = size;
+        glNamedRenderbufferStorage(id, texture_format_to_gl_format(format), w, h);
     }
     ~GLRenderBuffer() override { glDeleteRenderbuffers(1, &id); }
 
@@ -82,21 +92,21 @@ private:
 
     std::tuple<uint32_t, uint32_t> size;
 
-    static GLenum BufferFormat2GL(RenderBufferPixelFormat format) noexcept {
+    static GLenum BufferFormat2GL(DepthStencilPixelFormat format) noexcept {
         switch (format) {
-        case RenderBufferPixelFormat::DEPTH16:
+        case DepthStencilPixelFormat::DEPTH16:
             return GL_DEPTH_COMPONENT16;
-        case RenderBufferPixelFormat::DEPTH24:
+        case DepthStencilPixelFormat::DEPTH24:
             return GL_DEPTH_COMPONENT24;
-        case RenderBufferPixelFormat::DEPTH32:
+        case DepthStencilPixelFormat::DEPTH32:
             return GL_DEPTH_COMPONENT32;
-        case RenderBufferPixelFormat::DEPTH32F:
+        case DepthStencilPixelFormat::DEPTH32F:
             return GL_DEPTH_COMPONENT32F;
-        case RenderBufferPixelFormat::STENCIL8:
+        case DepthStencilPixelFormat::STENCIL8:
             return GL_STENCIL_INDEX8;
-        case RenderBufferPixelFormat::DEPTH24_STENCIL8:
+        case DepthStencilPixelFormat::DEPTH24_STENCIL8:
             return GL_DEPTH24_STENCIL8;
-        case RenderBufferPixelFormat::DEPTH32F_STENCIL8:
+        case DepthStencilPixelFormat::DEPTH32F_STENCIL8:
             return GL_DEPTH32F_STENCIL8;
         }
         return GL_NONE;
@@ -125,6 +135,9 @@ class GLRenderTargetScreen final : public RenderTarget {
 
     bool check_status() const noexcept override { return true; /* 如果存在则不会有问题*/ };
 
+protected:
+    GLuint get_id() const noexcept override { return 0; };
+
 private:
     friend class OpenGLGraphicsAPI;
     // 由OpenGLGraphicsAPI创建单例
@@ -142,10 +155,14 @@ private:
 
     std::tuple<uint32_t, uint32_t> size;
 
-    std::array<Ref<GLTexture>, MAX_ATTACH_COLOR> attached_color_texture; // 至少支持8个，那就只最多支持8个
+    std::array<std::variant<std::monostate, Ref<GLTexture>, Ref<GLRenderBuffer>>, MAX_ATTACH_COLOR>
+        attached_color_texture; // 至少支持8个，那就只最多支持8个
     std::variant<std::monostate, Ref<GLTexture>, Ref<GLRenderBuffer>>
         depth_buffer; // 可能是空的，也可能和stencil_buffer是同一个
     std::variant<std::monostate, Ref<GLTexture>, Ref<GLRenderBuffer>> stencil_buffer;
+
+protected:
+    GLuint get_id() const noexcept override { return id; };
 
 public:
     explicit GLFrameBuffer(std::tuple<uint32_t, uint32_t> size);
@@ -161,26 +178,34 @@ public:
     void attach_color_texture(uint32_t location, Ref<GLTexture> texture, int32_t level = 0);
     void attach_color_texture_layer(uint32_t location, Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
     void detach_color_texture(uint32_t location) noexcept;
-    Ref<GLTexture> get_color_texture(uint32_t location) const noexcept { return attached_color_texture[location]; };
-    bool has_color_buffer(uint32_t location) const noexcept override { return bool(attached_color_texture[location]); }
-    // 不会有想要渲染到RenderBuffer的吧？不会吧不会吧
+    Ref<GLTexture> get_color_texture(uint32_t location) const noexcept {
+        auto &buffer = attached_color_texture[location];
+        if (std::holds_alternative<Ref<GLTexture>>(buffer)) {
+            return std::get<Ref<GLTexture>>(buffer);
+        }
+        return nullptr;
+    };
+    void set_color_renderbuffer(uint32_t location, TextureStorageFormat format);
+    bool has_color_buffer(uint32_t location) const noexcept override {
+        return !std::holds_alternative<std::monostate>(attached_color_texture[location]);
+    }
 
     // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
     void set_depth_texture(Ref<GLTexture> texture, int32_t level = 0);
     void set_depth_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
-    void set_depth_renderbuffer(RenderBufferPixelFormat format);
+    void set_depth_renderbuffer(DepthStencilPixelFormat format);
     bool has_depth_buffer() const noexcept override { return !std::holds_alternative<std::monostate>(depth_buffer); };
 
     void set_stencil_texture(Ref<GLTexture> texture, int32_t level = 0);
     void set_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
-    void set_stencil_renderbuffer(RenderBufferPixelFormat format);
+    void set_stencil_renderbuffer(DepthStencilPixelFormat format);
     bool has_stencil_buffer() const noexcept override {
         return !std::holds_alternative<std::monostate>(stencil_buffer);
     };
 
     void set_depth_stencil_texture(Ref<GLTexture> texture, int32_t level = 0);
     void set_depth_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
-    void set_depth_stencil_renderbuffer(RenderBufferPixelFormat format);
+    void set_depth_stencil_renderbuffer(DepthStencilPixelFormat format);
 
     bool check_status() const noexcept override;
 
@@ -188,7 +213,7 @@ private:
     void update_drawbuffers() const noexcept {
         std::array<GLenum, MAX_ATTACH_COLOR> attachment; // NOLINT：后面会初始化
         for (GLenum i = 0; i < MAX_ATTACH_COLOR; i++) {
-            attachment[i] = attached_color_texture[i] ? GL_COLOR_ATTACHMENT0 + i : GL_NONE;
+            attachment[i] = has_color_buffer(i) ? GL_COLOR_ATTACHMENT0 + i : GL_NONE;
         }
         glNamedFramebufferDrawBuffers(id, MAX_ATTACH_COLOR, attachment.data());
     }

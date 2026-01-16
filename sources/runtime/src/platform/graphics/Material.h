@@ -54,6 +54,15 @@ public:
     void set_pipeline_setting(const std::string &name, PipelineSettingParamType value);
 
     void set_param(const std::string &name, const MaterialParameter &value);
+    MaterialParameter get_param(const std::string &name) const noexcept {
+        if (parameters.contains(name)) {
+            return parameters.at(name);
+        } else {
+            const auto &uber_shader_fields = uber_shader->per_material_block().fields;
+            auto iter = uber_shader_fields.find(name);
+            return iter != uber_shader_fields.end() ? iter->second.type_and_default_value : MaterialParameter();
+        }
+    }
 
     void set_external_buffer(const std::string &name, const Ref<GLBuffer> &buffer) {
         GN_ASSERT(buffer);

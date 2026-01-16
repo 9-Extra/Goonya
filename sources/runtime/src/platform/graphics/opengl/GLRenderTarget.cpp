@@ -2,18 +2,34 @@
 #include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "platform/graphics/opengl/GLTexture.h"
+#include "runtime/GAssert.h"
 
 #include <spdlog/details/circular_q.h>
 #include <variant>
 
 namespace Goonya {
 
+// ------------------------------RenderTarget------------------------------------
+void RenderTarget::blit(Ref<RenderTarget> target, int32_t src_x, int32_t src_y, int32_t src_x1, int32_t src_y1,
+                        int32_t dst_x, int32_t dst_y, int32_t dst_x1, int32_t dst_y1, bool color, bool depth,
+                        bool stencil, bool linear_filter) {
+    GN_ASSERT(target);
+    GLbitfield mask = 0;
+    if (color) {
+        mask |= GL_COLOR_BUFFER_BIT;
+    }
+    if (depth) {
+        mask |= GL_DEPTH_BUFFER_BIT;
+    }
+    if (stencil) {
+        mask |= GL_STENCIL_BUFFER_BIT;
+    }
+    glBlitNamedFramebuffer(get_id(), target->get_id(), src_x, src_y, src_x1, src_y1, dst_x, dst_y, dst_x1, dst_y1, mask,
+                           linear_filter ? GL_LINEAR : GL_NEAREST);
+}
+
 // --------------------------GLRenderTargetScreen------------------------------------
-void GLRenderTargetScreen::bind_draw() const {
-    // 在绘制到屏幕上时，Y轴不需要翻转，以顺时针为正面
-    glFrontFace(GL_CW);
-    glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-};
+void GLRenderTargetScreen::bind_draw() const { glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0); };
 void GLRenderTargetScreen::bind_read() const { glBindFramebuffer(GL_READ_FRAMEBUFFER, 0); };
 
 // --------------------------GLFrameBuffer------------------------------------
@@ -26,8 +42,6 @@ void GLFrameBuffer::bind_read() const {
 }
 // 忽略glDrawBuffers的再次重定向，在绑定时直接将所有关联的颜色缓冲按照attachment用作渲染目标
 void GLFrameBuffer::bind_draw() const {
-    // 在绘制到纹理上时，Y轴翻转（由透视投影矩阵完成），顶点环绕方向也反向了，所以改成逆时针
-    glFrontFace(GL_CCW);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, id);
     update_drawbuffers();
 }
@@ -48,9 +62,14 @@ void GLFrameBuffer::attach_color_texture_layer(uint32_t location, Ref<GLTexture>
 
 void GLFrameBuffer::detach_color_texture(uint32_t location) noexcept {
     glNamedFramebufferTexture(id, GL_COLOR_ATTACHMENT0 + location, 0, 0);
-    attached_color_texture[location] = nullptr;
+    attached_color_texture[location] = std::monostate();
 };
 
+void GLFrameBuffer::set_color_renderbuffer(uint32_t location, TextureStorageFormat format) {
+    Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
+    glNamedFramebufferRenderbuffer(id, GL_COLOR_ATTACHMENT0 + location, GL_RENDERBUFFER, renderbuffer->get_id());
+    attached_color_texture[location] = renderbuffer;
+}
 // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
 void GLFrameBuffer::set_depth_texture(Ref<GLTexture> texture, int32_t level) {
     glNamedFramebufferTexture(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level);
@@ -60,7 +79,7 @@ void GLFrameBuffer::set_depth_texture_layer(Ref<GLTexture> texture, int32_t laye
     glNamedFramebufferTextureLayer(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     depth_buffer = texture;
 }
-void GLFrameBuffer::set_depth_renderbuffer(RenderBufferPixelFormat format) {
+void GLFrameBuffer::set_depth_renderbuffer(DepthStencilPixelFormat format) {
     GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
@@ -77,7 +96,7 @@ void GLFrameBuffer::set_stencil_texture_layer(Ref<GLTexture> texture, int32_t la
     glNamedFramebufferTextureLayer(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_stencil_renderbuffer(RenderBufferPixelFormat format) {
+void GLFrameBuffer::set_stencil_renderbuffer(DepthStencilPixelFormat format) {
     GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
@@ -97,7 +116,7 @@ void GLFrameBuffer::set_depth_stencil_texture_layer(Ref<GLTexture> texture, int3
     depth_buffer = texture;
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_depth_stencil_renderbuffer(RenderBufferPixelFormat format) {
+void GLFrameBuffer::set_depth_stencil_renderbuffer(DepthStencilPixelFormat format) {
     GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
@@ -141,5 +160,4 @@ bool GLFrameBuffer::check_status() const noexcept {
     }
     return false;
 }
-
 } // namespace Goonya
