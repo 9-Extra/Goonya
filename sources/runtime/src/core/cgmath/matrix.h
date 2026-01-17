@@ -1,7 +1,6 @@
 #pragma once
 
 #include "quaternion.h"
-#include "runtime/GAssert.h"
 #include "vector.h"
 
 #include <cstddef>

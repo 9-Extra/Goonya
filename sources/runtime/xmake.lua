@@ -7,26 +7,35 @@ target("GRuntime")
     
     add_packages("glfw")
     add_packages("imgui", "spdlog", "jsoncpp", "reflect-cpp", {public=true})
-    if is_plat("linux") then
-        add_syslinks("stdc++exp") -- 用于支持stackstrace
-    end 
     add_includedirs("include", {public = true})
 
 -- 测试
+target("deps_for_test")
+    set_kind("static")
+    add_files("src/core/log/*.cpp")
+    add_includedirs("src", "include", {public = true})
+    add_packages("gtest", "spdlog", {public = true})
+
 target("test_math")
     set_kind("binary")
     add_tests("default")
     set_default(false)
     add_files("test/math.cpp")
-    add_includedirs("src", "include")
-    add_packages("gtest")
+    add_deps("deps_for_test")
 
 target("test_gobject")
     set_kind("binary")
     add_tests("default")
     set_default(false)
-    add_files("test/GObject.cpp", "src/function/world/GObject.cpp", "src/core/log/*.cpp")
-    add_includedirs("src", "include")
-    add_packages("gtest", "spdlog")
+    add_files("test/GObject.cpp", "src/function/world/GObject.cpp")
+    add_deps("deps_for_test")
+
+target("test_sparse_set")
+    set_kind("binary")
+    set_warnings("none")
+    add_tests("default")
+    set_default(false)
+    add_files("test/sparse_set.cpp")
+    add_deps("deps_for_test")
 
 

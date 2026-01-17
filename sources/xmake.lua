@@ -7,4 +7,8 @@ add_requires("jsoncpp")
 add_requires("reflect-cpp")
 add_requires("gtest")
 
+if is_plat("linux") then
+    add_syslinks("stdc++exp") -- 用于支持stackstrace
+end 
+
 includes("runtime", "game")
