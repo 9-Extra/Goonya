@@ -10,6 +10,7 @@
 #include <array>
 #include <glad/glad.h>
 #include <tuple>
+#include <utility>
 #include <variant>
 
 namespace Goonya {
@@ -60,6 +61,11 @@ public:
     void blit(Ref<RenderTarget> target, int32_t src_x, int32_t src_y, int32_t src_x1, int32_t src_y1, int32_t dst_x,
               int32_t dst_y, int32_t dst_x1, int32_t dst_y1, bool color = true, bool depth = false,
               bool stencil = false, bool linear_filter = false);
+    void blit(Ref<RenderTarget> target, bool color = true, bool depth = false, bool stencil = false,
+              bool linear_filter = false) {
+        auto [w, h] = get_size();
+        blit(std::move(target), 0, 0, w, h, 0, 0, w, h, color, depth, stencil, linear_filter);
+    }
 
     virtual bool check_status() const noexcept = 0;
 

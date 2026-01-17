@@ -3,6 +3,7 @@
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/Renderer.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
 #include "platform/graphics/Graphics.h"
@@ -21,13 +22,13 @@ public:
 
     void on_register() override {
         GN_ASSERT(get_owner() != nullptr);
-        RenderScene *scene = &get_owner()->get_world()->main_scene();
-        pointlight_handle = scene->pointlights.emplace(get_owner()->get_local_transform().position, color, radius);
+        RenderScene &scene = renderer.scene_set[get_owner()->get_world()->main_scene()];
+        pointlight_handle = scene.pointlights.emplace(get_owner()->get_local_transform().position, color, radius);
     }
 
     void on_unregister() override {
-        RenderScene *scene = &get_owner()->get_world()->main_scene();
-        scene->pointlights.erase(pointlight_handle);
+        RenderScene &scene = renderer.scene_set[get_owner()->get_world()->main_scene()];
+        scene.pointlights.erase(pointlight_handle);
     }
 
     void on_update(ComponentUpdateFlag flag) override {

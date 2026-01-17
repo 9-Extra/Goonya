@@ -1,6 +1,7 @@
 #include "imgui_module.h"
 
 #include "platform/display/display.h"
+#include "platform/graphics/Graphics.h"
 #include "runtime/GAssert.h"
 
 #include <imgui.h>
@@ -22,7 +23,10 @@ void new_frame() {
     ImGui_ImplGlfw_NewFrame();
     ImGui_ImplOpenGL3_NewFrame();
 }
-void render() { ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData()); }
+void render() {
+    GL.get_rendertarget_screen()->bind_draw();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+}
 
 void drop() {
     if (!initialized) {

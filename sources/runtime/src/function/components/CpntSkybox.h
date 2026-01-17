@@ -5,6 +5,7 @@
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/Renderer.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
 
@@ -30,14 +31,14 @@ public:
 
         Skybox skybox{env_map, skybox_material, ignore_range, bbox.offset(pos)};
 
-        RenderScene *scene = &get_owner()->get_world()->main_scene();
-        skybox_proxy = scene->skyboxs.emplace(std::move(skybox));
+        RenderScene &scene = renderer.scene_set[get_owner()->get_world()->main_scene()];
+        skybox_proxy = scene.skyboxs.emplace(std::move(skybox));
         // scene->skyboxs.erase(skybox_proxy);
     }
 
     void on_unregister() override {
-        RenderScene *scene = &get_owner()->get_world()->main_scene();
-        scene->skyboxs.erase(skybox_proxy);
+        RenderScene &scene = renderer.scene_set[get_owner()->get_world()->main_scene()];
+        scene.skyboxs.erase(skybox_proxy);
     }
 
     void on_update(ComponentUpdateFlag flag) override {

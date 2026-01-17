@@ -30,12 +30,18 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
             return; // 当前版本较旧，跳过
         }
         section->version = version; // 更新版本号
+
+        RenderScene *scene = Goonya::renderer.get_scene(render_scene);
+        if (scene == nullptr) {
+            return;
+        }
+
         if (result.indices.size() == 0) {
             // 对于没有东西需要渲染的区块，则其mesh_proxy都不需要存在
             if (section->mesh_proxy) {
-                auto iter = render_scene.mesh_proxys.find(section->mesh_proxy);
-                GN_ASSERT(iter != render_scene.mesh_proxys.end());
-                render_scene.mesh_proxys.erase(iter);
+                auto iter = scene->mesh_proxys.find(section->mesh_proxy);
+                GN_ASSERT(iter != scene->mesh_proxys.end());
+                scene->mesh_proxys.erase(iter);
                 section->mesh_proxy = nullptr;
             }
             return;
@@ -69,7 +75,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
 
             section->mesh_proxy = proxy;
 
-            render_scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
+            scene->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
         } else {
             MeshRenderProxy *proxy = section->mesh_proxy;
             proxy->mesh = updated_mesh;
@@ -91,7 +97,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
     is_dirty = false;
 }
 
-LevelRenderer::LevelRenderer(RenderScene &render_scene) : render_scene(render_scene) {
+LevelRenderer::LevelRenderer(Goonya::Handle<RenderScene> render_scene) : render_scene(render_scene) {
     Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(TERRAIN_SHADER_NAME).get();
     terrain_material = create_ref<Material>(shader);
     terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());

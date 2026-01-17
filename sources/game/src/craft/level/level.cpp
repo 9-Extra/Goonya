@@ -11,12 +11,14 @@
 #include "craft/level/RayCast.h"
 #include "craft/level/chunk.h"
 #include "craft/model_manager.h"
+#include "function/renderer/Renderer.h"
 #include "function/world/World.h"
 
 namespace Craft {
 
 Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player)
-    : level_renderer(world->main_scene()), player(player), wire_frame(world->main_scene()) {
+    : level_renderer(world->main_scene()), player(player),
+      wire_frame(*Goonya::renderer.get_scene(world->main_scene())) {
     GN_ASSERT(world != nullptr);
 }
 

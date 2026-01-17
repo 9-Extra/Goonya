@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/sparse_set.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/RenderScene.h"
 #include "function/renderer/passes/GeometryPass.h"
@@ -15,24 +16,20 @@ namespace Goonya {
 class Renderer final {
 public:
     std::vector<std::unique_ptr<CameraRenderProxy>> camera_set; // 所有的相机
-    std::vector<std::unique_ptr<RenderScene>> scene_set;
+    SparseSet<RenderScene> scene_set;
 
 private:
     // passes
     std::unique_ptr<GeometryPass> geometry_pass;
     std::unique_ptr<SkyBoxPass> skybox_pass;
 
+    Ref<GLFrameBuffer> replace_render_target[2]; // 替换渲染目标，用于渲染到屏幕，两个目标用于PingPong
+
 public:
-    RenderScene *create_scene() {
-        RenderScene *scene = new RenderScene();
-        scene_set.emplace_back(scene);
-        return scene;
-    }
-    void drop_scene(RenderScene *scene) {
-        auto iter = std::ranges::find_if(scene_set, [scene](auto &&a) { return a.get() == scene; });
-        GN_ASSERT(iter != scene_set.end());
-        scene_set.erase(iter);
-    }
+    Handle<RenderScene> create_scene() { return scene_set.emplace(); }
+    void drop_scene(Handle<RenderScene> handle) { scene_set.remove(handle); }
+
+    RenderScene *get_scene(Handle<RenderScene> handle) { return scene_set.get_or_null(handle); }
     CameraRenderProxy *create_camera() {
         CameraRenderProxy *camera = new CameraRenderProxy();
         camera_set.emplace_back(camera);

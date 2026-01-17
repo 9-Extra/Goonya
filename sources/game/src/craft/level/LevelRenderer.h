@@ -1,11 +1,13 @@
 #pragma once
 
 #include "core/RefCount.h"
+#include "core/sparse_set.h"
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/Renderer.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
 
@@ -100,10 +102,10 @@ public:
     uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
     bool is_dirty = true; // 是否需要重新编译
 
-    RenderScene &render_scene;
+    Goonya::Handle<RenderScene> render_scene;
     MeshRenderProxy *mesh_proxy = nullptr;
 
-    RenderSection(Ref<Chunk> chunk, RenderScene &render_scene)
+    RenderSection(Ref<Chunk> chunk, Goonya::Handle<RenderScene> render_scene)
         : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
         GN_ASSERT(origin_chunk);
     }
@@ -114,9 +116,10 @@ public:
         }
         // 销毁mesh_proxy
         if (mesh_proxy) {
-            auto iter = render_scene.mesh_proxys.find(mesh_proxy);
-            GN_ASSERT(iter != render_scene.mesh_proxys.end());
-            render_scene.mesh_proxys.erase(iter);
+            RenderScene *scene = Goonya::renderer.get_scene(render_scene);
+            auto iter = scene->mesh_proxys.find(mesh_proxy);
+            GN_ASSERT(iter != scene->mesh_proxys.end());
+            scene->mesh_proxys.erase(iter);
         }
     }
 
@@ -128,12 +131,12 @@ public:
     Ref<Material> terrain_material;
 
 private:
-    RenderScene &render_scene;
+    Goonya::Handle<RenderScene> render_scene;
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块
 
     std::vector<RenderSection *> visible_chunk; // 当前帧可见的区块
 public:
-    explicit LevelRenderer(RenderScene &render_scene);
+    explicit LevelRenderer(Goonya::Handle<RenderScene> render_scene);
     ~LevelRenderer() {
         render_chunks.clear(); // 提前销毁render_chunks，保证所有ComplieTask已结束
     }

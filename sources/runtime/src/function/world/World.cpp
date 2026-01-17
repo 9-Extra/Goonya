@@ -24,7 +24,7 @@ void TickFunction::unregister_ticker() noexcept {
 TickFunction::~TickFunction() { unregister_ticker(); }
 
 // -------------------------World-------------------------------
-World::World() : _main_scene(*renderer.create_scene()) {
+World::World() : _main_scene(renderer.create_scene()) {
     root = std::make_shared<GObject>("__root__");
     root->set_world(this);
 }
@@ -32,7 +32,7 @@ World::~World() {
     root->set_world(nullptr);
     root.reset();
     tick_count = 0;
-    renderer.drop_scene(&_main_scene);
+    renderer.drop_scene(_main_scene);
 }
 
 void World::tick() {

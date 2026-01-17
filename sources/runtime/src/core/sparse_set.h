@@ -11,8 +11,8 @@ namespace Goonya {
 
 template <typename T>
 struct Handle {
-    uint32_t index;   // sparse索引
-    uint32_t version; // 版本号
+    uint32_t index = std::numeric_limits<uint32_t>::max();   // sparse索引
+    uint32_t version = std::numeric_limits<uint32_t>::max(); // 版本号
 };
 template <typename T>
 class SparseSet {

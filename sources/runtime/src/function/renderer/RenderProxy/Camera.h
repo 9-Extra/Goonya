@@ -1,6 +1,7 @@
 #pragma once
 
 #include "core/cgmath/cgmath.h"
+#include "core/sparse_set.h"
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
@@ -18,7 +19,7 @@ public:
 
     Vector4f rect = {0, 0, 1, 1};    // 按照比例计算，其实是[x, y, w, h]
     Ref<RenderTarget> render_target; // 相机绘制的目标
-    RenderScene *scene = nullptr;    // 绘制的场景
+    Handle<RenderScene> scene;       // 绘制的场景
 
 public:
     CameraRenderProxy() = default;
@@ -26,12 +27,12 @@ public:
     Vector3f get_position() const noexcept { return camera_pos; }
 
     Matrix4f get_view_matrix() const noexcept { return view_matrix; }
-    Matrix4f get_perspective_matrix(float ratio) const noexcept {
+    Matrix4f get_projection_matrix(float ratio) const noexcept {
         return GL.compute_perspective_matrix(ratio, fov, near_z, far_z);
     }
-    Matrix4f get_view_perspective_matrix(float ratio) const noexcept {
+    Matrix4f get_view_projection_matrix(float ratio) const noexcept {
         // 先转换到相机坐标系，再投影
-        return get_view_matrix() * get_perspective_matrix(ratio);
+        return get_view_matrix() * get_projection_matrix(ratio);
     }
 
     Matrix4f get_skybox_view_perspective_matrix(float ratio) const noexcept {
@@ -40,7 +41,7 @@ public:
         view[3, 0] = 0;
         view[3, 1] = 0;
         view[3, 2] = 0;
-        return view * get_perspective_matrix(ratio);
+        return view * get_projection_matrix(ratio);
     }
 };
 

@@ -4,6 +4,7 @@
 #include "core/cgmath/cgmath.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/Renderer.h"
 #include "function/renderer/RendererBasic.h"
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
@@ -41,7 +42,7 @@ public:
         for (SubMesh &sub_mesh : mesh->submeshes) {
             mesh_proxy->aabbs.push_back(sub_mesh.aabb.transformed(owner.get_world_model_matrix()));
         }
-        RenderScene &scene = get_owner()->get_world()->main_scene();
+        RenderScene &scene = renderer.scene_set[get_owner()->get_world()->main_scene()];
         scene.mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{mesh_proxy});
     }
 
@@ -79,8 +80,9 @@ public:
             return; // 未注册
         }
 
-        RenderScene *scene = &get_owner()->get_world()->main_scene();
-        auto &container = scene->mesh_proxys;
+        RenderScene &scene = renderer.scene_set[get_owner()->get_world()->main_scene()];
+
+        auto &container = scene.mesh_proxys;
         auto iter = container.find(mesh_proxy);
         GN_ASSERT(iter != container.end());
         container.erase(iter);

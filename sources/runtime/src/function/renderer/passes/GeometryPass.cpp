@@ -4,6 +4,7 @@
 #include "core/cgmath/transform.h"
 #include "core/log/Log.h"
 #include "function/renderer/RenderScene.h"
+#include "function/renderer/Renderer.h"
 #include "function/renderer/passes/UniformBufferStructure.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/Material.h"
@@ -14,7 +15,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <ranges>
 
 namespace Goonya {
 
@@ -77,10 +77,10 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
 // 一般物体渲染
 void GeometryPass::run(PassRenderInfo &info) {
     Vector3f camera_pos = info.camera->get_position();
-    RenderScene &scene = *info.camera->scene;
+    RenderScene &scene = renderer.scene_set[info.camera->scene];
 
     const Matrix4f view_perspective =
-        info.camera->get_view_perspective_matrix(info.screen_size[0] / info.screen_size[1]);
+        info.camera->get_view_projection_matrix(info.screen_size[0] / info.screen_size[1]);
 
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(PER_FRAME_UNIFORM_BINDING);

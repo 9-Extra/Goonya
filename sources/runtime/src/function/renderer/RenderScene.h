@@ -25,15 +25,12 @@ public:
     std::unordered_set<std::unique_ptr<MeshRenderProxy>, PointerHash, PointerEqual> mesh_proxys; // 要渲染的网格
 
 public:
+    RenderScene() = default;
     void clear() /*NOLINT*/ {
         GN_ASSERT(pointlights.empty());
         GN_ASSERT(mesh_proxys.empty());
         GN_ASSERT(skyboxs.empty());
     }
-
-private:
-    friend class Renderer;
-    RenderScene() = default;
 };
 
 } // namespace Goonya
