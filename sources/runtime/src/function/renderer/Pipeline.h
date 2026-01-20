@@ -4,6 +4,7 @@
 #include "function/renderer/RenderScene.h"
 #include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
+#include "platform/graphics/opengl/GLRenderTarget.h"
 
 namespace Goonya {
 
@@ -54,6 +55,12 @@ private:
     Ref<GLMesh> postprocess_quad_mesh;
     Ref<Material> postprocess_material;
 
+    Ref<Material> guassian_blur_material_horizontal;
+    Ref<Material> guassian_blur_material_vertical;
+    Ref<Material> bright_extract_material;
+    Ref<Material> bloom_material;
+    Ref<GLFrameBuffer> bloom_render_target[2];
+
 public:
     Pipeline();
     virtual ~Pipeline() = default;
@@ -66,6 +73,7 @@ private:
     void draw_geometry(RenderContext &context);
     void draw_skybox(RenderContext &context);
     void draw_postprocess(RenderContext &context);
+    void draw_guassian_blur(RenderContext &context);
 };
 
 } // namespace Goonya

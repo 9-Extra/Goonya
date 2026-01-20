@@ -1,10 +1,14 @@
 {
     "type": "UberShader",
-    "name": "basic",
+    "name": "extract_bright",
     "content": {
         "sources": {
-            "vertex_shader": "basic.vert",
-            "pixel_shader": "basic.frag"
+            "vertex_shader": "extract_bright.vert",
+            "pixel_shader": "extract_bright.frag"
+        },
+        "parameters": {
+            "threshold": "f32(0.5f)",
+            "intensity": "f32(2.0f)"
         },
         "pipeline_setting": {
             "_depth_test": 6,

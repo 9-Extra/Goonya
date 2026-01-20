@@ -77,16 +77,28 @@ Pipeline::Pipeline() {
     }
     postprocess_material = create_ref<Material>(postprocess_shader.get());
 
-    VertexLayout layout = VertexLayoutBuilder().build();
-    postprocess_quad_mesh = create_ref<GLMesh>(layout);
-    // postprocess_quad_mesh->set_vertices(0, {});
-    // postprocess_quad_mesh->set_indices({});
-    postprocess_quad_mesh->submeshes.emplace_back(SubMesh{
-        .start_index = 0,
-        .index_count = 4,
-        .base_vertex_offset = 0,
-        .topology = Topology::TRIANGLE,
-    });
+    postprocess_quad_mesh = create_ref<GLMesh>(VertexLayoutBuilder().build()); // 空的网格体
+
+    guassian_blur_material_horizontal =
+        create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/guass"));
+    if (!guassian_blur_material_horizontal) {
+        throw RuntimeError("无法加载高斯模糊水平着色器");
+    }
+    guassian_blur_material_horizontal->set_local_variant_key("HORIZONTAL");
+    guassian_blur_material_vertical = guassian_blur_material_horizontal->clone();
+    guassian_blur_material_vertical->set_local_variant_key("VERTICAL");
+    if (!guassian_blur_material_vertical) {
+        throw RuntimeError("无法加载高斯模糊垂直着色器");
+    }
+    bright_extract_material =
+        create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/extract_bright"));
+    if (!bright_extract_material) {
+        throw RuntimeError("无法加载亮度提取着色器");
+    }
+    bloom_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/bloom"));
+    if (!bloom_material) {
+        throw RuntimeError("无法加载Bloom着色器");
+    }
 }
 
 void Pipeline::render() {
@@ -98,7 +110,7 @@ void Pipeline::render() {
             rt = create_ref<GLFrameBuffer>(std::make_tuple(w, h));
             rt->set_depth_stencil_renderbuffer(DepthStencilPixelFormat::DEPTH24_STENCIL8);
             Ref<GLTexture> color_texture =
-                create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f8, std::make_tuple(w, h, 0));
+                create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16, std::make_tuple(w, h, 0));
             rt->attach_color_texture(0, color_texture);
             GN_ASSERT(rt->check_status());
         }
@@ -124,7 +136,7 @@ void Pipeline::render() {
 
     if (is_screen_painted) {
         // 将临时渲染目标的内容绘制到屏幕，因为在绘制时Y轴是倒的，所以这里需要翻转Y轴
-        replace_render_target[0]->blit(GL.get_rendertarget_screen(), 0, 0, w, h, 0, h, w, 0, true, true, true);
+        replace_render_target[0]->blit(GL.get_rendertarget_screen(), 0, 0, w, h, 0, h, w, 0, true, false, false);
     } else {
         LOG_ERROR("没有相机绑定到屏幕！");
     }
@@ -302,19 +314,54 @@ void Pipeline::draw_postprocess(RenderContext &context) {
         return;
     }
 
-    replace_render_target[1]->bind_draw();
-    GL.clear(true, true, true);
-
-    // replace_render_target[0]->blit(replace_render_target[1]);
-
-    Ref<GLTexture> source_texture = replace_render_target[0]->get_color_texture(0);
-    postprocess_material->set_texture("source", source_texture);
-    postprocess_material->bind();
-    GN_ASSERT_MSG(source_texture, "未获取到源纹理");
+    const auto width_height = GL.get_rendertarget_screen()->get_size();
     postprocess_quad_mesh->bind();
+
+    if (renderer.draw_bloom) {
+        if (!bloom_render_target[0] || bloom_render_target[0]->get_size() != width_height) {
+            for (auto &target : bloom_render_target) {
+                target = create_ref<GLFrameBuffer>(width_height);
+                Ref<GLTexture> color_texture =
+                    create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                          std::make_tuple(std::get<0>(width_height), std::get<1>(width_height), 0));
+                color_texture->set_warp_mode(TextureWarpMode::ClAMP);
+                color_texture->set_filter_mode(TextureFilterMode::BILINEAR);
+                target->attach_color_texture(0, color_texture);
+            }
+        }
+
+        bloom_render_target[0]->bind_draw();
+        bright_extract_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
+        bright_extract_material->bind();
+        GL.draw_vertices(Topology::TRIANGLE, 0, 6);
+
+        bloom_render_target[1]->bind_draw();
+        guassian_blur_material_horizontal->set_texture("source", bloom_render_target[0]->get_color_texture(0));
+        guassian_blur_material_horizontal->bind();
+        GL.draw_vertices(Topology::TRIANGLE, 0, 6);
+
+        bloom_render_target[0]->bind_draw();
+        guassian_blur_material_vertical->set_texture("source", bloom_render_target[1]->get_color_texture(0));
+        guassian_blur_material_vertical->bind();
+        GL.draw_vertices(Topology::TRIANGLE, 0, 6);
+
+        replace_render_target[1]->bind_draw();
+        bloom_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
+        bloom_material->set_texture("bloom", bloom_render_target[0]->get_color_texture(0));
+        bloom_material->bind();
+        GL.draw_vertices(Topology::TRIANGLE, 0, 6);
+
+        std::ranges::swap(replace_render_target[0], replace_render_target[1]);
+    }
+
+    replace_render_target[1]->bind_draw();
+    postprocess_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
+    postprocess_material->bind();
     GL.draw_vertices(Topology::TRIANGLE, 0, 6);
 
     std::ranges::swap(replace_render_target[0], replace_render_target[1]);
 }
+
+void Pipeline::draw_guassian_blur(RenderContext &context) {}
 
 } // namespace Goonya

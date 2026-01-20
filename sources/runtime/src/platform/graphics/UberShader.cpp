@@ -142,6 +142,19 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->material_parameters = introspector.get_per_material_uniform_info();
     this->uniform_binding_info = introspector.get_uniform_binding_info();
     // 不同变体的纹理单元绑定可能不同，需要在每次编译时手动设置，保证每个变体的纹理单元绑定是一致的
+
+    // 遍历所有参数，将.meta中定义的参数值赋值给材质参数
+    for (auto &&[name, field] : material_parameters.fields) {
+        auto iter = desc.parameters.find(name);
+        if (iter != desc.parameters.end()) {
+            if (field.type_and_default_value.index() != iter->second.index()) {
+                throw RuntimeError(std::format("参数\"{}\"在.meta中定义为了不同的类型", name));
+            }
+            field.type_and_default_value = iter->second;
+        } else {
+            LOG_INFO("参数\"{}\"在.meta中未定义，将使用默认值", name);
+        }
+    }
 }
 
 Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {

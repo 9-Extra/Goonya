@@ -41,6 +41,7 @@ protected:
 public:
     // Material在创建是就对应特定的UberShader，且之后不能更改
     explicit Material(UberShader *uber_shader);
+    explicit Material(Ref<UberShader> uber_shader) : Material(uber_shader.get()) {}
     ~Material() = default;
 
     void bind();
@@ -75,6 +76,13 @@ public:
         }
     }
 
+    /**
+     * @brief 设置材质的纹理
+     *
+     * @param name 纹理名称
+     * @param texture 纹理对象
+     * @note 必须在bind()之前调用
+     */
     void set_texture(const std::string &name, const Ref<GLTexture> &texture) {
         // texture slot可能被优化掉了
         // 允许传入texture为空，表示使用默认纹理。但this->textures不应包含空指针

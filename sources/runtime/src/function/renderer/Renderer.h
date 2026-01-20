@@ -19,6 +19,8 @@ public:
     std::vector<std::unique_ptr<CameraRenderProxy>> camera_set; // 所有的相机
     SparseSet<RenderScene> scene_set;
 
+    bool draw_bloom = true;
+
 private:
     std::unique_ptr<Pipeline> render_pipeline;
 

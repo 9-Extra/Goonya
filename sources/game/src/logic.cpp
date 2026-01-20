@@ -79,6 +79,10 @@ void MoveSystem::handle_keyboard(float delta) const {
         }
     }
 
+    if (Goonya::Input::is_key_click('B')) {
+        renderer.draw_bloom = !renderer.draw_bloom;
+    }
+
     if (Goonya::Input::is_key_click(Input::KeyCode::ESCAPE)) {
         EventBus::dispatch_event(Events::EngineStop{});
     }
