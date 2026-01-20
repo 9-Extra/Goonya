@@ -1,0 +1,17 @@
+{
+    "type": "UberShader",
+    "name": "pbr",
+    "content": {
+        "sources": {
+            "vertex_shader": "vs.vert",
+            "pixel_shader": "ps.frag"
+        },
+        "pipeline_setting": {
+            "_depth_test": 1,
+            "_cull_mode": 3
+        },
+        "samplers": {
+            "source": "buildin:missing_texture"
+        }
+    }
+}

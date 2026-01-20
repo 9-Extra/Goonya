@@ -17,5 +17,5 @@ void main()
     //vec3 result_color = texture(skybox_color_texture, vec3(0, -1, 0)).xyz;
     //vec3 result_color = abs(fs_in.world_pos);
     //vec3 result_color = normalize(abs(vec3(0, 0, 1)));
-    out_color = vec4(pow(result_color, vec3(1 / 2.2)), 1.0f);
+    out_color = vec4(result_color, 1.0f);
 }

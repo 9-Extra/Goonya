@@ -277,6 +277,11 @@ static GLenum Topology2OpenGL(Topology t) noexcept {
         return GL_INVALID_VALUE;
     }
 }
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void OpenGLGraphicsAPI::draw_vertices(Topology topology, int32_t base_vertex, int32_t count) const {
+    ASSERT_RENDER_THREAD();
+    glDrawArrays(Topology2OpenGL(Topology::TRIANGLE), base_vertex, count);
+}
 
 //  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void OpenGLGraphicsAPI::draw_submesh(const SubMesh &submesh) const {

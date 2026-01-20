@@ -112,6 +112,6 @@ void main()
 
     vec3 linear_color = color.rgb * light;
 
-    out_color = vec4(pow(linear_color, vec3(1 / 2.2)), 1.0f);
+    out_color = vec4(linear_color, 1.0f);
     // out_color = vec4(abs(surface.normal), 1);
 }

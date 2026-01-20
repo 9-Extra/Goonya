@@ -36,6 +36,7 @@ public:
     void set_clear_parameter(std::optional<Color> color, std::optional<float> depth = std::nullopt,
                              std::optional<int> stencil = std::nullopt) noexcept;
     void clear(bool color, bool depth, bool stencil) const noexcept;
+    void draw_vertices(Topology topology, int32_t base_vertex, int32_t count) const;
     void draw_submesh(const SubMesh &submesh) const;
     void draw_multidraw(Topology topology, int32_t *count_array, size_t *index_offset_array, int32_t *base_vertex_array,
                         int32_t count) const;

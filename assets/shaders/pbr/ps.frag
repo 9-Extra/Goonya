@@ -199,11 +199,6 @@ vec3 caculate_normal(){
     return world_normal;
 }
 
-vec4 post_process(vec3 color_in){
-    color_in = clamp(color_in, 0.0f, 1.0f); // 钳制到[0, 1]范围内
-    return vec4(pow(color_in, vec3(1 / 2.2)), 1.0f);
-}
-
 void main()
 {
     const vec3 dielectric_specular = vec3(0.04);//一般电解质的基础反射率
@@ -260,6 +255,6 @@ void main()
     result_color = mix(fog_color, result_color, fog_factor);
 # endif
     
-    out_color = post_process(result_color);
+    out_color = vec4(result_color, 1.0f);
     // out_color = vec4(abs(N), 1);
 }

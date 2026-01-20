@@ -16,7 +16,10 @@ inline GLsizei max_mipmap_level(size_t width, size_t height, size_t depth) {
     return static_cast<GLsizei>(std::log2(std::max(std::max(width, height), depth))) + 1;
 }
 
-GLTexture::GLTexture(const TextureCreateDesc &desc) : type(desc.type), format(desc.format), shape(desc.shape) {
+GLTexture::GLTexture(const TextureCreateDesc &desc) : GLTexture(desc.type, desc.format, desc.shape) {}
+
+GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape)
+    : type(type), format(format), shape(shape) {
     const auto &[width, height, depth] = this->shape;
     const GLenum gl_format = texture_format_to_gl_format(this->format);
 

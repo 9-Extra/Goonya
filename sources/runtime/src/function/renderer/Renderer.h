@@ -3,8 +3,6 @@
 #include "core/sparse_set.h"
 #include "function/renderer/RenderProxy/Camera.h"
 #include "function/renderer/RenderScene.h"
-#include "function/renderer/passes/GeometryPass.h"
-#include "function/renderer/passes/SkyboxPass.h"
 
 #include <algorithm>
 
@@ -12,6 +10,9 @@
 #include <vector>
 
 namespace Goonya {
+
+class Pipeline;
+
 // 渲染管理器，包含所有渲染需要的数据供pass使用, 在world tick时各种组件会将渲染数据写到这里
 class Renderer final {
 public:
@@ -19,11 +20,7 @@ public:
     SparseSet<RenderScene> scene_set;
 
 private:
-    // passes
-    std::unique_ptr<GeometryPass> geometry_pass;
-    std::unique_ptr<SkyBoxPass> skybox_pass;
-
-    Ref<GLFrameBuffer> replace_render_target[2]; // 替换渲染目标，用于渲染到屏幕，两个目标用于PingPong
+    std::unique_ptr<Pipeline> render_pipeline;
 
 public:
     Handle<RenderScene> create_scene() { return scene_set.emplace(); }
