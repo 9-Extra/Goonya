@@ -72,7 +72,8 @@ private:
     void draw_geometry(RenderContext &context);
     void draw_skybox(RenderContext &context);
     void draw_postprocess(RenderContext &context);
-    void draw_guassian_blur(RenderContext &context);
+
+    void screen_paint(Ref<GLFrameBuffer> dst, Ref<GLFrameBuffer> src, Ref<Material> material);
 };
 
 } // namespace Goonya

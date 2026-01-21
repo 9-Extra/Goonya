@@ -24,7 +24,8 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
         throw RuntimeError("不能创建格式为UNKNOWN纹理");
     }
     if (mipmap_level == 0) {
-        throw RuntimeError("不能创建mipmap_level为0的纹理");
+        throw RuntimeError("不能创建mipmap_level为0的纹理，如果不需要mipmap，请将mipmap_"
+                           "level设置为1。如果需要最大的mipmap_level，请将mipmap_level设置为255");
     }
 
     switch (this->type) {

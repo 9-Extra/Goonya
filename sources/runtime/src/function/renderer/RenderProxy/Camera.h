@@ -17,7 +17,7 @@ public:
     float fov = 1.57f;
     float near_z = 1000.0f, far_z = 1.0f;
 
-    Vector4f rect = {0, 0, 1, 1};    // 按照比例计算，其实是[x, y, w, h]
+    Vector4f rect = {0, 0, 1, 1};    // 相机绘制的区域[x, y, width, height]，按照比例计算
     Ref<RenderTarget> render_target; // 相机绘制的目标
     Handle<RenderScene> scene;       // 绘制的场景
 
