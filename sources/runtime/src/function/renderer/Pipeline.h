@@ -58,7 +58,6 @@ private:
     Ref<Material> guassian_blur_material_horizontal;
     Ref<Material> guassian_blur_material_vertical;
     Ref<Material> bright_extract_material;
-    Ref<Material> bloom_material;
     Ref<GLFrameBuffer> bloom_render_target[2];
 
 public:

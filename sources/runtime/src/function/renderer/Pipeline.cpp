@@ -95,10 +95,6 @@ Pipeline::Pipeline() {
     if (!bright_extract_material) {
         throw RuntimeError("无法加载亮度提取着色器");
     }
-    bloom_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/bloom"));
-    if (!bloom_material) {
-        throw RuntimeError("无法加载Bloom着色器");
-    }
 }
 
 void Pipeline::render() {
@@ -109,8 +105,8 @@ void Pipeline::render() {
         if (!rt || rt->get_size() != std::make_tuple(w, h)) {
             rt = create_ref<GLFrameBuffer>(std::make_tuple(w, h));
             rt->set_depth_stencil_renderbuffer(DepthStencilPixelFormat::DEPTH24_STENCIL8);
-            Ref<GLTexture> color_texture =
-                create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16, std::make_tuple(w, h, 0));
+            Ref<GLTexture> color_texture = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                                                 std::make_tuple(w, h, 0), 1);
             rt->attach_color_texture(0, color_texture);
             GN_ASSERT(rt->check_status());
         }
@@ -310,10 +306,6 @@ void Pipeline::draw_skybox(RenderContext &context) {
 
 void Pipeline::draw_postprocess(RenderContext &context) {
     // 后处理
-    if (!postprocess_material) {
-        return;
-    }
-
     const auto width_height = GL.get_rendertarget_screen()->get_size();
     postprocess_quad_mesh->bind();
 
@@ -323,7 +315,7 @@ void Pipeline::draw_postprocess(RenderContext &context) {
                 target = create_ref<GLFrameBuffer>(width_height);
                 Ref<GLTexture> color_texture =
                     create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
-                                          std::make_tuple(std::get<0>(width_height), std::get<1>(width_height), 0));
+                                          std::make_tuple(std::get<0>(width_height), std::get<1>(width_height), 0), 1);
                 color_texture->set_warp_mode(TextureWarpMode::ClAMP);
                 color_texture->set_filter_mode(TextureFilterMode::BILINEAR);
                 target->attach_color_texture(0, color_texture);
@@ -346,20 +338,24 @@ void Pipeline::draw_postprocess(RenderContext &context) {
         GL.draw_vertices(Topology::TRIANGLE, 0, 6);
 
         replace_render_target[1]->bind_draw();
-        bloom_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
-        bloom_material->set_texture("bloom", bloom_render_target[0]->get_color_texture(0));
-        bloom_material->bind();
+        postprocess_material->set_local_variant_key("BLOOM");
+        postprocess_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
+        postprocess_material->set_texture("bloom", bloom_render_target[0]->get_color_texture(0));
+        postprocess_material->bind();
         GL.draw_vertices(Topology::TRIANGLE, 0, 6);
 
+        // 保证最终结果在replace_render_target[0]
+        std::ranges::swap(replace_render_target[0], replace_render_target[1]);
+    } else {
+        replace_render_target[1]->bind_draw();
+        postprocess_material->remove_local_variant_key("BLOOM");
+        postprocess_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
+        postprocess_material->bind();
+        GL.draw_vertices(Topology::TRIANGLE, 0, 6);
+
+        // 保证最终结果在replace_render_target[0]
         std::ranges::swap(replace_render_target[0], replace_render_target[1]);
     }
-
-    replace_render_target[1]->bind_draw();
-    postprocess_material->set_texture("source", replace_render_target[0]->get_color_texture(0));
-    postprocess_material->bind();
-    GL.draw_vertices(Topology::TRIANGLE, 0, 6);
-
-    std::ranges::swap(replace_render_target[0], replace_render_target[1]);
 }
 
 void Pipeline::draw_guassian_blur(RenderContext &context) {}

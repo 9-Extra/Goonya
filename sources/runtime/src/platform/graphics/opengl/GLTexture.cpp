@@ -3,28 +3,28 @@
 #include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
-#include <cmath>
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 
 namespace Goonya {
 
-inline GLsizei max_mipmap_level(size_t width) { return static_cast<GLsizei>(std::log2(width)) + 1; }
-inline GLsizei max_mipmap_level(size_t width, size_t height) {
-    return static_cast<GLsizei>(std::log2(std::max(width, height))) + 1;
+template <typename... Args>
+inline GLsizei max_mipmap_level(uint8_t indicate, Args... args) {
+    size_t max_size = std::max<size_t>({args...});
+    return std::min<GLsizei>(indicate, std::bit_width(max_size));
 }
-inline GLsizei max_mipmap_level(size_t width, size_t height, size_t depth) {
-    return static_cast<GLsizei>(std::log2(std::max(std::max(width, height), depth))) + 1;
-}
-
-GLTexture::GLTexture(const TextureCreateDesc &desc) : GLTexture(desc.type, desc.format, desc.shape) {}
-
-GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape)
+GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape,
+                     uint8_t mipmap_level)
     : type(type), format(format), shape(shape) {
     const auto &[width, height, depth] = this->shape;
     const GLenum gl_format = texture_format_to_gl_format(this->format);
 
     if (gl_format == 0) {
         throw RuntimeError("不能创建格式为UNKNOWN纹理");
+    }
+    if (mipmap_level == 0) {
+        throw RuntimeError("不能创建mipmap_level为0的纹理");
     }
 
     switch (this->type) {
@@ -34,7 +34,7 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     case TextureType::TEXTURE_1D: {
         GN_ASSERT(width != 0 && height == 0 && depth == 0);
         glCreateTextures(GL_TEXTURE_1D, 1, &id);
-        glTextureStorage1D(id, max_mipmap_level(width), gl_format, width);
+        glTextureStorage1D(id, max_mipmap_level(mipmap_level, width), gl_format, width);
         break;
     }
     case TextureType::TEXTURE_1D_ARRAY: {
@@ -44,19 +44,19 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     case TextureType::TEXTURE_2D: {
         GN_ASSERT(width != 0 && height != 0 && depth == 0);
         glCreateTextures(GL_TEXTURE_2D, 1, &id);
-        glTextureStorage2D(id, max_mipmap_level(width, height), gl_format, width, height);
+        glTextureStorage2D(id, max_mipmap_level(mipmap_level, width, height), gl_format, width, height);
         break;
     }
     case TextureType::TEXTURE_2D_ARRAY: {
         GN_ASSERT(width != 0 && height != 0 && depth != 0);
         glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
-        glTextureStorage3D(id, max_mipmap_level(width, height), gl_format, width, height, depth);
+        glTextureStorage3D(id, max_mipmap_level(mipmap_level, width, height, depth), gl_format, width, height, depth);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP: {
         GN_ASSERT(width != 0 && height != 0 && depth == 0);
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &id);
-        glTextureStorage2D(id, max_mipmap_level(width, height), gl_format, width, height);
+        glTextureStorage2D(id, max_mipmap_level(mipmap_level, width, height), gl_format, width, height);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP_ARRAY: {
@@ -66,7 +66,7 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     case TextureType::TEXTURE_3D: {
         GN_ASSERT(width != 0 && height != 0 && depth != 0);
         glCreateTextures(GL_TEXTURE_3D, 1, &id);
-        glTextureStorage3D(id, max_mipmap_level(width, height, depth), gl_format, width, height, depth);
+        glTextureStorage3D(id, max_mipmap_level(mipmap_level, width, height, depth), gl_format, width, height, depth);
         break;
     }
     }

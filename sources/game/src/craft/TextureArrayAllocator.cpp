@@ -9,6 +9,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <tuple>
 
 namespace Craft {
 
@@ -61,10 +62,9 @@ uint32_t TextureArrayAllocator::alloc_texture(std::string_view texture_location)
 
 Ref<Goonya::GLTexture> TextureArrayAllocator::generate_texture_array() {
     size_t texture_count = texture_storage.size();
-    Goonya::TextureCreateDesc desc{.type = Goonya::TextureType::TEXTURE_2D_ARRAY,
-                                   .format = Goonya::TextureStorageFormat::RGBA_f16,
-                                   .shape = {this->width, this->height, (uint32_t)texture_count}};
-    Ref<Goonya::GLTexture> texture_array = create_ref<Goonya::GLTexture>(desc);
+    Ref<Goonya::GLTexture> texture_array =
+        create_ref<Goonya::GLTexture>(Goonya::TextureType::TEXTURE_2D_ARRAY, Goonya::TextureStorageFormat::RGBA_f16,
+                                      std::make_tuple(this->width, this->height, (uint32_t)texture_count));
     for (size_t i = 0; i < texture_count; i++) {
         texture_array->import_image(texture_storage[i], 0, 0, 0, i);
     }

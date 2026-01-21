@@ -5,6 +5,7 @@
 #include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
 #include "runtime/GoonyaException.h"
+#include <tuple>
 
 namespace Goonya {
 
@@ -52,15 +53,15 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
 
         uint32_t width = image.get_width();
         uint32_t height = image.get_height();
+        uint8_t mip_levels = texture_desc.get("mip_levels", 255).asUInt();
 
         TextureStorageFormat storage_type = GLTexture::get_proper_storage_type(image);
 
         if (storage_type == TextureStorageFormat::UNKNOWN) {
             throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_path));
         }
-        TextureCreateDesc create_desc{TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
-
-        Ref<GLTexture> texture = create_ref<GLTexture>(create_desc);
+        Ref<GLTexture> texture =
+            create_ref<GLTexture>(TextureType::TEXTURE_2D, storage_type, std::make_tuple(width, height, 0), mip_levels);
 
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
         texture->set_filter_mode(filter_mode);
@@ -89,14 +90,15 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
 
         int width = image.get_width();
         int height = image.get_height();
+        uint8_t mip_levels = cubemap_desc.get("mip_levels", 255).asUInt();
 
         TextureStorageFormat storage_type = GLTexture::get_proper_storage_type(image);
         if (storage_type == TextureStorageFormat::UNKNOWN) {
             throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_dirs[0]));
         }
-        TextureCreateDesc texture_desc{
-            TextureType::TEXTURE_CUBEMAP, storage_type, {(uint32_t)width, (uint32_t)height, 0}};
-        Ref<GLTexture> texture = create_ref<GLTexture>(texture_desc);
+        Ref<GLTexture> texture =
+            create_ref<GLTexture>(TextureType::TEXTURE_CUBEMAP, storage_type,
+                                  std::make_tuple((uint32_t)width, (uint32_t)height, 0), mip_levels);
         texture->set_filter_mode(filter_mode);
 
         texture->import_image(image, 0, 0, 0, 0);

@@ -79,11 +79,8 @@ static void init_buildin_resource() {
         uint8_t b;
     };
     {
-        Ref<GLTexture> white = create_ref<GLTexture>(TextureCreateDesc{
-            .type = TextureType::TEXTURE_2D,
-            .format = TextureStorageFormat::RGB_f16,
-            .shape = {default_texture_size, default_texture_size, 0},
-        });
+        Ref<GLTexture> white = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                                     std::make_tuple(default_texture_size, default_texture_size, 0));
         for (size_t i = 0; i < image.get_size_byte(); i++) {
             ((uint8_t *)image.get_data())[i] = 255;
         }
@@ -91,11 +88,8 @@ static void init_buildin_resource() {
         buildin->contents.emplace("white", white);
     }
     {
-        Ref<GLTexture> black = create_ref<GLTexture>(TextureCreateDesc{
-            .type = TextureType::TEXTURE_2D,
-            .format = TextureStorageFormat::RGB_f16,
-            .shape = {default_texture_size, default_texture_size, 0},
-        });
+        Ref<GLTexture> black = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                                     std::make_tuple(default_texture_size, default_texture_size, 0));
         for (size_t i = 0; i < image.get_size_byte(); i++) {
             ((uint8_t *)image.get_data())[i] = 0;
         }
@@ -103,11 +97,8 @@ static void init_buildin_resource() {
         buildin->contents.emplace("black", black);
     }
     {
-        Ref<GLTexture> normal = create_ref<GLTexture>(TextureCreateDesc{
-            .type = TextureType::TEXTURE_2D,
-            .format = TextureStorageFormat::RGB_f16,
-            .shape = {default_texture_size, default_texture_size, 0},
-        });
+        Ref<GLTexture> normal = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                                      std::make_tuple(default_texture_size, default_texture_size, 0));
         for (size_t i = 0; i < default_texture_size; i++) {
             for (size_t j = 0; j < default_texture_size; j++) {
                 Color &color_ref = ((Color *)image.get_data())[i * default_texture_size + j];
@@ -118,11 +109,8 @@ static void init_buildin_resource() {
         buildin->contents.emplace("normal", normal);
     }
     {
-        Ref<GLTexture> missing = create_ref<GLTexture>(TextureCreateDesc{
-            .type = TextureType::TEXTURE_2D,
-            .format = TextureStorageFormat::RGB_f16,
-            .shape = {default_texture_size, default_texture_size, 0},
-        });
+        Ref<GLTexture> missing = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                                       std::make_tuple(default_texture_size, default_texture_size, 0));
         for (size_t i = 0; i < default_texture_size; i++) {
             for (size_t j = 0; j < default_texture_size; j++) {
                 Color &color_ref = ((Color *)image.get_data())[i * default_texture_size + j];

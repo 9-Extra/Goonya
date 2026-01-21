@@ -11,7 +11,11 @@
             "_cull_mode": 3
         },
         "samplers": {
-            "source": "buildin:missing_texture"
-        }
+            "source": "buildin:missing_texture",
+            "bloom": "buildin:missing_texture"
+        },
+        "local_variants": [
+            ["", "BLOOM"]
+        ]
     }
 }

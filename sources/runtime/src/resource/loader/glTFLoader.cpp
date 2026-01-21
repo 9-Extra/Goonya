@@ -28,6 +28,7 @@
 #include <memory>
 #include <ranges>
 #include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -278,9 +279,9 @@ struct GlTFLoadingContext {
             if (storage_type == TextureStorageFormat::UNKNOWN) {
                 throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_path));
             }
-            TextureCreateDesc create_desc{TextureType::TEXTURE_2D, storage_type, {width, height, 0}};
 
-            Ref<GLTexture> texture = create_ref<GLTexture>(create_desc);
+            Ref<GLTexture> texture =
+                create_ref<GLTexture>(TextureType::TEXTURE_2D, storage_type, std::make_tuple(width, height, 0));
 
             TextureFilterMode filter_mode = TextureFilterMode::BILINEAR;
             // 不严格支持glTF标准

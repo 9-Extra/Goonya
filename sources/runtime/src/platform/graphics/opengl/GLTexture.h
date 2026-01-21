@@ -59,12 +59,6 @@ enum class TextureWarpMode { REPEAT, ClAMP, MIRROR };
 
 enum class TextureFilterMode { NEAREST, BILINEAR, TRILINEAR };
 
-struct TextureCreateDesc {
-    TextureType type;
-    TextureStorageFormat format;
-    std::tuple<uint32_t, uint32_t, uint32_t> shape;
-};
-
 GLenum texture_format_to_gl_format(TextureStorageFormat format);
 
 class GLTexture final : public Resource {
@@ -75,8 +69,8 @@ private:
     TextureStorageFormat format;
     std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
 public:
-    explicit GLTexture(const TextureCreateDesc &desc);
-    explicit GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape);
+    explicit GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape,
+                       uint8_t mipmap_level = 255);
     ~GLTexture() { glDeleteTextures(1, &id); }
     void bind(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
 
