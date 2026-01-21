@@ -19,7 +19,6 @@ private:
     std::shared_ptr<Goonya::GObject> lights;
     std::shared_ptr<Goonya::GObject> light1;
     std::shared_ptr<Goonya::GObject> camera;
-    std::shared_ptr<Goonya::GObject> teapot;
 
     class LevelTicker : public Goonya::TickFunction {
         Craft::Level *level;

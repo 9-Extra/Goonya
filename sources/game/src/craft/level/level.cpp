@@ -41,8 +41,13 @@ void Level::tick() {
     } else {
         is_breaking_block = false;
     }
-    if (Goonya::Input::is_mouse_down(Goonya::Input::MouseKey::RIGHT)) {
+    if (Goonya::Input::is_mouse_pressing(Goonya::Input::MouseKey::RIGHT)) {
         is_placing_block = true;
+        if (Goonya::Input::is_mouse_down(Goonya::Input::MouseKey::RIGHT)) {
+            last_place_block_tick = 0; // 允许立即放置
+        }
+    } else {
+        is_placing_block = false;
     }
 }
 
@@ -60,14 +65,19 @@ void Level::fixed_tick() {
             }
         }
     }
-    if (is_placing_block) {
+    if (is_placing_block && Goonya::GAME_CLOCK.current_tick() - last_place_block_tick >= BLOCK_PLACE_INTERVAL) {
         is_placing_block = false;
         Goonya::Vector3f player_pos = player.get_position();
         Goonya::Vector3f player_dir = player.get_direction();
         BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
         BlockPos place_pos = hit_result.position + get_direction_vector(hit_result.normal);
         if (hit_result) {
-            set_block_state(place_pos, Blocks::get().POLISHED_GRANITE->get_default_blockstate());
+            if (get_block_state(place_pos) == Blocks::get().AIR->get_default_blockstate()) {
+                bool success = set_block_state(place_pos, Blocks::get().POLISHED_GRANITE->get_default_blockstate());
+                if (success) {
+                    last_place_block_tick = Goonya::GAME_CLOCK.current_tick();
+                }
+            }
         }
     }
 

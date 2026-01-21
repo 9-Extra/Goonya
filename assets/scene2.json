@@ -207,50 +207,6 @@
                 ]
             },
             {
-                "name": "teapot",
-                "transform": {
-                    "position": [
-                        0,
-                        5,
-                        -10
-                    ],
-                    "rotation": [
-                        1.57,
-                        0,
-                        0
-                    ]
-                },
-                "components": {
-                    "mesh_render": {
-                        "mesh": "models/teapot/teapot:teapot",
-                        "material": [
-                            "models/wood_floor_deck/wood_floor_deck_1k:wood_floor_deck"
-                        ]
-                    }
-                }
-            },
-            {
-                "name": "科拉莉",
-                "transform": {
-                    "position": [
-                        0,
-                        5,
-                        10
-                    ],
-                    "rotation": [
-                        0,
-                        3.14,
-                        0
-                    ],
-                    "scale": [
-                        5,
-                        5,
-                        5
-                    ]
-                },
-                "scene": "禁止二次配布/龙娘科拉莉2.0/科拉莉:Scene"
-            },
-            {
                 "name": "纳西妲",
                 "transform": {
                     "position": [

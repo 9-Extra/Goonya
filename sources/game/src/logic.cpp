@@ -141,8 +141,6 @@ void MoveSystem::on_register() {
     GN_ASSERT(light1);
     camera = get_owner()->get_child_by_name("相机");
     GN_ASSERT(camera);
-    teapot = get_owner()->get_child_by_name("teapot");
-    GN_ASSERT(teapot);
 
     Goonya::World *world = get_owner()->get_world();
     register_ticker(world);
@@ -170,7 +168,6 @@ void MoveSystem::tick() {
     handle_keyboard(delta_time);
     handle_mouse();
 
-    teapot->rotate_global_axis(Goonya::Vector3f({0, delta_time * 0.001f, 0}));
     Goonya::Quaternion r = Goonya::Quaternion::from_eular({delta_time * 0.001f, delta_time * 0.0015f, 0.0f});
     cube->rotate_local_axis(r);
     light1->set_local_position({20.0f * std::sinf(total_time * 0.005f), 0.0f, 0.0f});
