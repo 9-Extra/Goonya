@@ -98,6 +98,10 @@ std::tuple<int32_t, int32_t> get_mouse_move() { return std::make_tuple(Detail::m
 std::tuple<int32_t, int32_t> get_mouse_pos() { return std::make_tuple(Detail::mouse_pos_x, Detail::mouse_pos_y); }
 
 KeyState get_mouse_state(MouseKey key) { return Detail::mouse_key_state[key]; }
+
+bool is_mouse_down(MouseKey key) {
+    return Detail::mouse_key_state[key] == KeyState::DOWN && Detail::mouse_key_state_last_tick[key] == KeyState::UP;
+}
 bool is_mouse_click(MouseKey key) {
     return Detail::mouse_key_state[key] == KeyState::UP && Detail::mouse_key_state_last_tick[key] == KeyState::DOWN;
 }

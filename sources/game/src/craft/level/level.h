@@ -27,6 +27,7 @@ private:
 
     Player player;
     bool is_breaking_block = false;
+    bool is_placing_block = false;
     uint64_t last_break_block_tick = 0;
     constexpr static int8_t BLOCK_BREAK_INTERVAL = 2;
     WireFrame wire_frame;

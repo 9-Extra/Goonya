@@ -40,8 +40,8 @@ private:
 
     bool is_world_transform_dirty : 1 = true;
 
-    bool disabled : 1 = false;
-    bool _is_registered : 1 = false;
+    bool is_enabled : 1 = true;
+    bool _is_registered : 1 = false; // 当is_enabled为true且_world不为nullptr时，就注册到世界中
 
     ComponentUpdateFlag cpnt_update_flag = ComponentUpdateFlag::NONE;
 
@@ -59,25 +59,31 @@ public:
     std::string_view get_name() const noexcept { return name; }
     World *get_world() const noexcept { return _world; }
 
-    void enable() noexcept { // NOLINT: 手动保证没有循环引用
-        if (!is_disabled()) return;
-        disabled = false;
-        if (get_world()) {
-            do_register();
+    void enable(bool recursive = false) noexcept { // NOLINT: 手动保证没有循环引用
+        if (!is_enabled) {
+            is_enabled = true;
+            if (get_world()) {
+                do_register();
+            }
         }
-        for (std::shared_ptr<GObject> &child : children) {
-            child->enable();
+        if (recursive) {
+            for (std::shared_ptr<GObject> &child : children) {
+                child->enable(recursive);
+            }
         }
     }
 
-    void disable() noexcept { // NOLINT: 手动保证没有循环引用
-        if (is_disabled()) return;
-        disabled = true;
-        if (get_world()) {
-            do_unregister();
+    void disable(bool recursive = false) noexcept { // NOLINT: 手动保证没有循环引用
+        if (is_enabled) {
+            is_enabled = false;
+            if (get_world()) {
+                do_unregister();
+            }
         }
-        for (std::shared_ptr<GObject> &child : children) {
-            child->disable();
+        if (recursive) {
+            for (std::shared_ptr<GObject> &child : children) {
+                child->disable(recursive);
+            }
         }
     }
 
@@ -260,7 +266,7 @@ public:
         }
     }
 
-    bool is_disabled() const noexcept { return disabled; }
+    bool is_disabled() const noexcept { return !is_enabled; }
     bool is_registered() const noexcept { return _is_registered; }
 
 private:

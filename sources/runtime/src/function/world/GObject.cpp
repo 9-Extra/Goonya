@@ -24,13 +24,13 @@ void GObject::set_world(World *world) noexcept {
         return;
     } else {
         // exit world
-        if (_world) {
+        if (_world && _is_registered) {
             do_unregister();
         }
 
         _world = world; // 提前设置使component可以获取正确的世界
         // enter world
-        if (world) {
+        if (world && is_enabled) {
             do_register();
         }
 

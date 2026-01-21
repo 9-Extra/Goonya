@@ -22,13 +22,16 @@
 
 void MoveSystem::handle_mouse() const {
     using namespace Goonya;
-    if (Goonya::Input::is_mouse_click(Input::LEFT)) {
-        lights->enable();
-        // 左键点击时，捕获光标
+    if (Goonya::Input::is_mouse_down(Input::LEFT)) {
+        // 左键按下时，捕获光标
         Display::set_cursor_mode(CursorMode::CAPTURED | CursorMode::HIDDEN);
     }
-    if (Goonya::Input::is_mouse_click(Input::RIGHT)) {
-        lights->disable();
+    if (Goonya::Input::is_key_click('R')) {
+        if (lights->is_disabled()) {
+            lights->enable(true);
+        } else {
+            lights->disable(true);
+        }
     }
 
     // 如果光标已捕获，根据鼠标移动旋转视角

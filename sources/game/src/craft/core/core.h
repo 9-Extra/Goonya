@@ -119,6 +119,7 @@ struct BlockPos : public Vector3i {
     constexpr explicit BlockPos(Vector3i vec) noexcept : Vector3i(vec) {}
 
     constexpr Goonya::Vector3f get_center() const noexcept { return {x + 0.5f, y + 0.5f, z + 0.5f}; }
+    constexpr BlockPos operator+(Vector3i offset) const noexcept { return {x + offset.x, y + offset.y, z + offset.z}; }
 };
 
 constexpr uint32_t CHUNK_WIDTH_OFFSET = 5;

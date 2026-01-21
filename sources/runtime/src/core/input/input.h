@@ -54,6 +54,7 @@ enum MouseKey {
 
 KeyState get_mouse_state(MouseKey key);
 inline bool is_mouse_pressing(MouseKey key) noexcept { return get_mouse_state(key) == KeyState::DOWN; };
+bool is_mouse_down(MouseKey key);
 bool is_mouse_click(MouseKey key);
 bool is_mouse_release(MouseKey key);
 
