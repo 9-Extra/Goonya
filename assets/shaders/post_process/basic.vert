@@ -21,28 +21,6 @@ const uint index[6] = uint[6](
     2, 3, 0
 );
 
-#define POINTLIGNT_MAX 8
-
-struct PointLight{
-    vec3 position;
-    vec3 intensity;
-};
-
-layout(binding = 0, std140) uniform per_frame
-{
-    mat4 view_perspective_matrix; //16 * 4
-    mat4 view_matrix; //16 * 4
-    mat4 view_matrix_inv;
-    vec3 ambient_light; //3 * 4 + 4
-    vec3 camera_position;
-    float fog_min_distance;
-    float fog_density;
-    float time;
-    vec2 screen_size;
-    uint pointlight_num; // 4
-    PointLight pointlight_list[POINTLIGNT_MAX];
-};
-
 out VS_OUT
 {
     vec2 uv;
