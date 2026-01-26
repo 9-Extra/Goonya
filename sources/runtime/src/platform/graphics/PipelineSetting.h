@@ -62,6 +62,13 @@ struct PipelineSetting {
     DepthTestMode depth_test : 4 = DepthTestMode::LESS;
     CullFaceMode cull_mode : 3 = CullFaceMode::BACK;
 
+    bool write_red : 1 = true;
+    bool write_green : 1 = true;
+    bool write_blue : 1 = true;
+    bool write_alpha : 1 = true;
+    bool write_depth : 1 = true;
+    bool write_stencil : 1 = true;
+
     bool is_blend_enable : 1 = false;
     BlendOp blendop_color : 4 = BlendOp::ADD;
     BlendOp blendop_alpha : 4 = BlendOp::ADD;
@@ -117,6 +124,12 @@ class PipelineSettingSetter {
     static constexpr Entry ENTRY_TABLE[] = {
         DEF_ENTRY_ENUM("_depth_test", depth_test),
         DEF_ENTRY_ENUM("_cull_mode", cull_mode),
+        DEF_ENTRY_BOOL("_write_red", write_red),
+        DEF_ENTRY_BOOL("_write_green", write_green),
+        DEF_ENTRY_BOOL("_write_blue", write_blue),
+        DEF_ENTRY_BOOL("_write_alpha", write_alpha),
+        DEF_ENTRY_BOOL("_write_depth", write_depth),
+        DEF_ENTRY_BOOL("_write_stencil", write_stencil),
         DEF_ENTRY_BOOL("_is_blend_enable", is_blend_enable),
         DEF_ENTRY_ENUM("_blendop_color", blendop_color),
         DEF_ENTRY_ENUM("_blendop_alpha", blendop_alpha),

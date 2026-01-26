@@ -79,7 +79,7 @@ void GLFrameBuffer::set_depth_texture_layer(Ref<GLTexture> texture, int32_t laye
     glNamedFramebufferTextureLayer(id, GL_DEPTH_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     depth_buffer = texture;
 }
-void GLFrameBuffer::set_depth_renderbuffer(DepthStencilPixelFormat format) {
+void GLFrameBuffer::set_depth_renderbuffer(TextureStorageFormat format) {
     GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
@@ -96,7 +96,7 @@ void GLFrameBuffer::set_stencil_texture_layer(Ref<GLTexture> texture, int32_t la
     glNamedFramebufferTextureLayer(id, GL_STENCIL_ATTACHMENT, ((GLTexture *)texture.get())->get_id(), level, layer);
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_stencil_renderbuffer(DepthStencilPixelFormat format) {
+void GLFrameBuffer::set_stencil_renderbuffer(TextureStorageFormat format) {
     GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());
@@ -116,7 +116,7 @@ void GLFrameBuffer::set_depth_stencil_texture_layer(Ref<GLTexture> texture, int3
     depth_buffer = texture;
     stencil_buffer = texture;
 }
-void GLFrameBuffer::set_depth_stencil_renderbuffer(DepthStencilPixelFormat format) {
+void GLFrameBuffer::set_depth_stencil_renderbuffer(TextureStorageFormat format) {
     GN_ASSERT(size != std::make_tuple(0, 0));
     Ref<GLRenderBuffer> renderbuffer = create_ref<GLRenderBuffer>(size, format);
     glNamedFramebufferRenderbuffer(id, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, renderbuffer->get_id());

@@ -25,7 +25,9 @@ void new_frame() {
 }
 void render() {
     GL.get_rendertarget_screen()->bind_draw();
+    GL.push_debug_group_label("Imgui");
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    GL.pop_debug_group_label();
 }
 
 void drop() {

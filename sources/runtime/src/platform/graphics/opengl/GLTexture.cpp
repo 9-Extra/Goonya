@@ -327,6 +327,28 @@ GLenum texture_format_to_gl_format(TextureStorageFormat format) {
         return GL_R8I;
     case TextureStorageFormat::R_u8:
         return GL_R8UI;
+
+    case TextureStorageFormat::DEPTH_16:
+        return GL_DEPTH_COMPONENT16;
+    case TextureStorageFormat::DEPTH_24:
+        return GL_DEPTH_COMPONENT24;
+    case TextureStorageFormat::DEPTH_32:
+        return GL_DEPTH_COMPONENT32;
+    case TextureStorageFormat::DEPTH_f32:
+        return GL_DEPTH_COMPONENT32F;
+    case TextureStorageFormat::STENCIL_1:
+        return GL_STENCIL_INDEX1;
+    case TextureStorageFormat::STENCIL_4:
+        return GL_STENCIL_INDEX4;
+    case TextureStorageFormat::STENCIL_8:
+        return GL_STENCIL_INDEX8;
+    case TextureStorageFormat::STENCIL_16:
+        return GL_STENCIL_INDEX16;
+    case TextureStorageFormat::DEPTH_24_STENCIL_8:
+        return GL_DEPTH24_STENCIL8;
+    case TextureStorageFormat::DEPTH_f32_STENCIL_8:
+        return GL_DEPTH32F_STENCIL8;
+        break;
     case TextureStorageFormat::UNKNOWN:
         break;
     }

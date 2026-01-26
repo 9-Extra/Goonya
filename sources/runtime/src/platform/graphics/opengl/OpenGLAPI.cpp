@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
+#include <limits>
 #include <spdlog/async.h>
 #include <spdlog/common.h>
 #include <spdlog/spdlog.h>
@@ -220,6 +221,10 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipelineSetting &state) const n
     } else {
         glDisable(GL_CULL_FACE);
     }
+
+    glColorMask(state.write_red, state.write_green, state.write_blue, state.write_alpha);
+    glDepthMask(state.write_depth);
+    glStencilMask(state.write_stencil ? std::numeric_limits<GLuint>::max() : 0);
 
     if (state.is_blend_enable) {
         glEnable(GL_BLEND);

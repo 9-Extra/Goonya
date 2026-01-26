@@ -53,6 +53,19 @@ enum class TextureStorageFormat {
     R_f8,
     R_i8,
     R_u8,
+
+    DEPTH_16, // 所有的depth读取时都相当于归一化浮点数，只有DEPTH_f32真正使用浮点存储
+    DEPTH_24,
+    DEPTH_32,
+    DEPTH_f32,
+
+    STENCIL_1,
+    STENCIL_4,
+    STENCIL_8,
+    STENCIL_16,
+
+    DEPTH_24_STENCIL_8,
+    DEPTH_f32_STENCIL_8,
 };
 
 enum class TextureWarpMode { REPEAT, ClAMP, MIRROR };

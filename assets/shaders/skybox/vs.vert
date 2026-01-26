@@ -4,7 +4,7 @@
 
 layout (location = 0) in vec3 position;
 
-layout(binding = 0, std140) uniform per_frame
+layout(binding = 2, std140) uniform per_pass
 {
     mat4 view_perspective_matrix; //16 * 4
 };

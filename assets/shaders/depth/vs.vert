@@ -1,8 +1,10 @@
 #version 440 core
 
-#define POINTLIGNT_MAX 8
-
 #pragma GYA_INJECT
+
+layout (location = 0) in vec3 position;
+
+#define POINTLIGNT_MAX 8
 
 struct PointLight{
     vec3 position;
@@ -25,18 +27,13 @@ layout(binding = 0, std140) uniform per_frame
     PointLight pointlight_list[POINTLIGNT_MAX];
 };
 
-in VS_OUT
+layout(binding = 1, std140) uniform per_object
 {
-    vec3 model_position;
-} vs_out;
+    mat4 model_matrix;
+};
 
-out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类型必须是vec4
-
-// ----------------------------------------------------------------------
 
 void main()
 {
-    vec3 color = vec3(0, 0, 0);
-    out_color = vec4(color, 1.0f);
-    // out_color = vec4(abs(surface.normal), 1);
+    gl_Position = vec4(position.xyz, 1.0f) * model_matrix * view_perspective_matrix;
 }

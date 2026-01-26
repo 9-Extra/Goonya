@@ -22,20 +22,6 @@ struct Viewport {
     uint32_t height;
 };
 
-// ===============RenderBuffer=============
-enum class DepthStencilPixelFormat {
-    // 只用于深度
-    DEPTH16,
-    DEPTH24,
-    DEPTH32,
-    DEPTH32F,
-    // 只用于模板
-    STENCIL8,
-    // 同时
-    DEPTH24_STENCIL8,
-    DEPTH32F_STENCIL8,
-};
-
 // ===================Render Target=======================
 /**
  * @brief 可以绑定到渲染管线上的绘制目标
@@ -78,11 +64,6 @@ protected:
 // 用作RenderTarget，类似纹理，但是无法进行采样（只写），但是性能更好
 class GLRenderBuffer : public RefCount {
 public:
-    GLRenderBuffer(std::tuple<uint32_t, uint32_t> size, DepthStencilPixelFormat format) : size(size) {
-        glCreateRenderbuffers(1, &id);
-        auto [w, h] = size;
-        glNamedRenderbufferStorage(id, BufferFormat2GL(format), w, h);
-    }
     GLRenderBuffer(std::tuple<uint32_t, uint32_t> size, TextureStorageFormat format) : size(size) {
         glCreateRenderbuffers(1, &id);
         auto [w, h] = size;
@@ -97,26 +78,6 @@ private:
     GLuint id{};
 
     std::tuple<uint32_t, uint32_t> size;
-
-    static GLenum BufferFormat2GL(DepthStencilPixelFormat format) noexcept {
-        switch (format) {
-        case DepthStencilPixelFormat::DEPTH16:
-            return GL_DEPTH_COMPONENT16;
-        case DepthStencilPixelFormat::DEPTH24:
-            return GL_DEPTH_COMPONENT24;
-        case DepthStencilPixelFormat::DEPTH32:
-            return GL_DEPTH_COMPONENT32;
-        case DepthStencilPixelFormat::DEPTH32F:
-            return GL_DEPTH_COMPONENT32F;
-        case DepthStencilPixelFormat::STENCIL8:
-            return GL_STENCIL_INDEX8;
-        case DepthStencilPixelFormat::DEPTH24_STENCIL8:
-            return GL_DEPTH24_STENCIL8;
-        case DepthStencilPixelFormat::DEPTH32F_STENCIL8:
-            return GL_DEPTH32F_STENCIL8;
-        }
-        return GL_NONE;
-    }
 };
 
 // ========================GLFrameBuffer=====================
@@ -199,19 +160,19 @@ public:
     // 反正renderbuffer不能读，所有直接在内部创建，内部使用。如果要读则使用Texture
     void set_depth_texture(Ref<GLTexture> texture, int32_t level = 0);
     void set_depth_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
-    void set_depth_renderbuffer(DepthStencilPixelFormat format);
+    void set_depth_renderbuffer(TextureStorageFormat format);
     bool has_depth_buffer() const noexcept override { return !std::holds_alternative<std::monostate>(depth_buffer); };
 
     void set_stencil_texture(Ref<GLTexture> texture, int32_t level = 0);
     void set_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
-    void set_stencil_renderbuffer(DepthStencilPixelFormat format);
+    void set_stencil_renderbuffer(TextureStorageFormat format);
     bool has_stencil_buffer() const noexcept override {
         return !std::holds_alternative<std::monostate>(stencil_buffer);
     };
 
     void set_depth_stencil_texture(Ref<GLTexture> texture, int32_t level = 0);
     void set_depth_stencil_texture_layer(Ref<GLTexture> texture, int32_t layer, int32_t level = 0);
-    void set_depth_stencil_renderbuffer(DepthStencilPixelFormat format);
+    void set_depth_stencil_renderbuffer(TextureStorageFormat format);
 
     bool check_status() const noexcept override;
 

@@ -13,9 +13,10 @@ struct PointLight{
 // 帧相关参数和纹理
 layout(binding = 0, std140) uniform per_frame
 {
-    mat4 view_perspective_matrix; //16 * 4
     mat4 view_matrix; //16 * 4
     mat4 view_matrix_inv;
+    mat4 perspective_matrix;
+    mat4 view_perspective_matrix; //16 * 4
     vec3 ambient_light; //3 * 4 + 4
     vec3 camera_position;
     float fog_min_distance;

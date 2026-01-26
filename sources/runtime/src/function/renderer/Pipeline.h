@@ -5,6 +5,8 @@
 #include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
+#include "platform/graphics/opengl/GLTexture.h"
+#include <vector>
 
 namespace Goonya {
 
@@ -16,9 +18,10 @@ struct PointLightData final {
 };
 
 struct PerFrameData final { // NOLINT：不需要初始化
-    Matrix4f view_perspective_matrix;
     Matrix4f view_matrix;
     Matrix4f view_matrix_inv;
+    Matrix4f perspective_matrix;
+    Matrix4f view_perspective_matrix;
     alignas(16) Vector3f ambient_light;
     alignas(16) Vector3f camera_position;
     alignas(4) float fog_min_distance;
@@ -37,6 +40,7 @@ struct alignas(256) PerObjectData final {
 };
 
 constexpr uint32_t PER_OBJECT_UNIFORM_BINDING = 1;
+constexpr uint32_t PER_PASS_UNIFORM_BINDING = 2;
 
 class Pipeline {
 private:
@@ -47,11 +51,17 @@ private:
         float aspect_ratio;
         Ref<GLTexture> env_map;
         Ref<Material> skybox_material;
+        std::vector<Instance> visible_instances;
     };
 
     Ref<GLFrameBuffer> replace_render_target[2]; // 替换渲染目标，用于渲染到屏幕，两个目标用于PingPong
     const static unsigned int SKYBOX_TEXTURE_BINDING = 5;
     Ref<GLMesh> skybox_mesh;
+
+    Ref<Material> depth_material;
+    Ref<GLFrameBuffer> depth_fbo;
+    Ref<GLTexture> depth_texture;
+
     Ref<GLMesh> postprocess_quad_mesh;
     Ref<Material> postprocess_material;
 
@@ -69,6 +79,9 @@ public:
 private:
     void render_camera(RenderContext &context);
 
+    void cull(RenderContext &context);
+
+    void draw_depth(RenderContext &context);
     void draw_geometry(RenderContext &context);
     void draw_skybox(RenderContext &context);
     void draw_postprocess(RenderContext &context);

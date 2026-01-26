@@ -5,11 +5,23 @@
 #include "core/plf_colony.h"
 #include "function/renderer/RenderAspect.h"
 #include "function/renderer/RenderProxy/StaticMesh.h"
+#include "platform/graphics/opengl/GLBuffer.h"
+#include "platform/graphics/opengl/GLMesh.h"
 
 #include <memory>
 #include <unordered_set>
+#include <vector>
 
 namespace Goonya {
+
+struct Instance {
+    Ref<GLMesh> mesh;
+    Ref<Material> material;
+    Ref<GLBuffer> per_object_uniform;
+
+    SubMesh submesh;
+    BoundingBox transformed_aabbs; // 每个submesh经过变换的包围盒
+};
 
 class RenderScene {
 public:
@@ -23,7 +35,8 @@ public:
     float fog_density = 0.001f;    // 雾强度
     // -----------------物体-------------------
     std::unordered_set<std::unique_ptr<MeshRenderProxy>, PointerHash, PointerEqual> mesh_proxys; // 要渲染的网格
-
+private:
+    std::vector<Instance> instances; // 要渲染的实例
 public:
     RenderScene() = default;
     void clear() /*NOLINT*/ {

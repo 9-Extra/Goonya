@@ -28,19 +28,19 @@ void Material::bind() {
         per_material->bind_uniform(uber_shader->per_material_block().binding);
     }
     // 绑定所有纹理
-    for (const auto &[name, info] : get_uber_shader()->get_texture_units()) {
+    for (const auto &[name, info] : uber_shader->get_texture_units()) {
         if (auto iter = textures.find(info.unit); iter != textures.end()) {
             GN_ASSERT(iter->second);
             /*
             if (iter->second->get_type() != info.type) {
                 LOG_ERROR("材质绑定的纹理{}类型与着色器要求的类型不一致", name);
-                iter->second = get_uber_shader()->get_default_texture(info.unit); // 重置为默认纹理
+                iter->second = uber_shader->get_default_texture(info.unit); // 重置为默认纹理
             }
             */
             iter->second->bind(info.unit); // 绑定材质设定的纹理
         } else {
             // 绑定默认纹理
-            get_uber_shader()->get_default_texture(info.unit)->bind(info.unit);
+            uber_shader->get_default_texture(info.unit)->bind(info.unit);
         }
     }
     // 绑定其他buffer

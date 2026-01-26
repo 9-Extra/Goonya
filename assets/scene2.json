@@ -353,7 +353,7 @@
                 "name": "相机",
                 "components": {
                     "camera": {
-                        "near_z": 0.01,
+                        "near_z": 1,
                         "far_z": 1000,
                         "fov": 1.57,
                         "is_main": true

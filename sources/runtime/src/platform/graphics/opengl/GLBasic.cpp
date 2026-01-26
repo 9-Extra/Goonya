@@ -63,10 +63,12 @@ void APIENTRY _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
         break;
     }
     case GL_DEBUG_TYPE_PUSH_GROUP: {
+        return; // ingore this
         type_name = "Push Group ";
         break;
     }
     case GL_DEBUG_TYPE_POP_GROUP: {
+        return; // ingore this
         type_name = "Pop Group ";
         break;
     }
