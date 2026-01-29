@@ -24,6 +24,8 @@ enum class DepthTestMode : uint8_t {
     LESS_EQUAL,
     GREATER,
     GREATER_EQUAL,
+    EQUAL,
+    NOT_EQUAL,
     NEVER,
     ALWAYS,
     DISABLE,

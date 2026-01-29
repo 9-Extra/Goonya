@@ -1,20 +1,25 @@
 #include "MaterialParameterParser.h"
 #include "runtime/GoonyaException.h"
 #include <regex>
+#include <string_view>
 
 namespace Goonya {
 
-MaterialParameter parse_material_parameters(const std::string &parameter_string) {
+MaterialParameter parse_material_parameters(std::string_view parameter_string) {
     // 解析形如"vec3(1.0, 0, 2.0)"这样的参数
     const std::regex pattern(R"(^\s*(\w+)\s*\((.*)\)$)");
     const std::regex number_pattern(R"(\s*([-+]?\d*\.?\d+\s*))");
-    std::smatch matches;
-    if (std::regex_match(parameter_string, matches, pattern)) {
+
+    using RegexIter = std::regex_iterator<std::string_view::const_iterator>;
+    using Match = std::match_results<std::string_view::const_iterator>;
+
+    Match matches;
+    if (std::regex_match(parameter_string.begin(), parameter_string.end(), matches, pattern)) {
         // matches[0] 是整个匹配的字符串
-        std::string type_name = matches[1].str(); // 类型
-        std::string numbers_str = matches[2].str();
-        std::sregex_iterator it(numbers_str.begin(), numbers_str.end(), number_pattern);
-        std::sregex_iterator end;
+        std::string_view type_name = std::string_view(matches[1].first, matches[1].second); // 类型
+        std::string_view numbers_str = std::string_view(matches[2].first, matches[2].second);
+        RegexIter it(numbers_str.begin(), numbers_str.end(), number_pattern);
+        RegexIter end;
         if (type_name == "bool") {
             if (it == end || it->str() == "false") {
                 return false;

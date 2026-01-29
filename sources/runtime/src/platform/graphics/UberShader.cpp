@@ -29,7 +29,7 @@ void LocalVariantKeyCollect::add_variant_key_group(std::vector<std::string> &&gr
         if (!key.empty()) { // 略过空定义
             auto [_, inserted] = variants_key_map.emplace(key, std::make_tuple(group_index, index));
             if (!inserted) {
-                throw RuntimeError("着色器变体键重复定义");
+                throw RuntimeError("局部着色器变体键重复定义");
             }
         }
         index++;

@@ -167,6 +167,14 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipelineSetting &state) const n
         depth_func = GL_GEQUAL;
         break;
     }
+    case DepthTestMode::EQUAL: {
+        depth_func = GL_EQUAL;
+        break;
+    }
+    case DepthTestMode::NOT_EQUAL: {
+        depth_func = GL_NOTEQUAL;
+        break;
+    }
     case DepthTestMode::NEVER: {
         depth_func = GL_NEVER;
         break;

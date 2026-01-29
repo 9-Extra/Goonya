@@ -11,7 +11,7 @@
             "intensity": "f32(2.0f)"
         },
         "pipeline_setting": {
-            "_depth_test": 6,
+            "_depth_test": 8,
             "_cull_mode": 3
         },
         "samplers": {

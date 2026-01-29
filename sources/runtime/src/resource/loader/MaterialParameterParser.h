@@ -9,5 +9,5 @@ namespace Goonya {
  * @param parameter_string 字符串格式的参数
  * @return MaterialParameter 解析后的参数
  */
-MaterialParameter parse_material_parameters(const std::string &parameter_string);
+MaterialParameter parse_material_parameters(std::string_view parameter_string);
 } // namespace Goonya

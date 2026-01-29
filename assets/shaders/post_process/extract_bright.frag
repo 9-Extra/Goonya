@@ -2,7 +2,7 @@
 
 #pragma GYA_INJECT
 
-layout(binding = 2) uniform per_material
+layout(binding = 3) uniform per_material
 {
     float threshold;
     float intensity;

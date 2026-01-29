@@ -31,6 +31,8 @@ public:
 
     void clear() { storage.clear(); }
 
+    const std::filesystem::path &get_root_dir() const noexcept { return resource_dir; }
+
     bool put_resource(const AssetKey &key, Ref<Resource> res) {
         auto [_, update] = storage.insert_or_assign(key, res);
         return update;

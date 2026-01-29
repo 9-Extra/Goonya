@@ -25,6 +25,8 @@
 namespace Goonya {
 
 struct UberShaderDesc final {
+    std::string name;
+
     std::string vs_src;
     std::string ps_src;
 

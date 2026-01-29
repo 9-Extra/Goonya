@@ -7,7 +7,7 @@
             "pixel_shader": "guass.frag"
         },
         "pipeline_setting": {
-            "_depth_test": 6,
+            "_depth_test": 8,
             "_cull_mode": 3
         },
         "parameters": {
