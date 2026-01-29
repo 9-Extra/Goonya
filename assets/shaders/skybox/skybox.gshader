@@ -5,9 +5,6 @@
 
 #param color_permutation=vec3(1, 1, 1)
 
-#local_variant _ TEST
-#global_variant WWWWW
-
 #section common
 #include "shaders/common.glsl"
 
@@ -30,11 +27,6 @@ void vert() {
 }
 
 #section fragment
-
-layout(binding = 3) uniform per_material
-{
-    vec3 color_permutation;
-};
 
 uniform samplerCube skybox_specular_texture;
 

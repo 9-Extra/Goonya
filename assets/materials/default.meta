@@ -4,7 +4,7 @@
     "content": {
         "uber_shader": "shaders/single_color/single_color",
         "parameters": {
-            "color": "vec3(1, 0, 1)"
+            "color_permutation": "vec3(1, 0, 1)"
         }
     }
 }

@@ -41,6 +41,7 @@ struct alignas(256) PerObjectData final {
 
 constexpr uint32_t PER_OBJECT_UNIFORM_BINDING = 1;
 constexpr uint32_t PER_PASS_UNIFORM_BINDING = 2;
+constexpr uint32_t PER_MATERIAL_UNIFORM_BINDING = 3;
 
 class Pipeline {
 private:

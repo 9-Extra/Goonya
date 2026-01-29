@@ -1,5 +1,5 @@
 {
-    "type": "GUberShader",
+    "type": "UberShader",
     "name": "skybox",
     "content": {
         "source": "skybox.gshader"

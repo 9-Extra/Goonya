@@ -1,6 +1,13 @@
-#version 440 core
+#ifndef POST_PROCESS_HEAD
+#define POST_PROCESS_HEAD
 
-#pragma GYA_INJECT
+#ifndef VS_OUT_PS_IN
+#if defined(VERTEX_SHADER)
+# define VS_OUT_PS_IN out
+#elif defined(FRAGMENT_SHADER)
+# define VS_OUT_PS_IN in
+#endif
+#endif
 
 const vec3 position[4] = vec3[4](
     vec3(-1.0f, -1.0f, -1.0f),
@@ -20,16 +27,4 @@ const uint index[6] = uint[6](
     0, 1, 2,
     2, 3, 0
 );
-
-layout(binding = 0) uniform sampler2D source;
-
-out VS_OUT
-{
-    vec2 uv;
-} vs_out;
-
-void main()
-{
-    vs_out.uv = uv[index[gl_VertexID]];
-    gl_Position = vec4(position[index[gl_VertexID]], 1.0f);
-}
+#endif

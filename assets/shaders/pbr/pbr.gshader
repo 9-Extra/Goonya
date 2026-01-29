@@ -1,47 +1,27 @@
-#version 440 core
+#name pbr
+#texture basecolor_texture="buildin:missing_texture"
+#texture normal_texture="buildin:normal"
+#texture metallic_roughness_texture="buildin:white"
+#texture skybox_specular_texture="buildin:black"
 
-#define POINTLIGNT_MAX 8
+#param metallic_factor=f32(1)
+#param roughness_factor=f32(1)
 
-#pragma GYA_INJECT
+#global_variant GYA_IBL_ENVIRONMENT_LIGHT
+#global_variant GYA_FOG_EXP
 
+#local_variant _ USE_NORMAL_MAP
+#local_variant _ USE_METALLIC_ROUGHNESS_TEXTURE
 
-struct PointLight{
-    vec3 position; // 0
-    vec3 intensity; // 4
-};
-
-// 帧相关参数和纹理
-layout(binding = 0, std140) uniform per_frame
-{
-    mat4 view_matrix; //16 * 4
-    mat4 view_matrix_inv;
-    mat4 perspective_matrix;
-    mat4 view_perspective_matrix; //16 * 4
-    vec3 ambient_light; //3 * 4 + 4
-    vec3 camera_position;
-    float fog_min_distance;
-    float fog_density;
-    float time;
-    vec2 screen_size;
-    uint pointlight_num; // 4
-    PointLight pointlight_list[POINTLIGNT_MAX];
-};
-
-layout(binding = 5) uniform samplerCube skybox_specular_texture;
-
-// 材质参数和纹理
-layout(binding = 2) uniform per_material
-{
-    float metallic_factor;
-    float roughness_factor;
-};
+#section common
+#include "shaders/common.glsl"
 
 layout(binding = 0) uniform sampler2D basecolor_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
 layout(binding = 2) uniform sampler2D metallic_roughness_texture;
+layout(binding = 5) uniform samplerCube skybox_specular_texture;
 
-
-in VS_OUT
+VS_OUT_PS_IN VS_OUT
 {
     vec3 normal;
     vec4 tangent;
@@ -49,10 +29,22 @@ in VS_OUT
     vec2 tex_coords;
 } vs_out;
 
-out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类型必须是vec4
+#section vertex
 
-#define PI 3.1415926
+void vert()
+{
+    vec4 world_position = vec4(position.xyz, 1.0f) * model_matrix;
+    vs_out.world_position = world_position.xyz / world_position.w;
+    vs_out.normal = normal * normal_matrix;
+    vs_out.tangent = vec4(tangent.xyz * mat3(model_matrix), tangent.w);
+    vs_out.tex_coords = uv;
 
+    gl_Position = world_position * view_perspective_matrix;
+}
+
+#section fragment
+
+layout(location = 0) out vec4 out_color;
 // 生成 [0,1) 的Hammersley点（索引 i，总样本数 N），爱来自DeepSeek
 vec2 hammersley2d(uint i, uint N) {
     // 将i的二进制位反转，映射到[0,1)
@@ -200,7 +192,7 @@ vec3 caculate_normal(){
     return world_normal;
 }
 
-void main()
+void frag()
 {
     const vec3 dielectric_specular = vec3(0.04);//一般电解质的基础反射率
 

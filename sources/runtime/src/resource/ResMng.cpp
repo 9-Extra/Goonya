@@ -107,7 +107,7 @@ Ref<Resource> RenderResource::try_load(const std::filesystem::path &path) {
 
     auto iter = loaders.find(res_type);
     if (iter == loaders.end()) {
-        throw RuntimeError("用于类型\"{}\"资源的加载器不存在");
+        throw RuntimeError(std::format("用于类型\"{}\"资源的加载器不存在", res_type));
     }
 
     ResourceLoader *loader = iter->second.get();

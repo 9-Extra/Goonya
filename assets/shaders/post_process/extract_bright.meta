@@ -2,20 +2,6 @@
     "type": "UberShader",
     "name": "extract_bright",
     "content": {
-        "sources": {
-            "vertex_shader": "extract_bright.vert",
-            "pixel_shader": "extract_bright.frag"
-        },
-        "parameters": {
-            "threshold": "f32(0.5f)",
-            "intensity": "f32(2.0f)"
-        },
-        "pipeline_setting": {
-            "_depth_test": 8,
-            "_cull_mode": 3
-        },
-        "samplers": {
-            "source": "buildin:missing_texture"
-        }
+        "source": "extract_bright.gshader"
     }
 }

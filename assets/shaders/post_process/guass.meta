@@ -2,22 +2,6 @@
     "type": "UberShader",
     "name": "guass",
     "content": {
-        "sources": {
-            "vertex_shader": "guass.vert",
-            "pixel_shader": "guass.frag"
-        },
-        "pipeline_setting": {
-            "_depth_test": 8,
-            "_cull_mode": 3
-        },
-        "parameters": {
-            "blur_size": "f32(2.0f)"
-        },
-        "samplers": {
-            "source": "buildin:missing_texture"
-        },
-        "local_variants": [
-            ["HORIZONTAL", "VERTICAL"]
-        ]
+        "source": "guass.gshader"
     }
 }

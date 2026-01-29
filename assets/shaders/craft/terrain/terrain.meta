@@ -2,18 +2,6 @@
     "type": "UberShader",
     "name": "Terrain",
     "content": {
-        "sources": {
-            "vertex_shader": "terrain.vert",
-            "pixel_shader": "terrain.frag"
-        },
-        "pipeline_setting": {
-            "_depth_test": 1,
-            "_cull_mode": 0
-        },
-        "samplers": {
-            "basecolor_texture": "buildin:missing_texture"
-        },
-        "global_variants": [],
-        "local_variants": []
+        "source": "terrain.gshader"
     }
 }

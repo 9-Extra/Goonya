@@ -2,9 +2,6 @@
     "type": "UberShader",
     "name": "depth",
     "content": {
-        "sources": {
-            "vertex_shader": "vs.vert",
-            "pixel_shader": "ps.frag"
-        }
+        "source": "depth.gshader"
     }
 }

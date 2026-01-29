@@ -106,13 +106,13 @@ static std::string shader_source_inject(const std::string &src, const std::vecto
     }
     ss << src.substr(0, injection_point);
 
-    ss << "//------Combined Definitions---------: \n";
+    ss << "//------Combined Definitions---------\n";
 
     for (const std::string &key : variant_key) {
         ss << std::format("#define {}\n", key);
     }
 
-    ss << "//------Combined Definition End------: \n";
+    ss << "//------Combined Definition End------\n";
 
     ss << src.substr(injection_point + PATTERN.size());
 

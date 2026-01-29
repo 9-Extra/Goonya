@@ -1,29 +1,32 @@
-#version 440 core
+#name terrain
+#setting depth_test="less_equal"
+#setting cull_mode="back"
 
-#define POINTLIGNT_MAX 8
+#texture basecolor_texture="buildin:missing_texture"
 
-#pragma GYA_INJECT
+#section common
+#include "shaders/common.glsl"
 
-struct PointLight{
-    vec3 position;
-    vec3 intensity;
-};
-
-layout(binding = 0, std140) uniform per_frame
+VS_OUT_PS_IN VS_OUT
 {
-    mat4 view_matrix; //16 * 4
-    mat4 view_matrix_inv;
-    mat4 perspective_matrix;
-    mat4 view_perspective_matrix; //16 * 4
-    vec3 ambient_light; //3 * 4 + 4
-    vec3 camera_position;
-    float fog_min_distance;
-    float fog_density;
-    float time;
-    vec2 screen_size;
-    uint pointlight_num; // 4
-    PointLight pointlight_list[POINTLIGNT_MAX];
-};
+    vec3 world_position;
+    vec2 tex_coords;
+    flat uint object_id;
+} vs_out;
+
+#section vertex
+
+void vert()
+{
+    uint object_id = gl_VertexID / 4;
+    vs_out.world_position = position;
+    vs_out.tex_coords = uv;
+    vs_out.object_id = object_id;
+
+    gl_Position = vec4(position, 1) * view_perspective_matrix;
+}
+
+#section fragment
 
 struct PerSurface{
     uint basecolor_id;
@@ -31,24 +34,13 @@ struct PerSurface{
     vec3 normal;
 };
 
-layout(binding = 2, std430) buffer per_surface{
+layout(binding = 4, std430) buffer per_surface{
     PerSurface surfaces[]; // 使用SSBO实现动态大小
 };
 
-
 layout(binding = 0) uniform sampler2DArray basecolor_texture;
 
-
-in VS_OUT
-{
-    vec3 world_position;
-    vec2 tex_coords;
-    flat uint object_id;
-} vs_out;
-
-out vec4 out_color; // 片段着色器输出的变量名可以任意命名，类型必须是vec4
-
-// ----------------------------------------------------------------------
+layout(location = 0) out vec4 out_color;
 
 const vec3 sh_coeffs[9] = vec3[9](
     vec3(0.89f, 0.67f, 0.34f) * 1.5f,
@@ -99,8 +91,7 @@ vec3 spherical_harmonics3(vec3 direction)
     return max(result, vec3(0.0));
 }
 
-
-void main()
+void frag()
 {
     PerSurface surface = surfaces[vs_out.object_id];
     vec4 base_color = texture(basecolor_texture, vec3(vs_out.tex_coords, surface.basecolor_id));
