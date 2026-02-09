@@ -138,7 +138,7 @@ public:
         // 版本号递增
         sparse[key].version++;
 
-        // 将key加入空闲列表（可选）
+        // 将key加入空闲列表
         free_list.push_back(key);
     }
 

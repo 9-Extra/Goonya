@@ -66,14 +66,14 @@ private:
     }
 
     void parse() {
-        const std::regex pat = std::regex("#\\s*(.+?)\\s+(.+?)\\s*[\r\n]");
+        const std::regex pat = std::regex("#\\s*(.+?)\\s+(.+?)\\s*(//.*?|/\\*.*?|)[\r\n]");
         using RegexIter = std::regex_iterator<std::string_view::const_iterator>;
         using Match = std::match_results<std::string_view::const_iterator>;
         for (RegexIter it(g_shader_source.begin(), g_shader_source.end(), pat); it != RegexIter(); ++it) {
             const std::string_view full_match = std::string_view((*it)[0].first, (*it)[0].second);
             const std::string_view instruction = std::string_view((*it)[1].first, (*it)[1].second);
             const std::string_view content = std::string_view((*it)[2].first, (*it)[2].second);
-            // LOG_TRACE("解析指令{} {}", instruction, content);
+            // LOG_TRACE("解析指令#{} {}", instruction, content);
             if (instruction == "name") {
                 skip(full_match.begin(), full_match.end());
                 desc.name = content;
@@ -129,6 +129,27 @@ private:
                             desc.pipeline_setting.depth_test = DepthTestMode::ALWAYS;
                         } else {
                             LOG_ERROR("未知的depth_test模式: {}", setting_key);
+                        }
+                    }
+
+                    if (setting_key == "write_mask") {
+                        if (setting_value.contains("r")) {
+                            desc.pipeline_setting.write_red = true;
+                        }
+                        if (setting_value.contains("g")) {
+                            desc.pipeline_setting.write_green = true;
+                        }
+                        if (setting_value.contains("b")) {
+                            desc.pipeline_setting.write_blue = true;
+                        }
+                        if (setting_value.contains("a")) {
+                            desc.pipeline_setting.write_alpha = true;
+                        }
+                        if (setting_value.contains("d")) {
+                            desc.pipeline_setting.write_depth = true;
+                        }
+                        if (setting_value.contains("s")) {
+                            desc.pipeline_setting.write_stencil = true;
                         }
                     }
                 } else {

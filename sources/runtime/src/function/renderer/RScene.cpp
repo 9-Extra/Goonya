@@ -124,11 +124,18 @@ void RScene::update_mesh(IMeshRenderable *mesh) noexcept {
         Material,
         Transform_And_Material,
         Reconstruct,
+        Init,
     } mode;
 
     if (mesh->dirty_bits & std::to_underlying(IMeshRenderable::DirtyBit::Mesh)) {
         // 如果Mesh有变化，必须重建实例
-        mode = MeshUpdateMode::Reconstruct;
+        if (mesh->dirty_bits & std::to_underlying(IMeshRenderable::DirtyBit::Transform)) {
+            // 完全初始化
+            mode = MeshUpdateMode::Init;
+        } else {
+            // 只重建实例，不需要更新Transform
+            mode = MeshUpdateMode::Reconstruct;
+        }
     } else if (mesh->dirty_bits == std::to_underlying(IMeshRenderable::DirtyBit::Transform)) {
         // 如果只有Transform有变化，只需要更新Transform
         mode = MeshUpdateMode::Transform;
@@ -179,6 +186,11 @@ void RScene::update_mesh(IMeshRenderable *mesh) noexcept {
         break;
     }
     case MeshUpdateMode::Reconstruct: {
+        remove_mesh_instances(mesh);
+        gather_mesh_instances(mesh);
+        break;
+    }
+    case MeshUpdateMode::Init: {
         Matrix4f model_matrix = mesh->transform.model_matrix();
         PerObjectData per_object_data{
             .model_matrix = model_matrix.transpose(),

@@ -5,10 +5,14 @@
 #include "core/noise/PerlinNoise.h"
 #include "craft/block/all_blocks.h"
 #include "craft/core/core.h"
+#include "runtime/GAssert.h"
 
+#include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <future>
+#include <ranges>
 
 namespace Craft {
 
@@ -21,17 +25,51 @@ private:
     int32_t terrain_height_base = 0;
 
     siv::BasicPerlinNoise<float> terrain_height_noise{42};
+    std::vector<std::future<void>> running_tasks;
+    std::atomic<bool> is_stopped = false;
 
 public:
     ChunkGenerator() noexcept = default;
-    ~ChunkGenerator() = default;
+    ~ChunkGenerator() {
+        GN_ASSERT(running_tasks.empty()); // 析构时，所有任务都应该已经完成
+    }
+
+    /**
+     * @brief 将已完成的任务从running_tasks中移除，不阻塞
+     */
+    void suppress_running_tasks() {
+        size_t valid_task_index = 0;
+        for (auto &&[index, task] : std::views::enumerate(running_tasks)) {
+            // 只有std::async创建的std::future会在析构时join，来自std::packaged_task的future则不会，需要手动等待
+            if (task.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+                running_tasks[valid_task_index] = std::move(task);
+                valid_task_index++;
+            }
+        }
+        running_tasks.resize(valid_task_index);
+    }
+
+    void wait_all_tasks() {
+        is_stopped.store(true, std::memory_order::release);
+        for (auto &&task : running_tasks) {
+            task.wait();
+        }
+        running_tasks.clear();
+    }
 
     void process_chunk_async(const Ref<Chunk> &chunk, std::move_only_function<void(const Ref<Chunk> &)> delegate) {
-        Goonya::THREAD_POOL.enqueue_detached([this, chunk = chunk, delegate = std::move(delegate)] mutable {
-            do_process_chunk(chunk);
-            Goonya::THREAD_POOL.enqueue_main_thread(
-                [chunk, delegate = std::move(delegate)] mutable { delegate(chunk); });
-        });
+        running_tasks.emplace_back(
+            Goonya::THREAD_POOL.enqueue([this, chunk = chunk, delegate = std::move(delegate)] mutable {
+                if (is_stopped.load(std::memory_order::acquire)) {
+                    return;
+                }
+                do_process_chunk(chunk);
+                if (is_stopped.load(std::memory_order::acquire)) {
+                    return;
+                }
+                Goonya::THREAD_POOL.enqueue_main_thread(
+                    [chunk, delegate = std::move(delegate)] mutable { delegate(chunk); });
+            }));
     }
 
 private:

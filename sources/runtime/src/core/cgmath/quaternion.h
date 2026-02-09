@@ -22,9 +22,9 @@ struct Quaternion {
     }
 
     // 按XYZ顺序顺时针外旋（每个分量的旋转都基于初始坐标系），或者等同于ZYX内旋（每旋转一个分量后，下一次旋转基于旋转后的坐标系）
-    static Quaternion from_eular(Vector3f rotate) {
-        return Quaternion::from_rotation({1, 0, 0}, rotate.x) * Quaternion::from_rotation({0, 1, 0}, rotate.y) *
-               Quaternion::from_rotation({0, 0, 1}, rotate.z);
+    static Quaternion from_eular(Vector3f eular) {
+        return Quaternion::from_rotation({1, 0, 0}, eular.x) * Quaternion::from_rotation({0, 1, 0}, eular.y) *
+               Quaternion::from_rotation({0, 0, 1}, eular.z);
     }
 
     /**

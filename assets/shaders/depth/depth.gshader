@@ -2,6 +2,7 @@
 #texture skybox_specular_texture="buildin:missing_texture"
 #setting depth_test="less_equal"
 #setting cull_mode="off"
+#setting write_mask="d" // 只写入深度
 
 #param color_permutation=vec3(1, 1, 1)
 

@@ -24,19 +24,18 @@ private:
         Craft::Level *level;
 
     public:
-        explicit LevelTicker(Ref<Craft::Level> &level)
-            : Goonya::TickFunction(Goonya::TickType::TICK), level(level.get()) {};
+        explicit LevelTicker(Craft::Level *level) : Goonya::TickFunction(Goonya::TickType::TICK), level(level) {};
         void tick() override { level->tick(); }
     };
     class LevelFixedTicker : public Goonya::TickFunction {
         Craft::Level *level;
 
     public:
-        explicit LevelFixedTicker(Ref<Craft::Level> &level)
-            : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), level(level.get()) {};
+        explicit LevelFixedTicker(Craft::Level *level)
+            : Goonya::TickFunction(Goonya::TickType::FIXED_TICK), level(level) {};
         void tick() override { level->fixed_tick(); }
     };
 
     std::unique_ptr<Goonya::TickFunction> level_ticker[2];
-    Ref<Craft::Level> level;
+    std::unique_ptr<Craft::Level> level;
 };

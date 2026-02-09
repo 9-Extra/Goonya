@@ -48,8 +48,9 @@ layout(location = 0) out vec4 out_color;
 // 生成 [0,1) 的Hammersley点（索引 i，总样本数 N），爱来自DeepSeek
 vec2 hammersley2d(uint i, uint N) {
     // 将i的二进制位反转，映射到[0,1)
+    vec2 noise = vec2(100, 50) * sin(time);
     float phi = float(bitfieldReverse(i)) * 2.3283064365386963e-10f; // 1/(2^32)
-    return fract(vec2(100, 50) * sin(time) + vec2(float(i)/float(N), phi));
+    return fract(noise + vec2(float(i)/float(N), phi));
 }
 
 // RTR4 9.41 P340，GGX分布
@@ -145,7 +146,7 @@ vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
 vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
 {
     vec3 SpecularLighting = vec3(0);
-    const uint NumSamples = 16;
+    const uint NumSamples = 32;
     float NoV = max(dot(N, V), 0);
     for(uint i = 0; i < NumSamples; i++)
     {

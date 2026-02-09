@@ -150,18 +150,18 @@ void MoveSystem::on_register() {
     Goonya::World *world = get_owner()->get_world();
     register_ticker(world);
 
-    level = create_ref<Craft::Level>(world, camera);
-    level_ticker[0] = std::make_unique<LevelTicker>(level);
-    level_ticker[1] = std::make_unique<LevelFixedTicker>(level);
+    level = std::make_unique<Craft::Level>(world, camera);
+    level_ticker[0] = std::make_unique<LevelTicker>(level.get());
+    level_ticker[1] = std::make_unique<LevelFixedTicker>(level.get());
     for (auto &&t : level_ticker) {
         t->register_ticker(world);
     }
 }
 
 void MoveSystem::on_unregister() {
-    for (auto &&t : level_ticker) {
-        t->unregister_ticker();
-    }
+    level.reset();
+    level_ticker[0].reset();
+    level_ticker[1].reset();
     unregister_ticker();
 }
 
