@@ -341,4 +341,30 @@ Matrix4f OpenGLGraphicsAPI::compute_perspective_matrix(float ratio, float fov, f
 
     return perspective.scale({1.0f, -1.0f, 1.0f}); // 在Y轴上进行翻转
 }
+
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+Matrix4f OpenGLGraphicsAPI::compute_orthographic_matrix(float ratio, float scale, float near_z,
+                                                        float far_z) const noexcept {
+    GN_ASSERT(near_z < far_z); // 不要写反了！！！！！！！！！！
+    float c = 1 / scale;
+    Matrix4f orthographic = Matrix4f{c / ratio,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     c,
+                                     0,
+                                     0,
+                                     0,
+                                     0,
+                                     -2.0f / (far_z - near_z),
+                                     0,
+                                     0,
+                                     0,
+                                     -2.0f * near_z / (far_z - near_z) - 1.0f,
+                                     1.0f};
+
+    return orthographic.scale({1.0f, -1.0f, 1.0f}); // 在Y轴上进行翻转
+}
+
 } // namespace Goonya

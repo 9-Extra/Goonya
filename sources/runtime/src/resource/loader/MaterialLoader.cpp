@@ -2,8 +2,8 @@
 
 #include "core/RefCount.h"
 #include "core/log/Log.h"
-#include "platform/graphics/Material.h"
-#include "platform/graphics/UberShader.h"
+#include "function/renderer/Material.h"
+#include "function/renderer/UberShader.h"
 #include "resource/ResMng.h"
 #include "resource/loader/MaterialParameterParser.h"
 

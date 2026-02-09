@@ -2,9 +2,13 @@
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/transform.h"
 #include "core/clock/GameClock.h"
-#include "function/renderer/RenderScene.h"
+#include "function/renderer/Material.h"
+#include "function/renderer/PipelineLayout.h"
+#include "function/renderer/RScene.h"
 #include "function/renderer/Renderer.h"
-#include "platform/graphics/UberShader.h"
+#include "function/renderer/UberShader.h"
+#include "imgui.h"
+#include "platform/graphics/Graphics.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
 #include "platform/graphics/opengl/GLTexture.h"
@@ -14,6 +18,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <ranges>
 #include <span>
 #include <tuple>
 
@@ -73,6 +78,8 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
 
 Pipeline::Pipeline() {
     skybox_mesh = resources.load_resource<GLMesh>("buildin:skybox_cube");
+    skybox_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/skybox/skybox"));
+
     if (!skybox_mesh) {
         throw RuntimeError("无法加载天空盒模型");
     }
@@ -116,6 +123,8 @@ Pipeline::Pipeline() {
 }
 
 void Pipeline::render() {
+    ImGui::Begin("Rendering");
+
     auto [w, h] = GL.get_rendertarget_screen()->get_size();
 
     // 建立与屏幕大小相同的渲染目标
@@ -131,21 +140,18 @@ void Pipeline::render() {
     }
 
     bool is_screen_painted = false;
-    for (auto &&camera : renderer.camera_set) {
-        if (!camera->render_target) continue;
-        RenderScene *scene = renderer.scene_set.get_or_null(camera->scene);
-        if (!scene) continue;
+    for (auto [i, scene] : std::views::enumerate(renderer.scenes)) {
+        GN_ASSERT(scene);
+        for (RCamera *camera : scene->cameras) {
+            GN_ASSERT(camera);
+            if (!camera->render_target) continue;
 
-        if (camera->render_target->is_screen()) {
-            is_screen_painted = true;
+            if (camera->render_target->is_screen()) {
+                is_screen_painted = true;
+            }
+            ImGui::SeparatorText(std::format("Camera {}", i).c_str());
+            render_camera(camera, scene);
         }
-
-        RenderContext context{.render_target = camera->render_target,
-                              .camera = camera.get(),
-                              .scene = scene,
-                              .aspect_ratio = (float)w / (float)h};
-
-        render_camera(context);
     }
 
     if (is_screen_painted) {
@@ -154,9 +160,9 @@ void Pipeline::render() {
     } else {
         LOG_ERROR("没有相机绑定到屏幕！");
     }
+    ImGui::End();
 }
-void Pipeline::render_camera(RenderContext &context) {
-    CameraRenderProxy *camera = context.camera;
+void Pipeline::render_camera(RCamera *camera, RScene *scene) {
     auto [w, h] = camera->render_target->get_size();
 
     const Viewport viewport{.x = (int32_t)(camera->rect.x * w),
@@ -172,31 +178,38 @@ void Pipeline::render_camera(RenderContext &context) {
     GL.clear(true, true, true);
 
     // 寻找包含且最小，接近中心的天空盒
-    Skybox *skybox = nullptr;
+    REnvironment *env = nullptr;
     float min_distance = std::numeric_limits<float>::infinity();
-    for (auto &&s : context.scene->skyboxs) {
-        if (!s.ignore_range && !s.bbox.contains(camera->get_position())) {
+    for (auto &&s : scene->environments) {
+        if (!s.is_infinite && !s.aabb.contains(camera->transform.position)) {
             continue;
         }
         float d =
-            s.ignore_range ? std::numeric_limits<float>::max() : (s.bbox.center() - camera->get_position()).square();
+            s.is_infinite ? std::numeric_limits<float>::max() : (s.aabb.center() - camera->transform.position).square();
         if (d < min_distance) {
-            skybox = &s;
+            env = &s;
             min_distance = d;
         }
     }
 
-    context.env_map = skybox->env_map;
-    context.skybox_material = skybox->skybox_material;
+    const float ratio = float(viewport.width) / float(viewport.height);
+    const Matrix4f view_matrix = camera->get_view_matrix();
+    const Matrix4f projection_matrix = camera->get_projection_matrix(ratio);
+    const Matrix4f view_projection_matrix = view_matrix * projection_matrix;
+    Vector3f camera_pos = camera->transform.position;
+
+    CameraInfo camera_info{
+        .aspect_ratio = ratio,
+        .env = env,
+        .camera = camera,
+        .scene = scene,
+        .view_matrix = view_matrix,
+        .projection_matrix = projection_matrix,
+        .view_projection_matrix = view_projection_matrix,
+    };
 
     Ref<GLBuffer> per_frame_uniform =
         create_ref<GLBuffer>(BufferType::MODIFIABLE, sizeof(PerFrameData)); // 用于一般渲染每帧变化的数据
-    Vector3f camera_pos = camera->get_position();
-    RenderScene &scene = renderer.scene_set[camera->scene];
-
-    const Matrix4f perspective_matrix = camera->get_projection_matrix(float(w) / float(h));
-    const Matrix4f view_matrix = camera->get_view_matrix();
-    const Matrix4f view_perspective_matrix = view_matrix * perspective_matrix;
 
     {
         // 填充per_frame uniform数据
@@ -204,27 +217,27 @@ void Pipeline::render_camera(RenderContext &context) {
         // 视图矩阵
         data->view_matrix = view_matrix.transpose();
         // 视图矩阵的逆矩阵
-        data->view_matrix_inv = view_matrix.inverse()->transpose();
-        data->perspective_matrix = perspective_matrix.transpose();
+        data->view_matrix_inv = camera->get_view_matrix_inversed().transpose();
+        data->perspective_matrix = projection_matrix.transpose();
         // 透视投影矩阵
-        data->view_perspective_matrix = view_perspective_matrix.transpose();
+        data->view_perspective_matrix = view_projection_matrix.transpose();
         // 相机位置
         data->camera_position = camera_pos;
         // 雾参数
-        GN_ASSERT(scene.fog_density >= 0.0f);
-        data->fog_density = scene.fog_density;
-        data->fog_min_distance = scene.fog_min_distance;
+        GN_ASSERT(env->fog_density >= 0.0f);
+        data->fog_density = env->fog_density;
+        data->fog_min_distance = env->fog_min_distance;
         data->time = std::chrono::duration_cast<std::chrono::duration<float, std::milli>>(GAME_CLOCK.total()).count();
         data->screen_size = {(float)viewport.width, (float)viewport.height};
         // 灯光参数
-        data->ambient_light = scene.ambient_light;
-        if (scene.pointlights.size() > POINTLIGHT_MAX) {
-            LOG_WARN("点光源数量({})超出上限({})", scene.pointlights.size(), POINTLIGHT_MAX);
+        data->ambient_light = env->ambient_light;
+        if (scene->lights.size() > POINTLIGHT_MAX) {
+            LOG_WARN("点光源数量({})超出上限({})", scene->lights.size(), POINTLIGHT_MAX);
         }
-        uint32_t count = static_cast<uint32_t>(std::min<size_t>(scene.pointlights.size(), POINTLIGHT_MAX));
-        for (const auto &[i, l] : std::views::enumerate(scene.pointlights)) {
+        uint32_t count = static_cast<uint32_t>(std::min<size_t>(scene->lights.size(), POINTLIGHT_MAX));
+        for (const auto &[i, l] : std::views::enumerate(scene->lights)) {
             data->pointlight_list[i].position = l.position;
-            data->pointlight_list[i].intensity = l.color * l.factor;
+            data->pointlight_list[i].intensity = l.linear_color * l.intensity;
         }
         data->pointlight_num = count;
         // 填充结束
@@ -232,67 +245,44 @@ void Pipeline::render_camera(RenderContext &context) {
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(PER_FRAME_UNIFORM_BINDING);
 
-    cull(context);
+    std::vector<CullInstance> visible_instances = cull(camera_info);
 
-    draw_depth(context);
+    draw_depth(camera_info, visible_instances);
 
-    draw_geometry(context);
+    draw_geometry(camera_info, visible_instances);
 
-    if (skybox) {
-        draw_skybox(context);
-    }
+    draw_skybox(camera_info);
 
-    draw_postprocess(context);
+    draw_postprocess(camera_info);
 }
 
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void Pipeline::cull(RenderContext &context) {
-    const std::array<Plane, 6> worldspace_frustum =
-        create_frustum_planes(context.camera->get_view_projection_matrix(context.aspect_ratio));
+std::vector<CullInstance> Pipeline::cull(CameraInfo &camera_info) {
 
-    Ref<Material> default_material = resources.load_resource<Material>("materials/default");
+    std::vector<CullInstance> visible_instances;
 
-    for (const auto &mesh : context.scene->mesh_proxys) {
-        const Ref<GLMesh> m = mesh->mesh;
+    const std::array<Plane, 6> worldspace_frustum = create_frustum_planes(camera_info.view_projection_matrix);
 
-        struct PerObject {
-            Matrix4f model_matrix;
-            Matrix4f normal_matrix;
-        };
-
-        PerObject uniform_data{
-            .model_matrix = mesh->model_matrix.transpose(),
-            .normal_matrix = Matrix4f{mesh->normal_matrix.transpose()},
-        };
-
-        Ref<GLBuffer> per_object_uniform =
-            create_ref<GLBuffer>(BufferType::DEVICE_ONLY, std::as_bytes(std::span(&uniform_data, 1)));
-
-        for (uint32_t i = 0; i < m->submeshes.size(); i++) {
-            if (m->submeshes[i].index_count == 0) {
-                continue;
-            }
-            if (!intersect_frustum_aabb(worldspace_frustum, mesh->aabbs[i])) {
-                continue; // 不在视椎体内部
-            }
-
-            // 材质未设置时使用默认材质，多出来则无视
-            bool has_material = i < mesh->materials.size() && bool(mesh->materials[i]);
-            auto current_material = has_material ? mesh->materials[i] : default_material;
-
-            context.visible_instances.emplace_back(Instance{
-                .mesh = m,
-                .material = current_material,
-                .per_object_uniform = per_object_uniform,
-                .submesh = m->submeshes[i],
-            });
+    for (auto &&instance : camera_info.scene->instances) {
+        if (!intersect_frustum_aabb(worldspace_frustum, instance.transformed_bbox)) {
+            continue; // 不在视椎体内部
         }
+
+        GN_ASSERT(instance.material);
+
+        visible_instances.emplace_back(CullInstance{
+            .mesh = instance.mesh.get(),
+            .material = instance.material.get(),
+            .submesh = instance.submesh,
+            .per_object_uniform = instance.per_object_uniform.get(),
+        });
     }
+    return visible_instances;
 }
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void Pipeline::draw_depth(RenderContext &context) {
+void Pipeline::draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances) {
     GL.push_debug_group_label("Draw Depth");
-    auto [w, h] = context.render_target->get_size();
+    auto [w, h] = replace_render_target[0]->get_size();
     if (!depth_fbo || depth_fbo->get_size() != std::make_tuple(w, h)) {
         depth_fbo = create_ref<GLFrameBuffer>(std::make_tuple(w, h));
         depth_texture = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::DEPTH_24_STENCIL_8,
@@ -306,7 +296,7 @@ void Pipeline::draw_depth(RenderContext &context) {
 
     depth_material->bind();
 
-    for (auto &instance : context.visible_instances) {
+    for (auto &instance : visible_instances) {
         instance.mesh->bind();
         instance.per_object_uniform->bind_uniform(PER_OBJECT_UNIFORM_BINDING);
         GL.draw_submesh(instance.submesh);
@@ -314,12 +304,13 @@ void Pipeline::draw_depth(RenderContext &context) {
     GL.pop_debug_group_label();
 }
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
-void Pipeline::draw_geometry(RenderContext &context) {
+void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances) {
     GL.push_debug_group_label("Draw Geometry");
     replace_render_target[0]->bind_draw();
 
-    for (auto &instance : context.visible_instances) {
-        instance.material->set_texture("skybox_specular_texture", context.env_map);
+    ImGui::BulletText("Visible Instances: %zu", visible_instances.size());
+    for (auto &instance : visible_instances) {
+        instance.material->set_texture("skybox_specular_texture", camera_info.env->environment_map);
         instance.material->set_texture("camera_depth", depth_texture);
         instance.material->bind();
         instance.mesh->bind();
@@ -329,8 +320,8 @@ void Pipeline::draw_geometry(RenderContext &context) {
     GL.pop_debug_group_label();
 }
 
-void Pipeline::draw_skybox(RenderContext &context) {
-    if (context.skybox_material == nullptr) {
+void Pipeline::draw_skybox(CameraInfo &camera_info) {
+    if (camera_info.env->skybox == nullptr) {
         return;
     }
     GL.push_debug_group_label("Draw Skybox");
@@ -338,21 +329,21 @@ void Pipeline::draw_skybox(RenderContext &context) {
     replace_render_target[0]->bind_draw();
 
     Matrix4f skybox_view_perspective_matrix =
-        context.camera->get_skybox_view_perspective_matrix(context.aspect_ratio).transpose();
+        (camera_info.camera->get_skybox_view_matrix() * camera_info.projection_matrix).transpose();
     Ref<GLBuffer> skybox_per_pass =
         create_ref<GLBuffer>(BufferType::DEVICE_ONLY, std::as_bytes(std::span(&skybox_view_perspective_matrix, 1)));
     skybox_per_pass->bind_uniform(PER_PASS_UNIFORM_BINDING);
     // 绑定天空盒材质
-    context.skybox_material->bind();
-    context.skybox_material->set_texture("skybox_specular_texture", context.env_map);
-    skybox_per_pass->bind_uniform(PER_PASS_UNIFORM_BINDING);
+    skybox_material->bind();
+    skybox_material->set_texture("skybox_specular_texture", camera_info.env->skybox);
+    skybox_material->set_param("color_permutation", camera_info.env->skybox_permutation);
     skybox_mesh->bind();
     GL.draw_submesh(skybox_mesh->submeshes.at(0));
 
     GL.pop_debug_group_label();
 }
 
-void Pipeline::draw_postprocess(RenderContext &context) {
+void Pipeline::draw_postprocess(CameraInfo &camera_info) {
     GL.push_debug_group_label("Draw Postprocess");
     // 后处理
     auto [width, height] = GL.get_rendertarget_screen()->get_size();

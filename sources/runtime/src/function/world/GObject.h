@@ -31,8 +31,7 @@ private:
 
     Transform transform; // 相对父节点的变换
 
-    Matrix4f world_model_matrix;  // 世界根节点的变换
-    Matrix3f world_normal_matrix; // 世界根节点的法线变换
+    Matrix4f world_model_matrix; // 世界根节点的变换
 
     std::vector<std::unique_ptr<Component>> components;
     std::weak_ptr<GObject> parent;
@@ -213,12 +212,6 @@ public:
             recaculate_world_transform();
         }
         return world_model_matrix;
-    }
-    const Matrix3f &get_world_normal_matrix() noexcept {
-        if (is_world_transform_dirty) {
-            recaculate_world_transform();
-        }
-        return world_normal_matrix;
     }
 
     const std::vector<std::shared_ptr<GObject>> &get_children() const noexcept { return children; }

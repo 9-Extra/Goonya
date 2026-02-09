@@ -5,6 +5,7 @@
 #include <span>
 
 #include <glad/glad.h>
+#include <type_traits>
 #include <vector>
 
 #include "core/RefCount.h"
@@ -57,6 +58,11 @@ public:
     GLuint get_id() const noexcept { return id; }
     size_t get_size() const noexcept { return size; }
     // access
+    template <typename T>
+        requires std::is_trivially_copyable_v<T>
+    void write(const T *data, BufferMapOption option, size_t offset = 0) noexcept {
+        write(std::span<const std::byte>((const std::byte *)data, sizeof(T)), option, offset);
+    }
     // NOLINTNEXTLINE(readability-make-member-function-const)
     void write(std::span<const std::byte> data, BufferMapOption option, size_t offset = 0) noexcept;
     std::byte *map(BufferMapOption option) const noexcept { return map_range(option, 0, size); };

@@ -1,6 +1,6 @@
 #name skybox
 #texture skybox_specular_texture="buildin:missing_texture"
-#setting depth_test="off"
+#setting depth_test="less_equal"
 #setting cull_mode="off"
 
 #section common

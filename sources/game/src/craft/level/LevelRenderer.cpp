@@ -1,12 +1,14 @@
 #include "LevelRenderer.h"
 
 #include "core/RefCount.h"
+#include "core/cgmath/aabb.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/model_manager.h"
+#include "function/renderer/Material.h"
+#include "function/renderer/RScene.h"
 #include "function/renderer/RendererBasic.h"
-#include "platform/graphics/Material.h"
-#include "platform/graphics/UberShader.h"
+#include "function/renderer/UberShader.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 
@@ -19,8 +21,8 @@ namespace Craft {
 void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material) {
     GN_ASSERT(is_dirty);
 
-    auto receiver = [section_ptr = this->weak_from_this(), &render_scene = render_scene,
-                     terrain_material = terrain_material](ComplieResult &&result, uint32_t version) {
+    auto receiver = [section_ptr = this->weak_from_this(), terrain_material = terrain_material](ComplieResult &&result,
+                                                                                                uint32_t version) {
         ASSERT_RENDER_THREAD();
         std::shared_ptr<RenderSection> section = section_ptr.lock();
         if (section == nullptr) {
@@ -29,58 +31,50 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         if (version < section->version) {
             return; // 当前版本较旧，跳过
         }
-        section->version = version; // 更新版本号
 
-        RenderScene *scene = Goonya::renderer.get_scene(render_scene);
+        Goonya::RScene *scene = section->get_scene();
         if (scene == nullptr) {
-            return;
+            return; // 场景已经不存在
         }
 
-        if (result.indices.size() == 0) {
-            // 对于没有东西需要渲染的区块，则其mesh_proxy都不需要存在
-            if (section->mesh_proxy) {
-                auto iter = scene->mesh_proxys.find(section->mesh_proxy);
-                GN_ASSERT(iter != scene->mesh_proxys.end());
-                scene->mesh_proxys.erase(iter);
-                section->mesh_proxy = nullptr;
+        // ---------------开始更新----------------
+        section->version = version; // 更新版本号
+
+        // 没有物体则不需要网格
+        if (result.indices.empty()) {
+            if (section->mesh) {
+                section->mesh.reset();
+                section->mark_dirty(RenderSection::DirtyBit::Mesh);
             }
             return;
         }
 
-        Ref<Goonya::GLMesh> updated_mesh = create_ref<Goonya::GLMesh>(VERTEX_LAYOUT_PLANE);
-        updated_mesh->submeshes.emplace_back(Goonya::SubMesh{
-            .start_index = 0, .index_count = (uint32_t)result.indices.size(), .topology = Goonya::Topology::TRIANGLE});
+        Goonya::Vector3f start_pos = section->chunk_pos.get_start_pos();
+        Goonya::Vector3f end_pos = start_pos + Goonya::Vector3f{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH};
+        Goonya::BoundingBox bbox{start_pos, end_pos};
 
-        updated_mesh->set_vertices(0, std::as_bytes(std::span(result.vertices)));
-        updated_mesh->set_indices(result.indices);
+        section->mesh = create_ref<Goonya::GLMesh>(VERTEX_LAYOUT_PLANE);
+        section->mesh->submeshes.emplace_back(Goonya::SubMesh{.start_index = 0,
+                                                              .index_count = (uint32_t)result.indices.size(),
+                                                              .topology = Goonya::Topology::TRIANGLE,
+                                                              .aabb = bbox});
+
+        section->mesh->set_vertices(0, std::as_bytes(std::span(result.vertices)));
+        section->mesh->set_indices(result.indices);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
         Ref<Goonya::GLBuffer> updated_per_surface_buffer =
             create_ref<Goonya::GLBuffer>(Goonya::BufferType::DEVICE_ONLY, per_surface_data);
 
         // LOG_INFO("位于 {} 的区块编译完成", section->chunk_pos);
-        if (section->mesh_proxy == nullptr) {
+        if (section->materials.empty()) {
+            // 没有材质则创建一个
             Ref<Material> material = terrain_material->clone();
-            material->set_external_buffer("per_surface", updated_per_surface_buffer);
-
-            Goonya::Vector3f start_pos = section->chunk_pos.get_start_pos();
-            Goonya::Vector3f end_pos = start_pos + Goonya::Vector3f{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH};
-
-            MeshRenderProxy *proxy = new MeshRenderProxy{};
-            proxy->mesh = updated_mesh;
-            proxy->materials = {material};
-            proxy->model_matrix = Goonya::Matrix4f::identity();
-            proxy->normal_matrix = Goonya::Matrix3f::identity();
-            proxy->aabbs = {Goonya::BoundingBox{start_pos, end_pos}};
-
-            section->mesh_proxy = proxy;
-
-            scene->mesh_proxys.emplace(std::unique_ptr<MeshRenderProxy>{proxy});
-        } else {
-            MeshRenderProxy *proxy = section->mesh_proxy;
-            proxy->mesh = updated_mesh;
-            proxy->materials[0]->set_external_buffer("per_surface", updated_per_surface_buffer);
+            section->materials = {material};
         }
+
+        section->materials[0]->set_external_buffer("per_surface", updated_per_surface_buffer);
+        section->mark_dirty(DirtyBit::Init);
     };
 
     if (complie_task) {
@@ -89,7 +83,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
 
     version++;
     complie_task = std::make_shared<ComplieTask>(chunk_pos, region_cache.create_region(chunk_pos), version, receiver);
-    Goonya::THREAD_POOL.enqueue_detached([task = this->complie_task, receiver = std::move(receiver)] mutable {
+    Goonya::THREAD_POOL.enqueue_detached([task = this->complie_task] mutable {
         // 在LevelRenderer销毁前一定提前结束所有任务，所以queue一定可用
         task->do_complie();
     });
@@ -97,7 +91,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
     is_dirty = false;
 }
 
-LevelRenderer::LevelRenderer(Goonya::Handle<RenderScene> render_scene) : render_scene(render_scene) {
+LevelRenderer::LevelRenderer(Goonya::RScene *render_scene) : render_scene(render_scene) {
     Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(TERRAIN_SHADER_NAME).get();
     terrain_material = create_ref<Material>(shader);
     terrain_material->set_texture("basecolor_texture", ModelManager::get().get_textures());

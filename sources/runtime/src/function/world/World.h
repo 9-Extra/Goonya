@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GObject.h"
-#include "core/sparse_set.h"
+#include "function/renderer/RScene.h"
 #include "function/world/Component.h"
 
 #include <forward_list>
@@ -38,8 +38,6 @@ public:
     virtual void tick() = 0;
 };
 
-class RenderScene;
-
 class World final {
 public:
     static std::forward_list<World> world_list;
@@ -47,7 +45,7 @@ public:
 private:
     std::shared_ptr<GObject> root;
     uint64_t tick_count = 0;
-    Handle<RenderScene> _main_scene;
+    RScene *scene;
 
     std::unordered_set<TickFunction *> tick_functions;
     std::unordered_set<TickFunction *> fixed_tick_functions;
@@ -64,7 +62,7 @@ public:
     }
     World(const World &) = delete;
     // --------------------管理--------------------------
-    Handle<RenderScene> &main_scene() noexcept { return _main_scene; }
+    RScene *get_scene() const noexcept { return scene; }
 
     std::shared_ptr<GObject> get_root() const noexcept { return root; }
 

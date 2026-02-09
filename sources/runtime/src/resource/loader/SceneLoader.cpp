@@ -7,9 +7,10 @@
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
 #include "function/components/CpntSkybox.h"
+#include "function/renderer/Material.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/Material.h"
 #include "platform/graphics/opengl/GLMesh.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
 
@@ -78,18 +79,18 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             }
             obj->add_component(std::move(camera));
         } else if (cpnt_name == "sky_box") {
-            Ref<Material> material;
-            if (cpnt_desc.isMember("material")) {
-                material = resources.load_resource<Material>(cpnt_desc["material"].asString());
+            Ref<GLTexture> skybox;
+            if (cpnt_desc.isMember("skybox")) {
+                skybox = resources.load_resource<GLTexture>(cpnt_desc["skybox"].asString());
             } else {
-                throw RuntimeError("天空盒必须指定材质");
+                throw RuntimeError("天空盒必须指定纹理");
             }
 
             Ref<GLTexture> env_map;
             if (cpnt_desc.isMember("env_map")) {
                 env_map = resources.load_resource<GLTexture>(cpnt_desc["env_map"].asString());
             } else {
-                env_map = resources.load_resource<GLTexture>("buildin:black");
+                env_map = skybox;
             }
 
             bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
@@ -99,7 +100,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
             } else if (!ignore_range) {
                 throw RuntimeError("带范围的天空盒必须指定包围盒");
             }
-            obj->add_component(std::make_unique<CpntSkybox>(material, ignore_range, bbox));
+            obj->add_component(std::make_unique<CpntSkybox>(skybox, env_map, ignore_range, bbox));
         } else {
             throw RuntimeError(std::format("未知组件：{}", cpnt_name));
         }

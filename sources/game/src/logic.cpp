@@ -8,10 +8,11 @@
 #include "core/input/input.h"
 #include "core/log/Log.h"
 #include "craft/level/level.h"
+#include "function/renderer/Renderer.h"
+#include "function/renderer/UberShader.h"
 #include "function/world/Component.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
-#include "platform/graphics/UberShader.h"
 #include "resource/ResMng.h"
 #include "runtime/GAssert.h"
 
@@ -25,13 +26,6 @@ void MoveSystem::handle_mouse() const {
     if (Goonya::Input::is_mouse_down(Input::LEFT)) {
         // 左键按下时，捕获光标
         Display::set_cursor_mode(CursorMode::CAPTURED | CursorMode::HIDDEN);
-    }
-    if (Goonya::Input::is_key_click('R')) {
-        if (lights->is_disabled()) {
-            lights->enable(true);
-        } else {
-            lights->disable(true);
-        }
     }
 
     // 如果光标已捕获，根据鼠标移动旋转视角
@@ -52,6 +46,7 @@ void MoveSystem::handle_keyboard(float delta) const {
     using namespace Goonya;
     const float move_speed = delta * (Input::is_key_pressing(Input::KeyCode::LCTRL) ? 0.06f : 0.02f);
 
+    // F键开关IBL环境光
     if (Input::is_key_click('F')) {
         const std::string_view key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
         if (!Goonya::GLOBAL_VARIANT_KEY.is_key_set(key_name)) {
@@ -59,6 +54,20 @@ void MoveSystem::handle_keyboard(float delta) const {
         } else {
             Goonya::GLOBAL_VARIANT_KEY.reset_key(key_name);
         }
+    }
+
+    // R键开关灯
+    if (Goonya::Input::is_key_click('R')) {
+        if (lights->is_disabled()) {
+            lights->enable(true);
+        } else {
+            lights->disable(true);
+        }
+    }
+
+    // B键开关Bloom
+    if (Goonya::Input::is_key_click('B')) {
+        renderer.draw_bloom = !renderer.draw_bloom;
     }
 
     // 按下LALT时，切换光标模式
@@ -80,10 +89,6 @@ void MoveSystem::handle_keyboard(float delta) const {
         } else {
             LOG_ERROR("导出失败, 未找到资源\"{}\"", key);
         }
-    }
-
-    if (Goonya::Input::is_key_click('B')) {
-        renderer.draw_bloom = !renderer.draw_bloom;
     }
 
     if (Goonya::Input::is_key_click(Input::KeyCode::ESCAPE)) {

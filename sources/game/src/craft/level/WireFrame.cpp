@@ -2,14 +2,12 @@
 
 #include "core/RefCount.h"
 #include "core/cgmath/aabb.h"
-#include "core/cgmath/matrix.h"
 #include "core/cgmath/vector.h"
 #include "craft/block/block_model.h"
-#include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/renderer/RenderScene.h"
+#include "function/renderer/Material.h"
+#include "function/renderer/RScene.h"
+#include "function/renderer/UberShader.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/Material.h"
-#include "platform/graphics/UberShader.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 
@@ -27,7 +25,7 @@ struct WireFrameVertex {
 
 constexpr std::string_view WIREFRAME_SHADER_NAME = "shaders/craft/wireframe/wire_frame";
 
-WireFrame::WireFrame(Goonya::RenderScene &render_scene) {
+WireFrame::WireFrame(Goonya::RScene *scene) {
     // 确保OpenGL上下文已初始化，避免过早创建资源导致错误
     GN_ASSERT(Goonya::GL.is_initialized()); // 不能太早初始化
 
@@ -44,22 +42,18 @@ WireFrame::WireFrame(Goonya::RenderScene &render_scene) {
     mesh->submeshes.resize(1);
     // 只有index_count需要动态改变，另外Topology::LINE因为线宽不能大于1，因此在调试之外就别用了
     // 使用三角形拓扑结构，通过几何着色器将三角形转换为线条，以实现更宽的线宽效果
-    mesh->submeshes[0] = Goonya::SubMesh{
-        .start_index = 0, .index_count = 0, .base_vertex_offset = 0, .topology = Goonya::Topology::TRIANGLE};
+    mesh->submeshes[0] = Goonya::SubMesh{.start_index = 0,
+                                         .index_count = 0,
+                                         .base_vertex_offset = 0,
+                                         .topology = Goonya::Topology::TRIANGLE,
+                                         .aabb = Goonya::BoundingBox{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
 
     // 从资源管理器加载线框着色器，该着色器负责将三角形转换为线条
     Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(WIREFRAME_SHADER_NAME).get();
-    material = create_ref<Goonya::Material>(shader);
+    materials = {create_ref<Goonya::Material>(shader)};
 
-    // 创建网格渲染代理对象，用于管理网格和材质的渲染
-    mesh_proxy = new Goonya::MeshRenderProxy(); // 不需要由WireFrame销毁
-    mesh_proxy->mesh = mesh;
-    mesh_proxy->materials.emplace_back(material);
-    mesh_proxy->aabbs.resize(1);
-    mesh_proxy->aabbs[0] = Goonya::BoundingBox{{0, 0, 0}, {0, 0, 0}}; // 初始化为不可见的边界框
-
-    // 将网格代理添加到渲染场景中，使其参与渲染流程
-    render_scene.mesh_proxys.emplace(std::unique_ptr<Goonya::MeshRenderProxy>{mesh_proxy});
+    hide(true); // 初始不可见
+    scene->register_mesh(this);
 }
 void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     // 现代OpenGL渲染中，线条是通过渲染两个三角形来模拟的
@@ -95,9 +89,8 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     mesh->set_indices(std::span(indices));
     mesh->submeshes[0].index_count = indices.size();
 
-    // 设置模型变换矩阵，将线框从局部坐标系转换到世界坐标系
-    // 不需要normal_matrix，因为线框渲染不依赖于法线变换
-    mesh_proxy->model_matrix = Goonya::Matrix4f::identity().translate(pos);
-    mesh_proxy->aabbs[0] = Goonya::BoundingBox{pos, pos + 1}; // 更新边界框为1x1x1的立方体
+    transform.position = pos;
+    this->mark_dirty(DirtyBit::Init); // Mesh和Transform需要更新
+    hide(false);                      // 可见
 }
 } // namespace Craft

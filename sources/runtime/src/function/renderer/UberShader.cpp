@@ -125,6 +125,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->pipeline_setting = desc.pipeline_setting;
     this->local_variant_key_collect = LocalVariantKeyCollect(std::move(desc.local_variant_keys));
     this->effective_global_key_mask = GLOBAL_VARIANT_KEY.get_shader_global_key_mask(desc.global_variant_keys);
+    this->render_priority = desc.render_priority;
 
     // 不使用Opengl默认的纹理单元绑定，而是手动分配纹理单元
     for (auto &&[i, default_texture] : std::views::enumerate(std::move(desc.textures))) {
@@ -148,11 +149,11 @@ UberShader::UberShader(UberShaderDesc &&desc) {
         auto iter = desc.parameters.find(name);
         if (iter != desc.parameters.end()) {
             if (field.type_and_default_value.index() != iter->second.index()) {
-                throw RuntimeError(std::format("参数\"{}\"在.meta中定义为了不同的类型", name));
+                throw RuntimeError(std::format("参数\"{}\"在着色器中定义为了不同的类型", name));
             }
             field.type_and_default_value = iter->second;
         } else {
-            LOG_INFO("参数\"{}\"在.meta中未定义，将使用默认值", name);
+            LOG_INFO("参数\"{}\"在着色器中未定义，将使用默认值", name);
         }
     }
 }

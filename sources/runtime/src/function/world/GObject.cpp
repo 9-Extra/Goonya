@@ -49,11 +49,9 @@ void GObject::recaculate_world_transform() noexcept {
         // 子节点的transform为父节点的transform叠加上自身的transform
         // 从逻辑上是先进行子节点的变换，再进行父节点的变换
         world_model_matrix = transform.model_matrix() * p->world_model_matrix;
-        world_normal_matrix = transform.normal_matrix() * p->world_normal_matrix;
     } else {
         // 对于根节点特殊处理
         world_model_matrix = transform.model_matrix();
-        world_normal_matrix = transform.normal_matrix();
     }
     is_world_transform_dirty = false;
 }

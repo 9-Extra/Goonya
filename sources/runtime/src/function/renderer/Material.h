@@ -1,15 +1,18 @@
 #pragma once
 
+#include "RPriority.h"
+#include "UberShader.h"
 #include "core/RefCount.h"
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/PipelineSetting.h"
-#include "platform/graphics/UberShader.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/GLTexture.h"
+
 #include "resource/Resource.h"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -21,6 +24,8 @@ protected:
     // 着色器设置
     UberShader *const uber_shader;
     VariantCode local_variant_code;
+
+    std::optional<RenderPriority> render_priority;
 
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, PipelineSettingParamType> override_pipeline_setting;
@@ -34,8 +39,8 @@ protected:
 
     // 设备侧
     PipelineSetting pipeline_setting;
-    VariantCodeSet current_variant_code; // 当前绑定的着色器的变体码
-    Ref<GLShader> shader;
+    mutable VariantCodeSet current_variant_code; // 当前绑定的着色器的变体码
+    mutable Ref<GLShader> shader;
     Ref<GLBuffer> per_material; // 显存中的材质参数
 
 public:
@@ -44,13 +49,32 @@ public:
     explicit Material(Ref<UberShader> uber_shader) : Material(uber_shader.get()) {}
     ~Material() = default;
 
-    void bind();
-    void update() {
+    /**
+     * @brief 绑定材质到渲染管线
+     * 完整的绑定，包含着色器、uniform buffer、纹理等
+     */
+    void bind() const;
+
+    /**
+     * @brief 绑定额外的资源到渲染管线
+     * 只包括外部缓冲区和纹理
+     */
+    void bind_external_resources() const;
+    Ref<GLShader> get_shader() const noexcept {
         update_shader_variant();
+        return shader;
+    }
+    PipelineSetting get_pipeline_setting() const noexcept { return pipeline_setting; }
+
+    Ref<GLBuffer> get_per_material_uniform() const noexcept {
         update_parameter();
+        return per_material;
     }
 
     UberShader *get_uber_shader() const noexcept { return uber_shader; }
+    RenderPriority get_render_priority() const noexcept {
+        return render_priority.has_value() ? render_priority.value() : uber_shader->get_render_priority();
+    }
 
     void set_pipeline_setting(const std::string &name, PipelineSettingParamType value);
 
@@ -108,8 +132,8 @@ public:
     Ref<Material> clone() const noexcept;
 
 protected:
-    void update_shader_variant();
-    void update_parameter();
+    void update_shader_variant() const;
+    void update_parameter() const;
 
 private:
 };

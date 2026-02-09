@@ -1,10 +1,11 @@
 #include "Material.h"
 #include "core/RefCount.h"
 
+#include "UberShader.h"
+#include "function/renderer/PipelineLayout.h"
 #include "platform/graphics/Graphics.h"
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/PipelineSetting.h"
-#include "platform/graphics/UberShader.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/OpenGLAPI.h"
@@ -18,15 +19,17 @@
 
 namespace Goonya {
 
-void Material::bind() {
-    this->update();
-
+void Material::bind() const {
     GL.set_pipeline_state(pipeline_setting);
-    shader->bind(); // 绑定此材质关联的着色器
+    get_shader()->bind(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
     if (per_material->get_size() != 0) {
-        per_material->bind_uniform(uber_shader->per_material_block().binding);
+        get_per_material_uniform()->bind_uniform(PER_MATERIAL_UNIFORM_BINDING);
     }
+    bind_external_resources();
+}
+
+void Material::bind_external_resources() const {
     // 绑定所有纹理
     for (const auto &[name, info] : uber_shader->get_texture_units()) {
         if (auto iter = textures.find(info.unit); iter != textures.end()) {
@@ -108,7 +111,7 @@ Ref<Material> Material::clone() const noexcept {
     return c;
 }
 
-void Material::update_shader_variant() {
+void Material::update_shader_variant() const {
     VariantCodeSet code{uber_shader->get_effective_global_key_code(), local_variant_code};
     if (current_variant_code != code) [[unlikely]] {
         shader = uber_shader->query_variant(code);
@@ -116,8 +119,9 @@ void Material::update_shader_variant() {
     }
 }
 
-void Material::update_parameter() {
+void Material::update_parameter() const {
     if (!is_parameters_dirty) return;
+    is_parameters_dirty = false;
 
     {
         const auto &fields = uber_shader->per_material_block().fields;
@@ -139,8 +143,6 @@ void Material::update_parameter() {
         }
         per_material->unmap();
     }
-
-    is_parameters_dirty = false;
 }
 
 } // namespace Goonya

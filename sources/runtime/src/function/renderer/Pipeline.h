@@ -1,63 +1,44 @@
 #pragma once
 
-#include "function/renderer/RenderProxy/Camera.h"
-#include "function/renderer/RenderScene.h"
-#include "platform/graphics/Material.h"
+#include "Material.h"
+#include "core/cgmath/matrix.h"
+#include "function/renderer/Camera.h"
+#include "function/renderer/RScene.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
 #include "platform/graphics/opengl/GLTexture.h"
+
 #include <vector>
 
 namespace Goonya {
 
-static constexpr unsigned int POINTLIGHT_MAX = 8;
-
-struct PointLightData final {
-    alignas(16) Vector3f position;
-    alignas(16) Vector3f intensity;
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct CullInstance {
+    GLMesh *mesh;
+    Material *material;
+    SubMesh submesh;
+    GLBuffer *per_object_uniform;
 };
-
-struct PerFrameData final { // NOLINT：不需要初始化
-    Matrix4f view_matrix;
-    Matrix4f view_matrix_inv;
-    Matrix4f perspective_matrix;
-    Matrix4f view_perspective_matrix;
-    alignas(16) Vector3f ambient_light;
-    alignas(16) Vector3f camera_position;
-    alignas(4) float fog_min_distance;
-    alignas(4) float fog_density;
-    alignas(4) float time;
-    alignas(4) Vector2f screen_size;
-    alignas(4) uint32_t pointlight_num;
-    PointLightData pointlight_list[POINTLIGHT_MAX];
-};
-
-constexpr uint32_t PER_FRAME_UNIFORM_BINDING = 0;
-
-struct alignas(256) PerObjectData final {
-    Matrix4f model_matrix;
-    Matrix4f normal_matrix; // 内存对齐
-};
-
-constexpr uint32_t PER_OBJECT_UNIFORM_BINDING = 1;
-constexpr uint32_t PER_PASS_UNIFORM_BINDING = 2;
-constexpr uint32_t PER_MATERIAL_UNIFORM_BINDING = 3;
 
 class Pipeline {
 private:
-    struct RenderContext {
-        Ref<RenderTarget> render_target;
-        CameraRenderProxy *camera;
-        RenderScene *scene;
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+    struct CameraInfo {
         float aspect_ratio;
-        Ref<GLTexture> env_map;
-        Ref<Material> skybox_material;
-        std::vector<Instance> visible_instances;
+        REnvironment *env;
+        RCamera *camera;
+        RScene *scene;
+
+        // 冗余，但防止重复计算
+        Matrix4f view_matrix;
+        Matrix4f projection_matrix;
+        Matrix4f view_projection_matrix;
     };
 
     Ref<GLFrameBuffer> replace_render_target[2]; // 替换渲染目标，用于渲染到屏幕，两个目标用于PingPong
-    const static unsigned int SKYBOX_TEXTURE_BINDING = 5;
+
     Ref<GLMesh> skybox_mesh;
+    Ref<Material> skybox_material;
 
     Ref<Material> depth_material;
     Ref<GLFrameBuffer> depth_fbo;
@@ -78,14 +59,14 @@ public:
     virtual void render();
 
 private:
-    void render_camera(RenderContext &context);
+    void render_camera(RCamera *camera, RScene *scene);
 
-    void cull(RenderContext &context);
+    std::vector<CullInstance> cull(CameraInfo &camera_info);
 
-    void draw_depth(RenderContext &context);
-    void draw_geometry(RenderContext &context);
-    void draw_skybox(RenderContext &context);
-    void draw_postprocess(RenderContext &context);
+    void draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &instances);
+    void draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> &instances);
+    void draw_skybox(CameraInfo &camera_info);
+    void draw_postprocess(CameraInfo &camera_info);
 
     void screen_paint(Ref<GLFrameBuffer> dst, Ref<GLFrameBuffer> src, Ref<Material> material);
 };

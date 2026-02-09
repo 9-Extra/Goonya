@@ -3,6 +3,7 @@
 #include "core/RefCount.h"
 #include "core/hash_helper.h"
 #include "core/log/Log.h"
+#include "function/renderer/RPriority.h"
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/GLTexture.h"
@@ -31,6 +32,7 @@ struct UberShaderDesc final {
     std::string ps_src;
 
     PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
+    RenderPriority render_priority;
 
     /**
      * 当全局的变体定义发生修改时，所有使用此定义的UberShader的所有材质受到影响并更新，
@@ -208,6 +210,7 @@ protected:
     PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
     std::unordered_map<uint32_t, Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
     MaterialParameterBlockInfo material_parameters;        // 默认材质参数
+    RenderPriority render_priority;                        // 渲染优先级
 
     LocalVariantKeyCollect local_variant_key_collect;
     VariantCode effective_global_key_mask;
@@ -222,7 +225,7 @@ public:
     UberShader(UberShader &&) = delete;
 
     const PipelineSetting &get_pipeline_setting() const noexcept { return pipeline_setting; }
-
+    RenderPriority get_render_priority() const noexcept { return render_priority; }
     const MaterialParameterBlockInfo &per_material_block() const noexcept { return material_parameters; }
     const std::unordered_map<std::string, TextureParameterInfo> &get_texture_units() const noexcept {
         return texture_units;

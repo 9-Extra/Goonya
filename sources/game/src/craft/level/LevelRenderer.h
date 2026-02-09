@@ -1,15 +1,13 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/sparse_set.h"
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
-#include "function/renderer/RenderProxy/StaticMesh.h"
-#include "function/renderer/RenderScene.h"
-#include "function/renderer/Renderer.h"
+#include "function/renderer/IMeshRenderable.h"
+#include "function/renderer/Material.h"
+#include "function/renderer/RScene.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/Material.h"
 
 #include <cstdint>
 #include <memory>
@@ -21,8 +19,6 @@ namespace Craft {
 
 using Goonya::enqueue_render_task;
 using Goonya::Material;
-using Goonya::MeshRenderProxy;
-using Goonya::RenderScene;
 
 /*
 Minecraft世界Level被分为16 * height *
@@ -93,7 +89,7 @@ Minecraft中LevelRender和ClientLevel运行在同一线程，SeverLevel运行在
  * @brief 一个可以渲染的区块，除了对应的mesh，还管理它的编译任务
  *
  */
-class RenderSection : public std::enable_shared_from_this<RenderSection> {
+class RenderSection : public std::enable_shared_from_this<RenderSection>, public Goonya::IMeshRenderable {
 public:
     ChunkPos chunk_pos;
     Ref<Chunk> origin_chunk;
@@ -102,24 +98,13 @@ public:
     uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
     bool is_dirty = true; // 是否需要重新编译
 
-    Goonya::Handle<RenderScene> render_scene;
-    MeshRenderProxy *mesh_proxy = nullptr;
-
-    RenderSection(Ref<Chunk> chunk, Goonya::Handle<RenderScene> render_scene)
-        : chunk_pos(chunk->chunk_pos), origin_chunk(chunk), render_scene(render_scene) {
+    explicit RenderSection(Ref<Chunk> chunk) : chunk_pos(chunk->chunk_pos), origin_chunk(chunk) {
         GN_ASSERT(origin_chunk);
     }
 
     ~RenderSection() {
         if (complie_task) {
             complie_task->cancel();
-        }
-        // 销毁mesh_proxy
-        if (mesh_proxy) {
-            RenderScene *scene = Goonya::renderer.get_scene(render_scene);
-            auto iter = scene->mesh_proxys.find(mesh_proxy);
-            GN_ASSERT(iter != scene->mesh_proxys.end());
-            scene->mesh_proxys.erase(iter);
         }
     }
 
@@ -131,19 +116,20 @@ public:
     Ref<Material> terrain_material;
 
 private:
-    Goonya::Handle<RenderScene> render_scene;
+    Goonya::RScene *render_scene;
     std::unordered_map<ChunkPos, std::shared_ptr<RenderSection>> render_chunks; // 当前帧所有可能渲染的区块
 
     std::vector<RenderSection *> visible_chunk; // 当前帧可见的区块
 public:
-    explicit LevelRenderer(Goonya::Handle<RenderScene> render_scene);
+    explicit LevelRenderer(Goonya::RScene *render_scene);
     ~LevelRenderer() {
         render_chunks.clear(); // 提前销毁render_chunks，保证所有ComplieTask已结束
     }
 
     void register_chunk(const Ref<Chunk> &chunk) noexcept {
         ChunkPos pos = chunk->chunk_pos;
-        auto section = std::make_unique<RenderSection>(chunk, render_scene);
+        auto section = std::make_unique<RenderSection>(chunk);
+        render_scene->register_mesh(section.get());
 
         render_chunks.emplace(pos, std::move(section));
     }
