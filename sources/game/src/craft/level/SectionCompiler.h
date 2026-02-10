@@ -5,6 +5,7 @@
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/level/chunk.h"
+#include "craft/level/chunk_block_storage.h"
 #include <cstdint>
 
 namespace Craft {
@@ -14,13 +15,16 @@ namespace Craft {
  * 与Minecraft不同，这里的一个区块就是一个section
  */
 struct RenderChunk {
-    std::array<BlockState *, CHUNK_BLOCK_COUNT> block_states;
+    ChunkBlockStorage block_storage;
     std::unordered_map<BlockInnerPos, int, BlockInnerPos::Hasher> block_entities;
 
     // 从Chunk复制数据
-    explicit RenderChunk(Ref<Chunk> chunk) : block_states(chunk->block_states), block_entities(chunk->block_entities) {}
+    explicit RenderChunk(Ref<Chunk> chunk)
+        : block_storage(chunk->block_storage), block_entities(chunk->block_entities) {}
 
-    BlockState *get_block_state(BlockInnerPos pos) const noexcept { return block_states[pos.as_index()]; }
+    BlockState *get_block_state(BlockInnerPos pos) const noexcept {
+        return block_storage.get_block_state(pos.as_index());
+    }
     BlockState *get_block_state(BlockPos pos) const noexcept { return get_block_state(BlockInnerPos(pos)); }
 };
 

@@ -3,9 +3,8 @@
 #include "core/RefCount.h"
 #include "craft/block/blockstate.h"
 #include "craft/core/core.h"
+#include "craft/level/chunk_block_storage.h"
 
-#include <cstddef>
-#include <cstdint>
 #include <unordered_map>
 
 namespace Craft {
@@ -51,23 +50,21 @@ public:
     ChunkState current_state = ChunkState::EMPTY;
     const ChunkPos chunk_pos;
 
-    std::array<BlockState *, CHUNK_BLOCK_COUNT> block_states;
+    ChunkBlockStorage block_storage;
     std::unordered_map<BlockInnerPos, int, BlockInnerPos::Hasher> block_entities;
 
 public:
-    explicit Chunk(ChunkPos chunk_pos) : chunk_pos(chunk_pos), block_states() {};
+    explicit Chunk(ChunkPos chunk_pos) : chunk_pos(chunk_pos) {};
     Chunk(Chunk &) = delete;
 
-    BlockState *get_block_state(BlockInnerPos pos) const noexcept { return block_states[pos.as_index()]; }
+    BlockState *get_block_state(BlockInnerPos pos) const noexcept {
+        return block_storage.get_block_state(pos.as_index());
+    }
     BlockState *get_block_state(BlockPos pos) const noexcept { return get_block_state(BlockInnerPos(pos)); }
-    BlockState *set_block_state(BlockInnerPos pos, BlockState *state) noexcept {
-        BlockState *old = block_states[pos.as_index()];
-        block_states[pos.as_index()] = state;
-        return old;
+    void set_block_state(BlockInnerPos pos, BlockState *state) noexcept {
+        block_storage.set_block_state(pos.as_index(), state);
     }
-    BlockState *set_block_state(BlockPos pos, BlockState *state) noexcept {
-        return set_block_state(BlockInnerPos(pos), state);
-    }
+    void set_block_state(BlockPos pos, BlockState *state) noexcept { set_block_state(BlockInnerPos(pos), state); }
 
 private:
 };

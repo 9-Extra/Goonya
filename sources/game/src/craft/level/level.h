@@ -65,10 +65,8 @@ public:
         if (chunk == nullptr) {
             return false;
         }
-        BlockState *old = chunk->set_block_state(pos, state);
-        if (old != state) {
-            level_renderer.notify_block_update(pos, state);
-        }
+        chunk->set_block_state(pos, state);
+        level_renderer.notify_block_update(pos, state);
         return true;
     }
 
