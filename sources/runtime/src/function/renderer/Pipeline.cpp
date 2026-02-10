@@ -142,6 +142,7 @@ void Pipeline::render() {
             if (camera->render_target->is_screen()) {
                 is_screen_painted = true;
             }
+            scene->do_pending_updates(); // 只需要在渲染前更新，必须发生在render_thread_process之后
             ImGui::SeparatorText(std::format("Camera {}", i).c_str());
             render_camera(camera, scene);
         }

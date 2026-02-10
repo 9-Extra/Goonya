@@ -111,7 +111,7 @@ extern ThreadPool THREAD_POOL; // 全局的线程池
 inline void main_thread_process() {
     auto &queue = THREAD_POOL.main_thread_tasks;
     for (auto task = queue.pop(); task.has_value(); task = queue.pop()) {
-        std::move(task.value())();
+        task.value()();
     }
 }
 
@@ -119,7 +119,7 @@ inline void renderer_thread_process() {
     GN_ASSERT(current_thread_type == ThreadType::RENDER);
     auto &queue = THREAD_POOL.renderer_thread_tasks;
     for (auto task = queue.pop(); task.has_value(); task = queue.pop()) {
-        std::move(task.value())();
+        task.value()();
     }
 }
 

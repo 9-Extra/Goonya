@@ -51,8 +51,6 @@ void World::tick() {
     }
     deferred_update_list.clear();
 
-    scene->do_pending_updates();
-
     main_thread_process();
 }
 

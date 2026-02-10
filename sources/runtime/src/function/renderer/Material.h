@@ -90,11 +90,14 @@ public:
     }
 
     void set_external_buffer(const std::string &name, const Ref<GLBuffer> &buffer) {
-        GN_ASSERT(buffer);
         auto info = uber_shader->get_uniform_info(name);
         if (info.has_value()) {
             auto [binding, type] = info.value();
-            external_buffer[binding] = {buffer, type};
+            if (buffer) {
+                external_buffer[binding] = {buffer, type};
+            } else {
+                external_buffer.erase(binding);
+            }
         } else {
             // Maybe optimized out?
         }

@@ -53,11 +53,14 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         Goonya::Vector3f end_pos = start_pos + Goonya::Vector3f{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH};
         Goonya::BoundingBox bbox{start_pos, end_pos};
 
-        section->mesh = create_ref<Goonya::GLMesh>(VERTEX_LAYOUT_PLANE);
-        section->mesh->submeshes.emplace_back(Goonya::SubMesh{.start_index = 0,
-                                                              .index_count = (uint32_t)result.indices.size(),
-                                                              .topology = Goonya::Topology::TRIANGLE,
-                                                              .aabb = bbox});
+        if (!section->mesh) {
+            section->mesh = create_ref<Goonya::GLMesh>(VERTEX_LAYOUT_PLANE);
+            section->mesh->submeshes.resize(1);
+        }
+        section->mesh->submeshes[0] = Goonya::SubMesh{.start_index = 0,
+                                                      .index_count = (uint32_t)result.indices.size(),
+                                                      .topology = Goonya::Topology::TRIANGLE,
+                                                      .aabb = bbox};
 
         section->mesh->set_vertices(0, std::as_bytes(std::span(result.vertices)));
         section->mesh->set_indices(result.indices);
@@ -74,6 +77,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         }
 
         section->materials[0]->set_external_buffer("per_surface", updated_per_surface_buffer);
+
         section->mark_dirty(DirtyBit::Init);
     };
 

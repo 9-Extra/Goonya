@@ -9,7 +9,6 @@ Renderer renderer; // global renderer
 void Renderer::init() { render_pipeline = std::make_unique<Pipeline>(); }
 
 void Renderer::render() {
-
     renderer_thread_process();
     render_pipeline->render();
 }
