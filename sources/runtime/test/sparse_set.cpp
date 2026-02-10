@@ -34,10 +34,10 @@ TEST(SparseSetTest, Remove) {
     SparseSet<int> set;
 
     // 插入元素
-    auto handle1 = set.insert(10);
-    auto handle2 = set.insert(20);
-    auto handle3 = set.insert(30);
-    auto handle4 = set.insert(40);
+    auto handle1 = set.emplace(10);
+    auto handle2 = set.emplace(20);
+    auto handle3 = set.emplace(30);
+    auto handle4 = set.emplace(40);
 
     // 删除中间元素
     set.remove(handle2);

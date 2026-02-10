@@ -1,7 +1,6 @@
 #pragma once
 
 #include "GObject.h"
-#include "function/renderer/RScene.h"
 #include "function/world/Component.h"
 
 #include <forward_list>
@@ -37,6 +36,8 @@ public:
 
     virtual void tick() = 0;
 };
+
+class RScene;
 
 class World final {
 public:

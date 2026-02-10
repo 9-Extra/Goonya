@@ -133,23 +133,38 @@ private:
                     }
 
                     if (setting_key == "write_mask") {
-                        if (setting_value.contains("r")) {
-                            desc.pipeline_setting.write_red = true;
-                        }
-                        if (setting_value.contains("g")) {
-                            desc.pipeline_setting.write_green = true;
-                        }
-                        if (setting_value.contains("b")) {
-                            desc.pipeline_setting.write_blue = true;
-                        }
-                        if (setting_value.contains("a")) {
-                            desc.pipeline_setting.write_alpha = true;
-                        }
-                        if (setting_value.contains("d")) {
-                            desc.pipeline_setting.write_depth = true;
-                        }
-                        if (setting_value.contains("s")) {
-                            desc.pipeline_setting.write_stencil = true;
+                        desc.pipeline_setting.write_red = false;
+                        desc.pipeline_setting.write_green = false;
+                        desc.pipeline_setting.write_blue = false;
+                        desc.pipeline_setting.write_alpha = false;
+                        desc.pipeline_setting.write_stencil = false;
+                        desc.pipeline_setting.write_depth = false;
+                        for (char c : setting_value) {
+                            switch (c) {
+                            case 'r':
+                                desc.pipeline_setting.write_red = true;
+                                break;
+                            case 'g':
+                                desc.pipeline_setting.write_green = true;
+                                break;
+                            case 'b':
+                                desc.pipeline_setting.write_blue = true;
+                                break;
+                            case 'a':
+                                desc.pipeline_setting.write_alpha = true;
+                                break;
+                            case 'd':
+                                desc.pipeline_setting.write_depth = true;
+                                break;
+                            case 's':
+                                desc.pipeline_setting.write_stencil = true;
+                                break;
+                            case '0':
+                                break;
+                            default:
+                                LOG_ERROR("未知的write_mask字符: {}", c);
+                                break;
+                            }
                         }
                     }
                 } else {

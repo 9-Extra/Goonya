@@ -23,16 +23,8 @@ Level::Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &playe
 }
 
 void Level::tick() {
-    ImGui::Begin("Craft");
     Goonya::Vector3f player_pos = player.get_position();
     Goonya::Vector3f player_dir = player.get_direction();
-    if (ImGui::DragFloat3("Player Position", player_pos.v)) {
-        player.player->set_local_position(player_pos);
-    }
-    Goonya::Quaternion player_rot = player.player->get_local_rotation();
-    if (ImGui::DragFloat4("Player Direction", &player_rot.x, 0.001, 0, 1)) {
-        player.player->set_local_rotation(player_rot.normalize());
-    }
 
     BlockHitResult hit_result = ray_cast(Ray{player_pos, player_dir}, 64);
     if (hit_result) {
@@ -42,12 +34,6 @@ void Level::tick() {
                            ModelManager::get().get_baked_model(hit_result.block_state, hit_result.position));
     } else {
         wire_frame.hide();
-    }
-    {
-        Block *block = hit_result.block_state ? hit_result.block_state->get_block() : Blocks::get().AIR;
-        std::string_view block_key = REGISTRY_BLOCK.find_key(block);
-        auto text = std::format("Targeting Block: {}", block_key);
-        ImGui::TextUnformatted(text.data(), &text.back() + 1);
     }
 
     if (Goonya::Input::is_mouse_pressing(Goonya::Input::MouseKey::LEFT)) {
@@ -62,6 +48,21 @@ void Level::tick() {
         }
     } else {
         is_placing_block = false;
+    }
+
+    if (ImGui::Begin("Craft")) {
+        if (ImGui::DragFloat3("Player Position", player_pos.v)) {
+            player.player->set_local_position(player_pos);
+        }
+        Goonya::Quaternion player_rot = player.player->get_local_rotation();
+        if (ImGui::DragFloat4("Player Direction", &player_rot.x, 0.001, 0, 1)) {
+            player.player->set_local_rotation(player_rot.normalize());
+        }
+        // 显示当前指向的方块
+        Block *block = hit_result.block_state ? hit_result.block_state->get_block() : Blocks::get().AIR;
+        std::string_view block_key = REGISTRY_BLOCK.find_key(block);
+        auto text = std::format("Targeting Block: {}", block_key);
+        ImGui::TextUnformatted(text.data(), &text.back() + 1);
     }
     ImGui::End();
 }

@@ -85,7 +85,8 @@ void RScene::gather_mesh_instances(IMeshRenderable *mesh) noexcept {
     if (!mesh->hidden && mesh->mesh) {
         Matrix4f model_matrix = mesh->transform.model_matrix();
         size_t instance_count = mesh->mesh->submeshes.size();
-        mesh->instance_indices.resize(instance_count);
+        GN_ASSERT(mesh->instance_indices.empty());
+        mesh->instance_indices.reserve(instance_count);
         for (size_t i = 0; i < instance_count; ++i) {
             SubMesh &submesh = mesh->mesh->submeshes[i];
             if (submesh.index_count == 0) {
@@ -94,7 +95,7 @@ void RScene::gather_mesh_instances(IMeshRenderable *mesh) noexcept {
             Ref<Material> mat = i < mesh->materials.size() ? mesh->materials[i] : nullptr;
             Handle<Instance> h_instance = instances.emplace(mesh->mesh, mat, submesh, mesh->per_object_uniform,
                                                             submesh.aabb.transformed(model_matrix));
-            mesh->instance_indices[i] = h_instance;
+            mesh->instance_indices.push_back(h_instance);
         }
     }
 }

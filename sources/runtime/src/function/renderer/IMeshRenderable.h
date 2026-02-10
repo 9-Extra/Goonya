@@ -44,7 +44,10 @@ public:
     RScene *get_scene() const { return scene; }
 
     bool is_hidden() const { return hidden; }
-    void hide(bool hide = true) { hidden = hide; }
+    void hide(bool hide = true) {
+        hidden = hide;
+        mark_dirty(DirtyBit::Mesh);
+    }
     bool is_registered() const { return scene != nullptr; }
 
     void mark_dirty(DirtyBit bit) noexcept;

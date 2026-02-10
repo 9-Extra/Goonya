@@ -85,13 +85,6 @@ Pipeline::Pipeline() {
     }
     {
         depth_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/depth/depth"));
-        // 深度着色器只写入深度
-        depth_material->set_pipeline_setting("_write_red", (PipelineSettingParamType) false);
-        depth_material->set_pipeline_setting("_write_green", (PipelineSettingParamType) false);
-        depth_material->set_pipeline_setting("_write_blue", (PipelineSettingParamType) false);
-        depth_material->set_pipeline_setting("_write_alpha", (PipelineSettingParamType) false);
-        depth_material->set_pipeline_setting("_write_stencil", (PipelineSettingParamType) false);
-        depth_material->set_pipeline_setting("_write_depth", (PipelineSettingParamType) true);
         if (!depth_material) {
             throw RuntimeError("无法加载深度着色器");
         }
@@ -259,6 +252,8 @@ void Pipeline::render_camera(RCamera *camera, RScene *scene) {
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 std::vector<CullInstance> Pipeline::cull(CameraInfo &camera_info) {
 
+    Ref<Material> default_material = resources.load_resource<Material>("materials/default");
+
     std::vector<CullInstance> visible_instances;
 
     const std::array<Plane, 6> worldspace_frustum = create_frustum_planes(camera_info.view_projection_matrix);
@@ -268,11 +263,9 @@ std::vector<CullInstance> Pipeline::cull(CameraInfo &camera_info) {
             continue; // 不在视椎体内部
         }
 
-        GN_ASSERT(instance.material);
-
         visible_instances.emplace_back(CullInstance{
             .mesh = instance.mesh.get(),
-            .material = instance.material.get(),
+            .material = instance.material ? instance.material.get() : default_material.get(),
             .submesh = instance.submesh,
             .per_object_uniform = instance.per_object_uniform.get(),
         });
