@@ -23,7 +23,7 @@ private:
     };
 
     std::vector<T> dense;                  // 紧凑存储实际数据
-    std::vector<uint32_t> dense_to_sparse; // dense到sparse的映射
+    std::vector<size_t> dense_to_sparse; // dense到sparse的映射
     std::vector<SparseIndex> sparse;       // 稀疏索引，大小 >= 最大键值
 
     std::vector<size_t> free_list; // 空闲key列表
@@ -124,7 +124,7 @@ public:
             std::ranges::swap(dense[dense_index], dense[last_dense_index]);
 
             // 更新被交换元素的映射
-            uint32_t swapped_key = dense_to_sparse[last_dense_index];
+            size_t swapped_key = dense_to_sparse[last_dense_index];
             sparse[swapped_key].index = dense_index;
             dense_to_sparse[dense_index] = swapped_key;
         }

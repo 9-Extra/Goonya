@@ -21,7 +21,7 @@ struct BlockElement {
         Goonya::Vector2f uv_up_left;
         Goonya::Vector2f uv_down_right;
         std::string texture_key;
-        int32_t tintindex;
+        int32_t tintindex = -1;
     };
 
     Goonya::Vector3f from; // 西下南角（最小）

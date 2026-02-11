@@ -128,7 +128,7 @@ public:
     }
 
     void get_variant_key_names(std::vector<std::string> &out_result) const noexcept {
-        uint16_t size = key_to_id.size();
+        uint16_t size = (uint16_t)key_to_id.size();
         for (uint16_t i = 0; i < size; i++) {
             if (key_mask[i]) {
                 out_result.emplace_back(id_to_key[i]);

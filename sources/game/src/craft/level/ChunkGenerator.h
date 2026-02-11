@@ -75,7 +75,7 @@ public:
 private:
     int32_t get_terrain_height(int32_t x, int32_t z) const noexcept {
         const float frequence = 0.1f;
-        return terrain_height_base + terrain_height_noise.octave2D(x * frequence, z * frequence, 3) * 5;
+        return terrain_height_base + int32_t(terrain_height_noise.octave2D(x * frequence, z * frequence, 3) * 5);
     }
 
     void do_process_chunk(Ref<Chunk> chunk) const {

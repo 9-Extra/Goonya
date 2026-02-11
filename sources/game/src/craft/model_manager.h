@@ -81,7 +81,7 @@ public:
     Ref<Goonya::GLTexture> get_textures() const noexcept { return block_texture_array; }
 
     static ModelManager &get() noexcept {
-        (instance.has_value());
+        GN_ASSERT(instance.has_value());
         return instance.value();
     }
 

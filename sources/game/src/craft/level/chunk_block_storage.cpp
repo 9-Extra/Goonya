@@ -3,6 +3,7 @@
 #include "craft/block/all_blocks.h"
 #include "craft/block/blockstate.h"
 #include <cstdint>
+#include <ranges>
 
 namespace Craft {
 

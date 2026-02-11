@@ -58,6 +58,10 @@ private:
         current_section_begin = end_pos;
     }
 
+    void skip(std::string_view view) {
+        skip(view.data(), &view.back());
+    }
+
     void skip(const char *start_pos, const char *end_pos) {
         if (current_section != Section::None && current_section_begin != start_pos) {
             append_source(current_section, std::string_view(current_section_begin, start_pos));
@@ -75,10 +79,10 @@ private:
             const std::string_view content = std::string_view((*it)[2].first, (*it)[2].second);
             // LOG_TRACE("解析指令#{} {}", instruction, content);
             if (instruction == "name") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 desc.name = content;
             } else if (instruction == "texture") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 // skybox_specular_texture="buildin:missing_texture"
                 const std::regex pat = std::regex(R"----(^(\w+)\s*=\s*"(.+)")----");
                 Match match;
@@ -90,7 +94,7 @@ private:
                     LOG_ERROR("纹理指令#texture格式错误: {}", content);
                 }
             } else if (instruction == "setting") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 // #setting cull_mode="off"
                 const std::regex pat = std::regex(R"----(^(\w+)\s*=\s*"(\w+)")----");
                 Match match;
@@ -171,7 +175,7 @@ private:
                     LOG_ERROR("渲染管线设置指令#setting格式错误: {}", content);
                 }
             } else if (instruction == "param") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 // #param color_permutation=vec3(1, 1, 1)
                 const std::regex pat = std::regex(R"----(^(\w+)\s*=\s*(.*))----");
                 Match match;
@@ -184,7 +188,7 @@ private:
                     LOG_ERROR("参数指令#param格式错误: {}", content);
                 }
             } else if (instruction == "local_variant") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 // #local_variant _ USE_NORMAL
                 const std::regex pat = std::regex(R"----(\w+)----");
                 std::vector<std::string> local_variant_keys;
@@ -198,28 +202,28 @@ private:
                 }
                 desc.local_variant_keys.emplace_back(std::move(local_variant_keys));
             } else if (instruction == "global_variant") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 // #global_variant WWWWW
                 desc.global_variant_keys.emplace_back(content);
             } else if (instruction == "section") {
                 if (content == "common") {
-                    switch_section(Section::Common, full_match.begin());
+                    switch_section(Section::Common, full_match.data());
                 } else if (content == "vertex") {
-                    switch_section(Section::Vertex, full_match.begin());
+                    switch_section(Section::Vertex, full_match.data());
                 } else if (content == "fragment") {
-                    switch_section(Section::Frag, full_match.begin());
+                    switch_section(Section::Frag, full_match.data());
                 } else if (content == "end") {
                     if (current_section == Section::None) {
                         LOG_ERROR("段落结束指令#end不能在段落外部使用");
                     }
-                    switch_section(Section::None, full_match.begin());
+                    switch_section(Section::None, full_match.data());
                 } else {
                     LOG_ERROR("未知着色器段落#section: {}", content);
-                    switch_section(Section::None, full_match.begin());
+                    switch_section(Section::None, full_match.data());
                 }
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
             } else if (instruction == "include") {
-                skip(full_match.begin(), full_match.end());
+                skip(full_match);
                 if (current_section == Section::None) {
                     LOG_ERROR("包含指令#include只能在段落内部使用");
                     break;
@@ -256,12 +260,12 @@ private:
                 if (current_section == Section::None) {
                     LOG_ERROR("未知指令\"{} {}\"，GLSL原指令只能在段落内部使用", instruction, content);
                 } else {
-                    switch_section(current_section, full_match.end());
+                    switch_section(current_section, &full_match.back() + 1);
                 }
             }
         }
 
-        switch_section(Section::None, g_shader_source.end());
+        switch_section(Section::None, &g_shader_source.back() + 1);
     }
     std::string generate_material_uniform_block() const {
         if (desc.parameters.empty()) {

@@ -416,8 +416,8 @@ BakedBlockModel ModelManager::bake_model(const BlockModel &model_src, int32_t ro
 
             if (rotation_x != 0 || rotation_y != 0) {
                 // 旋转quad，Y轴顺时针旋转整型y，再以方块中心沿X轴顺时针旋转整型x
-                float y = to_radian(rotation_y);
-                float x = to_radian(rotation_x);
+                float y = to_radian((float)rotation_y);
+                float x = to_radian((float)rotation_x);
                 Quaternion q = Quaternion::from_rotation({1, 0, 0}, x) * Quaternion::from_rotation({0, 1, 0}, y);
                 for (auto &v : quad.vertices) {
                     v.position = (v.position - Vector3f{0.5, 0.5, 0.5}).apply(q) + Vector3f{0.5, 0.5, 0.5};

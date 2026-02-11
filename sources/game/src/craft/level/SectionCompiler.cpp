@@ -74,7 +74,7 @@ void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, B
     for (const auto &v : quad.vertices) {
         uint32_t base_index = result.vertices.size() * 4;
 
-        Goonya::Vector3f world_pos = Goonya::Vector3f(pos.x, pos.y, pos.z) + v.position;
+        Goonya::Vector3f world_pos = Goonya::Vector3f((float)pos.x, (float)pos.y, (float)pos.z) + v.position;
         result.vertices.emplace_back(world_pos, v.uv);
 
         result.indices.push_back(base_index + 0);

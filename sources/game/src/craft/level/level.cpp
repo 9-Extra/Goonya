@@ -55,7 +55,7 @@ void Level::tick() {
             player.player->set_local_position(player_pos);
         }
         Goonya::Quaternion player_rot = player.player->get_local_rotation();
-        if (ImGui::DragFloat4("Player Direction", &player_rot.x, 0.001, 0, 1)) {
+        if (ImGui::DragFloat4("Player Direction", &player_rot.x, 0.001f, 0, 1)) {
             player.player->set_local_rotation(player_rot.normalize());
         }
         // 显示当前指向的方块

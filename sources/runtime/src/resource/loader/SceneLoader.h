@@ -5,6 +5,7 @@
 #include "resource/Loader.h"
 #include "resource/Resource.h"
 #include "runtime/GoonyaException.h"
+#include <filesystem>
 
 namespace Goonya {
 
@@ -13,7 +14,7 @@ struct Scene : public Resource {
     std::shared_ptr<GObject> root;
 };
 
-Ref<Scene> load_scene_from_json(const std::string &path);
+Ref<Scene> load_scene_from_json(const std::filesystem::path &path);
 
 class SceneLoader : public ResourceLoader {
 public:

@@ -6,7 +6,10 @@
 #include <source_location> // IWYU pragma: keep
 #include <stacktrace>      // IWYU pragma: keep
 
-#include "core/log/Log.h" // IWYU pragma: keep
+namespace Goonya::Details {
+// at sources\runtime\src\core\GAssert.cpp
+[[noreturn]] void _log_and_exit(const std::string &msg, const std::source_location &location);
+}
 
 #ifdef DEBUG
 #define GN_ENABLE_ASSERT
@@ -16,14 +19,7 @@
 
 #define GN_ASSERT_MSG(cond, ...)                                                                                       \
     if (!(cond)) [[unlikely]] {                                                                                        \
-        ::std::source_location location = ::std::source_location::current();                                           \
-        ::std::stacktrace trace = std::stacktrace::current(0);                                                         \
-        LOG_ERROR("{} at {}:{} ({})\nStacktrace:\n{}", ::std::format(__VA_ARGS__), location.file_name(),               \
-                  location.line(), location.function_name(), trace);                                                   \
-        spdlog::drop_all();                                                                                            \
-        std::cout.flush();                                                                                             \
-        std::cerr.flush();                                                                                             \
-        std::terminate();                                                                                              \
+        ::Goonya::Details::_log_and_exit(::std::format(__VA_ARGS__), ::std::source_location::current());                                                 \
     } else                                                                                                             \
         (void(0))
 

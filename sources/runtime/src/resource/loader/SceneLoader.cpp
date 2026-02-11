@@ -133,7 +133,7 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
 }
 
 // 从json文件加载场景
-Ref<Scene> load_scene_from_json(const std::string &path) {
+Ref<Scene> load_scene_from_json(const std::filesystem::path &path) {
     Ref<Scene> scene = create_ref<Scene>();
     Json::Value json;
     {

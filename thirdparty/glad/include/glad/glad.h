@@ -28,12 +28,13 @@
 #endif
 #define __gl_h_
 
+#ifndef APIENTRY
 #if defined(_WIN32) && !defined(APIENTRY) && !defined(__CYGWIN__) && !defined(__SCITECH_SNAP__)
 #define APIENTRY __stdcall
+#else
+#define APIENTRY
 #endif
 
-#ifndef APIENTRY
-#define APIENTRY
 #endif
 #ifndef APIENTRYP
 #define APIENTRYP APIENTRY *

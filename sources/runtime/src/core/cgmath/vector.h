@@ -104,7 +104,7 @@ struct Vector3f {
     constexpr Vector3f operator/(float n) const { return *this * (1.0f / n); }
     constexpr Vector3f operator*(Vector3f v) const { return {x * v.x, y * v.y, z * v.z}; }
     constexpr bool operator==(Vector3f rhs) const noexcept {
-        return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y) && is_nearly_equal(y, rhs.y);
+        return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y);
     }
     friend constexpr Vector3f operator*(Vector3f left, Matrix3f right) noexcept;
     constexpr float dot(const Vector3f b) const { return x * b.x + y * b.y + z * b.z; }

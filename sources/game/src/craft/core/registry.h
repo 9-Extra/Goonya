@@ -25,7 +25,7 @@ private:
 public:
     void do_register(std::string key, std::unique_ptr<T> &&entry) {
         GN_ASSERT(entry && !entry_to_id.contains(entry.get())); // 重复注册
-        TID id = entry_list.size();
+        TID id = (TID)entry_list.size();
 
         entry_to_id[entry.get()] = id;
         entry_list.push_back(std::move(entry));

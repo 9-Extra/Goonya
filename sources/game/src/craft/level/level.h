@@ -48,7 +48,7 @@ public:
 
     Ref<Chunk> get_chunk(ChunkPos pos) const noexcept {
         auto iter = accessible_chunk.find(pos);
-        return iter != all_chunks.end() ? iter->second : nullptr;
+        return iter != accessible_chunk.end() ? iter->second : nullptr;
     }
 
     BlockState *get_block_state(BlockPos pos) const noexcept {

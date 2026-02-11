@@ -10,6 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <tuple>
+#include <span>
 
 namespace Craft {
 
@@ -18,7 +19,7 @@ TextureArrayAllocator::TextureArrayAllocator(std::filesystem::path resource_path
     // 生成缺省图像，也就是紫黑块
     stb::Image missing_image = stb::Image::create_empty(width, height, 4, true);
     Goonya::Vector4f black{0, 0, 0, 1};
-    Goonya::Vector4f purple{0.68542, 0.3735, 0.803862, 1};
+    Goonya::Vector4f purple{0.68542f, 0.3735f, 0.803862f, 1.0f};
     std::span<Goonya::Vector4f> pixel_view((Goonya::Vector4f *)missing_image.get_data(), width * height);
     // 紫黑块
     for (size_t i = 0; i < height; i++) {
@@ -61,11 +62,11 @@ uint32_t TextureArrayAllocator::alloc_texture(std::string_view texture_location)
 }
 
 Ref<Goonya::GLTexture> TextureArrayAllocator::generate_texture_array() {
-    size_t texture_count = texture_storage.size();
+    uint32_t texture_count = (uint32_t)texture_storage.size();
     Ref<Goonya::GLTexture> texture_array =
         create_ref<Goonya::GLTexture>(Goonya::TextureType::TEXTURE_2D_ARRAY, Goonya::TextureStorageFormat::RGBA_f16,
-                                      std::make_tuple(this->width, this->height, (uint32_t)texture_count));
-    for (size_t i = 0; i < texture_count; i++) {
+                                      std::make_tuple(this->width, this->height, texture_count));
+    for (uint32_t i = 0; i < texture_count; i++) {
         texture_array->import_image(texture_storage[i], 0, 0, 0, i);
     }
 

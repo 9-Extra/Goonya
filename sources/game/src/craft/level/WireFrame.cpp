@@ -76,18 +76,19 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
         vertices.emplace_back(WireFrameVertex{.position = end, .normal = dir});
 
         // 生成索引数据，定义两个三角形的顶点连接关系
-        indices.emplace_back(i * 4 + 0);
-        indices.emplace_back(i * 4 + 1);
-        indices.emplace_back(i * 4 + 2);
-        indices.emplace_back(i * 4 + 3);
-        indices.emplace_back(i * 4 + 2);
-        indices.emplace_back(i * 4 + 1);
+        const uint32_t o_i = (uint32_t)i * 4;
+        indices.emplace_back(o_i + 0);
+        indices.emplace_back(o_i + 1);
+        indices.emplace_back(o_i + 2);
+        indices.emplace_back(o_i + 3);
+        indices.emplace_back(o_i + 2);
+        indices.emplace_back(o_i + 1);
     }
 
     // 将生成的顶点数据上传到GPU
     mesh->set_vertices(0, std::as_bytes(std::span(vertices)));
     mesh->set_indices(std::span(indices));
-    mesh->submeshes[0].index_count = indices.size();
+    mesh->submeshes[0].index_count = (uint32_t)indices.size();
 
     transform.position = pos;
     this->mark_dirty(DirtyBit::Init); // Mesh和Transform需要更新

@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include <unordered_set>
+#include <algorithm>
 
 #include "core/sparse_set.h"
 

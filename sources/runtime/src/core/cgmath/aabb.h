@@ -10,8 +10,8 @@ struct BoundingBox {
 
     constexpr static BoundingBox infinite() {
         // 不使用浮点inf作为包围盒长度，因为计算center会得到nan
-        float max = std::numeric_limits<float>::max();
-        float min = std::numeric_limits<float>::min();
+        constexpr float max = std::numeric_limits<float>::max();
+        constexpr float min = std::numeric_limits<float>::min();
         return BoundingBox{{-min, -min, -min}, {max, max, max}};
     }
 
