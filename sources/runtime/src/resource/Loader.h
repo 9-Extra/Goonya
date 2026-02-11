@@ -18,7 +18,8 @@ public:
         }
     }
     ResourceLoader(const ResourceLoader &) = delete;
-
+    virtual ~ResourceLoader() = default;
+     
 protected:
     friend class RenderResource;
     std::vector<std::string> supported_types;

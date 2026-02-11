@@ -85,7 +85,7 @@ struct std::formatter<Craft::BlockState> {
         std::format_to(ctx.out(), "Block{{{}}} ", *state.get_block());
         std::format_to(ctx.out(), "[");
         bool is_first = true;
-        for (const auto [property, value] : state.get_properties()) {
+        for (const auto& [property, value] : state.get_properties()) {
             if (is_first) {
                 std::format_to(ctx.out(), "{} = {}", property->get_name(), property->to_string(value));
                 is_first = false;

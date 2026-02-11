@@ -36,8 +36,8 @@ static uint32_t calculate_fps(GameClock::ClockType::duration delta) {
     static Clock::duration average_frame_time = Clock::duration::zero();
     const float smoothing_factor = 0.05f;
 
-    average_frame_time =
-        Clock::duration((Clock::duration::rep)std::lerp(average_frame_time.count(), delta.count(), smoothing_factor));
+    Clock::duration::rep delta_count = std::lerp(average_frame_time.count(), delta.count(), smoothing_factor);
+    average_frame_time = Clock::duration(std::max<Clock::duration::rep>(delta_count, 1)); // 防止被0除
 
     return static_cast<uint32_t>(std::chrono::seconds(1) / average_frame_time);
 }

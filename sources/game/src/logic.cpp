@@ -36,7 +36,7 @@ void MoveSystem::handle_mouse() const {
         const float rotate_speed = 0.002f;
         camera->rotate_global_axis({0, -dx * rotate_speed, 0});
         // 同时，要约束绕x轴旋转角度在(-90, 90)度之间
-        const float limit = std::numbers::pi_v<float> / 2 - 0.01;
+        const float limit = std::numbers::pi_v<float> / 2.0f - 0.01f;
         float y_dir = std::asin(camera->get_local_transform().forward_direction().y);
         float y_dir_target = std::clamp(y_dir - dy * rotate_speed, -limit, limit);
         camera->rotate_local_axis({y_dir_target - y_dir, 0, 0});
