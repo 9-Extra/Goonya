@@ -32,7 +32,7 @@ struct UberShaderDesc final {
     std::string ps_src;
 
     PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
-    RenderPriority render_priority;
+    RenderPriority render_priority = RenderPriority::OPAQUE;
 
     /**
      * 当全局的变体定义发生修改时，所有使用此定义的UberShader的所有材质受到影响并更新，

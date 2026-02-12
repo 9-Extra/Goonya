@@ -228,34 +228,6 @@
                 "scene": "禁止二次配布/Nahida/纳西妲Scene"
             },
             {
-                "name": "测试片",
-                "transform": {
-                    "position": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "rotation": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "scale": [
-                        0.5,
-                        0.5,
-                        0.5
-                    ]
-                },
-                "components": {
-                    "mesh_render": {
-                        "mesh": "buildin:plane",
-                        "material": [
-                            "materials/test_material"
-                        ]
-                    }
-                }
-            },
-            {
                 "transform": {
                     "position": [
                         0,

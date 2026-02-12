@@ -10,19 +10,21 @@
 namespace Craft {
 
 struct ChunkBlockStorage final {
+private:
     enum class Policy { ALL_AIR, ONE_BIT, TWO_BIT, FOUR_BIT, EIGHT_BIT, SIXTEEN_BIT, DIRECT };
     Policy policy = Policy::ALL_AIR;
     std::vector<BlockState *> block_states;
     std::unordered_map<BlockState *, uint32_t> block_state_index_map;
     uint16_t *raw_data = nullptr;
+
     static_assert(CHUNK_BLOCK_COUNT % 16 == 0);
 
+public:
     ChunkBlockStorage() = default;
     ChunkBlockStorage(ChunkBlockStorage &other);
     ~ChunkBlockStorage() { delete[] raw_data; }
 
     BlockState *get_block_state(uint32_t pos) const noexcept;
-
     void set_block_state(uint32_t pos, BlockState *state) noexcept;
 
 private:

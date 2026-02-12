@@ -103,6 +103,7 @@ Ref<Material> Material::clone() const noexcept {
     Ref<Material> c = create_ref<Material>(uber_shader);
     c->local_variant_code = local_variant_code;
     c->pipeline_setting = pipeline_setting;
+    c->render_priority = render_priority;
 
     c->parameters = parameters;
     c->textures = textures;

@@ -2,15 +2,19 @@
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/transform.h"
 #include "core/clock/GameClock.h"
+#include "core/log/Log.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/PipelineLayout.h"
+#include "function/renderer/RPriority.h"
 #include "function/renderer/RScene.h"
 #include "function/renderer/Renderer.h"
 #include "function/renderer/UberShader.h"
 #include "imgui.h"
 #include "platform/graphics/Graphics.h"
+#include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
+#include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/ResMng.h"
 #include "runtime/GAssert.h"
@@ -21,6 +25,7 @@
 #include <ranges>
 #include <span>
 #include <tuple>
+#include <vector>
 
 namespace Goonya {
 
@@ -75,6 +80,19 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
     // 如果所有平面测试都通过，则AABB与视锥体相交或在其内部
     return true;
 }
+
+// -------------------------Pipeline-----------------------------
+
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
+struct DrawInstance {
+    RenderPriority priority;
+    GLShader *shader;
+    GLMesh *mesh;
+    Material *material; // 为了额外资源，比如纹理
+
+    GLBuffer *per_object_uniform;
+    SubMesh submesh;
+};
 
 Pipeline::Pipeline() {
     skybox_mesh = resources.load_resource<GLMesh>("buildin:skybox_cube");
@@ -300,14 +318,49 @@ void Pipeline::draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &vi
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances) {
     GL.push_debug_group_label("Draw Geometry");
+    ImGui::BulletText("Visible Instances: %zu", visible_instances.size());
     replace_render_target[0]->bind_draw();
 
-    ImGui::BulletText("Visible Instances: %zu", visible_instances.size());
+    std::vector<DrawInstance> draw_instances;
+    draw_instances.reserve(visible_instances.size());
     for (auto &instance : visible_instances) {
-        instance.material->set_texture("skybox_specular_texture", camera_info.env->environment_map);
-        instance.material->set_texture("camera_depth", depth_texture);
-        instance.material->bind();
-        instance.mesh->bind();
+        draw_instances.emplace_back(DrawInstance{
+            .priority = instance.material->get_render_priority(),
+            .shader = instance.material->get_shader().get(),
+            .mesh = instance.mesh,
+            .material = instance.material,
+            .per_object_uniform = instance.per_object_uniform,
+            .submesh = instance.submesh,
+        });
+    }
+
+    std::ranges::sort(draw_instances, [](const DrawInstance &a, const DrawInstance &b) {
+        return std::tie(a.priority, a.shader, a.mesh, a.material) < std::tie(b.priority, b.shader, b.mesh, b.material);
+    });
+
+    GLShader *last_shader = nullptr;
+    GLMesh *last_mesh = nullptr;
+    Material *last_material = nullptr;
+
+    for (auto &instance : draw_instances) {
+        if (last_shader != instance.shader) {
+            instance.shader->bind();
+            last_shader = instance.shader;
+        }
+
+        if (last_mesh != instance.mesh) {
+            instance.mesh->bind();
+            last_mesh = instance.mesh;
+        }
+        if (last_material != instance.material) {
+            GL.set_pipeline_state(instance.material->get_pipeline_setting());
+            instance.material->get_per_material_uniform()->bind_uniform(PER_MATERIAL_UNIFORM_BINDING);
+            instance.material->bind_external_resources();
+            instance.material->set_texture("camera_depth", depth_texture);
+            instance.material->set_texture("skybox_specular_texture", camera_info.env->environment_map);
+            last_material = instance.material;
+        }
+
         instance.per_object_uniform->bind_uniform(PER_OBJECT_UNIFORM_BINDING);
         GL.draw_submesh(instance.submesh);
     }

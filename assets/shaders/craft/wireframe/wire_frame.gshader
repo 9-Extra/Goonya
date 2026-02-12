@@ -2,6 +2,7 @@
 #texture skybox_specular_texture="buildin:missing_texture"
 #setting depth_test="less_equal"
 #setting cull_mode="off"
+#setting render_priority="1001"
 
 #section common
 #include "shaders/common.glsl"

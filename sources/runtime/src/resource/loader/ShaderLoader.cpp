@@ -4,6 +4,7 @@
 #include "core/log/Log.h"
 #include "core/path_formatter.h"
 #include "function/renderer/PipelineLayout.h"
+#include "function/renderer/RPriority.h"
 #include "function/renderer/UberShader.h"
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/read_file.h"
@@ -12,6 +13,7 @@
 #include "runtime/GAssert.h"
 
 #include <array>
+#include <charconv>
 #include <filesystem>
 #include <format>
 #include <functional>
@@ -58,9 +60,7 @@ private:
         current_section_begin = end_pos;
     }
 
-    void skip(std::string_view view) {
-        skip(view.data(), &view.back());
-    }
+    void skip(std::string_view view) { skip(view.data(), &view.back()); }
 
     void skip(const char *start_pos, const char *end_pos) {
         if (current_section != Section::None && current_section_begin != start_pos) {
@@ -133,6 +133,16 @@ private:
                             desc.pipeline_setting.depth_test = DepthTestMode::ALWAYS;
                         } else {
                             LOG_ERROR("未知的depth_test模式: {}", setting_key);
+                        }
+                    }
+
+                    if (setting_key == "render_priority") {
+                        std::underlying_type_t<RenderPriority> p;
+                        if (std::from_chars(setting_value.data(), setting_value.data() + setting_value.size(), p).ec ==
+                            std::errc{}) {
+                            desc.render_priority = RenderPriority(p);
+                        } else {
+                            LOG_ERROR("无法解析priority的值: {}", setting_key);
                         }
                     }
 
