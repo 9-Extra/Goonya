@@ -121,7 +121,7 @@ void Level::load_chunks() {
             Ref<Chunk> chunk = create_ref<Chunk>(pos);
             all_chunks.emplace(pos, chunk);
             chunk_generator.process_chunk_async(chunk, [level = this](const Ref<Chunk> &chunk) mutable {
-                // 在level销毁时会自动清理所有任务，这里无需担心内存泄漏
+                // 在level销毁时会自动清理所有任务，保证level指针有效
                 level->accessible_chunk.emplace(chunk->chunk_pos, chunk);
                 level->level_renderer.register_chunk(chunk);
             });

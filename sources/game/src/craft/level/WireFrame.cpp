@@ -42,11 +42,13 @@ WireFrame::WireFrame(Goonya::RScene *scene) {
     mesh->submeshes.resize(1);
     // 只有index_count需要动态改变，另外Topology::LINE因为线宽不能大于1，因此在调试之外就别用了
     // 使用三角形拓扑结构，通过几何着色器将三角形转换为线条，以实现更宽的线宽效果
-    mesh->submeshes[0] = Goonya::SubMesh{.start_index = 0,
-                                         .index_count = 0,
-                                         .base_vertex_offset = 0,
-                                         .topology = Goonya::Topology::TRIANGLE,
-                                         .aabb = Goonya::BoundingBox{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}}};
+    mesh->submeshes[0] = Goonya::SubMesh{
+        .start_index = 0,
+        .index_count = 0,
+        .base_vertex_offset = 0,
+        .topology = Goonya::Topology::TRIANGLE,
+        .aabb = Goonya::BoundingBox{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
+    };
 
     // 从资源管理器加载线框着色器，该着色器负责将三角形转换为线条
     Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(WIREFRAME_SHADER_NAME).get();
@@ -66,7 +68,7 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     // 遍历方块模型的所有边，为每条边生成两个三角形
     for (const auto &[i, edge] : std::views::enumerate(model.for_all_edges())) {
         const auto &[start, end] = edge;
-        Goonya::Vector3f dir = (end - start).normalize(); // 计算边的方向向量，用于几何着色器
+        Goonya::Vector3f dir = (end - start).normalize(); // 计算边的方向向量
 
         // 为每条边创建4个顶点，形成两个三角形的顶点布局
         // 顶点布局：0-1-2 和 2-3-1 形成两个三角形
