@@ -86,11 +86,9 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
     }
 
     version++;
+    // 提交编译任务
     complie_task = std::make_shared<ComplieTask>(chunk_pos, region_cache.create_region(chunk_pos), version, receiver);
-    Goonya::THREAD_POOL.enqueue_detached([task = this->complie_task] mutable {
-        // 在LevelRenderer销毁前一定提前结束所有任务，所以queue一定可用
-        task->do_complie();
-    });
+    complie_task->launch();
 
     is_dirty = false;
 }

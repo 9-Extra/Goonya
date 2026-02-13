@@ -10,6 +10,7 @@
 #include <sys/types.h>
 
 #include "core/RefCount.h"
+#include "core/ThreadPool.h"
 #include "core/ThreadUtils.h"
 #include "core/clock/GameClock.h"
 #include "core/eventbus/eventbus.h"

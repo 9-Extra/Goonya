@@ -82,7 +82,7 @@ struct ComplieResult {
     std::vector<TerrainPerSurface> per_surface;
 };
 
-struct ComplieTask {
+struct ComplieTask : public std::enable_shared_from_this<ComplieTask> {
 private:
     ChunkPos pos; // 编译的区块位置
     RenderChunkRegion region;
@@ -90,19 +90,20 @@ private:
     std::atomic<bool> is_cancelled = false;
     std::move_only_function<void(ComplieResult &&, uint32_t)> receiver;
 
+    bool is_launched = false;
+
 public:
     ComplieTask(ChunkPos pos, RenderChunkRegion region, uint32_t version,
                 std::move_only_function<void(ComplieResult &&, uint32_t)> receiver) noexcept
         : pos(pos), region(std::move(region)), version(version), receiver(std::move(receiver)) {}
 
     void cancel() noexcept { is_cancelled.store(true, std::memory_order::relaxed); }
-    /**
-     * @brief 异步执行的编译任务，编译完成后调用receiver
-     * @param delegate 编译完成后的回调函数，参数为编译结果
-     */
-    void do_complie();
+
+    void launch() noexcept;
 
 private:
+    void do_compile();
+
     static void compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos,
                                    const BakedQuad &quad) noexcept;
 

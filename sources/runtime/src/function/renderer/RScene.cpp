@@ -73,8 +73,9 @@ void RScene::unregister_mesh(IMeshRenderable *mesh) noexcept {
     mesh_free_list.push_back(mesh->index_in_scene);
     meshes[mesh->index_in_scene] = nullptr;
     mesh->scene = nullptr;
-    mesh->index_in_scene = 0;
+    mesh->index_in_scene = IMeshRenderable::InvalidIndex;
 
+    // 从更新队列中移除
     if (mesh->pending_update_index != IMeshRenderable::InvalidIndex) {
         meshes_to_update[mesh->pending_update_index] = nullptr;
         mesh->pending_update_index = IMeshRenderable::InvalidIndex;

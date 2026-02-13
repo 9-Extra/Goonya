@@ -200,25 +200,27 @@ extern GlobalVariantKeyCollect GLOBAL_VARIANT_KEY;
 class GLShader;
 class UberShader final : public Resource {
 protected:
-    // 创建后会变的
-    std::unordered_map<VariantCodeSet, Ref<GLShader>> shaders; // 此元着色器的变体缓存
     // 不会变的
+    std::string display_name;
     std::string vs_src;
     std::string ps_src;
 
     // 默认材质参数
-    PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
-    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
-    MaterialParameterBlockInfo material_parameters;        // 默认材质参数
     RenderPriority render_priority;                        // 渲染优先级
-
-    LocalVariantKeyCollect local_variant_key_collect;
-    VariantCode effective_global_key_mask;
+    PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
+    MaterialParameterBlockInfo material_parameters;        // 默认材质参数
+    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
 
     std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
         uniform_binding_info; // 全部uniform buffer的绑定点和类型
     std::unordered_map<std::string, TextureParameterInfo>
         texture_units; // 纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)
+
+    // 变体相关
+    LocalVariantKeyCollect local_variant_key_collect;
+    VariantCode effective_global_key_mask;
+    std::unordered_map<VariantCodeSet, Ref<GLShader>> shaders; // 此元着色器的变体缓存
+
 public:
     explicit UberShader(UberShaderDesc &&desc);
     UberShader(const UberShader &) = delete;

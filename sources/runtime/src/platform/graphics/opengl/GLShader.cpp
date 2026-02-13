@@ -27,7 +27,8 @@ unsigned int compile_shader(const std::string &source, unsigned int shader_type)
     if (!success) {
         glGetShaderInfoLog(id, 512, nullptr, infoLog);
         throw RuntimeError(
-            std::format("着色器编译错误: {}\nSource:\n{}\n---------------END--------------", infoLog, source));
+            std::format("着色器编译错误: {}\n---------------SOURCE--------------\n{}\n---------------END--------------",
+                        infoLog, source));
     }
 
     return id;

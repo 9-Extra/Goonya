@@ -60,7 +60,7 @@ private:
         current_section_begin = end_pos;
     }
 
-    void skip(std::string_view view) { skip(view.data(), &view.back()); }
+    void skip(std::string_view view) { skip(view.data(), view.data() + view.size()); }
 
     void skip(const char *start_pos, const char *end_pos) {
         if (current_section != Section::None && current_section_begin != start_pos) {
@@ -270,12 +270,12 @@ private:
                 if (current_section == Section::None) {
                     LOG_ERROR("未知指令\"{} {}\"，GLSL原指令只能在段落内部使用", instruction, content);
                 } else {
-                    switch_section(current_section, &full_match.back() + 1);
+                    switch_section(current_section, full_match.data() + full_match.size());
                 }
             }
         }
 
-        switch_section(Section::None, &g_shader_source.back() + 1);
+        switch_section(Section::None, g_shader_source.data() + g_shader_source.size());
     }
     std::string generate_material_uniform_block() const {
         if (desc.parameters.empty()) {

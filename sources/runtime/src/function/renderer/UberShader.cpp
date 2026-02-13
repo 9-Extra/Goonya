@@ -120,6 +120,7 @@ static std::string shader_source_inject(const std::string &src, const std::vecto
 }
 
 UberShader::UberShader(UberShaderDesc &&desc) {
+    this->display_name = std::move(desc.name);
     this->vs_src = std::move(desc.vs_src);
     this->ps_src = std::move(desc.ps_src);
     this->pipeline_setting = desc.pipeline_setting;
@@ -160,6 +161,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
 
 Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
     if (auto iter = shaders.find(variant_code); iter != shaders.end()) {
+        // 缓存中已存在此变体，直接返回
         return iter->second;
     }
 

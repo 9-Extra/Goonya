@@ -6,6 +6,7 @@
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/level/LevelRenderer.h"
 #include "craft/model_manager.h"
+#include "runtime/GAssert.h"
 
 #include <cstdint>
 
@@ -36,7 +37,16 @@ RenderChunkRegion RenderRegionCache::create_region(ChunkPos section_pos) {
     return region;
 }
 
-void ComplieTask::do_complie() {
+void ComplieTask::launch() noexcept {
+    GN_ASSERT_MSG(!is_launched, "任务只能启动一次");
+    is_launched = true;
+    Goonya::THREAD_POOL.enqueue_detached([task = shared_from_this()] mutable {
+        // 提交的lambda内持有对task的共享引用，确保任务在lambda执行完毕前不会被销毁
+        task->do_compile();
+    });
+}
+
+void ComplieTask::do_compile() {
     if (is_cancelled.load(std::memory_order::acquire)) {
         return;
     }
@@ -48,10 +58,8 @@ void ComplieTask::do_complie() {
     }
 
     // 我们总是先取消旧任务，再启动新任务，然而这也不一定保证旧任务结束先于新任务结束
-    Goonya::THREAD_POOL.enqueue_renderer_thread(
-        [receiver = std::move(this->receiver), result = std::move(result), version = this->version] mutable {
-            receiver(std::move(result), version);
-        });
+    Goonya::THREAD_POOL.enqueue_renderer_thread([receiver = std::move(receiver), result = std::move(result),
+                                                 version = version] mutable { receiver(std::move(result), version); });
 }
 
 void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos,

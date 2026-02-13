@@ -7,7 +7,6 @@
 #include "function/renderer/IMeshRenderable.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/RScene.h"
-#include "platform/graphics/Graphics.h"
 
 #include <cstdint>
 #include <memory>
@@ -17,7 +16,6 @@
 
 namespace Craft {
 
-using Goonya::enqueue_render_task;
 using Goonya::Material;
 
 /*

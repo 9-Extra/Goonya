@@ -1,6 +1,6 @@
 #include "Renderer.h"
 
-#include "core/ThreadUtils.h"
+#include "core/ThreadPool.h"
 #include "function/renderer/Pipeline.h"
 
 namespace Goonya {
@@ -20,9 +20,7 @@ void Renderer::drop_scene(RScene *scene) noexcept {
 }
 
 void Renderer::clear() {
-    if (current_thread_type == ThreadType::RENDER) {
-        renderer_thread_process();
-    }
+    renderer_thread_process();
     // todo: 我们无法确认在清空这些资源时，是否会有其他的对象还持有引用
     for (auto scene : scenes) {
         delete scene;
