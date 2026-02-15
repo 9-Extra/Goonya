@@ -240,7 +240,7 @@ struct GlTFLoadingContext {
             }
 
             GN_ASSERT(vertex_offset == total_vertex_count && index_offset == total_indices_count);
-            // 用收集完成的数据构建MeshDesc并添加资源
+            // 用收集完成的数据构建GLMesh并添加资源
             Ref<GLMesh> device_mesh = create_ref<GLMesh>(GLTF_VERTEX_LAYOUT);
             device_mesh->set_vertices(0, raw_vertices);
             device_mesh->set_indices(indices);

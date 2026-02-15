@@ -132,15 +132,7 @@ void Material::update_parameter() const {
             const MaterialParameter &param =
                 parameters.contains(name) ? parameters.at(name) : field_info.type_and_default_value;
             GN_ASSERT(param.index() == field_info.type_and_default_value.index()); // 保证类型一致
-            std::visit(
-                [=](auto &&arg) {
-                    if constexpr (!std::is_same_v<decltype(arg), std::monostate>) {
-                        memcpy(base_ptr + field_info.offset, &arg, sizeof(arg));
-                    } else {
-                        std::unreachable();
-                    }
-                },
-                param);
+            std::visit([=](auto &&arg) { memcpy(base_ptr + field_info.offset, &arg, sizeof(arg)); }, param);
         }
         per_material->unmap();
     }

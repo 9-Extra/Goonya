@@ -43,6 +43,7 @@ struct Instance {
     SubMesh submesh;
 
     Ref<GLBuffer> per_object_uniform;
+    Vector3f position;
     BoundingBox transformed_bbox;
 };
 

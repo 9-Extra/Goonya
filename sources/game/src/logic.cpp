@@ -1,19 +1,16 @@
 #include "logic.h"
 
-#include "core/RefCount.h"
 #include "core/cgmath/quaternion.h"
 #include "core/clock/GameClock.h"
 #include "core/eventbus/eventbus.h"
 #include "core/events.h"
 #include "core/input/input.h"
-#include "core/log/Log.h"
 #include "craft/level/level.h"
 #include "function/renderer/Renderer.h"
 #include "function/renderer/UberShader.h"
 #include "function/world/Component.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
-#include "resource/ResMng.h"
 #include "runtime/GAssert.h"
 
 #include <algorithm>
@@ -76,18 +73,6 @@ void MoveSystem::handle_keyboard(float delta) const {
             Display::set_cursor_mode(CursorMode::CAPTURED | CursorMode::HIDDEN);
         } else {
             Display::set_cursor_mode(CursorMode::FREE | CursorMode::VISIBLE);
-        }
-    }
-
-    if (Input::is_key_click('P')) {
-        LOG_DEBUG("正在进行图像导出");
-        const std::string_view key = "buildin:missing_texture";
-        Ref<Goonya::GLTexture> skybox = resources.load_resource<Goonya::GLTexture>(key);
-        if (skybox) {
-            stb::Image image = skybox->export_image(0);
-            image.save("output.hdr");
-        } else {
-            LOG_ERROR("导出失败, 未找到资源\"{}\"", key);
         }
     }
 

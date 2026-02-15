@@ -11,7 +11,7 @@ IMeshRenderable::~IMeshRenderable() {
 
 /**
  * @brief 标记需要更新，可以重复标记
- * 最终会中执行RScene::update_mesh，只会更新一次
+ * 最终会执行RScene::update_mesh，只会更新一次
  * @see RScene::update_mesh
  * @param bit 脏标记
  */

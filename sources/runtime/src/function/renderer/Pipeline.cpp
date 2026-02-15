@@ -287,6 +287,7 @@ std::vector<CullInstance> Pipeline::cull(CameraInfo &camera_info) {
             .material = instance.material ? instance.material.get() : default_material.get(),
             .submesh = instance.submesh,
             .per_object_uniform = instance.per_object_uniform.get(),
+            .distance_to_camera = (instance.position - camera_info.camera->transform.position).length(),
         });
     }
     return visible_instances;

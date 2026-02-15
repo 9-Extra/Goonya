@@ -18,6 +18,7 @@ struct CullInstance {
     Material *material;
     SubMesh submesh;
     GLBuffer *per_object_uniform;
+    float distance_to_camera;
 };
 
 class Pipeline {

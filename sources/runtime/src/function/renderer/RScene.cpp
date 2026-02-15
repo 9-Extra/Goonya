@@ -94,8 +94,9 @@ void RScene::gather_mesh_instances(IMeshRenderable *mesh) noexcept {
                 continue; // 没有顶点，跳过
             }
             Ref<Material> mat = i < mesh->materials.size() ? mesh->materials[i] : nullptr;
-            Handle<Instance> h_instance = instances.emplace(mesh->mesh, mat, submesh, mesh->per_object_uniform,
-                                                            submesh.aabb.transformed(model_matrix));
+            Handle<Instance> h_instance =
+                instances.emplace(mesh->mesh, mat, submesh, mesh->per_object_uniform, mesh->transform.position,
+                                  submesh.aabb.transformed(model_matrix));
             mesh->instance_indices.push_back(h_instance);
         }
     }
@@ -159,7 +160,9 @@ void RScene::update_mesh(IMeshRenderable *mesh) noexcept {
         mesh->per_object_uniform->write(&per_object_data, BufferMapOption::WRITE_DISCARD);
 
         for (Handle<Instance> h_instance : mesh->instance_indices) {
-            instances[h_instance].transformed_bbox = instances[h_instance].submesh.aabb.transformed(model_matrix);
+            Instance &instance = instances[h_instance];
+            instance.position = mesh->transform.position;
+            instance.transformed_bbox = instance.submesh.aabb.transformed(model_matrix);
         }
         break;
     }
@@ -183,6 +186,7 @@ void RScene::update_mesh(IMeshRenderable *mesh) noexcept {
             Ref<Material> mat = i < mesh->materials.size() ? mesh->materials[i] : nullptr;
             Instance &instance = instances[mesh->instance_indices[i]];
             instance.material = mat;
+            instance.position = mesh->transform.position;
             instance.transformed_bbox = instance.submesh.aabb.transformed(model_matrix);
         }
         break;
