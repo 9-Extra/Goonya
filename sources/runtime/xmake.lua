@@ -12,7 +12,7 @@ target("GRuntime")
 -- 测试
 target("deps_for_test")
     set_kind("static")
-    add_files("src/core/log/*.cpp")
+    add_files("src/core/log/*.cpp", "src/core/GAssert.cpp")
     add_includedirs("src", "include", {public = true})
     add_packages("gtest", "spdlog", {public = true})
 

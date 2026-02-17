@@ -51,6 +51,14 @@ struct Quaternion {
 
     constexpr Quaternion conjugate() const { return Quaternion{-x, -y, -z, w}; }
 
+    constexpr Quaternion operator+(this const Quaternion lhs, Quaternion rhs) noexcept {
+        return Quaternion{lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z, lhs.w + rhs.w};
+    }
+
+    constexpr Quaternion operator*(this const Quaternion lhs, float rhs) noexcept {
+        return Quaternion{lhs.x * rhs, lhs.y * rhs, lhs.z * rhs, lhs.w * rhs};
+    }
+
     constexpr Quaternion operator*(this const Quaternion lhs, Quaternion rhs) noexcept {
         Vector3f lv{lhs.x, lhs.y, lhs.z}, rv{rhs.x, rhs.y, rhs.z};
         Vector3f v = lv.cross(rv) + lv * rhs.w + rv * lhs.w;
@@ -69,12 +77,89 @@ struct Quaternion {
         return src + ((uv * w) + u.cross(uv)) * 2.0f;
     }
 
+    constexpr float dot(Quaternion r) const noexcept { return x * r.x + y * r.y + z * r.z + w * r.w; }
+
     bool operator==(this const Quaternion &self, const Quaternion r) noexcept {
         return is_nearly_equal(self.x, r.x) && is_nearly_equal(self.y, r.y) && is_nearly_equal(self.z, r.z) &&
                is_nearly_equal(self.w, r.w);
     }
 
+    static bool rotation_equal(Quaternion a, Quaternion b) noexcept {
+        const float EPSILON = 1e-6f;
+        // 检查 q1 是否等于 q2 或 -q2（因为两者代表相同旋转）
+        double dot1 = std::abs(a.dot(b));
+        double dot2 = std::abs(a.dot(b * -1.0f));
+
+        return (std::abs(1.0f - dot1) < EPSILON) || (std::abs(1.0f - dot2) < EPSILON);
+    }
+
     bool isnan() const noexcept { return std::isnan(x) || std::isnan(y) || std::isnan(z) || std::isnan(w); }
+
+    /**
+     * @brief 线性插值（Lerp）
+     * 用于在两个四元数之间进行线性插值，快，在四元数相近时效果好。
+     *
+     * @note 没有归一化，可能需要按情况手动归一化
+     * @param q1 起始四元数
+     * @param q2 结束四元数
+     * @param t 插值参数，范围[0,1]为插值，超过1时预测未来
+     * @return Quaternion 插值后的四元数
+     */
+    static Quaternion lerp(Quaternion q1, Quaternion q2, float t) {
+        // 计算两个四元数之间的夹角余弦
+        double cosine = q1.dot(q2);
+
+        // 处理负点积的情况，确保插值沿最短路径
+        if (cosine < 0.0f) {
+            q2 = q2 * -1.0f;
+            cosine = -cosine;
+        }
+
+        return q1 * (1.0f - t) + q2 * t;
+    }
+
+    /**
+     * @brief 球面线性插值（Slerp）
+     * 用于在两个四元数之间进行球面插值，慢但准确，适用于四元数相差较大时。
+     *
+     * @param q1 起始四元数
+     * @param q2 结束四元数
+     * @param t 插值参数，范围[0,1]为插值，超过1时预测未来
+     * @return Quaternion 插值后的四元数
+     */
+    static Quaternion slerp(Quaternion q1, Quaternion q2, float t) {
+        // 计算两个四元数之间的夹角余弦
+        double cosine = q1.dot(q2);
+
+        // 处理负点积的情况，确保插值沿最短路径
+        if (cosine < 0.0f) {
+            q2 = q2 * -1.0f;
+            cosine = -cosine;
+        }
+
+        // 检查是否非常接近
+        const float EPSILON = 1e-6;
+
+        if (cosine > 1.0f - EPSILON) {
+            // 非常接近，使用线性插值避免除零
+            return (q1 * (1.0f - t) + q2 * t).normalize();
+        }
+
+        // 标准SLERP公式
+        float omega = std::acosf(cosine);
+        float sin_omega = std::sinf(omega);
+
+        // 计算插值系数
+        float scale0 = std::sinf((1.0f - t) * omega) / sin_omega;
+        float scale1 = std::sinf(t * omega) / sin_omega;
+
+        return (q1 * scale0 + q2 * scale1).normalize();
+    }
+
+    static float angle_between(Quaternion q1, Quaternion q2) noexcept {
+        float dot = std::abs(q1.dot(q2));
+        return 2.0f * std::acos(dot);
+    }
 };
 
 constexpr Vector3f Vector3f::apply(Quaternion q) const noexcept { return q * (*this); }
