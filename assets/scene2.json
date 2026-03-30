@@ -207,16 +207,16 @@
                 ]
             },
             {
-                "name": "纳西妲",
+                "name": "科拉莉",
                 "transform": {
                     "position": [
                         0,
                         5,
-                        -20
+                        10
                     ],
                     "rotation": [
                         0,
-                        0,
+                        3.14,
                         0
                     ],
                     "scale": [
@@ -225,7 +225,7 @@
                         5
                     ]
                 },
-                "scene": "禁止二次配布/Nahida/纳西妲Scene"
+                "scene": "禁止二次配布/龙娘科拉莉2.0/科拉莉:Scene"
             },
             {
                 "transform": {

@@ -1,7 +1,10 @@
 #include "imgui_module.h"
 
+#include "core/log/Log.h"
+#include "core/path_formatter.h"
 #include "platform/display/display.h"
 #include "platform/graphics/Graphics.h"
+#include "resource/ResMng.h"
 #include "runtime/GAssert.h"
 
 #include <imgui.h>
@@ -15,6 +18,19 @@ void init() {
     GN_ASSERT_MSG(!initialized, "Imgui模块重复初始化");
     initialized = true;
     ImGui::SetCurrentContext(ImGui::CreateContext());
+
+    // 加载中文字体
+    auto font_path = resources.get_root_dir() / "fonts/HarmonyOS_Sans_SC_Regular.ttf";
+
+    ImGuiIO &io = ImGui::GetIO();
+    ImFont *font = io.Fonts->AddFontFromFileTTF((const char *)font_path.u8string().c_str(), 18.0f, nullptr,
+                                                io.Fonts->GetGlyphRangesChineseFull());
+    if (font == nullptr) {
+        LOG_ERROR("中文字体加载失败: {}", font_path);
+    } else {
+        LOG_INFO("中文字体加载成功: {}", font_path);
+    }
+
     ImGui_ImplOpenGL3_Init("#version 460");
     ImGui_ImplGlfw_InitForOpenGL(Display::window, true);
 }

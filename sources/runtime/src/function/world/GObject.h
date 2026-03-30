@@ -10,6 +10,7 @@
 #include "core/cgmath/cgmath.h"
 #include "core/cgmath/quaternion.h"
 #include "core/cgmath/transform.h"
+#include "core/cgmath/vector.h"
 #include "core/enum_operator.h"
 #include "core/log/Log.h"
 
@@ -199,6 +200,10 @@ public:
 
     // ----------------缩放--------------------
     Vector3f get_local_scale() const noexcept { return this->transform.scale; }
+    void set_local_scale(Vector3f scale) noexcept {
+        this->transform.scale = scale;
+        mark_world_transform_dirty();
+    }
 
     Vector3f get_global_scale() noexcept {
         if (is_world_transform_dirty) {
@@ -224,13 +229,90 @@ public:
         }
         return nullptr;
     }
+    /**
+     * @brief 根据路径获取子节点
+     * @param path 节点路径，支持以下格式：
+     *             - 空字符串""：返回当前节点自身
+     *             - 相对路径"xxx/yyy"：从当前节点开始查找
+     * @note 以'/'开头的路径是不正确的
+     * @return 找到的目标节点，找不到时返回nullptr
+     */
+    std::shared_ptr<GObject> get_child_by_path(std::string_view path) noexcept {
+        // 空路径返回自身
+        if (path.empty()) {
+            return shared_from_this();
+        }
+
+        std::shared_ptr<GObject> current = shared_from_this();
+
+        // 按/分割路径并逐级查找
+        size_t start = 0;
+        while (start < path.size()) {
+            size_t end = path.find('/', start);
+            if (end == std::string_view::npos) {
+                end = path.size();
+            }
+
+            std::string_view name = path.substr(start, end - start);
+            // 查找当前名称的子节点
+            std::shared_ptr<GObject> next = nullptr;
+            for (auto &child : current->children) {
+                if (child->name == name) {
+                    next = child;
+                    break;
+                }
+            }
+
+            if (!next) {
+                return nullptr;
+            }
+
+            current = next;
+            start = end + 1;
+        }
+
+        return current;
+    }
 
     void attach_child(const std::shared_ptr<GObject> &child) noexcept {
         GN_ASSERT(!child->has_parent());
+        // 如果子节点名称为空，自动生成唯一名称
+        if (child->name.empty()) {
+            child->name = generate_unique_name();
+        }
         children.push_back(child);
         child->mark_world_transform_dirty();
         child->parent = weak_from_this();
         child->set_world(this->get_world());
+    }
+
+    /**
+     * @brief 生成一个唯一的对象名称，格式为 "obj", "obj1", "obj2", ...
+     * @return 与所有兄弟节点不同的唯一名称
+     */
+    std::string generate_unique_name() const noexcept {
+        // 检查 "obj" 是否可用
+        if (!has_child_with_name("obj")) {
+            return "obj";
+        }
+        // 尝试 "obj1", "obj2", ...
+        for (int index = 1; index < 1024; index++) {
+            std::string candidate = std::format("obj{}", index);
+            if (!has_child_with_name(candidate)) {
+                return candidate;
+            }
+        }
+
+        return "obj_too_many";
+    }
+
+    /**
+     * @brief 检查是否存在指定名称的子节点
+     * @param name 要检查的名称
+     * @return 如果存在返回 true，否则返回 false
+     */
+    bool has_child_with_name(std::string_view name) const noexcept {
+        return std::ranges::any_of(children, [name](auto &&c) { return c->name == name; });
     }
 
     void remove_child(GObject *child) noexcept {

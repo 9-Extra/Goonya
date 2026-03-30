@@ -94,5 +94,8 @@ public:
         GN_ASSERT(iter != deferred_update_list.end());
         deferred_update_list.erase(iter);
     }
+
+private:
+    void draw_scene_tree_node(const std::shared_ptr<GObject> &node) const noexcept;
 };
 } // namespace Goonya

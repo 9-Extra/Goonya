@@ -18,7 +18,7 @@ namespace Goonya {
 // 资源管理器
 class RenderResource final {
 private:
-    std::filesystem::path resource_dir;
+    std::filesystem::path resource_dir; // 默认为"./assets"
 
     std::unordered_map<AssetKey, Ref<Resource>, StringHash, StringEqual> storage;
     std::unordered_map<std::string, std::shared_ptr<ResourceLoader>> loaders;
