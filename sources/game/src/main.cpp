@@ -23,12 +23,15 @@ int main() {
         {
             Ref<Goonya::Scene> scene =
                 Goonya::load_scene_from_json("../assets/scene2.json"); // 整个场景的所有物体都从json加载了
-            world->set_root(scene->root);
+            for (auto &&obj : scene->nodes) {
+                world->get_root()->attach_child(obj);
+            }
         }
         // 初始捕获鼠标不方便调试
         // Goonya::Display::set_cursor_mode(Goonya::CursorMode::CAPTURED | Goonya::CursorMode::HIDDEN); // 捕获鼠标
-
-        world->get_root()->add_component(std::make_unique<MoveSystem>());
+        std::shared_ptr<Goonya::GObject> controller = std::make_shared<Goonya::GObject>("controller");
+        controller->add_component(std::make_unique<MoveSystem>());
+        world->get_root()->attach_child(controller);
 
         Goonya::main_loop();
 

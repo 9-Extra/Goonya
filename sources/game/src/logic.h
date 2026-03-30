@@ -14,6 +14,8 @@ public:
     void on_unregister() override;
     void tick() override;
 
+    std::unique_ptr<Component> clone() const override { return std::make_unique<MoveSystem>(); }
+
 private:
     std::shared_ptr<Goonya::GObject> cube;
     std::shared_ptr<Goonya::GObject> lights;

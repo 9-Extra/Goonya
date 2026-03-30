@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #include "core/enum_operator.h"
 #include "runtime/GAssert.h"
 
@@ -25,6 +27,12 @@ public:
     Component() : owner(nullptr) {}
     virtual ~Component() = default;
     GObject *get_owner() const noexcept { return owner; }
+
+    /**
+     * @brief 克隆组件，创建深拷贝
+     * @return 新的组件实例
+     */
+    virtual std::unique_ptr<Component> clone() const = 0;
 
 protected:
     friend class GObject;

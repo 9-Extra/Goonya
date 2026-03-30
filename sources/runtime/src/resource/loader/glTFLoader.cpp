@@ -4,6 +4,7 @@
 #include "core/as_u8string.h"
 #include "core/cgmath/cgmath.h"
 #include "core/path_formatter.h"
+#include "function/animation/Animation.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/UberShader.h"
@@ -90,6 +91,13 @@ struct GlTFLoadingContext {
     std::vector<Ref<GLTexture>> texture_list;
     std::vector<Ref<Material>> material_list;
 
+    // 节点索引到路径的映射（假设节点名称不重复）
+    std::vector<std::string> node_index_to_path;
+
+    // 原始缓冲区数据（用于读取 accessor）
+    std::vector<std::unique_ptr<char[]>> buffer_data;
+    std::vector<size_t> buffer_sizes;
+
     GlTFLoadingContext(Ref<ResourcePack> pack, std::filesystem::path path)
         : pack(std::move(pack)), path(std::move(path)) {
 
@@ -99,6 +107,51 @@ struct GlTFLoadingContext {
             throw RuntimeError(std::format("打开文件{}失败", this->path));
         }
         reader.parse(file, json, false);
+
+        // 预加载所有缓冲区数据
+        load_buffers();
+    }
+
+    void load_buffers() {
+        std::filesystem::path root = path.parent_path();
+        if (!json.isMember("buffers")) {
+            return;
+        }
+        const Json::Value &buffers_json = json["buffers"];
+        buffer_data.reserve(buffers_json.size());
+        buffer_sizes.reserve(buffers_json.size());
+
+        for (const Json::Value &buffer : buffers_json) {
+            std::filesystem::path bin_path = root / as_u8string_view(uri_decode(buffer["uri"].asString()));
+            std::fstream file(bin_path, std::ios_base::in | std::ios_base::binary);
+            if (!file) {
+                throw RuntimeError(
+                    std::format("打开文件{}失败", std::filesystem::canonical(bin_path).generic_string()));
+            }
+
+            size_t byte_length = buffer["byteLength"].asUInt();
+            auto data = std::make_unique<char[]>(byte_length);
+            file.read(data.get(), byte_length);
+
+            buffer_data.push_back(std::move(data));
+            buffer_sizes.push_back(byte_length);
+        }
+    }
+
+    // 获取 accessor 数据的指针和数量
+    template <typename T>
+    std::pair<const T *, size_t> get_accessor_data(uint32_t accessor_index) const {
+        const Json::Value &accessor = json["accessors"][accessor_index];
+        const Json::Value &buffer_view = json["bufferViews"][accessor["bufferView"].asUInt()];
+
+        uint32_t buffer_index = buffer_view["buffer"].asUInt();
+        size_t byte_offset = buffer_view.get("byteOffset", 0).asUInt();
+        byte_offset += accessor.get("byteOffset", 0).asUInt();
+
+        size_t count = accessor["count"].asUInt();
+        const char *data_ptr = buffer_data[buffer_index].get() + byte_offset;
+
+        return {reinterpret_cast<const T *>(data_ptr), count};
     }
 
     void load_gltf_mesh() {
@@ -359,6 +412,39 @@ struct GlTFLoadingContext {
         }
     }
 
+    // 递归构建节点索引到路径的映射
+    void build_node_path_map(uint32_t node_index, const std::string &parent_path) {
+        if (node_index >= node_index_to_path.size()) {
+            node_index_to_path.resize(node_index + 1);
+        }
+
+        const Json::Value &node_json = json["nodes"][node_index];
+        std::string name = node_json.get("name", "").asString();
+        std::string current_path = parent_path.empty() ? name : parent_path + "/" + name;
+        node_index_to_path[node_index] = current_path;
+
+        // 递归处理子节点
+        if (node_json.isMember("children")) {
+            for (const Json::Value &child_index : node_json["children"]) {
+                build_node_path_map(child_index.asUInt(), current_path);
+            }
+        }
+    }
+
+    // 初始化节点路径映射（从场景根节点开始）
+    void init_node_path_map() {
+        if (!json.isMember("scenes")) {
+            return;
+        }
+        for (const Json::Value &scene_json : json["scenes"]) {
+            if (scene_json.isMember("nodes")) {
+                for (const Json::Value &node_index : scene_json["nodes"]) {
+                    build_node_path_map(node_index.asUInt(), "");
+                }
+            }
+        }
+    }
+
     std::shared_ptr<GObject> load_gltf_node(uint32_t index) {
         const Json::Value &node_json = json["nodes"][index];
         // 先加载名称和变换
@@ -419,6 +505,9 @@ struct GlTFLoadingContext {
     }
 
     void load_gltf_scene() {
+        // 首先初始化节点路径映射
+        init_node_path_map();
+
         for (const auto &[id, scene_json] : std::ranges::enumerate_view(json["scenes"])) {
             Ref<Scene> scene = create_ref<Scene>();
             // 默认使用其自定义的名称，否则使用下标生成名称，重名会导致错误
@@ -429,12 +518,145 @@ struct GlTFLoadingContext {
             }
             AssetKey res_name = scene->name;
 
-            scene->root =
-                std::make_shared<GObject>("scene_root"); // gltf的scene中可能有不止一个根节点，因此另外创建一个根节点
             for (const Json::Value &node_index : scene_json["nodes"]) {
-                scene->root->attach_child(load_gltf_node(node_index.asUInt()));
+                scene->nodes.emplace_back(load_gltf_node(node_index.asUInt()));
             }
             pack->contents.emplace(std::move(res_name), std::move(scene));
+        }
+    }
+
+    void load_gltf_animation() {
+        if (!json.isMember("animations")) {
+            return;
+        }
+
+        const Json::Value &animations_json = json["animations"];
+
+        for (const Json::Value &anim_json : animations_json) {
+            Ref<Animation> animation = create_ref<Animation>();
+
+            std::string anim_name = anim_json.get("name", "animation").asString();
+            float max_duration = 0.0f;
+
+            // 解析 samplers
+            const Json::Value &samplers_json = anim_json["samplers"];
+
+            // 解析 channels
+            const Json::Value &channels_json = anim_json["channels"];
+
+            for (const Json::Value &channel_json : channels_json) {
+                // 获取 sampler 索引
+                uint32_t sampler_index = channel_json["sampler"].asUInt();
+                const Json::Value &sampler_json = samplers_json[sampler_index];
+
+                // 获取 target 信息
+                const Json::Value &target_json = channel_json["target"];
+
+                // 如果 node 未定义，忽略此通道
+                if (!target_json.isMember("node")) {
+                    continue;
+                }
+
+                uint32_t node_index = target_json["node"].asUInt();
+                std::string path = target_json["path"].asString();
+
+                // 获取节点路径（假设节点名称不重复）
+                if (node_index >= node_index_to_path.size()) {
+                    continue; // 节点索引越界
+                }
+                std::string node_path = node_index_to_path[node_index];
+                if (node_path.empty()) {
+                    continue; // 无法找到有效路径
+                }
+
+                // 获取 interpolation 类型（CUBICSPLINE 转为 LINEAR）
+                std::string interpolation_str = sampler_json.get("interpolation", "LINEAR").asString();
+                InterpolationType interp_type = InterpolationType::LINEAR;
+                if (interpolation_str == "STEP") {
+                    interp_type = InterpolationType::STEP;
+                }
+                // CUBICSPLINE 也使用 LINEAR
+
+                // 获取 sampler 的 input/output accessor
+                uint32_t input_accessor = sampler_json["input"].asUInt();
+                uint32_t output_accessor = sampler_json["output"].asUInt();
+
+                // 读取时间数据（input）
+                auto [time_data, time_count] = get_accessor_data<float>(input_accessor);
+                if (time_count == 0) {
+                    continue;
+                }
+
+                // 更新最大持续时间
+                max_duration = std::max(max_duration, time_data[time_count - 1]);
+
+                // 根据 path 类型创建对应的 Channel
+                if (path == "translation") {
+                    auto [pos_data, pos_count] = get_accessor_data<Vector3f>(output_accessor);
+                    if (pos_count != time_count) {
+                        continue; // 数据不匹配
+                    }
+
+                    auto pos_channel = std::make_unique<Animation::PositionChannel>();
+                    pos_channel->target = node_path;
+                    pos_channel->interpolation_type = interp_type;
+
+                    pos_channel->position_series.key_points.reserve(time_count);
+                    for (size_t i = 0; i < time_count; ++i) {
+                        pos_channel->position_series.key_points.push_back(
+                            KeyPoint<Vector3f>{time_data[i], pos_data[i]});
+                    }
+
+                    animation->channels.push_back(std::move(pos_channel));
+
+                } else if (path == "rotation") {
+                    // rotation 使用 VEC4 (xyzw)
+                    auto [rot_data, rot_count] = get_accessor_data<Vector4f>(output_accessor);
+                    if (rot_count != time_count) {
+                        continue;
+                    }
+
+                    auto rot_channel = std::make_unique<Animation::RotationChannel>();
+                    rot_channel->target = node_path;
+                    rot_channel->interpolation_type = interp_type;
+
+                    rot_channel->rotation_series.key_points.reserve(time_count);
+                    for (size_t i = 0; i < time_count; ++i) {
+                        Quaternion quat(rot_data[i].x, rot_data[i].y, rot_data[i].z, rot_data[i].w);
+                        rot_channel->rotation_series.key_points.push_back(KeyPoint<Quaternion>{time_data[i], quat});
+                    }
+
+                    animation->channels.push_back(std::move(rot_channel));
+
+                } else if (path == "scale") {
+                    auto [scale_data, scale_count] = get_accessor_data<Vector3f>(output_accessor);
+                    if (scale_count != time_count) {
+                        continue;
+                    }
+
+                    auto scale_channel = std::make_unique<Animation::ScaleChannel>();
+                    scale_channel->target = node_path;
+                    scale_channel->interpolation_type = interp_type;
+
+                    scale_channel->scale_series.key_points.reserve(time_count);
+                    for (size_t i = 0; i < time_count; ++i) {
+                        scale_channel->scale_series.key_points.push_back(
+                            KeyPoint<Vector3f>{time_data[i], scale_data[i]});
+                    }
+
+                    animation->channels.push_back(std::move(scale_channel));
+                }
+                // "weights" 路径被忽略（Animation 类不支持）
+            }
+
+            // 设置动画持续时间（秒转换为 GameClock::Duration）
+            animation->duration =
+                std::chrono::duration_cast<GameClock::Duration>(std::chrono::duration<float>(max_duration));
+
+            // 只有当有有效通道时才添加动画
+            if (!animation->channels.empty()) {
+                pack->contents.emplace(anim_name, animation);
+            }
         }
     }
 };
@@ -453,6 +675,7 @@ Ref<Resource> GlTFLoader::load(std::string_view type, const std::filesystem::pat
     context.load_gltf_material();
     context.load_gltf_mesh();
     context.load_gltf_scene();
+    context.load_gltf_animation();
 
     return pack;
 }

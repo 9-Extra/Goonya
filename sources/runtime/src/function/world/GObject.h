@@ -121,6 +121,8 @@ public:
 
     std::vector<std::unique_ptr<Component>> &get_components() noexcept { return components; }
 
+    std::shared_ptr<GObject> clone(bool recursive = false) const;
+
     const Transform &get_local_transform() const noexcept { return transform; }
 
     void set_local_transform(const Transform &transform) noexcept {
@@ -237,42 +239,7 @@ public:
      * @note 以'/'开头的路径是不正确的
      * @return 找到的目标节点，找不到时返回nullptr
      */
-    std::shared_ptr<GObject> get_child_by_path(std::string_view path) noexcept {
-        // 空路径返回自身
-        if (path.empty()) {
-            return shared_from_this();
-        }
-
-        std::shared_ptr<GObject> current = shared_from_this();
-
-        // 按/分割路径并逐级查找
-        size_t start = 0;
-        while (start < path.size()) {
-            size_t end = path.find('/', start);
-            if (end == std::string_view::npos) {
-                end = path.size();
-            }
-
-            std::string_view name = path.substr(start, end - start);
-            // 查找当前名称的子节点
-            std::shared_ptr<GObject> next = nullptr;
-            for (auto &child : current->children) {
-                if (child->name == name) {
-                    next = child;
-                    break;
-                }
-            }
-
-            if (!next) {
-                return nullptr;
-            }
-
-            current = next;
-            start = end + 1;
-        }
-
-        return current;
-    }
+    std::shared_ptr<GObject> get_child_by_path(std::string_view path) noexcept;
 
     void attach_child(const std::shared_ptr<GObject> &child) noexcept {
         GN_ASSERT(!child->has_parent());
@@ -290,21 +257,7 @@ public:
      * @brief 生成一个唯一的对象名称，格式为 "obj", "obj1", "obj2", ...
      * @return 与所有兄弟节点不同的唯一名称
      */
-    std::string generate_unique_name() const noexcept {
-        // 检查 "obj" 是否可用
-        if (!has_child_with_name("obj")) {
-            return "obj";
-        }
-        // 尝试 "obj1", "obj2", ...
-        for (int index = 1; index < 1024; index++) {
-            std::string candidate = std::format("obj{}", index);
-            if (!has_child_with_name(candidate)) {
-                return candidate;
-            }
-        }
-
-        return "obj_too_many";
-    }
+    std::string generate_unique_name() const noexcept;
 
     /**
      * @brief 检查是否存在指定名称的子节点
@@ -327,7 +280,7 @@ public:
 
     bool has_parent() const noexcept { return !parent.expired(); }
 
-    std::weak_ptr<GObject> get_parent() const noexcept { return parent; }
+    std::shared_ptr<GObject> get_parent() const noexcept { return parent.lock(); }
 
     void attach_parent(const std::shared_ptr<GObject> &new_parent) noexcept {
         if (new_parent == parent.lock()) return;

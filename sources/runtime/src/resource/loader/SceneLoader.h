@@ -11,7 +11,7 @@ namespace Goonya {
 
 struct Scene : public Resource {
     std::string name;
-    std::shared_ptr<GObject> root;
+    std::vector<std::shared_ptr<GObject>> nodes; // 根节点可能不止一个
 };
 
 Ref<Scene> load_scene_from_json(const std::filesystem::path &path);

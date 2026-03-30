@@ -17,6 +17,8 @@ private:
 public:
     CpntPointLight(Vector3f color, float intensity) : color(color), intensity(intensity) {}
 
+    std::unique_ptr<Component> clone() const override { return std::make_unique<CpntPointLight>(color, intensity); }
+
     void on_register() override {
         GN_ASSERT(get_owner() != nullptr);
         scene = get_owner()->get_world()->get_scene();

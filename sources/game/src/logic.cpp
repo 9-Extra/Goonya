@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <numbers>
 #include <resource/Resource.h>
 
@@ -123,13 +124,15 @@ void MoveSystem::handle_keyboard(float delta) const {
     // }
 }
 void MoveSystem::on_register() {
-    cube = get_owner()->get_child_by_name("方块");
+    std::shared_ptr<Goonya::GObject> root = get_owner()->get_parent();
+    GN_ASSERT(root);
+    cube = root->get_child_by_name("方块");
     GN_ASSERT(cube);
-    lights = get_owner()->get_child_by_name("lights");
+    lights = root->get_child_by_name("lights");
     GN_ASSERT(lights);
-    light1 = get_owner()->get_child_by_name("lights")->get_child_by_name("light1");
+    light1 = root->get_child_by_name("lights")->get_child_by_name("light1");
     GN_ASSERT(light1);
-    camera = get_owner()->get_child_by_name("相机");
+    camera = root->get_child_by_name("相机");
     GN_ASSERT(camera);
 
     Goonya::World *world = get_owner()->get_world();

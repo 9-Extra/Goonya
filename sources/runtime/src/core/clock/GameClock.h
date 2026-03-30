@@ -15,6 +15,8 @@ namespace Goonya {
 class GameClock {
 public:
     using ClockType = std::chrono::steady_clock;
+    using TimePoint = ClockType::time_point;
+    using Duration = ClockType::duration;
 
     static const uint32_t TPS = 20;
     static const uint32_t MIN_FPS = 20;
@@ -25,36 +27,36 @@ public:
 private:
     uint64_t fixed_current_tick = 0;
     uint64_t expected_tick = 0;
-    ClockType::duration last_fixed_tick_time = ClockType::duration::zero();
+    Duration last_fixed_tick_time = ClockType::duration::zero();
 
-    ClockType::duration virtual_delta = ClockType::duration::zero();
-    ClockType::duration virtual_total = ClockType::duration::zero();
-    ClockType::time_point last_frame_time;
+    Duration virtual_delta = ClockType::duration::zero();
+    Duration virtual_total = ClockType::duration::zero();
+    TimePoint last_frame_time;
 
 public:
     GameClock() = default;
 
     uint64_t current_tick() const noexcept { return fixed_current_tick; }
 
-    ClockType::time_point fixed_now() const noexcept { return ClockType::time_point{} + fixed_total(); }
+    TimePoint fixed_now() const noexcept { return ClockType::time_point{} + fixed_total(); }
 
     ClockType::duration fixed_total() const noexcept { return fixed_current_tick * FIXED_TICK_INTERVAL; }
 
     /**
      * @brief 获取当前帧对应时间点
      * @note 本非真实时间，而是游戏世界模拟时间
-     * @return ClockType::time_point 当前时间点
+     * @return TimePoint 当前时间点
      */
-    ClockType::time_point now() const noexcept { return ClockType::time_point{} + virtual_total; }
+    TimePoint now() const noexcept { return ClockType::time_point{} + virtual_total; }
 
-    ClockType::duration total() const noexcept { return virtual_total; }
+    Duration total() const noexcept { return virtual_total; }
 
     /**
      * @brief 获取当前帧的模拟时间间隔
      * @note 对于游戏世界模拟时间来说，这是个定值
-     * @return ClockType::duration 当前模拟时间间隔
+     * @return Duration 当前模拟时间间隔
      */
-    constexpr ClockType::duration delta() const noexcept // NOLINT，与其他类似函数保持一致
+    constexpr Duration delta() const noexcept // NOLINT，与其他类似函数保持一致
     {
         return virtual_delta;
     }

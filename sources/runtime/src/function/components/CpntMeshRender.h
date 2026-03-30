@@ -20,6 +20,13 @@ private:
     RScene *scene = nullptr;
 
 public:
+    std::unique_ptr<Component> clone() const override {
+        auto new_comp = std::make_unique<CpntMeshRender>();
+        new_comp->mesh = mesh;
+        new_comp->materials = materials;
+        return new_comp;
+    }
+
     void on_register() override {
         GN_ASSERT(get_owner() != nullptr);
         GObject &owner = *get_owner();

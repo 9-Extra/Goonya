@@ -14,6 +14,7 @@
 #include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
 
+#include "json/value.h"
 #include <fstream>
 #include <json/json.h>
 #include <memory>
@@ -120,10 +121,12 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
     }
 
     if (json.isMember("scene")) {
-        // todo: copy
         Ref<Scene> sub_scene = resources.load_resource<Scene>(json["scene"].asString());
         if (sub_scene) {
-            node->attach_child(sub_scene->root);
+            for (auto &&sub_node : sub_scene->nodes) {
+                // 复制所有根物体及其子物体
+                node->attach_child(sub_node->clone(true));
+            }
         } else {
             throw RuntimeError(std::format("子场景\"{}\"加载失败", json["scene"].asString()));
         }
@@ -147,7 +150,9 @@ Ref<Scene> load_scene_from_json(const std::filesystem::path &path) {
 
     scene->name = json.get("name", "未命名").asString();
     // 加载物体
-    scene->root = load_node_from_json(json["root"]);
+    for (const Json::Value &node : json["nodes"]) {
+        scene->nodes.emplace_back(load_node_from_json(node));
+    }
 
     return scene;
 }

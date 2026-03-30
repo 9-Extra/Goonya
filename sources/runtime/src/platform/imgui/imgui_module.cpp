@@ -26,9 +26,9 @@ void init() {
     ImFont *font = io.Fonts->AddFontFromFileTTF((const char *)font_path.u8string().c_str(), 18.0f, nullptr,
                                                 io.Fonts->GetGlyphRangesChineseFull());
     if (font == nullptr) {
-        LOG_ERROR("中文字体加载失败: {}", font_path);
+        LOG_ERROR("字体加载失败: {}，回退到默认字体", font_path);
     } else {
-        LOG_INFO("中文字体加载成功: {}", font_path);
+        LOG_INFO("Imgui使用字体: {}", font_path);
     }
 
     ImGui_ImplOpenGL3_Init("#version 460");

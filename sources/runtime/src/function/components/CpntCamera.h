@@ -24,6 +24,12 @@ public:
     explicit CpntCamera(float near_z = 1.0f, float far_z = 1000.0f, float fov = 1.57)
         : near_z(near_z), far_z(far_z), fov(fov) {}
 
+    std::unique_ptr<Component> clone() const override {
+        auto new_comp = std::make_unique<CpntCamera>(near_z, far_z, fov);
+        new_comp->render_target = render_target;
+        return new_comp;
+    }
+
     void on_register() override {
         scene = get_owner()->get_world()->get_scene();
         p_camera = scene->add_camera();
