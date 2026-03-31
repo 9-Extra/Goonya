@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 #include "Component.h"
@@ -87,23 +88,17 @@ public:
         }
     }
 
-    void add_component(std::unique_ptr<Component> &&component) {
-        component->set_owner(this);
-        if (get_world()) {
-            component->on_register();
-        }
-        components.push_back(std::move(component));
+    void add_component(std::unique_ptr<Component> &&component);
+    template <typename T, typename... ARGS>
+        requires std::is_constructible_v<T, ARGS...>
+    T *create_component(ARGS... args) {
+        std::unique_ptr<T> t = std::make_unique<T>(std::forward<ARGS>(args)...);
+        T *ptr = t.get();
+        add_component(std::move(t));
+        return ptr;
     }
 
-    Component *get_component(const std::type_info &t_info) noexcept {
-        for (auto &component : components) {
-            auto &c = *component; // 比较其内容而非智能指针
-            if (typeid(c) == t_info) {
-                return component.get();
-            }
-        }
-        return nullptr;
-    }
+    Component *get_component(const std::type_info &t_info) noexcept;
 
     template <class T>
         requires(std::is_base_of_v<Component, T>)

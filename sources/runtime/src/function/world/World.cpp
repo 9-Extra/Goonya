@@ -45,7 +45,9 @@ void World::tick() {
     // here
     if (ImGui::Begin("SceneTree")) {
         ImGui::TextUnformatted("World");
-        draw_scene_tree_node(root);
+        for (const auto &child : root->get_children()) {
+            draw_scene_tree_node(child);
+        }
     }
     ImGui::End();
 

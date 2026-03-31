@@ -90,7 +90,7 @@ public:
         virtual ~Channel() = default;
 
         virtual void apply(GObject *root, float time_offset) = 0;
-        virtual bool is_vaild_on(GObject *root) noexcept { return root != nullptr; }
+        virtual bool is_vaild_on(GObject *root) noexcept { return get_target_object(root) != nullptr; }
     };
 
     struct PositionChannel : public Channel {

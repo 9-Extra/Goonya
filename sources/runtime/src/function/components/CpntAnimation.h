@@ -2,6 +2,7 @@
 
 #include "core/clock/GameClock.h"
 #include "core/enum_operator.h"
+#include "core/log/Log.h"
 #include "function/animation/Animation.h"
 #include "function/world/Component.h"
 #include "function/world/World.h"
@@ -16,7 +17,7 @@ enum class AnimationPlayMode {
     LOOP = 2,     // >>>>>...
     PINGPONG = 3, // ><><><>...
 
-    PLAY_MASK = 4,
+    PLAY_MASK = 3,
 
     REVERSE_FLAG = 4
 };
@@ -31,6 +32,20 @@ private:
 
 public:
     CpntAnimator() : TickFunction(TickType::TICK) {}
+
+    void set_animation(const Ref<Animation> &ani) noexcept {
+        animation = ani;
+
+        if (!is_registered()) return;
+
+        GObject *owner = get_owner();
+        for (const auto &c : animation->channels) {
+            if (!c->is_vaild_on(owner)) {
+                LOG_WARN("动画目标\"{}\"不匹配", c->target);
+            }
+        }
+    }
+    Ref<Animation> get_animation() const noexcept { return animation; }
 
     std::unique_ptr<Component> clone() const override {
         auto new_comp = std::make_unique<CpntAnimator>();

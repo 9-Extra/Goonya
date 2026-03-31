@@ -87,6 +87,23 @@ std::string GObject::generate_unique_name() const noexcept {
 
 // ----------------------------------------------------------
 
+void GObject::add_component(std::unique_ptr<Component> &&component) {
+    component->set_owner(this);
+    if (get_world()) {
+        component->on_register();
+    }
+    components.push_back(std::move(component));
+}
+Component *GObject::get_component(const std::type_info &t_info) noexcept {
+    for (auto &component : components) {
+        auto &c = *component; // 比较其内容而非智能指针
+        if (typeid(c) == t_info) {
+            return component.get();
+        }
+    }
+    return nullptr;
+}
+
 bool GObject::remove_component(const std::type_info &t_info) {
     for (auto it = components.begin(); it != components.end(); ++it) {
         auto &c = **it; // 比较其内容而非智能指针
@@ -183,5 +200,4 @@ void GObject::queue_deferred_update(ComponentUpdateFlag flag) noexcept {
 
     // 不会递归更新子节点
 }
-
 } // namespace Goonya
