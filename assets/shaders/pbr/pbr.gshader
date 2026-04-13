@@ -68,9 +68,9 @@ float D_GGX(float dotNH, float roughness)
 // 计算了微表面上的遮蔽和阴影
 float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
 {
-    float r  = (roughness + 1.0);
-    float k  = (r * r) / 8.0;
-    float GL = dotNL / (dotNL * (1.0 - k) + k); // Schlick-GGX 计算遮蔽或者阴影，RTR4上没找到？
+    float alpha  = roughness * roughness;
+    float k  = alpha / 2;
+    float GL = dotNL / (    dotNL * (1.0 - k) + k); // Schlick-GGX 计算遮蔽或者阴影，RTR4上没找到？
     float GV = dotNV / (dotNV * (1.0 - k) + k); 
     return GL * GV; // 使用Smith的方法乘起来计算两个效应的叠加，RTR4上有这个
 }
@@ -186,7 +186,7 @@ vec3 caculate_normal(){
     const vec3 bitangent = cross(normal, tangent) * vs_out.tangent.w;
  
     vec3 h = texture(normal_texture, vs_out.tex_coords).xyz * 2 - 1;
-    vec3 world_normal = tangent * h.x + bitangent * h.y + normal * h.z;
+    vec3 world_normal = normalize(tangent * h.x + bitangent * h.y + normal * h.z);
 #else
     vec3 world_normal = normal;
 #endif
