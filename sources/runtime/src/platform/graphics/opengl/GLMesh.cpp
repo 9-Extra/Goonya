@@ -27,11 +27,30 @@ static std::tuple<GLuint, GLenum> FieldType2OpenGLComponentsAndType(Meta::FieldT
         return {3, GL_FLOAT};
     case Meta::FieldType::vec4f:
         return {4, GL_FLOAT};
+    case Meta::FieldType::vec2i:
+        return {2, GL_INT};
+    case Meta::FieldType::vec3i:
+        return {3, GL_INT};
+    case Meta::FieldType::vec4i:
+        return {4, GL_INT};
     case Meta::FieldType::mat4f:
         throw RuntimeError("Invalid Type for Vertex Array");
     }
 
     throw RuntimeError("Invalid Field Type");
+}
+
+static bool IsIntegerFieldType(Meta::FieldType type) {
+    switch (type) {
+    case Meta::FieldType::i32:
+    case Meta::FieldType::u32:
+    case Meta::FieldType::vec2i:
+    case Meta::FieldType::vec3i:
+    case Meta::FieldType::vec4i:
+        return true;
+    default:
+        return false;
+    }
 }
 
 GLMesh::GLMesh(VertexLayout layout) noexcept : layout(std::move(layout)) {
@@ -45,7 +64,11 @@ GLMesh::GLMesh(VertexLayout layout) noexcept : layout(std::move(layout)) {
 
         GLuint index = static_cast<GLuint>(location);
         glEnableVertexArrayAttrib(vao_id, index);
-        glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);
+        if (IsIntegerFieldType(type)) {
+            glVertexArrayAttribIFormat(vao_id, index, num_components, gl_type, offset);
+        } else {
+            glVertexArrayAttribFormat(vao_id, index, num_components, gl_type, GL_FALSE, offset);
+        }
         glVertexArrayAttribBinding(vao_id, index, stream_id);
     }
 };

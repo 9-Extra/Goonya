@@ -14,7 +14,7 @@
 
 namespace Goonya::Meta {
 
-enum class FieldType : uint32_t { nul, i32, i64, u32, u64, f32, f64, vec2f, vec3f, vec4f, mat4f };
+enum class FieldType : uint32_t { nul, i32, i64, u32, u64, f32, f64, vec2f, vec3f, vec4f, vec2i, vec3i, vec4i, mat4f };
 
 template <FieldType>
 struct FieldType2CType {
@@ -45,6 +45,9 @@ GOONYA_DEFINE_FIELDTYPE2CTYPE(f64, double)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(vec2f, Vector2f)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(vec3f, Vector3f)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(vec4f, Vector4f)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(vec2i, Vector2i)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(vec3i, Vector3i)
+GOONYA_DEFINE_FIELDTYPE2CTYPE(vec4i, Vector4i)
 GOONYA_DEFINE_FIELDTYPE2CTYPE(mat4f, Matrix4f)
 
 #undef GOONYA_DEFINE_FIELDTYPE2CTYPE
@@ -76,6 +79,12 @@ constexpr size_t sizeof_field_type(FieldType type) noexcept {
         return sizeof(FieldType2CType<FieldType::vec3f>::Type);
     case FieldType::vec4f:
         return sizeof(FieldType2CType<FieldType::vec4f>::Type);
+    case FieldType::vec2i:
+        return sizeof(FieldType2CType<FieldType::vec2i>::Type);
+    case FieldType::vec3i:
+        return sizeof(FieldType2CType<FieldType::vec3i>::Type);
+    case FieldType::vec4i:
+        return sizeof(FieldType2CType<FieldType::vec4i>::Type);
     case FieldType::mat4f:
         return sizeof(FieldType2CType<FieldType::mat4f>::Type);
     }
@@ -305,6 +314,12 @@ struct std::formatter<Goonya::Meta::FieldType> {
             return std::format_to(ctx.out(), "vec3f");
         case Goonya::Meta::FieldType::vec4f:
             return std::format_to(ctx.out(), "vec4f");
+        case Goonya::Meta::FieldType::vec2i:
+            return std::format_to(ctx.out(), "vec2i");
+        case Goonya::Meta::FieldType::vec3i:
+            return std::format_to(ctx.out(), "vec3i");
+        case Goonya::Meta::FieldType::vec4i:
+            return std::format_to(ctx.out(), "vec4i");
         case Goonya::Meta::FieldType::mat4f:
             return std::format_to(ctx.out(), "mat4f");
         }

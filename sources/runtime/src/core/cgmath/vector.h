@@ -78,6 +78,72 @@ struct Matrix3f;
 struct Matrix4f;
 struct Quaternion;
 
+struct Vector2i {
+    union {
+        struct {
+            int32_t x, y;
+        };
+        int32_t v[2]{};
+    };
+    constexpr Vector2i() : x(0), y(0) {}
+    constexpr Vector2i(int32_t x, int32_t y) : x(x), y(y) {}
+
+    constexpr int32_t &operator[](unsigned int i) noexcept { return v[i]; }
+    constexpr const int32_t &operator[](unsigned int i) const noexcept { return v[i]; }
+
+    constexpr Vector2i operator+(const Vector2i b) const { return {x + b.x, y + b.y}; }
+    constexpr Vector2i operator-(const Vector2i b) const { return {x - b.x, y - b.y}; }
+    constexpr Vector2i operator*(const int32_t s) const { return {x * s, y * s}; }
+    constexpr Vector2i operator/(const int32_t s) const { return {x / s, y / s}; }
+    constexpr bool operator==(const Vector2i rhs) const noexcept { return x == rhs.x && y == rhs.y; }
+};
+
+struct Vector3i {
+    union {
+        struct {
+            int32_t x, y, z;
+        };
+        int32_t v[3]{};
+    };
+
+    constexpr Vector3i() : x(0), y(0), z(0) {}
+    constexpr Vector3i(int32_t x, int32_t y, int32_t z) : x(x), y(y), z(z) {}
+
+    constexpr int32_t &operator[](unsigned int i) noexcept { return v[i]; }
+    constexpr const int32_t &operator[](unsigned int i) const noexcept { return v[i]; }
+
+    constexpr Vector3i operator+(const Vector3i b) const { return {x + b.x, y + b.y, z + b.z}; }
+    constexpr Vector3i operator-(const Vector3i b) const { return {x - b.x, y - b.y, z - b.z}; }
+    constexpr Vector3i operator*(const int32_t s) const { return {x * s, y * s, z * s}; }
+    constexpr Vector3i operator/(const int32_t s) const { return {x / s, y / s, z / s}; }
+    constexpr bool operator==(const Vector3i rhs) const noexcept { return x == rhs.x && y == rhs.y && z == rhs.z; }
+};
+
+struct Vector4i {
+    union {
+        struct {
+            int32_t x, y, z, w;
+        };
+        int32_t v[4]{};
+    };
+
+    constexpr Vector4i() : x(0), y(0), z(0), w(0) {}
+    constexpr Vector4i(int32_t x, int32_t y, int32_t z, int32_t w) : x(x), y(y), z(z), w(w) {}
+    constexpr Vector4i(Vector3i vec3, int32_t w) : x(vec3.x), y(vec3.y), z(vec3.z), w(w) {}
+
+    constexpr Vector3i get_xyz() const noexcept { return Vector3i{x, y, z}; }
+
+    constexpr int32_t &operator[](size_t i) noexcept { return v[i]; }
+    constexpr const int32_t &operator[](size_t i) const noexcept { return v[i]; }
+    constexpr Vector4i operator+(const Vector4i n) const noexcept { return {x + n.x, y + n.y, z + n.z, w + n.w}; }
+    constexpr Vector4i operator-(const Vector4i n) const noexcept { return {x - n.x, y - n.y, z - n.z, w - n.w}; }
+    constexpr Vector4i operator*(const int32_t n) const noexcept { return {x * n, y * n, z * n, w * n}; }
+    constexpr Vector4i operator/(const int32_t n) const noexcept { return {x / n, y / n, z / n, w / n}; }
+    constexpr bool operator==(const Vector4i rhs) const noexcept {
+        return x == rhs.x && y == rhs.y && z == rhs.z && w == rhs.w;
+    }
+};
+
 struct Vector3f {
     union {
         struct {
@@ -156,6 +222,33 @@ struct Vector4f {
 };
 
 } // namespace Goonya
+
+template <>
+struct std::formatter<Goonya::Vector2i> {
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
+    template <typename FormatContext>
+    auto format(const Goonya::Vector2i vec2, FormatContext &ctx) const {
+        return std::format_to(ctx.out(), "({}, {})", vec2.x, vec2.y);
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Vector3i> {
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
+    template <typename FormatContext>
+    auto format(const Goonya::Vector3i vec3, FormatContext &ctx) const {
+        return std::format_to(ctx.out(), "({}, {}, {})", vec3.x, vec3.y, vec3.z);
+    }
+};
+
+template <>
+struct std::formatter<Goonya::Vector4i> {
+    constexpr auto parse(std::format_parse_context &context) /*NOLINT*/ { return context.begin(); }
+    template <typename FormatContext>
+    auto format(const Goonya::Vector4i vec4, FormatContext &ctx) const {
+        return std::format_to(ctx.out(), "({}, {}, {}, {})", vec4.x, vec4.y, vec4.z, vec4.w);
+    }
+};
 
 template <>
 struct std::formatter<Goonya::Vector2f> {

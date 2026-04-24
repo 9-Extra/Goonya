@@ -90,7 +90,7 @@ public:
 
     void add_component(std::unique_ptr<Component> &&component);
     template <typename T, typename... ARGS>
-        requires std::is_constructible_v<T, ARGS...>
+        requires std::is_base_of_v<Component, T> && std::is_constructible_v<T, ARGS...>
     T *create_component(ARGS... args) {
         std::unique_ptr<T> t = std::make_unique<T>(std::forward<ARGS>(args)...);
         T *ptr = t.get();

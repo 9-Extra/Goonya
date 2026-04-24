@@ -45,6 +45,8 @@ enum class VertexAttribute : uint32_t {
     TANGENT = 2,
     COLOR = 3,
     UV = 4,
+    JOINTS = 5,
+    WEIGHTS = 6,
 
     MAX_ATTRIBUTE
 };
@@ -55,6 +57,8 @@ const Meta::FieldType VertexAttributeTypeMap[] = {
     Goonya::Meta::FieldType::vec4f, // tangent
     Goonya::Meta::FieldType::vec3f, // color
     Goonya::Meta::FieldType::vec2f, // uv
+    Goonya::Meta::FieldType::vec4i, // joints
+    Goonya::Meta::FieldType::vec4f, // weights
 };
 
 struct VertexLayout {
