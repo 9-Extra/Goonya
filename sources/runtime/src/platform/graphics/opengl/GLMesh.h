@@ -3,6 +3,7 @@
 #include "GLBuffer.h"
 #include "core/RefCount.h"
 #include "core/cgmath/aabb.h"
+#include "core/cgmath/vector.h"
 #include "core/metatype/metatype.h"
 #include "resource/Resource.h"
 
@@ -11,9 +12,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <glad/glad.h>
-#include <map>
-#include <ranges>
-#include <span>
 #include <sys/types.h>
 #include <utility>
 #include <vector>
@@ -45,94 +43,33 @@ enum class VertexAttribute : uint32_t {
     TANGENT = 2,
     COLOR = 3,
     UV = 4,
-    JOINTS = 5,
-    WEIGHTS = 6,
 
     MAX_ATTRIBUTE
 };
 
-const Meta::FieldType VertexAttributeTypeMap[] = {
-    Goonya::Meta::FieldType::vec3f, // position
-    Goonya::Meta::FieldType::vec3f, // normal
-    Goonya::Meta::FieldType::vec4f, // tangent
-    Goonya::Meta::FieldType::vec3f, // color
-    Goonya::Meta::FieldType::vec2f, // uv
-    Goonya::Meta::FieldType::vec4i, // joints
-    Goonya::Meta::FieldType::vec4f, // weights
-};
-
 struct VertexLayout {
     struct AttributeInfo {
-        Meta::FieldType type;
-        uint32_t stream_id; // 可以用多个底层Buffer装数据，此id指定装到哪一个buffer里
+        Meta::FieldType type = Meta::FieldType::nul; // 为nul表示此location没有绑定属性
+        uint32_t stream_id;                          // 可以用多个底层Buffer装数据，此id指定装到哪一个buffer里
         uint32_t offset;
     };
-    std::map<uint32_t, AttributeInfo> attributes; // location -> info
-    std::vector<uint32_t> vertex_size;            // 每个buffer的单个顶点大小
+    constexpr static size_t MAX_VERTEX_ATTRIBUTES = 16; // 参考GL_MAX_VERTEX_ATTRIBS多数硬件就是16
 
-    uint32_t buffer_count() const noexcept { return (uint32_t)vertex_size.size(); }
+    std::array<AttributeInfo, MAX_VERTEX_ATTRIBUTES> attributes; // location -> info
+    std::array<uint32_t, MAX_VERTEX_ATTRIBUTES>
+        vertex_stride; // stream_id -> buffer内单个顶点大小，为0表示此stream无buffer绑定
+
+    uint32_t buffer_count() const noexcept {
+        uint32_t count = 0;
+        for (uint32_t stride : vertex_stride) {
+            if (stride != 0) {
+                count++;
+            }
+        }
+        return count;
+    }
 
     bool operator==(const VertexLayout &b) const noexcept = default;
-};
-
-class VertexLayoutBuilder {
-    VertexLayout layout{};
-    uint32_t current_buffer_id = 0;
-    bool used = false;
-
-public:
-    VertexLayoutBuilder() noexcept { select_buffer(0); };
-
-    VertexLayoutBuilder &select_buffer(uint32_t stream_id) noexcept {
-        GN_ASSERT(!used);
-        if (stream_id >= layout.vertex_size.size()) {
-            layout.vertex_size.resize(stream_id + 1);
-            current_buffer_id = stream_id;
-        }
-        return *this;
-    }
-
-    VertexLayoutBuilder &add_attribute(uint32_t location, Meta::FieldType type) noexcept {
-        GN_ASSERT(!used);
-        GN_ASSERT(!layout.attributes.contains(location));
-
-        uint32_t offset = layout.vertex_size[current_buffer_id];
-        layout.vertex_size[current_buffer_id] += (uint32_t)Meta::sizeof_field_type(type);
-        layout.attributes[location] = {type, current_buffer_id, offset};
-
-        return *this;
-    }
-
-    VertexLayoutBuilder &add_attribute(VertexAttribute attribute) noexcept {
-        GN_ASSERT(attribute < VertexAttribute::MAX_ATTRIBUTE);
-        add_attribute((uint32_t)attribute, VertexAttributeTypeMap[(uint32_t)attribute]);
-        return *this;
-    }
-
-    VertexLayout build() noexcept {
-        used = true;
-
-        uint32_t remapped = 0;
-        std::vector<uint32_t> stream_remap(layout.vertex_size.size()); // 消除大小为0的buffer
-        std::vector<uint32_t> remapped_size;
-        for (auto [i, size] : std::views::enumerate(layout.vertex_size)) {
-            if (size != 0) {
-                remapped_size.push_back(size);
-                stream_remap[i] = remapped++;
-            }
-        }
-
-        if (remapped == layout.vertex_size.size()) {
-            return layout; // 不需要remap
-        } else {
-            // 进行重映射
-            layout.vertex_size = std::move(remapped_size);
-            for (auto &[_, info] : layout.attributes) {
-                info.stream_id = stream_remap[info.stream_id];
-            }
-            return layout;
-        }
-    }
 };
 
 // 点和线应该弃用，只支持三角形
@@ -147,6 +84,7 @@ struct SubMesh {
     BoundingBox aabb = BoundingBox::infinite();
 };
 
+/*
 struct MeshDesc {
     VertexLayout vertex_layout;
     std::vector<std::byte> raw_vertices;
@@ -163,32 +101,126 @@ struct MeshDesc {
           indices(std::forward<I>(indices)),
           sub_meshes({{0, static_cast<uint32_t>(this->indices.size()), 0, topology, aabb}}) {}
 };
+*/
+
+/**
+ * @brief VAO的封装，可以移动
+ * @note
+ * 作为轻量对象，内部不增加Ref<GLBuffer>的引用计数（OpenGL内部可能会，但是也不一定），需要外部保证Ref<GLBuffer>存活
+ */
+class GLVertexLayout {
+private:
+    GLuint id = 0;
+
+public:
+    GLVertexLayout() = default;
+    explicit GLVertexLayout(const VertexLayout &layout);
+    GLVertexLayout(GLVertexLayout &) = delete;
+    GLVertexLayout(GLVertexLayout &&other) noexcept : id(std::exchange(other.id, 0)) {}
+    ~GLVertexLayout() { glDeleteVertexArrays(1, &id); }
+
+    GLVertexLayout &operator=(GLVertexLayout &&other) noexcept {
+        if (other.id == id) return *this;
+        glDeleteVertexArrays(1, &id);
+        id = std::exchange(other.id, 0);
+        return *this;
+    }
+
+    void bind() const noexcept { glBindVertexArray(id); }
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    void set_vertice_buffer(uint32_t stream_idx, const Ref<GLBuffer> &buffer, int32_t offset, int32_t stride) noexcept {
+        glVertexArrayVertexBuffer(id, stream_idx, buffer->get_id(), offset, stride);
+    }
+    // NOLINTNEXTLINE(readability-make-member-function-const)
+    void set_index_buffer(const Ref<GLBuffer> &buffer) noexcept { glVertexArrayElementBuffer(id, buffer->get_id()); }
+
+    // 判断是否为空
+    explicit operator bool() const noexcept { return id != 0; }
+};
 
 class GLMesh final : public Resource {
 private:
-    GLuint vao_id = 0;
-
+    Ref<GLBuffer> mesh_buffer; // position, normal, tangent
+    Ref<GLBuffer> skin_buffer; // uv, color, joints, weight
     Ref<GLBuffer> indices_buffer;
-    std::array<Ref<GLBuffer>, 16> vertices_buffers{};
 
-    VertexLayout layout{};
+    // 顶点属性可以少不可以多，顺序严格排序，真实的布局在构建网格体时由其中的属性组合唯一确定
+    VertexLayout layout;
+    size_t vertex_count = 0;
+
+    GLVertexLayout vao;
 
 public:
-    explicit GLMesh(VertexLayout layout) noexcept;
-    ~GLMesh() { glDeleteVertexArrays(1, &vao_id); }
+    std::vector<SubMesh> submeshes;
+
+    GLMesh(const VertexLayout &layout, size_t vertex_count, Ref<GLBuffer> mesh_buffer, Ref<GLBuffer> skin_buffer,
+           Ref<GLBuffer> indices_buffer)
+        : mesh_buffer(std::move(mesh_buffer)), skin_buffer(std::move(skin_buffer)),
+          indices_buffer(std::move(indices_buffer)), layout(layout), vertex_count(vertex_count) {
+        init_vao();
+    }
+
+    void bind() const noexcept { vao.bind(); }
+
+    size_t get_vertex_count() const noexcept { return vertex_count; }
+    size_t get_index_count() const noexcept { return indices_buffer ? indices_buffer->get_size() : 0; }
+
+private:
+    void init_vao() {
+        vao = GLVertexLayout{layout};
+        if (mesh_buffer) {
+            vao.set_vertice_buffer(0, mesh_buffer, 0, layout.vertex_stride[0]);
+        }
+        if (skin_buffer) {
+            vao.set_vertice_buffer(1, skin_buffer, 0, layout.vertex_stride[1]);
+        }
+        if (indices_buffer) {
+            vao.set_index_buffer(indices_buffer);
+        }
+    }
+};
+
+class MeshBuilder final {
+public:
+    std::vector<Vector3f> position;
+    std::vector<Vector3f> normal;
+    std::vector<Vector4f> tangent;
+
+    std::vector<Vector2f> uv;
+    std::vector<Vector3f> color;
+    std::vector<Vector4i> joints;
+    std::vector<Vector4f> weight;
+
+    std::vector<uint32_t> indices;
 
     std::vector<SubMesh> submeshes;
 
-    void bind() const noexcept { glBindVertexArray(vao_id); }
+private:
+    constexpr static Meta::FieldType VertexAttributeTypeMap[] = {
+        Goonya::Meta::FieldType::vec3f, // position
+        Goonya::Meta::FieldType::vec3f, // normal
+        Goonya::Meta::FieldType::vec4f, // tangent
+        Goonya::Meta::FieldType::vec3f, // color
+        Goonya::Meta::FieldType::vec2f, // uv
+    };
 
-    void set_vertices(uint32_t stream_id, const std::span<const std::byte> &data) noexcept;
-    void set_indices(const std::span<const uint32_t> &indices) noexcept;
-
-    void set_debug_label(const std::string &name) const noexcept {
-#ifdef DEBUG
-        glObjectLabel(GL_VERTEX_ARRAY, vao_id, (GLsizei)name.size(), name.data());
-#endif
+    static void add_attribute(VertexLayout &layout, VertexAttribute attribute, uint32_t stream_idx) noexcept {
+        uint32_t location = (uint32_t)attribute;
+        Meta::FieldType type = VertexAttributeTypeMap[location];
+        uint32_t offset = layout.vertex_stride[stream_idx];
+        layout.vertex_stride[stream_idx] += (uint32_t)Meta::sizeof_field_type(type);
+        layout.attributes[location] = {type, stream_idx, offset};
     }
+
+public:
+    MeshBuilder() noexcept = default;
+
+    /**
+     * @brief 生成空的GLMesh
+     */
+    static Ref<GLMesh> build_empty();
+
+    Ref<GLMesh> build(bool verify = false) const;
 };
 
 } // namespace Goonya

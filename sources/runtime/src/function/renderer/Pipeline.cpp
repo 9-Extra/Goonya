@@ -113,19 +113,17 @@ Pipeline::Pipeline() {
     }
     postprocess_material = create_ref<Material>(postprocess_shader.get());
 
-    postprocess_quad_mesh = create_ref<GLMesh>(VertexLayoutBuilder().build()); // 空的网格体
+    postprocess_quad_mesh = MeshBuilder::build_empty(); // 空的网格体
 
     guassian_blur_material_horizontal =
         create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/guass"));
     if (!guassian_blur_material_horizontal) {
-        throw RuntimeError("无法加载高斯模糊水平着色器");
+        throw RuntimeError("无法加载高斯模糊着色器");
     }
     guassian_blur_material_horizontal->set_local_variant_key("HORIZONTAL");
     guassian_blur_material_vertical = guassian_blur_material_horizontal->clone();
     guassian_blur_material_vertical->set_local_variant_key("VERTICAL");
-    if (!guassian_blur_material_vertical) {
-        throw RuntimeError("无法加载高斯模糊垂直着色器");
-    }
+
     bright_extract_material =
         create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/extract_bright"));
     if (!bright_extract_material) {

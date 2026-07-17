@@ -72,6 +72,13 @@ public:
         return *this;
     }
 
+    Ref<T> &operator=(Ref<T> &&other) noexcept {
+        if (this->ptr == other.ptr) return *this;
+        reset();
+        ptr = std::exchange(other.ptr, nullptr);
+        return *this;
+    }
+
     bool operator==(const Ref<T> &other) const noexcept { return this->ptr == other.ptr; }
 
     const T *get() const noexcept { return ptr; }

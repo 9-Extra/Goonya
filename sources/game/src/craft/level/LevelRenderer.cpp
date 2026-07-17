@@ -41,7 +41,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         section->version = version; // 更新版本号
 
         // 没有物体则不需要网格
-        if (result.indices.empty()) {
+        if (result.mesh_builder.indices.empty()) {
             if (section->mesh) {
                 section->mesh.reset();
                 section->mark_dirty(RenderSection::DirtyBit::Mesh);
@@ -49,23 +49,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
             return;
         }
 
-        if (!section->mesh) {
-            section->mesh = create_ref<Goonya::GLMesh>(VERTEX_LAYOUT_PLANE);
-
-            Goonya::Vector3f start_pos = section->chunk_pos.get_start_pos();
-            Goonya::Vector3f end_pos = start_pos + Goonya::Vector3f{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH};
-            Goonya::BoundingBox bbox{start_pos, end_pos};
-            section->mesh->submeshes = {Goonya::SubMesh{
-                .start_index = 0,
-                .index_count = (uint32_t)result.indices.size(),
-                .topology = Goonya::Topology::TRIANGLE,
-                .aabb = bbox,
-            }};
-        }
-        section->mesh->submeshes[0].index_count = (uint32_t)result.indices.size();
-
-        section->mesh->set_vertices(0, std::as_bytes(std::span(result.vertices)));
-        section->mesh->set_indices(result.indices);
+        section->mesh = result.mesh_builder.build();
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
         Ref<Goonya::GLBuffer> updated_per_surface_buffer =

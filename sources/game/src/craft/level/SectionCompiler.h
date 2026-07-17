@@ -6,6 +6,7 @@
 #include "craft/level/CraftGraphicsBasic.h"
 #include "craft/level/chunk.h"
 #include "craft/level/chunk_block_storage.h"
+#include "platform/graphics/opengl/GLMesh.h"
 #include <cstdint>
 
 namespace Craft {
@@ -77,8 +78,7 @@ struct RenderRegionCache {
 class RenderSection;
 
 struct ComplieResult {
-    std::vector<TerrainMeshVertex> vertices;
-    std::vector<uint32_t> indices;
+    Goonya::MeshBuilder mesh_builder;
     std::vector<TerrainPerSurface> per_surface;
 };
 

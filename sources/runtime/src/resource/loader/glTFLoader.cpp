@@ -68,21 +68,6 @@ static std::string uri_decode(const std::string &src) {
     return out;
 }
 
-// 固定使用此顶点格式
-struct glTFVertex {
-    Vector3f position;
-    Vector3f normal;
-    Vector4f tangent;
-    Vector2f uv;
-};
-
-const VertexLayout GLTF_VERTEX_LAYOUT = VertexLayoutBuilder()
-                                            .add_attribute(VertexAttribute::POSITION)
-                                            .add_attribute(VertexAttribute::NORMAL)
-                                            .add_attribute(VertexAttribute::TANGENT)
-                                            .add_attribute(VertexAttribute::UV)
-                                            .build();
-
 struct GlTFLoadingContext {
     Ref<ResourcePack> pack;
     std::filesystem::path path;
@@ -262,31 +247,37 @@ struct GlTFLoadingContext {
                 total_indices_count += indices_count;
             }
 
-            // 通过顶点和索引总数预先分配内存
-            std::vector<std::byte> raw_vertices(total_vertex_count * sizeof(glTFVertex));
-            std::vector<uint32_t> indices(total_indices_count);
-            std::vector<SubMesh> sub_meshes;
-            sub_meshes.reserve(primitive_info.size());
+            // 使用MeshBuilder构建网格
+            MeshBuilder mesh_builder;
+            mesh_builder.position.reserve(total_vertex_count);
+            mesh_builder.normal.reserve(total_vertex_count);
+            mesh_builder.tangent.reserve(total_vertex_count);
+            mesh_builder.uv.reserve(total_vertex_count);
+            mesh_builder.indices.reserve(total_indices_count);
+            mesh_builder.submeshes.reserve(primitive_info.size());
 
-            std::span<glTFVertex> vertices = std::span((glTFVertex *)raw_vertices.data(), total_vertex_count);
             uint32_t vertex_offset = 0;
             uint32_t index_offset = 0;
-            // 遍历之前收集到的PrimitiveInfo，将其中数据转换格式并填入raw_vertices, indices和sub_meshes
+            // 遍历之前收集到的PrimitiveInfo，将其中数据填入MeshBuilder
             for (const PrimitiveInfo &info : primitive_info) {
 
                 for (uint32_t i = 0; i < info.vertex_count; i++) {
-                    vertices[vertex_offset + i] = {info.pos[i], info.normal[i], info.tangent[i], info.uv[i]};
+                    mesh_builder.position.push_back(info.pos[i]);
+                    mesh_builder.normal.push_back(info.normal[i]);
+                    mesh_builder.tangent.push_back(info.tangent[i]);
+                    mesh_builder.uv.push_back(info.uv[i]);
                 }
 
                 for (uint32_t i = 0; i < info.indices_count; i += 3) {
                     // 将顶点环绕方向从gltf的逆时针反转为Goonya定义的顺时针
-                    indices[index_offset + i + 0] = info.indices_ptr[i + 2];
-                    indices[index_offset + i + 1] = info.indices_ptr[i + 1];
-                    indices[index_offset + i + 2] = info.indices_ptr[i + 0];
+                    mesh_builder.indices.push_back(info.indices_ptr[i + 2]);
+                    mesh_builder.indices.push_back(info.indices_ptr[i + 1]);
+                    mesh_builder.indices.push_back(info.indices_ptr[i + 0]);
                 }
 
-                sub_meshes.emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset, Topology::TRIANGLE,
-                                                BoundingBox{info.pos_min, info.pos_max}});
+                mesh_builder.submeshes.emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset,
+                                                            Topology::TRIANGLE,
+                                                            BoundingBox{info.pos_min, info.pos_max}});
 
                 vertex_offset += info.vertex_count;
                 index_offset += info.indices_count;
@@ -294,11 +285,7 @@ struct GlTFLoadingContext {
 
             GN_ASSERT(vertex_offset == total_vertex_count && index_offset == total_indices_count);
             // 用收集完成的数据构建GLMesh并添加资源
-            Ref<GLMesh> device_mesh = create_ref<GLMesh>(GLTF_VERTEX_LAYOUT);
-            device_mesh->set_vertices(0, raw_vertices);
-            device_mesh->set_indices(indices);
-            device_mesh->submeshes = std::move(sub_meshes);
-
+            Ref<GLMesh> device_mesh = mesh_builder.build();
             pack->contents.emplace(key, device_mesh);
         }
     }

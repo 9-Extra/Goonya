@@ -80,18 +80,19 @@ void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, B
     });
 
     for (const auto &v : quad.vertices) {
-        uint32_t base_index = result.vertices.size() * 4;
-
         Goonya::Vector3f world_pos = Goonya::Vector3f((float)pos.x, (float)pos.y, (float)pos.z) + v.position;
-        result.vertices.emplace_back(world_pos, v.uv);
-
-        result.indices.push_back(base_index + 0);
-        result.indices.push_back(base_index + 1);
-        result.indices.push_back(base_index + 2);
-        result.indices.push_back(base_index + 2);
-        result.indices.push_back(base_index + 3);
-        result.indices.push_back(base_index + 0);
+        result.mesh_builder.position.emplace_back(world_pos);
+        result.mesh_builder.uv.emplace_back(v.uv);
     }
+
+    uint32_t base_index = result.mesh_builder.position.size() - 4;
+    auto &indices = result.mesh_builder.indices;
+    indices.push_back(base_index + 0);
+    indices.push_back(base_index + 1);
+    indices.push_back(base_index + 2);
+    indices.push_back(base_index + 2);
+    indices.push_back(base_index + 3);
+    indices.push_back(base_index + 0);
 }
 
 ComplieResult ComplieTask::compile_mesh(ChunkPos pos) const {
@@ -115,6 +116,17 @@ ComplieResult ComplieTask::compile_mesh(ChunkPos pos) const {
             compiler_push_quad(result, state, pos, quad);
         }
     }
+
+    Goonya::Vector3f start_pos = pos.get_start_pos();
+    Goonya::Vector3f end_pos = start_pos + Goonya::Vector3f{CHUNK_WIDTH, CHUNK_WIDTH, CHUNK_WIDTH};
+    Goonya::BoundingBox bbox{start_pos, end_pos};
+    result.mesh_builder.submeshes = {Goonya::SubMesh{
+        .start_index = 0,
+        .index_count = (uint32_t)result.mesh_builder.indices.size(),
+        .topology = Goonya::Topology::TRIANGLE,
+        .aabb = bbox,
+    }};
+
     return result;
 }
 } // namespace Craft

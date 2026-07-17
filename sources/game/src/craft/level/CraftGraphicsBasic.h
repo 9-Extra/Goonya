@@ -7,11 +7,6 @@
 
 namespace Craft {
 
-struct TerrainMeshVertex {
-    Goonya::Vector3f position;
-    Goonya::Vector2f uv;
-};
-
 struct alignas(16) TerrainPerSurface { // NOLINT
     alignas(16) uint32_t basecolor_id;
     alignas(16) Goonya::Vector3f tint_color;
@@ -34,11 +29,6 @@ struct PointLight {
 //     alignas(4) uint pointlight_num; // 4
 //     PointLight pointlight_list[2];
 // };
-
-inline const Goonya::VertexLayout VERTEX_LAYOUT_PLANE = Goonya::VertexLayoutBuilder()
-                                                            .add_attribute(Goonya::VertexAttribute::POSITION)
-                                                            .add_attribute(Goonya::VertexAttribute::UV)
-                                                            .build();
 
 constexpr std::string_view TERRAIN_SHADER_NAME = "shaders/craft/terrain/terrain";
 

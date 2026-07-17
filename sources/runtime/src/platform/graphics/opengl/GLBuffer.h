@@ -14,7 +14,7 @@
 
 namespace Goonya {
 
-enum class BufferType { DEVICE_ONLY, MODIFIABLE, READBACK };
+enum class BufferType { DEVICE_ONLY, MODIFIABLE, READBACK, MEMORY };
 enum class BufferMapOption {
     WRITE_DISCARD, // 丢弃旧数据，避免复制
     WRITE_MODIFY,  // 修改旧数据，可能导致从显存到内存的复制
@@ -29,6 +29,8 @@ static GLuint GLBufferType(BufferType type) {
         return GL_MAP_WRITE_BIT;
     case BufferType::READBACK:
         return GL_MAP_READ_BIT;
+    case BufferType::MEMORY:
+        return GL_MAP_READ_BIT | GL_MAP_WRITE_BIT | GL_CLIENT_STORAGE_BIT;
     default:
         std::unreachable();
     }
@@ -103,6 +105,10 @@ public:
     void bind_storage_ranged(uint32_t binding, size_t offset, size_t size) const noexcept {
         glBindBufferRange(GL_SHADER_STORAGE_BUFFER, binding, id, offset, size);
     };
+    void bind_vertice_buffer(uint32_t stream_idx, int32_t offset, int32_t stride) const noexcept {
+        glBindVertexBuffer(stream_idx, id, offset, stride);
+    }
+    void bind_index_buffer() const noexcept { glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id); }
 
     ~GLBuffer() {
         if (size != 0) glDeleteBuffers(1, &id);
