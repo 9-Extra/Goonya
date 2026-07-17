@@ -84,25 +84,6 @@ struct SubMesh {
     BoundingBox aabb = BoundingBox::infinite();
 };
 
-/*
-struct MeshDesc {
-    VertexLayout vertex_layout;
-    std::vector<std::byte> raw_vertices;
-    std::vector<uint32_t> indices;
-    std::vector<SubMesh> sub_meshes;
-
-    template <typename T, typename I, typename M>
-    MeshDesc(T &&vertex_layout, std::vector<std::byte> &&raw_vertices, I &&indices, M &&sub_meshes)
-        : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
-          indices(std::forward<I>(indices)), sub_meshes(std::forward<M>(sub_meshes)) {}
-    template <typename T, typename I>
-    MeshDesc(T &&vertex_layout, std::vector<std::byte> &&raw_vertices, I &&indices, Topology topology, BoundingBox aabb)
-        : vertex_layout(std::forward<T>(vertex_layout)), raw_vertices(std::move(raw_vertices)),
-          indices(std::forward<I>(indices)),
-          sub_meshes({{0, static_cast<uint32_t>(this->indices.size()), 0, topology, aabb}}) {}
-};
-*/
-
 /**
  * @brief VAO的封装，可以移动
  * @note

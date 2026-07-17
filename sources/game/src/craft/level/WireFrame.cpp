@@ -19,7 +19,7 @@ namespace Craft {
 
 constexpr std::string_view WIREFRAME_SHADER_NAME = "shaders/craft/wireframe/wire_frame";
 
-WireFrame::WireFrame(Goonya::RScene *scene) {
+WireFrame::WireFrame(Goonya::RScene *scene) : renderable(*scene) {
     // 确保OpenGL上下文已初始化，避免过早创建资源导致错误
     GN_ASSERT(Goonya::GL.is_initialized()); // 不能太早初始化
 
@@ -38,8 +38,9 @@ WireFrame::WireFrame(Goonya::RScene *scene) {
     Goonya::UberShader *shader = Goonya::resources.load_resource<Goonya::UberShader>(WIREFRAME_SHADER_NAME).get();
     materials = {create_ref<Goonya::Material>(shader)};
 
-    hide(true); // 初始不可见
-    scene->register_mesh(this);
+    renderable.set_mesh(mesh);
+    renderable.set_materials(materials);
+    renderable.set_hidden(true); // 初始不可见
 }
 void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     // 现代OpenGL渲染中，线条是通过渲染两个三角形来模拟的
@@ -90,9 +91,8 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
     }};
 
     mesh = builder.build();
-
-    transform.position = pos;
-    this->mark_dirty(DirtyBit::Init); // Mesh和Transform需要更新
-    hide(false);                      // 可见
+    renderable.set_mesh(mesh);
+    renderable.set_transform(Goonya::Matrix4f::identity().translate(pos));
+    renderable.set_hidden(false); // 可见
 }
 } // namespace Craft

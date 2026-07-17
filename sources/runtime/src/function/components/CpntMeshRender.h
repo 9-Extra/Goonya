@@ -1,8 +1,6 @@
 #pragma once
 
 #include "core/RefCount.h"
-#include "core/cgmath/transform.h"
-#include "function/renderer/IMeshRenderable.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/RScene.h"
 #include "function/world/Component.h"
@@ -11,13 +9,19 @@
 #include "platform/graphics/opengl/GLMesh.h"
 
 #include <cstdint>
+#include <memory>
+#include <span>
 #include <vector>
 
 namespace Goonya {
 // 渲染mesh的组件，可以渲染出物体
-class CpntMeshRender : public Component, public IMeshRenderable {
+class CpntMeshRender : public Component {
 private:
     RScene *scene = nullptr;
+    RenderableRef renderable;
+
+    Ref<GLMesh> mesh;
+    std::vector<Ref<Material>> materials;
 
 public:
     std::unique_ptr<Component> clone() const override {
@@ -31,8 +35,14 @@ public:
         GN_ASSERT(get_owner() != nullptr);
         GObject &owner = *get_owner();
         scene = owner.get_world()->get_scene();
-        transform = Transform::from_matrix(owner.get_world_model_matrix());
-        scene->register_mesh(this);
+        renderable = RenderableRef{*scene};
+        renderable.set_transform(owner.get_world_model_matrix());
+        if (mesh) {
+            renderable.set_mesh(mesh);
+        }
+        if (!materials.empty()) {
+            renderable.set_materials(materials);
+        }
     }
 
     const Ref<GLMesh> &get_mesh() const noexcept { return mesh; }
@@ -40,7 +50,9 @@ public:
 
     void set_mesh(const Ref<GLMesh> &mesh) noexcept {
         this->mesh = mesh;
-        this->mark_dirty(DirtyBit::Mesh);
+        if (renderable.is_valid()) {
+            renderable.set_mesh(mesh);
+        }
     }
 
     void set_material(uint32_t slot, const Ref<Material> &material) noexcept {
@@ -48,27 +60,28 @@ public:
             materials.resize(slot + 1, nullptr);
         }
         materials[slot] = material;
-        this->mark_dirty(DirtyBit::Material);
+        if (renderable.is_valid()) {
+            renderable.set_materials(materials);
+        }
     }
 
     void set_materials(std::span<Ref<Material>> materials) noexcept {
         this->materials.assign_range(materials);
-        this->mark_dirty(DirtyBit::Material);
+        if (renderable.is_valid()) {
+            renderable.set_materials(this->materials);
+        }
     }
 
     void on_unregister() override {
-        GN_ASSERT(get_owner() != nullptr);
-        scene->unregister_mesh(this);
+        renderable = {};
         scene = nullptr;
     }
 
     void on_update(ComponentUpdateFlag flag) override {
-        GN_ASSERT(is_registered());
-        GObject &owner = *get_owner();
+        GN_ASSERT(renderable.is_valid());
 
         if (contain(flag, ComponentUpdateFlag::TRANSFORM)) {
-            transform = Transform::from_matrix(owner.get_world_model_matrix());
-            this->mark_dirty(DirtyBit::Transform);
+            renderable.set_transform(get_owner()->get_world_model_matrix());
         }
     }
 };

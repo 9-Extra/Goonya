@@ -151,6 +151,7 @@ void Pipeline::render() {
     bool is_screen_painted = false;
     for (auto [i, scene] : std::views::enumerate(renderer.scenes)) {
         GN_ASSERT(scene);
+        scene->commit(); // 只需要在渲染前更新，必须发生在render_thread_process之后
         for (RCamera *camera : scene->cameras) {
             GN_ASSERT(camera);
             if (!camera->render_target) continue;
@@ -158,7 +159,6 @@ void Pipeline::render() {
             if (camera->render_target->is_screen()) {
                 is_screen_painted = true;
             }
-            scene->do_pending_updates(); // 只需要在渲染前更新，必须发生在render_thread_process之后
             ImGui::SeparatorText(std::format("Camera {}", i).c_str());
             render_camera(camera, scene);
         }

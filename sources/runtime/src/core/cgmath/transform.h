@@ -38,7 +38,7 @@ struct Transform {
     }
     constexpr Matrix3f normal_matrix() const noexcept {
         // 缩放矩阵的伴随矩阵 * 旋转矩阵
-        return Matrix3f::identity().scale({scale.y * scale.z, scale.x * scale.z, scale.y * scale.z}).rotate(rotation);
+        return Matrix3f::identity().scale({scale.y * scale.z, scale.x * scale.z, scale.x * scale.z}).rotate(rotation);
     }
 };
 

@@ -32,8 +32,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
             return; // 当前版本较旧，跳过
         }
 
-        Goonya::RScene *scene = section->get_scene();
-        if (scene == nullptr) {
+        if (!section->renderable.is_valid()) {
             return; // 场景已经不存在
         }
 
@@ -44,12 +43,13 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         if (result.mesh_builder.indices.empty()) {
             if (section->mesh) {
                 section->mesh.reset();
-                section->mark_dirty(RenderSection::DirtyBit::Mesh);
+                section->renderable.set_mesh(nullptr);
             }
             return;
         }
 
         section->mesh = result.mesh_builder.build();
+        section->renderable.set_mesh(section->mesh);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};
         Ref<Goonya::GLBuffer> updated_per_surface_buffer =
@@ -63,7 +63,7 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
 
         section->materials[0]->set_external_buffer("per_surface", updated_per_surface_buffer);
 
-        section->mark_dirty(DirtyBit::Init);
+        section->renderable.set_materials(section->materials);
     };
 
     if (complie_task) {

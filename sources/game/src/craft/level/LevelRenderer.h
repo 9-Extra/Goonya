@@ -4,7 +4,6 @@
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
 #include "craft/level/chunk.h"
-#include "function/renderer/IMeshRenderable.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/RScene.h"
 
@@ -87,10 +86,15 @@ Minecraft中LevelRender和ClientLevel运行在同一线程，SeverLevel运行在
  * @brief 一个可以渲染的区块，除了对应的mesh，还管理它的编译任务
  *
  */
-class RenderSection : public std::enable_shared_from_this<RenderSection>, public Goonya::IMeshRenderable {
+class RenderSection : public std::enable_shared_from_this<RenderSection> {
 public:
     ChunkPos chunk_pos;
     Ref<Chunk> origin_chunk;
+
+    // 区块的变换恒为单位矩阵(顶点已烘焙世界坐标), 因此只需同步mesh和材质
+    Goonya::RenderableRef renderable;
+    Ref<Goonya::GLMesh> mesh;
+    std::vector<Ref<Material>> materials;
 
     std::shared_ptr<ComplieTask> complie_task;
     uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
@@ -127,7 +131,7 @@ public:
     void register_chunk(const Ref<Chunk> &chunk) noexcept {
         ChunkPos pos = chunk->chunk_pos;
         auto section = std::make_unique<RenderSection>(chunk);
-        render_scene->register_mesh(section.get());
+        section->renderable = Goonya::RenderableRef{*render_scene};
 
         render_chunks.emplace(pos, std::move(section));
     }

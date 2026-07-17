@@ -33,7 +33,7 @@ void Level::tick() {
         wire_frame.draw_at(hit_result.position,
                            ModelManager::get().get_baked_model(hit_result.block_state, hit_result.position));
     } else {
-        wire_frame.hide();
+        wire_frame.set_hidden();
     }
 
     if (Goonya::Input::is_mouse_pressing(Goonya::Input::MouseKey::LEFT)) {
