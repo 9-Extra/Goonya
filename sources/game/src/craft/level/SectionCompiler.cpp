@@ -37,7 +37,7 @@ RenderChunkRegion RenderRegionCache::create_region(ChunkPos section_pos) {
     return region;
 }
 
-void ComplieTask::launch() noexcept {
+void CompileTask::launch() noexcept {
     GN_ASSERT_MSG(!is_launched, "任务只能启动一次");
     is_launched = true;
     Goonya::THREAD_POOL.enqueue_detached([task = shared_from_this()] mutable {
@@ -46,12 +46,12 @@ void ComplieTask::launch() noexcept {
     });
 }
 
-void ComplieTask::do_compile() {
+void CompileTask::do_compile() {
     if (is_cancelled.load(std::memory_order::acquire)) {
         return;
     }
 
-    ComplieResult result = compile_mesh(pos);
+    CompileResult result = compile_mesh(pos);
 
     if (is_cancelled.load(std::memory_order::acquire)) {
         return; // 再检查一次
@@ -62,7 +62,7 @@ void ComplieTask::do_compile() {
                                                  version = version] mutable { receiver(std::move(result), version); });
 }
 
-void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos,
+void CompileTask::compiler_push_quad(CompileResult &result, BlockState *state, BlockPos pos,
                                      const BakedQuad &quad) noexcept {
     Goonya::Vector3f normal = get_direction_vector(quad.normal);
 
@@ -95,8 +95,8 @@ void ComplieTask::compiler_push_quad(ComplieResult &result, BlockState *state, B
     indices.push_back(base_index + 0);
 }
 
-ComplieResult ComplieTask::compile_mesh(ChunkPos pos) const {
-    ComplieResult result;
+CompileResult CompileTask::compile_mesh(ChunkPos pos) const {
+    CompileResult result;
 
     for (BlockPos pos : Vector3i::iterate_region(pos.get_start_pos(), pos.get_end_pos())) {
         BlockState *state = region.get_block_state(pos);

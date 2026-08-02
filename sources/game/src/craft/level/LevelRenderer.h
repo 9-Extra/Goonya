@@ -96,7 +96,7 @@ public:
     Ref<Goonya::GLMesh> mesh;
     std::vector<Ref<Material>> materials;
 
-    std::shared_ptr<ComplieTask> complie_task;
+    std::shared_ptr<CompileTask> compile_task;
     uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
     bool is_dirty = true; // 是否需要重新编译
 
@@ -105,12 +105,12 @@ public:
     }
 
     ~RenderSection() {
-        if (complie_task) {
-            complie_task->cancel();
+        if (compile_task) {
+            compile_task->cancel();
         }
     }
 
-    void complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material);
+    void compile_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material);
 };
 
 class LevelRenderer {
@@ -125,7 +125,7 @@ private:
 public:
     explicit LevelRenderer(Goonya::RScene *render_scene);
     ~LevelRenderer() {
-        render_chunks.clear(); // 提前销毁render_chunks，保证所有ComplieTask已结束
+        render_chunks.clear(); // 提前销毁render_chunks，保证所有CompileTask已结束
     }
 
     void register_chunk(const Ref<Chunk> &chunk) noexcept {

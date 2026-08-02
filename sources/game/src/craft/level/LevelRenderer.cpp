@@ -18,10 +18,10 @@
 
 namespace Craft {
 
-void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material) {
+void RenderSection::compile_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material) {
     GN_ASSERT(is_dirty);
 
-    auto receiver = [section_ptr = this->weak_from_this(), terrain_material = terrain_material](ComplieResult &&result,
+    auto receiver = [section_ptr = this->weak_from_this(), terrain_material = terrain_material](CompileResult &&result,
                                                                                                 uint32_t version) {
         ASSERT_RENDER_THREAD();
         std::shared_ptr<RenderSection> section = section_ptr.lock();
@@ -66,14 +66,14 @@ void RenderSection::complie_async(RenderRegionCache &region_cache, const Ref<Mat
         section->renderable.set_materials(section->materials);
     };
 
-    if (complie_task) {
-        complie_task->cancel();
+    if (compile_task) {
+        compile_task->cancel();
     }
 
     version++;
     // 提交编译任务
-    complie_task = std::make_shared<ComplieTask>(chunk_pos, region_cache.create_region(chunk_pos), version, receiver);
-    complie_task->launch();
+    compile_task = std::make_shared<CompileTask>(chunk_pos, region_cache.create_region(chunk_pos), version, receiver);
+    compile_task->launch();
 
     is_dirty = false;
 }
@@ -91,7 +91,7 @@ void LevelRenderer::render_frame() {
     RenderRegionCache region_cache{*this};
     for (RenderSection *section : visible_chunk) {
         if (!section->is_dirty) continue;
-        section->complie_async(region_cache, terrain_material);
+        section->compile_async(region_cache, terrain_material);
     }
 }
 

@@ -20,7 +20,7 @@ void APIENTRY _opengl_debug_callback(GLenum source, GLenum type, GLuint id, GLen
         break;
     }
     case GL_DEBUG_SOURCE_SHADER_COMPILER: {
-        source_name = "Shader Complier: ";
+        source_name = "Shader Compiler: ";
         break;
     }
     case GL_DEBUG_SOURCE_THIRD_PARTY: {

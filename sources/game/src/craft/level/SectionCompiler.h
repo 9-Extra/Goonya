@@ -64,7 +64,7 @@ class LevelRenderer;
 
 /**
  * @brief 缓存一帧中所有编译时需要的所有RenderChunk
- * 构建ComplieTask时从这里取出对应section需要的7个RenderChunk打包成RenderChunkRegion
+ * 构建CompileTask时从这里取出对应section需要的7个RenderChunk打包成RenderChunkRegion
  */
 struct RenderRegionCache {
     const LevelRenderer &level;
@@ -77,24 +77,24 @@ struct RenderRegionCache {
 
 class RenderSection;
 
-struct ComplieResult {
+struct CompileResult {
     Goonya::MeshBuilder mesh_builder;
     std::vector<TerrainPerSurface> per_surface;
 };
 
-struct ComplieTask : public std::enable_shared_from_this<ComplieTask> {
+struct CompileTask : public std::enable_shared_from_this<CompileTask> {
 private:
     ChunkPos pos; // 编译的区块位置
     RenderChunkRegion region;
     uint32_t version; // 编译版本
     std::atomic<bool> is_cancelled = false;
-    std::move_only_function<void(ComplieResult &&, uint32_t)> receiver;
+    std::move_only_function<void(CompileResult &&, uint32_t)> receiver;
 
     bool is_launched = false;
 
 public:
-    ComplieTask(ChunkPos pos, RenderChunkRegion region, uint32_t version,
-                std::move_only_function<void(ComplieResult &&, uint32_t)> receiver) noexcept
+    CompileTask(ChunkPos pos, RenderChunkRegion region, uint32_t version,
+                std::move_only_function<void(CompileResult &&, uint32_t)> receiver) noexcept
         : pos(pos), region(std::move(region)), version(version), receiver(std::move(receiver)) {}
 
     void cancel() noexcept { is_cancelled.store(true, std::memory_order::relaxed); }
@@ -104,10 +104,10 @@ public:
 private:
     void do_compile();
 
-    static void compiler_push_quad(ComplieResult &result, BlockState *state, BlockPos pos,
+    static void compiler_push_quad(CompileResult &result, BlockState *state, BlockPos pos,
                                    const BakedQuad &quad) noexcept;
 
-    ComplieResult compile_mesh(ChunkPos pos) const;
+    CompileResult compile_mesh(ChunkPos pos) const;
 };
 
 } // namespace Craft
