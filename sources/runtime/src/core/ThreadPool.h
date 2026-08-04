@@ -18,16 +18,6 @@
 
 namespace Goonya {
 
-// class Task: public RefCount{
-// private:
-//     std::function<void()> content;
-//     std::atomic<uint32_t> prerequistites_count;
-// public:
-
-// private:
-
-// };
-
 class ThreadPool final {
 private:
     std::vector<std::thread> workers;
@@ -100,6 +90,25 @@ public:
     }
 
     void stop_all() noexcept;
+
+    template <typename F>
+        requires std::invocable<F>
+    void enqueue_thread(ThreadType type, F &&f) noexcept {
+        static_assert(std::is_same_v<std::invoke_result_t<F>, void>);
+        switch (type) {
+        case ThreadType::LOGIC:
+            main_thread_tasks.push(std::forward<F>(f));
+            break;
+        case ThreadType::RENDER:
+            renderer_thread_tasks.push(std::forward<F>(f));
+            break;
+        case ThreadType::WORKER:
+            enqueue_detached(std::forward<F>(f));
+            break;
+        default:
+            std::unreachable();
+        }
+    }
 
 private:
     friend void main_thread_process();

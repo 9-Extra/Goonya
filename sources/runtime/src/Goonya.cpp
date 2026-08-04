@@ -1,6 +1,5 @@
 #include <chrono>
 #include <cmath>
-#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <format>
@@ -9,7 +8,6 @@
 #include <runtime/Goonya.h>
 #include <sys/types.h>
 
-#include "core/RefCount.h"
 #include "core/ThreadPool.h"
 #include "core/ThreadUtils.h"
 #include "core/clock/GameClock.h"

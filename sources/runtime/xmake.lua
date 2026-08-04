@@ -38,4 +38,18 @@ target("test_sparse_set")
     add_files("test/sparse_set.cpp")
     add_deps("deps_for_test")
 
+target("test_future")
+    set_kind("binary")
+    add_tests("default")
+    set_default(false)
+    add_files("test/future.cpp", "src/core/ThreadPool.cpp", "src/core/ThreadUtils.cpp")
+    add_deps("deps_for_test")
+
+target("test_future_void")
+    set_kind("binary")
+    add_tests("default")
+    set_default(false)
+    add_files("test/future_void.cpp", "src/core/ThreadPool.cpp", "src/core/ThreadUtils.cpp")
+    add_deps("deps_for_test")
+
 

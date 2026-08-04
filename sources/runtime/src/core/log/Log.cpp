@@ -33,7 +33,7 @@ Logger::Logger() {
 
 Logger::~Logger() {
     core_logger.reset();
-    spdlog::drop_all();
+    spdlog::shutdown();
 }
 
 } // namespace Goonya
