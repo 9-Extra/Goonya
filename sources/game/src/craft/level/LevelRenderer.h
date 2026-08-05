@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/Future.h"
 #include "core/RefCount.h"
 #include "craft/core/core.h"
 #include "craft/level/SectionCompiler.h"
@@ -96,7 +97,7 @@ public:
     Ref<Goonya::GLMesh> mesh;
     std::vector<Ref<Material>> materials;
 
-    std::shared_ptr<CompileTask> compile_task;
+    Ref<Goonya::Future<void>> compile_task;
     uint32_t version = 0; // 已提交的编译版本，用于保证旧版本不会覆盖新版本，在提交时更新
     bool is_dirty = true; // 是否需要重新编译
 

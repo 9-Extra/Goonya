@@ -6,7 +6,7 @@
 #include <semaphore>
 #include <thread>
 
-#include "core/Task.h"
+#include "core/Future.h"
 #include "core/ThreadPool.h"
 #include "core/ThreadUtils.h"
 

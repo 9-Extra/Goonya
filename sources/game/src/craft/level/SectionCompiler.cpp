@@ -1,6 +1,5 @@
 #include "SectionCompiler.h"
 
-#include "core/ThreadPool.h"
 #include "craft/block/block.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
@@ -37,33 +36,8 @@ RenderChunkRegion RenderRegionCache::create_region(ChunkPos section_pos) {
     return region;
 }
 
-void CompileTask::launch() noexcept {
-    GN_ASSERT_MSG(!is_launched, "任务只能启动一次");
-    is_launched = true;
-    Goonya::THREAD_POOL.enqueue_detached([task = shared_from_this()] mutable {
-        // 提交的lambda内持有对task的共享引用，确保任务在lambda执行完毕前不会被销毁
-        task->do_compile();
-    });
-}
-
-void CompileTask::do_compile() {
-    if (is_cancelled.load(std::memory_order::acquire)) {
-        return;
-    }
-
-    CompileResult result = compile_mesh(pos);
-
-    if (is_cancelled.load(std::memory_order::acquire)) {
-        return; // 再检查一次
-    }
-
-    // 我们总是先取消旧任务，再启动新任务，然而这也不一定保证旧任务结束先于新任务结束
-    Goonya::THREAD_POOL.enqueue_renderer_thread([receiver = std::move(receiver), result = std::move(result),
-                                                 version = version] mutable { receiver(std::move(result), version); });
-}
-
-void CompileTask::compiler_push_quad(CompileResult &result, BlockState *state, BlockPos pos,
-                                     const BakedQuad &quad) noexcept {
+void SectionCompiler::compiler_push_quad(CompileResult &result, BlockState *state, BlockPos pos,
+                                         const BakedQuad &quad) noexcept {
     Goonya::Vector3f normal = get_direction_vector(quad.normal);
 
     Goonya::Vector3f tint_color;
@@ -95,7 +69,7 @@ void CompileTask::compiler_push_quad(CompileResult &result, BlockState *state, B
     indices.push_back(base_index + 0);
 }
 
-CompileResult CompileTask::compile_mesh(ChunkPos pos) const {
+CompileResult SectionCompiler::compile_mesh() const {
     CompileResult result;
 
     for (BlockPos pos : Vector3i::iterate_region(pos.get_start_pos(), pos.get_end_pos())) {

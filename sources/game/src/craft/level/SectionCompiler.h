@@ -7,7 +7,6 @@
 #include "craft/level/chunk.h"
 #include "craft/level/chunk_block_storage.h"
 #include "platform/graphics/opengl/GLMesh.h"
-#include <cstdint>
 
 namespace Craft {
 
@@ -82,32 +81,19 @@ struct CompileResult {
     std::vector<TerrainPerSurface> per_surface;
 };
 
-struct CompileTask : public std::enable_shared_from_this<CompileTask> {
+struct SectionCompiler {
 private:
     ChunkPos pos; // 编译的区块位置
     RenderChunkRegion region;
-    uint32_t version; // 编译版本
-    std::atomic<bool> is_cancelled = false;
-    std::move_only_function<void(CompileResult &&, uint32_t)> receiver;
-
-    bool is_launched = false;
 
 public:
-    CompileTask(ChunkPos pos, RenderChunkRegion region, uint32_t version,
-                std::move_only_function<void(CompileResult &&, uint32_t)> receiver) noexcept
-        : pos(pos), region(std::move(region)), version(version), receiver(std::move(receiver)) {}
+    SectionCompiler(ChunkPos pos, RenderChunkRegion region) noexcept : pos(pos), region(std::move(region)) {}
 
-    void cancel() noexcept { is_cancelled.store(true, std::memory_order::relaxed); }
-
-    void launch() noexcept;
+    CompileResult compile_mesh() const;
 
 private:
-    void do_compile();
-
     static void compiler_push_quad(CompileResult &result, BlockState *state, BlockPos pos,
                                    const BakedQuad &quad) noexcept;
-
-    CompileResult compile_mesh(ChunkPos pos) const;
 };
 
 } // namespace Craft

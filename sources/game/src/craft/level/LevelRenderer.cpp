@@ -1,9 +1,10 @@
 #include "LevelRenderer.h"
 
 #include "core/RefCount.h"
-#include "core/cgmath/aabb.h"
+#include "core/ThreadUtils.h"
 #include "craft/core/core.h"
 #include "craft/level/CraftGraphicsBasic.h"
+#include "craft/level/SectionCompiler.h"
 #include "craft/model_manager.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/RScene.h"
@@ -12,17 +13,27 @@
 #include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 
-#include <cstdint>
 #include <memory>
 #include <span>
+#include <stop_token>
+#include <sys/types.h>
+#include <tuple>
 
 namespace Craft {
 
 void RenderSection::compile_async(RenderRegionCache &region_cache, const Ref<Material> &terrain_material) {
     GN_ASSERT(is_dirty);
 
-    auto receiver = [section_ptr = this->weak_from_this(), terrain_material = terrain_material](CompileResult &&result,
-                                                                                                uint32_t version) {
+    auto complier = [compiler =
+                         SectionCompiler{chunk_pos, region_cache.create_region(chunk_pos)}](const std::stop_token &st) {
+        if (st.stop_requested()) {
+            Goonya::cancel_current_task();
+        }
+        return compiler.compile_mesh();
+    };
+
+    auto receiver = [section_ptr = this->weak_from_this(), terrain_material = terrain_material,
+                     version = version + 1](CompileResult result) {
         ASSERT_RENDER_THREAD();
         std::shared_ptr<RenderSection> section = section_ptr.lock();
         if (section == nullptr) {
@@ -66,15 +77,16 @@ void RenderSection::compile_async(RenderRegionCache &region_cache, const Ref<Mat
         section->renderable.set_materials(section->materials);
     };
 
+    version++; // 只接受匹配的新版本
+
+    // 提前取消不一定保证旧任务结束先于新任务结束
     if (compile_task) {
         compile_task->cancel();
     }
 
-    version++;
-    // 提交编译任务
-    compile_task = std::make_shared<CompileTask>(chunk_pos, region_cache.create_region(chunk_pos), version, receiver);
-    compile_task->launch();
-
+    // 启动编译任务
+    compile_task = Goonya::Future<CompileResult>::async(Goonya::ThreadType::WORKER, std::move(complier))
+                       ->then(Goonya::ThreadType::RENDER, std::move(receiver));
     is_dirty = false;
 }
 

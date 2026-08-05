@@ -76,21 +76,84 @@ inline void cancel_current_task() {
     throw TaskCancel{}; // NOLINT(hicpp-exception-baseclass)
 }
 
-/**
- * @brief 创建即立即开始执行的任务对象，支持后继任务
- */
-template <typename T>
-class Future : public RefCount {
-private:
-    using ResultType = std::conditional_t<std::is_void_v<T>, std::monostate, T>;
-    std::variant<std::monostate, ResultType, std::exception_ptr> result;
-
+// 使用Future<T>，而不是这个
+class FutureBase : public RefCount {
+protected:
     std::move_only_function<void()> on_complete;
     std::mutex on_complete_mutex;
     std::condition_variable complete_blocker;
     std::stop_source canceller;
     bool is_taken = false; // 防二次读取
     bool is_completed = false;
+
+public:
+    FutureBase(FutureBase &) = delete;
+    FutureBase(FutureBase &&) = delete;
+    /**
+     * @brief 取消整个任务链
+     */
+    bool cancel() { return canceller.request_stop(); }
+    bool is_cancellable() const { return canceller.stop_possible(); }
+    bool is_cancelled() const { return canceller.stop_requested(); }
+    bool is_ready() {
+        std::unique_lock<std::mutex> lock(on_complete_mutex);
+        return is_completed;
+    }
+
+    /**
+     * @brief 阻塞直到任务执行完成
+     * @note 不要在主线程上等待主线程任务执行完成，会锁死！通常只用在等待工作线程的任务上
+     */
+    void wait() {
+        std::unique_lock<std::mutex> lock(on_complete_mutex);
+        complete_blocker.wait(lock, [this]() { return is_completed; });
+    }
+
+protected:
+    explicit FutureBase(std::stop_source canceller) : canceller(std::move(canceller)) {};
+
+    template <typename E>
+    void register_on_complete(E &&callback) {
+        bool fire = false;
+        {
+            std::lock_guard lock{on_complete_mutex};
+            GN_ASSERT_MSG(!on_complete, "不能重复注册后继任务");
+            GN_ASSERT_MSG(!is_taken, "then和take_result只能选一个");
+            is_taken = true;
+            if (is_completed) {
+                fire = true; // 如果任务已结束，就直接由当前线程发起
+            } else {
+                on_complete = std::forward<E>(callback); // 否则由执行任务的线程发起
+            }
+        }
+        if (fire) {
+            callback();
+        }
+    }
+
+    void handle_complete() {
+        std::move_only_function<void()> t;
+        {
+            std::lock_guard lock{on_complete_mutex};
+            is_completed = true;
+            t = std::move(on_complete);
+        }
+        complete_blocker.notify_all();
+
+        if (t) {
+            t();
+        }
+    }
+};
+
+/**
+ * @brief 创建即立即开始执行的任务对象，支持后继任务
+ */
+template <typename T>
+class Future : public FutureBase {
+private:
+    using ResultType = std::conditional_t<std::is_void_v<T>, std::monostate, T>;
+    std::variant<std::monostate, ResultType, std::exception_ptr> result;
 
 public:
     Future(Future &) = delete;
@@ -149,7 +212,7 @@ public:
     }
 
     /**
-     * @brief 注册一个后继任务，接收当前任务的返回值作为输入
+     * @brief 创建一个后继任务，接收当前任务的返回值作为输入
      * @param type 在什么线程上执行
      * @param f 任务函数体
      * @return 代表后继任务的Future对象
@@ -191,23 +254,6 @@ public:
     }
 
     /**
-     * @brief 取消整个任务链
-     */
-    bool cancel() { return canceller.request_stop(); }
-
-    bool is_cancellable() const { return canceller.stop_possible(); }
-    bool is_cancelled() const { return canceller.stop_requested(); }
-
-    /**
-     * @brief 阻塞直到任务执行完成
-     * @note 不要在主线程上等待主线程任务执行完成，会锁死！通常只用在等待工作线程的任务上
-     */
-    void wait() {
-        std::unique_lock<std::mutex> lock(on_complete_mutex);
-        complete_blocker.wait(lock, [this]() { return is_completed; });
-    }
-
-    /**
      * @brief 阻塞等待后取出任务结果
      * @note 如任务取消，会抛出TaskCancel类型，任务内异常会被忽略，此类型不能被std::exception捕获，需要额外处理
      * @note 已取消的任务也可能正常获取结果，不建议依赖这样的情况
@@ -231,46 +277,13 @@ public:
     ~Future() override = default;
 
 private:
-    explicit Future(std::stop_source canceller) : canceller(std::move(canceller)) {};
-
-    static Ref<Future<T>> empty(std::stop_source canceller = {}) {
-        return Ref<Future<T>>{new Future<T>{std::move(canceller)}};
-    }
-
     template <typename R>
     friend class Future;
 
-    template <typename E>
-    void register_on_complete(E &&callback) {
-        bool fire = false;
-        {
-            std::lock_guard lock{on_complete_mutex};
-            GN_ASSERT_MSG(!on_complete, "不能重复注册后继任务");
-            GN_ASSERT_MSG(!is_taken, "then和take_result只能选一个");
-            is_taken = true;
-            if (is_completed) {
-                fire = true; // 如果任务已结束，就直接由当前线程发起
-            } else {
-                on_complete = std::forward<E>(callback); // 否则由执行任务的线程发起
-            }
-        }
-        if (fire) {
-            callback();
-        }
-    }
+    explicit Future(std::stop_source canceller) : FutureBase(std::move(canceller)) {};
 
-    void handle_complete() {
-        std::move_only_function<void()> t;
-        {
-            std::lock_guard lock{on_complete_mutex};
-            is_completed = true;
-            t = std::move(on_complete);
-        }
-        complete_blocker.notify_all();
-
-        if (t) {
-            t();
-        }
+    static Ref<Future<T>> empty(std::stop_source canceller = {}) {
+        return Ref<Future<T>>{new Future<T>{std::move(canceller)}};
     }
 
     template <typename F, typename... ARGS>
