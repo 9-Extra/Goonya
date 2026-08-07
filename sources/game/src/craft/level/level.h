@@ -39,7 +39,6 @@ private:
 public:
     Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player);
     ~Level() {
-        chunk_generator.wait_all_tasks();
         Goonya::main_thread_process();
         for (const auto &[_, c] : accessible_chunk) {
             level_renderer.unregister_chunk(c->chunk_pos);

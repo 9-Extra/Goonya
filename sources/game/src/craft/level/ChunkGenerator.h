@@ -1,18 +1,17 @@
 #pragma once
 
 #include "chunk.h"
-#include "core/ThreadPool.h"
+#include "core/LockQueue.h"
+#include "core/Task.h"
+#include "core/TaskGroup.h"
+#include "core/ThreadUtils.h"
 #include "core/noise/PerlinNoise.h"
 #include "craft/block/all_blocks.h"
 #include "craft/core/core.h"
 #include "runtime/GAssert.h"
 
-#include <atomic>
-#include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <future>
-#include <ranges>
 
 namespace Craft {
 
@@ -21,58 +20,30 @@ struct ChunkProcessTask {
 };
 
 class ChunkGenerator {
+public:
+    Goonya::LockQueue<Ref<Chunk>> generated_chunks;
+
 private:
     int32_t terrain_height_base = 0;
 
     siv::BasicPerlinNoise<float> terrain_height_noise{42};
-    std::vector<std::future<void>> running_tasks;
-    std::atomic<bool> is_stopped = false;
+
+    Goonya::TaskGroup generation_tasks;
 
 public:
     ChunkGenerator() noexcept = default;
-    ~ChunkGenerator() {
-        GN_ASSERT(running_tasks.empty()); // 析构时，所有任务都应该已经完成
-    }
 
-    /**
-     * @brief 将已完成的任务从running_tasks中移除，不阻塞
-     */
-    void suppress_running_tasks() {
-        size_t valid_task_index = 0;
-        for (auto &&[index, task] : std::views::enumerate(running_tasks)) {
-            // 只有std::async创建的std::future会在析构时join，来自std::packaged_task的future则不会，需要手动等待
-            if (task.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-                running_tasks[valid_task_index] = std::move(task);
-                valid_task_index++;
-            }
-        }
-        running_tasks.resize(valid_task_index);
-    }
-
-    void wait_all_tasks() {
-        is_stopped.store(true, std::memory_order::release);
-        for (auto &&task : running_tasks) {
-            task.wait();
-        }
-        running_tasks.clear();
-    }
-
-    void process_chunk_async(const Ref<Chunk> &chunk, std::move_only_function<void(const Ref<Chunk> &)> delegate) {
-        running_tasks.emplace_back(
-            Goonya::THREAD_POOL.enqueue([this, chunk = chunk, delegate = std::move(delegate)] mutable {
-                if (is_stopped.load(std::memory_order::acquire)) {
-                    return;
-                }
-                do_process_chunk(chunk);
-                if (is_stopped.load(std::memory_order::acquire)) {
-                    return;
-                }
-                Goonya::THREAD_POOL.enqueue_main_thread(
-                    [chunk, delegate = std::move(delegate)] mutable { delegate(chunk); });
-            }));
-    }
+    void process_chunk_async(const Ref<Chunk> &chunk) { generation_tasks.spawn(process_chunk(chunk)); }
 
 private:
+    // NOLINTNEXTLIE(performance-unnecessary-value-param)
+    Goonya::Task<void> process_chunk(Ref<Chunk> chunk) {
+        co_await Goonya::switch_thread(Goonya::ThreadType::WORKER);
+        do_process_chunk(chunk);
+        generated_chunks.push(chunk);
+        co_return;
+    }
+
     int32_t get_terrain_height(int32_t x, int32_t z) const noexcept {
         const float frequence = 0.1f;
         return terrain_height_base + int32_t(terrain_height_noise.octave2D(x * frequence, z * frequence, 3) * 5);

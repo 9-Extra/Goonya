@@ -107,8 +107,6 @@ void Level::load_chunks() {
         return; // 玩家在同一个区块里且加载范围不变，则不需要加载新的区块
     }
 
-    chunk_generator.suppress_running_tasks(); // 定期清理已完成的任务防止内存泄漏
-
     auto load_new_chunk = [&](ChunkPos pos) -> void {
         if (auto iter = accessible_chunk.find(pos); iter != accessible_chunk.end()) {
             level_renderer.register_chunk(iter->second);
@@ -120,11 +118,7 @@ void Level::load_chunks() {
         } else {
             Ref<Chunk> chunk = create_ref<Chunk>(pos);
             all_chunks.emplace(pos, chunk);
-            chunk_generator.process_chunk_async(chunk, [level = this](const Ref<Chunk> &chunk) mutable {
-                // 在level销毁时会自动清理所有任务，保证level指针有效
-                level->accessible_chunk.emplace(chunk->chunk_pos, chunk);
-                level->level_renderer.register_chunk(chunk);
-            });
+            chunk_generator.process_chunk_async(chunk);
         }
     };
 
@@ -158,6 +152,12 @@ void Level::load_chunks() {
                                                      player_chunk_pos + chunk_load_distance + 1)) {
             load_new_chunk(pos);
         }
+    }
+
+    for (auto c = chunk_generator.generated_chunks.pop(); c.has_value(); c = chunk_generator.generated_chunks.pop()) {
+        auto &chunk = c.value();
+        accessible_chunk.emplace(chunk->chunk_pos, chunk);
+        level_renderer.register_chunk(chunk);
     }
 
     player.last_chunk_pos = player_chunk_pos;

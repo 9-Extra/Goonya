@@ -52,4 +52,18 @@ target("test_future_void")
     add_files("test/future_void.cpp", "src/core/ThreadPool.cpp", "src/core/ThreadUtils.cpp")
     add_deps("deps_for_test")
 
+target("test_task")
+    set_kind("binary")
+    add_tests("default")
+    set_default(false)
+    add_files("test/task.cpp", "src/core/ThreadPool.cpp", "src/core/ThreadUtils.cpp", "src/core/format_exception.cpp")
+    add_deps("deps_for_test")
+
+target("test_task_group")
+    set_kind("binary")
+    add_tests("default")
+    set_default(false)
+    add_files("test/task_group.cpp", "src/core/ThreadPool.cpp", "src/core/ThreadUtils.cpp", "src/core/format_exception.cpp")
+    add_deps("deps_for_test")
+
 

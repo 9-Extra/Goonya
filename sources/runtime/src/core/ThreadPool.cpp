@@ -14,6 +14,7 @@ ThreadPool::ThreadPool() : stop(false) {
 
     for (uint32_t i = 0; i < threads; ++i) {
         workers.emplace_back([this, i] {
+            current_thread_type = ThreadType::WORKER;
             set_current_thread_name(std::format("Worker {}", i));
             for (;;) {
                 std::move_only_function<void()> task;
