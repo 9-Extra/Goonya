@@ -383,10 +383,10 @@ struct GlTFLoadingContext {
             }
 
             if (material["pbrMetallicRoughness"].isMember("metallicRoughnessTexture")) {
-                device_material->set_local_variant_key("USE_METALLIC_ROUGHNESS_TEXTURE");
-                Ref<GLTexture> metallic_roughness_texture =
+                device_material->set_local_variant_key("USE_ORM_TEXTURE");
+                Ref<GLTexture> orm_texture =
                     load_texture(material["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"].asUInt(), false);
-                device_material->set_texture("metallic_roughness_texture", metallic_roughness_texture);
+                device_material->set_texture("orm_texture", orm_texture);
             }
 
             float metallicFactor = material["pbrMetallicRoughness"].get("metallicFactor", 1.0).asFloat();

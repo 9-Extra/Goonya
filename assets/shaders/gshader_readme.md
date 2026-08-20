@@ -142,11 +142,11 @@ void frag()
 
 ```gshader
 #local_variant _ USE_NORMAL_MAP
-#local_variant _ USE_METALLIC_ROUGHNESS_TEXTURE
+#local_variant _ USE_ORM_TEXTURE
 ```
 
 - `_`（下划线）表示该组的默认状态：**不定义任何宏**。
-- 上例中，第一组可选 `无` 或 `USE_NORMAL_MAP`，第二组可选 `无` 或 `USE_METALLIC_ROUGHNESS_TEXTURE`。
+- 上例中，第一组可选 `无` 或 `USE_NORMAL_MAP`，第二组可选 `无` 或 `USE_ORM_TEXTURE`。
 
 也可以在多选一的场景下省略 `_`：
 
@@ -309,7 +309,7 @@ layout(binding = 1) uniform per_object
 #name pbr
 #texture basecolor_texture="buildin:missing_texture"
 #texture normal_texture="buildin:normal"
-#texture metallic_roughness_texture="buildin:white"
+#texture orm_texture="buildin:white"
 #texture skybox_specular_texture="buildin:black"
 
 #param metallic_factor=f32(1)
@@ -319,7 +319,7 @@ layout(binding = 1) uniform per_object
 #global_variant GYA_FOG_EXP
 
 #local_variant _ USE_NORMAL_MAP
-#local_variant _ USE_METALLIC_ROUGHNESS_TEXTURE
+#local_variant _ USE_ORM_TEXTURE
 
 #section common
 #include "shaders/common.glsl"
@@ -349,7 +349,7 @@ void vert()
 
 layout(binding = 0) uniform sampler2D basecolor_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
-layout(binding = 2) uniform sampler2D metallic_roughness_texture;
+layout(binding = 2) uniform sampler2D orm_texture;
 layout(binding = 5) uniform samplerCube skybox_specular_texture;
 
 layout(location = 0) out vec4 out_color;

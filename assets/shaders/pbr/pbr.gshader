@@ -1,7 +1,7 @@
 #name pbr
 #texture basecolor_texture="buildin:missing_texture"
 #texture normal_texture="buildin:normal"
-#texture metallic_roughness_texture="buildin:white"
+#texture orm_texture="buildin:white"
 #texture skybox_specular_texture="buildin:black"
 
 #param metallic_factor=f32(1)
@@ -11,14 +11,14 @@
 #global_variant GYA_FOG_EXP
 
 #local_variant _ USE_NORMAL_MAP
-#local_variant _ USE_METALLIC_ROUGHNESS_TEXTURE
+#local_variant _ USE_ORM_TEXTURE
 
 #section common
 #include "shaders/common.glsl"
 
 layout(binding = 0) uniform sampler2D basecolor_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
-layout(binding = 2) uniform sampler2D metallic_roughness_texture;
+layout(binding = 2) uniform sampler2D orm_texture;
 layout(binding = 5) uniform samplerCube skybox_specular_texture;
 
 VS_OUT_PS_IN VS_OUT
@@ -200,11 +200,13 @@ void frag()
     const vec3 N = caculate_normal();//法线
     const vec3 V = normalize(camera_position - vs_out.world_position); // 观察方向
     
-#ifdef USE_METALLIC_ROUGHNESS_TEXTURE
-    const vec3 metallic_roughness = texture(metallic_roughness_texture, vs_out.tex_coords).xyz;
-    const float roughness = roughness_factor * metallic_roughness.y;//粗糙度
-    const float metallic = metallic_factor * metallic_roughness.x;//金属度
+#ifdef USE_ORM_TEXTURE
+    const vec3 orm = texture(orm_texture, vs_out.tex_coords).xyz; // Occlusion/Roughness/Metallic 
+    const float occlusion = orm.x; // 环境光遮蔽（预烘培的）
+    const float roughness = roughness_factor * orm.y;//粗糙度
+    const float metallic = metallic_factor * orm.z;//金属度
 #else
+    const float occlusion = 1.0f; // 环境光遮蔽（预烘培的）
     const float roughness = roughness_factor;//粗糙度
     const float metallic = metallic_factor;//金属度
 #endif
@@ -219,10 +221,10 @@ void frag()
     // 环境光
 #ifdef GYA_IBL_ENVIRONMENT_LIGHT
     // 使用环境光贴图
-    result_color += SpecularIBL(F0, roughness, N, V);
+    result_color += SpecularIBL(F0, roughness, N, V) * occlusion;
 #else
     // 使用常数环境光强度
-    result_color += ambient_light * albedo;
+    result_color += ambient_light * albedo * occlusion;
 #endif
 
     // 点光源
