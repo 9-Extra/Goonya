@@ -27,7 +27,7 @@ private:
             static_assert(std::derived_from<P, PromiseBase>); // 只有Task<T>才会调用FinalAwaiter（在final_suspend()中）
             auto &p = cf.promise();
             if (p.next) {
-                return p.next; // 在当前线程上继续下一个任务
+                return p.next; // 在当前线程上继续下一个任务，实际控制流走到TaskAwaiter::await_resume()
             }
             if (p.result.index() == 2) {
                 // 结果静默丢弃，但异常还是输出到日志
@@ -129,7 +129,7 @@ public:
 
     /**
      * @brief 切换到新任务执行，完成后切回
-     * @note 切换回来之后可能在任意线程上，必要时switch_thread
+     * @note 切换回来之后可能在任意线程上，必要时需要手动switch_thread
      */
     TaskAwaiter operator co_await() && { return TaskAwaiter{std::exchange(handle, nullptr)}; }
 
@@ -157,6 +157,12 @@ struct SwitchThread {
     void await_resume() const noexcept {}
 };
 
+/**
+ * @brief 切换执行本协程的线程
+ * @param type 线程类型
+ * @param delay 是否延迟执行，即强制将任务推入队列，而不是可以时直接继续运行
+ * @return SwitchThread 用来co_await的对象
+ */
 inline SwitchThread switch_thread(ThreadType type, bool delay = false) { return SwitchThread{type, delay}; }
 
 } // namespace Goonya

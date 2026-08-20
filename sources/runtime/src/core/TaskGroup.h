@@ -22,6 +22,11 @@ public:
 
     ~TaskGroup() { join(); }
 
+    /**
+     * @brief 开始一个任务，保证此任务生命周期不超过TaskGroup
+     * @note 任务结束时必须在WORKER线程上，否则会导致主线程等主线程锁死
+     * @param task
+     */
     void spawn(Task<void> &&task) { wrap(std::move(task)).launch(); }
 
     void join() {
