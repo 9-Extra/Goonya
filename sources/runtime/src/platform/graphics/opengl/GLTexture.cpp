@@ -51,7 +51,7 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     case TextureType::TEXTURE_2D_ARRAY: {
         GN_ASSERT(width != 0 && height != 0 && depth != 0);
         glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
-        glTextureStorage3D(id, max_mipmap_level(mipmap_level, width, height, depth), gl_format, width, height, depth);
+        glTextureStorage3D(id, max_mipmap_level(mipmap_level, width, height), gl_format, width, height, depth);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP: {
