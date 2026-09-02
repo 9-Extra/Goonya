@@ -222,6 +222,7 @@ void frag()
 #ifdef GYA_IBL_ENVIRONMENT_LIGHT
     // 使用环境光贴图
     result_color += SpecularIBL(F0, roughness, N, V) * occlusion;
+    result_color += ambient_light * albedo * occlusion; // 低频漫反射部分，暂时用ambient_light替代
 #else
     // 使用常数环境光强度
     result_color += ambient_light * albedo * occlusion;

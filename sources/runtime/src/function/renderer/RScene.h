@@ -63,12 +63,9 @@ enum class RenderableDirty : uint8_t {
 /**
  * @brief 一个可渲染对象的全部渲染侧状态, 集中存储在RScene内部
  * 游戏侧只能通过 RenderableRef 间接操作, 不直接持有本结构
- *
- * 蒙皮等动态几何的接入方式: 蒙皮pass每帧产出新的顶点数据写入mesh的buffer后,
- * 通过 set_bounds_override 回写包围盒; 填入 BoundingBox::infinite() 即可禁用剔除
  */
 struct RRenderable {
-    Ref<GLMesh> mesh;
+    Ref<GLMesh> mesh; //  包含vao，子网格分割，和每个子网格的包围盒
     std::vector<Ref<Material>> materials;
     Matrix4f model_matrix = Matrix4f::identity();
 

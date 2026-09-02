@@ -31,6 +31,9 @@ struct TextureParameterInfo {
     uint32_t unit = 0;
 };
 
+/**
+ * @brief 编译完成的光栅化着色器组合，即shaderprogram
+ */
 class GLShader final : public RefCount {
 private:
     GLuint id = 0;
