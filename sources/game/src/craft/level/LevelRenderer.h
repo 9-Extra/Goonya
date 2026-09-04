@@ -94,7 +94,7 @@ public:
 
     // 区块的变换恒为单位矩阵(顶点已烘焙世界坐标), 因此只需同步mesh和材质
     Goonya::RenderableRef renderable;
-    Ref<Goonya::GLMesh> mesh;
+    Ref<Goonya::Mesh> mesh;
     std::vector<Ref<Material>> materials;
 
     Ref<Goonya::Future<void>> compile_task;

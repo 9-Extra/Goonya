@@ -7,6 +7,7 @@
 #include "core/sparse_set.h"
 #include "function/renderer/Camera.h"
 #include "function/renderer/Material.h"
+#include "function/renderer/Mesh.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLTexture.h"
@@ -41,7 +42,7 @@ struct RLight {
 };
 
 struct Instance {
-    Ref<GLMesh> mesh;
+    Ref<Mesh> mesh;
     Ref<Material> material;
     SubMesh submesh;
 
@@ -65,7 +66,7 @@ enum class RenderableDirty : uint8_t {
  * 游戏侧只能通过 RenderableRef 间接操作, 不直接持有本结构
  */
 struct RRenderable {
-    Ref<GLMesh> mesh; //  包含vao，子网格分割，和每个子网格的包围盒
+    Ref<Mesh> mesh; //  包含vao，子网格分割，和每个子网格的包围盒
     std::vector<Ref<Material>> materials;
     Matrix4f model_matrix = Matrix4f::identity();
 
@@ -103,7 +104,7 @@ public:
     Handle<RRenderable> create_renderable() noexcept;
     void destroy_renderable(Handle<RRenderable> handle) noexcept;
 
-    void set_mesh(Handle<RRenderable> handle, Ref<GLMesh> mesh) noexcept;
+    void set_mesh(Handle<RRenderable> handle, Ref<Mesh> mesh) noexcept;
     void set_materials(Handle<RRenderable> handle, std::span<const Ref<Material>> materials) noexcept;
     void set_hidden(Handle<RRenderable> handle, bool hidden = true) noexcept;
     void set_transform(Handle<RRenderable> handle, const Matrix4f &model_matrix) noexcept;
@@ -203,7 +204,7 @@ public:
     bool is_valid() const noexcept { return scene != nullptr; }
     explicit operator bool() const noexcept { return is_valid(); }
 
-    void set_mesh(Ref<GLMesh> mesh) noexcept {
+    void set_mesh(Ref<Mesh> mesh) noexcept {
         if (scene) scene->set_mesh(handle, std::move(mesh));
     }
     void set_materials(std::span<const Ref<Material>> materials) noexcept {

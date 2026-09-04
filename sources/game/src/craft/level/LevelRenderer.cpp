@@ -10,7 +10,6 @@
 #include "function/renderer/RScene.h"
 #include "function/renderer/RendererBasic.h"
 #include "function/renderer/UberShader.h"
-#include "platform/graphics/opengl/GLMesh.h"
 #include "resource/ResMng.h"
 
 #include <memory>
@@ -59,7 +58,7 @@ void RenderSection::compile_async(RenderRegionCache &region_cache, const Ref<Mat
             return;
         }
 
-        section->mesh = result.mesh_builder.build();
+        section->mesh = create_ref<Goonya::Mesh>(result.mesh_builder);
         section->renderable.set_mesh(section->mesh);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};

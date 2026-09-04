@@ -4,8 +4,8 @@
 #include "core/cgmath/vector.h"
 #include "craft/block/block_model.h"
 #include "function/renderer/Material.h"
+#include "function/renderer/Mesh.h"
 #include "function/renderer/RScene.h"
-#include "platform/graphics/opengl/GLMesh.h"
 
 #include <vector>
 
@@ -14,9 +14,9 @@ namespace Craft {
 // 玩家看向的方块线框
 class WireFrame {
 private:
-    Goonya::MeshBuilder builder;
+    Goonya::MeshDataArrays mesh_data;
     Goonya::RenderableRef renderable;
-    Ref<Goonya::GLMesh> mesh;
+    Ref<Goonya::Mesh> mesh;
     std::vector<Ref<Goonya::Material>> materials;
 
 public:

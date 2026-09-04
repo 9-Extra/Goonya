@@ -7,6 +7,7 @@
 #include "function/animation/Animation.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/renderer/Material.h"
+#include "function/renderer/Mesh.h"
 #include "function/renderer/UberShader.h"
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
@@ -248,13 +249,13 @@ struct GlTFLoadingContext {
             }
 
             // 使用MeshBuilder构建网格
-            MeshBuilder mesh_builder;
+            MeshDataArrays mesh_builder;
             mesh_builder.position.reserve(total_vertex_count);
             mesh_builder.normal.reserve(total_vertex_count);
             mesh_builder.tangent.reserve(total_vertex_count);
             mesh_builder.uv.reserve(total_vertex_count);
             mesh_builder.indices.reserve(total_indices_count);
-            mesh_builder.submeshes.reserve(primitive_info.size());
+            mesh_builder.submeshes.emplace().reserve(primitive_info.size());
 
             uint32_t vertex_offset = 0;
             uint32_t index_offset = 0;
@@ -275,9 +276,9 @@ struct GlTFLoadingContext {
                     mesh_builder.indices.push_back(info.indices_ptr[i + 0]);
                 }
 
-                mesh_builder.submeshes.emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset,
-                                                            Topology::TRIANGLE,
-                                                            BoundingBox{info.pos_min, info.pos_max}});
+                mesh_builder.submeshes->emplace_back(SubMesh{index_offset, info.indices_count, vertex_offset,
+                                                             Topology::TRIANGLE,
+                                                             BoundingBox{info.pos_min, info.pos_max}});
 
                 vertex_offset += info.vertex_count;
                 index_offset += info.indices_count;
@@ -285,7 +286,7 @@ struct GlTFLoadingContext {
 
             GN_ASSERT(vertex_offset == total_vertex_count && index_offset == total_indices_count);
             // 用收集完成的数据构建GLMesh并添加资源
-            Ref<GLMesh> device_mesh = mesh_builder.build();
+            Ref<Mesh> device_mesh = create_ref<Mesh>(mesh_builder);
             pack->contents.emplace(key, device_mesh);
         }
     }
@@ -461,7 +462,7 @@ struct GlTFLoadingContext {
             uint32_t mesh_id = node_json["mesh"].asUInt();
             const Json::Value &mesh_json = json["meshes"][mesh_id];
             AssetKey mesh_key = mesh_json["name"].asString();
-            Ref<GLMesh> mesh = Ref<GLMesh>::cast_from(pack->contents.at(mesh_key));
+            Ref<Mesh> mesh = Ref<Mesh>::cast_from(pack->contents.at(mesh_key));
             mesh_render->set_mesh(mesh);
 
             /*

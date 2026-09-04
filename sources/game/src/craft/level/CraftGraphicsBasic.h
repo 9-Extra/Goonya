@@ -1,6 +1,6 @@
 #pragma once
 
-#include "platform/graphics/opengl/GLMesh.h"
+#include "core/cgmath/vector.h"
 
 #include <cstdint>
 #include <string_view>

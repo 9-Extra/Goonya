@@ -1,6 +1,7 @@
 #include "resource/BuiltinResource.h"
 
 #include "core/RefCount.h"
+#include "function/renderer/Mesh.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
@@ -13,52 +14,56 @@ void init_buildin_resource() {
     Ref<ResourcePack> buildin = create_ref<ResourcePack>();
     resources.put_resource("buildin", buildin);
     { // 部分硬编码的mesh — plane
-        MeshBuilder builder;
-        builder.position = {
-            {-1.0f, 1.0f, 0.0f},
-            {1.0f, 1.0f, 0.0f},
-            {1.0f, -1.0f, 0.0f},
-            {-1.0f, -1.0f, 0.0f},
-        };
-        builder.normal = {
-            {0.0f, 0.0f, 1.0f},
-            {0.0f, 0.0f, 1.0f},
-            {0.0f, 0.0f, 1.0f},
-            {0.0f, 0.0f, 1.0f},
-        };
-        builder.tangent = {
-            {1.0f, 0.0f, 0.0f, 1.0f},
-            {1.0f, 0.0f, 0.0f, 1.0f},
-            {1.0f, 0.0f, 0.0f, 1.0f},
-            {1.0f, 0.0f, 0.0f, 1.0f},
-        };
-        builder.uv = {
-            {0.0f, 0.0f},
-            {1.0f, 0.0f},
-            {1.0f, 1.0f},
-            {0.0f, 1.0f},
-        };
-        builder.indices = {0, 1, 2, 2, 3, 0};
-        builder.submeshes.emplace_back(SubMesh{.start_index = 0,
-                                               .index_count = 6,
-                                               .base_vertex_offset = 0,
-                                               .topology = Topology::TRIANGLE,
-                                               .aabb = {{-1.0f, -1.0f, -0.0001f}, {1.0f, 1.0f, 0.0001f}}});
-        buildin->contents.emplace("plane", builder.build());
+        MeshDataArrays mesh_data{.position =
+                                     {
+                                         {-1.0f, 1.0f, 0.0f},
+                                         {1.0f, 1.0f, 0.0f},
+                                         {1.0f, -1.0f, 0.0f},
+                                         {-1.0f, -1.0f, 0.0f},
+                                     },
+                                 .normal =
+                                     {
+                                         {0.0f, 0.0f, 1.0f},
+                                         {0.0f, 0.0f, 1.0f},
+                                         {0.0f, 0.0f, 1.0f},
+                                         {0.0f, 0.0f, 1.0f},
+                                     },
+                                 .tangent =
+                                     {
+                                         {1.0f, 0.0f, 0.0f, 1.0f},
+                                         {1.0f, 0.0f, 0.0f, 1.0f},
+                                         {1.0f, 0.0f, 0.0f, 1.0f},
+                                         {1.0f, 0.0f, 0.0f, 1.0f},
+                                     },
+                                 .uv =
+                                     {
+                                         {0.0f, 0.0f},
+                                         {1.0f, 0.0f},
+                                         {1.0f, 1.0f},
+                                         {0.0f, 1.0f},
+                                     },
+                                 .indices = {0, 1, 2, 2, 3, 0},
+                                 .submeshes = {{SubMesh{.start_index = 0,
+                                                        .index_count = 6,
+                                                        .base_vertex_offset = 0,
+                                                        .topology = Topology::TRIANGLE,
+                                                        .aabb = {{-1.0f, -1.0f, -0.0001f}, {1.0f, 1.0f, 0.0001f}}}}}};
+
+        buildin->contents.emplace("plane", create_ref<Mesh>(mesh_data));
     }
 
     { // 添加天空盒的mesh，因为只有位置所以格式不一样
-        MeshBuilder builder;
-        builder.position = {{-1.0, -1.0, -1.0}, {1.0, -1.0, -1.0}, {1.0, 1.0, -1.0}, {-1.0, 1.0, -1.0},
-                            {-1.0, -1.0, 1.0},  {1.0, -1.0, 1.0},  {1.0, 1.0, 1.0},  {-1.0, 1.0, 1.0}};
-        builder.indices = {1, 0, 3, 3, 2, 1, 3, 7, 6, 6, 2, 3, 7, 3, 0, 0, 4, 7,
-                           2, 6, 5, 5, 1, 2, 4, 5, 6, 6, 7, 4, 5, 4, 0, 0, 1, 5};
-        builder.submeshes.emplace_back(SubMesh{.start_index = 0,
-                                               .index_count = 36,
-                                               .base_vertex_offset = 0,
-                                               .topology = Topology::TRIANGLE,
-                                               .aabb = {{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}}});
-        buildin->contents.emplace("skybox_cube", builder.build());
+        MeshDataArrays mesh_data;
+        mesh_data.position = {{-1.0, -1.0, -1.0}, {1.0, -1.0, -1.0}, {1.0, 1.0, -1.0}, {-1.0, 1.0, -1.0},
+                              {-1.0, -1.0, 1.0},  {1.0, -1.0, 1.0},  {1.0, 1.0, 1.0},  {-1.0, 1.0, 1.0}};
+        mesh_data.indices = {1, 0, 3, 3, 2, 1, 3, 7, 6, 6, 2, 3, 7, 3, 0, 0, 4, 7,
+                             2, 6, 5, 5, 1, 2, 4, 5, 6, 6, 7, 4, 5, 4, 0, 0, 1, 5};
+        mesh_data.submeshes = {SubMesh{.start_index = 0,
+                                       .index_count = 36,
+                                       .base_vertex_offset = 0,
+                                       .topology = Topology::TRIANGLE,
+                                       .aabb = {{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}}}};
+        buildin->contents.emplace("skybox_cube", create_ref<Mesh>(mesh_data));
     }
 
     const uint32_t default_texture_size = 16;

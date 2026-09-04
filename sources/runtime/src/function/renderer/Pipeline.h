@@ -14,7 +14,7 @@ namespace Goonya {
 
 // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct CullInstance {
-    GLMesh *mesh;
+    Mesh *mesh;
     Material *material;
     SubMesh submesh;
     GLBuffer *per_object_uniform;
@@ -38,14 +38,14 @@ private:
 
     Ref<GLFrameBuffer> replace_render_target[2]; // 替换渲染目标，用于渲染到屏幕，两个目标用于PingPong
 
-    Ref<GLMesh> skybox_mesh;
+    Ref<Mesh> skybox_mesh;
     Ref<Material> skybox_material;
 
     Ref<Material> depth_material;
     Ref<GLFrameBuffer> depth_fbo;
     Ref<GLTexture> depth_texture;
 
-    Ref<GLMesh> postprocess_quad_mesh;
+    Ref<Mesh> postprocess_quad_mesh;
     Ref<Material> postprocess_material;
 
     Ref<Material> guassian_blur_material_horizontal;

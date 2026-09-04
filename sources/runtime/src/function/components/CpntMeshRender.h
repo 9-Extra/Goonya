@@ -6,7 +6,6 @@
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
-#include "platform/graphics/opengl/GLMesh.h"
 
 #include <cstdint>
 #include <memory>
@@ -20,7 +19,7 @@ private:
     RScene *scene = nullptr;
     RenderableRef renderable;
 
-    Ref<GLMesh> mesh;
+    Ref<Mesh> mesh;
     std::vector<Ref<Material>> materials;
 
 public:
@@ -45,10 +44,10 @@ public:
         }
     }
 
-    const Ref<GLMesh> &get_mesh() const noexcept { return mesh; }
+    const Ref<Mesh> &get_mesh() const noexcept { return mesh; }
     const std::vector<Ref<Material>> &get_materials() const noexcept { return materials; }
 
-    void set_mesh(const Ref<GLMesh> &mesh) noexcept {
+    void set_mesh(const Ref<Mesh> &mesh) noexcept {
         this->mesh = mesh;
         if (renderable.is_valid()) {
             renderable.set_mesh(mesh);

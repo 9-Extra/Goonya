@@ -9,7 +9,6 @@
 #include "function/components/CpntSkybox.h"
 #include "function/renderer/Material.h"
 #include "platform/graphics/Graphics.h"
-#include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/ResMng.h"
 #include "runtime/GoonyaException.h"
@@ -54,7 +53,7 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
         if (cpnt_name == "mesh_render") {
             std::unique_ptr<CpntMeshRender> cpnt_ptr = std::make_unique<CpntMeshRender>();
             if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->set_mesh(resources.load_resource<GLMesh>(cpnt_desc["mesh"].asString()));
+                cpnt_ptr->set_mesh(resources.load_resource<Mesh>(cpnt_desc["mesh"].asString()));
             }
             if (cpnt_desc.isMember("material")) {
                 std::vector<Ref<Material>> materials;

@@ -1,4 +1,5 @@
 #include "Pipeline.h"
+#include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/transform.h"
 #include "core/clock/GameClock.h"
@@ -87,7 +88,7 @@ bool intersect_frustum_aabb(const std::array<Plane, 6> &frustum, const BoundingB
 struct DrawInstance {
     RenderPriority priority;
     GLShader *shader;
-    GLMesh *mesh;
+    Mesh *mesh;
     Material *material; // 为了额外资源，比如纹理
 
     GLBuffer *per_object_uniform;
@@ -95,7 +96,7 @@ struct DrawInstance {
 };
 
 Pipeline::Pipeline() {
-    skybox_mesh = resources.load_resource<GLMesh>("buildin:skybox_cube");
+    skybox_mesh = resources.load_resource<Mesh>("buildin:skybox_cube");
     skybox_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/skybox/skybox"));
 
     if (!skybox_mesh) {
@@ -113,7 +114,8 @@ Pipeline::Pipeline() {
     }
     postprocess_material = create_ref<Material>(postprocess_shader.get());
 
-    postprocess_quad_mesh = MeshBuilder::build_empty(); // 空的网格体
+    postprocess_quad_mesh = create_ref<Mesh>();
+    postprocess_quad_mesh->set_empty(); // 空的网格体
 
     guassian_blur_material_horizontal =
         create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/guass"));
@@ -338,7 +340,7 @@ void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> 
     });
 
     GLShader *last_shader = nullptr;
-    GLMesh *last_mesh = nullptr;
+    Mesh *last_mesh = nullptr;
     Material *last_material = nullptr;
 
     for (auto &instance : draw_instances) {
@@ -384,7 +386,7 @@ void Pipeline::draw_skybox(CameraInfo &camera_info) {
     skybox_material->set_texture("skybox_specular_texture", camera_info.env->skybox);
     skybox_material->set_param("color_permutation", camera_info.env->skybox_permutation);
     skybox_mesh->bind();
-    GL.draw_submesh(skybox_mesh->submeshes.at(0));
+    GL.draw_submesh(skybox_mesh->get_submeshes().at(0));
 
     GL.pop_debug_group_label();
 }

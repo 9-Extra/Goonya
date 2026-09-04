@@ -44,7 +44,6 @@ private:
 
 public:
     GLBuffer(BufferType type, size_t size) : size(size), type(type) {
-        GN_ASSERT_MSG(type != BufferType::DEVICE_ONLY, "DEVICE_ONLY Buffer必须使用初始化数据");
         if (size != 0) {
             glCreateBuffers(1, &id);
             glNamedBufferStorage(id, size, nullptr, GLBufferType(type));

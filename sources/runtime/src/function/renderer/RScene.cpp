@@ -42,8 +42,8 @@ void RScene::commit() noexcept {
             remove_mesh_instances(renderable);
             if (!renderable.hidden && renderable.mesh) {
                 Vector3f position = renderable.model_matrix.resolve_position();
-                for (size_t i = 0; i < renderable.mesh->submeshes.size(); ++i) {
-                    SubMesh &submesh = renderable.mesh->submeshes[i];
+                for (size_t i = 0; i < renderable.mesh->get_submeshes().size(); ++i) {
+                    const SubMesh &submesh = renderable.mesh->get_submeshes()[i];
                     if (submesh.index_count == 0) {
                         continue; // 没有顶点，跳过
                     }
@@ -86,7 +86,7 @@ void RScene::destroy_renderable(Handle<RRenderable> handle) noexcept {
     renderables.remove(handle);
 }
 
-void RScene::set_mesh(Handle<RRenderable> handle, Ref<GLMesh> mesh) noexcept {
+void RScene::set_mesh(Handle<RRenderable> handle, Ref<Mesh> mesh) noexcept {
     RRenderable &renderable = renderables[handle];
     renderable.mesh = std::move(mesh);
     mark_dirty(renderable, RenderableDirty::Structure);
