@@ -43,7 +43,7 @@ void RenderResource::scan() {
 Ref<Resource> RenderResource::load_resource(std::string_view key) {
     if (auto iter = storage.find(key); iter != storage.end()) {
         if (!iter->second) {
-            throw RuntimeError(std::format("加载资源\"{}\"时存在错误，见之前的异常", key));
+            throw RuntimeError(std::format("重复尝试加载出错的资源\"{}\"，请参考之前的异常信息", key));
         }
         GN_ASSERT(iter->second);
         return iter->second;

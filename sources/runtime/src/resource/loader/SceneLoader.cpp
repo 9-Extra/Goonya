@@ -20,6 +20,7 @@
 #include <fstream>
 #include <json/json.h>
 #include <memory>
+#include <string_view>
 #include <vector>
 
 namespace Goonya {
@@ -49,75 +50,91 @@ Transform load_transform(const Json::Value &json) {
 
 BoundingBox load_bbox(const Json::Value &json) { return BoundingBox{load_vec3(json["min"]), load_vec3(json["max"])}; }
 
+AnimationPlayMode load_animation_play_mode(const Json::Value &json) {
+    const std::string &s = json.asString();
+    if (s == "disable") return AnimationPlayMode::DISABLE;
+    if (s == "once") return AnimationPlayMode::ONCE;
+    if (s == "loop") return AnimationPlayMode::LOOP;
+    if (s == "pingpong") return AnimationPlayMode::PINGPONG;
+    throw RuntimeError(std::format("未知动画播放模式：{}", s));
+}
+
 // 从json加载组件
-void load_conponents_from_json(GObject *obj, const Json::Value &json) {
-    for (const auto &cpnt_name : json.getMemberNames()) {
-        const Json::Value &cpnt_desc = json[cpnt_name];
-        if (cpnt_name == "mesh_render") {
-            std::unique_ptr<CpntMeshRender> cpnt_ptr = std::make_unique<CpntMeshRender>();
-            if (cpnt_desc.isMember("mesh")) {
-                cpnt_ptr->set_mesh(resources.load_resource<Mesh>(cpnt_desc["mesh"].asString()));
-            }
-            if (cpnt_desc.isMember("material")) {
-                std::vector<Ref<Material>> materials;
-                for (const Json::Value &material_name : cpnt_desc["material"]) {
-                    std::string mat_name = material_name.asString();
-                    materials.emplace_back(mat_name.empty() ? nullptr : resources.load_resource<Material>(mat_name));
-                }
-                cpnt_ptr->set_materials(std::span(materials));
-            }
-            obj->add_component(std::move(cpnt_ptr));
-        } else if (cpnt_name == "point_light") {
-            Vector3f color = load_vec3(cpnt_desc["color"]);
-            float radius = cpnt_desc["factor"].asFloat();
-            obj->add_component(std::make_unique<CpntPointLight>(color, radius));
-        } else if (cpnt_name == "camera") {
-            bool is_main = cpnt_desc.isMember("is_main") && cpnt_desc["is_main"].asBool();
-            float near_z = cpnt_desc["near_z"].asFloat();
-            float far_z = cpnt_desc["far_z"].asFloat();
-            float fov = cpnt_desc["fov"].asFloat();
-            std::unique_ptr<CpntCamera> camera = std::make_unique<CpntCamera>(near_z, far_z, fov);
-            if (is_main) {
-                camera->render_target = GL.get_rendertarget_screen();
-            }
-            obj->add_component(std::move(camera));
-        } else if (cpnt_name == "sky_box") {
-            Ref<GLTexture> skybox;
-            if (cpnt_desc.isMember("skybox")) {
-                skybox = resources.load_resource<GLTexture>(cpnt_desc["skybox"].asString());
-            } else {
-                throw RuntimeError("天空盒必须指定纹理");
-            }
-
-            Ref<GLTexture> env_map;
-            if (cpnt_desc.isMember("env_map")) {
-                env_map = resources.load_resource<GLTexture>(cpnt_desc["env_map"].asString());
-            } else {
-                env_map = skybox;
-            }
-
-            bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
-            BoundingBox bbox;
-            if (cpnt_desc.isMember("bbox")) {
-                bbox = load_bbox(cpnt_desc["bbox"]);
-            } else if (!ignore_range) {
-                throw RuntimeError("带范围的天空盒必须指定包围盒");
-            }
-            obj->add_component(std::make_unique<CpntSkybox>(skybox, env_map, ignore_range, bbox));
-        } else if (cpnt_name == "animator") {
-            if (!cpnt_desc.isMember("animation")) {
-                throw RuntimeError("动画组件必须指定动画资源");
-            }
-            // 动画资源缺失时降级为跳过动画，不影响节点本身的加载
-            try {
-                Ref<Animation> animation = resources.load_resource<Animation>(cpnt_desc["animation"].asString());
-                obj->create_component<CpntAnimator>()->set_animation(animation);
-            } catch (const std::exception &e) {
-                LOG_ERROR("动画资源\"{}\"加载失败，已跳过：{}", cpnt_desc["animation"].asString(), format_exception(e));
-            }
-        } else {
-            throw RuntimeError(std::format("未知组件：{}", cpnt_name));
+void load_component(GObject *obj, std::string_view cpnt_name, const Json::Value &cpnt_desc) {
+    if (cpnt_name == "mesh_render") {
+        std::unique_ptr<CpntMeshRender> cpnt_ptr = std::make_unique<CpntMeshRender>();
+        if (cpnt_desc.isMember("mesh")) {
+            cpnt_ptr->set_mesh(resources.load_resource<Mesh>(cpnt_desc["mesh"].asString()));
         }
+        if (cpnt_desc.isMember("material")) {
+            std::vector<Ref<Material>> materials;
+            for (const Json::Value &material_name : cpnt_desc["material"]) {
+                std::string mat_name = material_name.asString();
+                materials.emplace_back(mat_name.empty() ? nullptr : resources.load_resource<Material>(mat_name));
+            }
+            cpnt_ptr->set_materials(std::span(materials));
+        }
+        obj->add_component(std::move(cpnt_ptr));
+    } else if (cpnt_name == "point_light") {
+        Vector3f color = load_vec3(cpnt_desc["color"]);
+        float radius = cpnt_desc["factor"].asFloat();
+        obj->add_component(std::make_unique<CpntPointLight>(color, radius));
+    } else if (cpnt_name == "camera") {
+        bool is_main = cpnt_desc.isMember("is_main") && cpnt_desc["is_main"].asBool();
+        float near_z = cpnt_desc["near_z"].asFloat();
+        float far_z = cpnt_desc["far_z"].asFloat();
+        float fov = cpnt_desc["fov"].asFloat();
+        std::unique_ptr<CpntCamera> camera = std::make_unique<CpntCamera>(near_z, far_z, fov);
+        if (is_main) {
+            camera->render_target = GL.get_rendertarget_screen();
+        }
+        obj->add_component(std::move(camera));
+    } else if (cpnt_name == "sky_box") {
+        Ref<GLTexture> skybox;
+        if (cpnt_desc.isMember("skybox")) {
+            skybox = resources.load_resource<GLTexture>(cpnt_desc["skybox"].asString());
+        } else {
+            throw RuntimeError("天空盒必须指定纹理");
+        }
+
+        Ref<GLTexture> env_map;
+        if (cpnt_desc.isMember("env_map")) {
+            env_map = resources.load_resource<GLTexture>(cpnt_desc["env_map"].asString());
+        } else {
+            env_map = skybox;
+        }
+
+        bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());
+        BoundingBox bbox;
+        if (cpnt_desc.isMember("bbox")) {
+            bbox = load_bbox(cpnt_desc["bbox"]);
+        } else if (!ignore_range) {
+            throw RuntimeError("带范围的天空盒必须指定包围盒");
+        }
+        obj->add_component(std::make_unique<CpntSkybox>(skybox, env_map, ignore_range, bbox));
+    } else if (cpnt_name == "animator") {
+        if (!cpnt_desc.isMember("animation")) {
+            throw RuntimeError("动画组件必须指定动画资源");
+        }
+        AnimationPlayMode mode = AnimationPlayMode::LOOP;
+        if (cpnt_desc.isMember("mode")) {
+            mode = load_animation_play_mode(cpnt_desc["mode"]);
+        }
+        if (cpnt_desc.isMember("reverse") && cpnt_desc["reverse"].asBool()) {
+            mode = mode | AnimationPlayMode::REVERSE_FLAG;
+        }
+        GameClock::TimePoint start_time{}; // 相对游戏开始的秒数，缺省 0 表示立即播放
+        if (cpnt_desc.isMember("start_time")) {
+            start_time = GameClock::TimePoint{} + std::chrono::duration_cast<GameClock::Duration>(
+                                                      std::chrono::duration<float>(cpnt_desc["start_time"].asFloat()));
+        }
+        Ref<Animation> animation = resources.load_resource<Animation>(cpnt_desc["animation"].asString());
+        CpntAnimator *animator = obj->create_component<CpntAnimator>();
+        animator->set_play_mode(mode);
+        animator->set_start_time(start_time);
+        animator->set_animation(animation);
+    } else {
+        throw RuntimeError(std::format("未知组件：{}", cpnt_name));
     }
 }
 
@@ -127,21 +144,27 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
 
     std::shared_ptr<GObject> node = std::make_shared<GObject>(load_transform(json), name);
 
-    load_conponents_from_json(node.get(), json["components"]);
+    for (const auto &cpnt_name : json["components"].getMemberNames()) {
+        try {
+            load_component(node.get(), cpnt_name, json["components"][cpnt_name]);
+        } catch (const std::exception &e) {
+            LOG_ERROR("组件\"{}\"加载失败：{}", cpnt_name, format_exception(e));
+        }
+    }
 
     for (const Json::Value &child_desc : json["children"]) {
         node->attach_child(load_node_from_json(child_desc));
     }
 
     if (json.isMember("scene")) {
-        Ref<Scene> sub_scene = resources.load_resource<Scene>(json["scene"].asString());
-        if (sub_scene) {
+        try {
+            Ref<Scene> sub_scene = resources.load_resource<Scene>(json["scene"].asString());
             for (auto &&sub_node : sub_scene->nodes) {
                 // 复制所有根物体及其子物体
                 node->attach_child(sub_node->clone(true));
             }
-        } else {
-            throw RuntimeError(std::format("子场景\"{}\"加载失败", json["scene"].asString()));
+        } catch (const std::exception &e) {
+            LOG_ERROR("子场景\"{}\"加载失败：{}", json["scene"].asString(), format_exception(e));
         }
     }
 
@@ -167,7 +190,7 @@ Ref<Scene> load_scene_from_json(const std::filesystem::path &path) {
         try {
             scene->nodes.emplace_back(load_node_from_json(node));
         } catch (const std::exception &e) {
-            LOG_ERROR("节点\"{}\"加载失败，已跳过：{}", node.get("name", "未命名").asString(), format_exception(e));
+            LOG_ERROR("节点\"{}\"加载失败：{}", node.get("name", "未命名").asString(), format_exception(e));
         }
     }
 

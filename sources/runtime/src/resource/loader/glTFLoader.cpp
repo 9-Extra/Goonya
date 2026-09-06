@@ -568,9 +568,9 @@ struct GlTFLoadingContext {
                 const Json::Value skin_data_json = json["skins"][skin_id];
                 if (skin_data_json) {
                     if (skin_data_json["name"].isString()) {
-                        LOG_INFO("正在加载蒙皮映射数据\"{}\"", skin_data_json["name"].asString());
+                        LOG_TRACE("加载蒙皮映射数据\"{}\"", skin_data_json["name"].asString());
                     } else {
-                        LOG_INFO("正在加载蒙皮映射数据\"id={}\"", skin_id);
+                        LOG_TRACE("加载蒙皮映射数据\"id={}\"", skin_id);
                     }
                     // 逆绑定矩阵，指静置位置下节点的世界变换的逆
                     // 目标位置 = 蒙皮顶点相对节点的变换 * 当前的节点世界变换 = (原始网格体中的顶点位置 * 逆绑定矩阵) *

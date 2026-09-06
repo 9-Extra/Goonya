@@ -59,6 +59,13 @@ public:
     }
     Ref<Animation> get_animation() const noexcept { return animation; }
 
+    void set_play_mode(AnimationPlayMode m) noexcept { mode = m; }
+    AnimationPlayMode get_play_mode() const noexcept { return mode; }
+
+    // start_time 是游戏时钟上的绝对时间点，TimePoint{} 表示从游戏开始就播放
+    void set_start_time(GameClock::TimePoint t) noexcept { start_time = t; }
+    GameClock::TimePoint get_start_time() const noexcept { return start_time; }
+
     std::unique_ptr<Component> clone() const override {
         auto new_comp = std::make_unique<CpntAnimator>();
         new_comp->animation = animation;
