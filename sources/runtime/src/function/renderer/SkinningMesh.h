@@ -37,7 +37,17 @@ public:
         }
         skin_buffer->write(std::as_bytes(src), BufferMapOption::WRITE_DISCARD);
     }
-    std::span<const SkinMeshVertex> get_mesh_buffer_data() const noexcept { return mesh_buffer_cpu; }
+    std::span<const SkinMeshVertex> get_mesh_buffer_data() noexcept {
+        // 尚不能保证mesh_buffer_cpu和mesh_buffer数据完全同步，小心使用
+        if (!mesh_buffer) {
+            return {};
+        }
+        if (mesh_buffer_cpu.empty() && mesh_buffer->get_size() != 0) {
+            mesh_buffer_cpu.resize(vertex_count);
+            mesh_buffer->read((std::byte *)mesh_buffer_cpu.data(), mesh_buffer->get_size()); // 目前只能靠回读了
+        }
+        return mesh_buffer_cpu;
+    }
 
     Ref<GLBuffer> get_caculated_mesh_buffer() const noexcept { return caculated_mesh_buffer; }
 

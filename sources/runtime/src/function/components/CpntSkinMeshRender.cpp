@@ -144,7 +144,7 @@ void CpntSkinMeshRender::gpu_mesh_update() {
     if (!scene || !mesh || binding_joints.empty()) {
         return;
     }
-    GN_ASSERT(mesh->get_skin_data() && !mesh->get_mesh_buffer_data().empty());
+    GN_ASSERT(mesh->get_skin_data());
 
     if (!skinning_shader) {
         auto uber = resources.load_resource<UberShader>("shaders/compute/skinning");
@@ -159,6 +159,7 @@ void CpntSkinMeshRender::gpu_mesh_update() {
     size_t pose_matrix_buffer_size = binding_joints.size() * sizeof(std::array<Matrix4f, 2>);
     if (!pose_matrix_buffer || pose_matrix_buffer->get_size() != pose_matrix_buffer_size) {
         pose_matrix_buffer = create_ref<GLBuffer>(BufferType::MODIFIABLE, pose_matrix_buffer_size);
+        pose_matrix_buffer->set_debug_label("姿态矩阵缓存");
     }
     {
         ArrayBufferWriter<std::array<Matrix4f, 2>> buffer(pose_matrix_buffer, BufferMapOption::WRITE_DISCARD);

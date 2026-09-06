@@ -22,8 +22,6 @@ SkinningMesh::SkinningMesh(const Mesh &mesh) : Mesh(mesh) {
         vao.set_vertice_buffer(1, color_buffer, 0, layout.vertex_stride[1]);
     }
     vao.set_index_buffer(indices_buffer);
-    mesh_buffer_cpu.resize(vertex_count);
-    mesh_buffer->read((std::byte *)mesh_buffer_cpu.data(), mesh_buffer->get_size()); // 目前只能靠回读了
     ignore_bbox();
 }
 } // namespace Goonya
