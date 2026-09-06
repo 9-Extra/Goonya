@@ -18,6 +18,10 @@ enum class TickType {
     FIXED_TICK,
 };
 
+/**
+ * @brief 一个可以tick的对象
+ * 使用方法：实现tick函数，初始化时设定tick_type，在注册和注销时执行register_ticker和unregister_ticker
+ */
 struct TickFunction {
 private:
     friend class World;

@@ -9,9 +9,11 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <span>
 #include <utility>
+#include <vector>
 
 namespace Goonya {
 
@@ -84,6 +86,7 @@ struct MeshDataArrays {
     std::vector<Vector3f> color;
 
     std::vector<uint32_t> indices;
+    std::vector<SkinVertex> skin_data;
     std::optional<std::vector<SubMesh>> submeshes;
 };
 
@@ -100,12 +103,11 @@ protected:
     Ref<GLBuffer> indices_buffer;
     GLVertexLayout vao;
 
+    Ref<GLBuffer> skin_buffer; // vec4i joints, vec4f weight，用于GPU侧蒙皮，不属于顶点数据，但同一资产共享
+    std::shared_ptr<std::vector<SkinVertex>> skin_data; // 保存一份到内部方便cpu蒙皮, todo：按需保留
 public:
     // 初始化为空
     Mesh() noexcept = default;
-    explicit Mesh(const MeshDataArrays &data) : Mesh{} {
-        Mesh::reconstruct(data); // 这是有个"虚"函数，子类慎用本方法构造基类
-    }
 
     void bind() const noexcept {
         GN_ASSERT_MSG(vao, "在绑定Mesh前必须初始化");
@@ -116,6 +118,7 @@ public:
     size_t get_index_count() const noexcept {
         return indices_buffer ? indices_buffer->get_size() / sizeof(uint32_t) : 0;
     }
+    const std::shared_ptr<std::vector<SkinVertex>> &get_skin_data() const noexcept { return skin_data; }
 
     const std::vector<SubMesh> &get_submeshes() const noexcept { return submeshes; }
     bool has_attribute(VertexAttribute attribute) const noexcept {
@@ -130,7 +133,7 @@ public:
     /**
      * @brief 上传数据
      */
-    void reconstruct(const MeshDataArrays &data);
+    void init(const MeshDataArrays &data);
 
     /**
      * @brief 初始化一个空但是可绑定绘制的网格体
@@ -150,12 +153,13 @@ protected:
     // 用于子类创建，所有GLBuffer拷贝引用，VAO独立
     Mesh(const Mesh &mesh)
         : layout(mesh.layout), vertex_count(mesh.vertex_count), submeshes(mesh.submeshes),
-          mesh_buffer(mesh.mesh_buffer), color_buffer(mesh.color_buffer), indices_buffer(mesh.indices_buffer) {
+          mesh_buffer(mesh.mesh_buffer), color_buffer(mesh.color_buffer), indices_buffer(mesh.indices_buffer),
+          skin_buffer(mesh.skin_buffer), skin_data(mesh.skin_data) {
         // VAO需要由子类创建
     }
 
     // 网格重建钩子
-    virtual void on_reconstruct() {}
+    virtual void on_init(const MeshDataArrays &data) {}
 
 private:
     static void add_attribute(VertexLayout &layout, VertexAttribute attribute) noexcept {

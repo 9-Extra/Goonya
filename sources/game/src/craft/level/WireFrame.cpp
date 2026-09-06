@@ -89,7 +89,7 @@ void WireFrame::draw_at(Goonya::Vector3f pos, const BakedBlockModel &model) {
         .aabb = Goonya::BoundingBox{{0.0f, 0.0f, 0.0f}, {1.0f, 1.0f, 1.0f}},
     }};
 
-    mesh->reconstruct(mesh_data);
+    mesh->init(mesh_data);
     renderable.set_mesh(mesh);
     renderable.set_transform(Goonya::Matrix4f::identity().translate(pos));
     renderable.set_hidden(false); // 可见

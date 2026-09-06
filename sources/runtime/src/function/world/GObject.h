@@ -217,7 +217,7 @@ public:
     }
 
     const std::vector<std::shared_ptr<GObject>> &get_children() const noexcept { return children; }
-    std::shared_ptr<GObject> get_child_by_name(const std::string &name) noexcept {
+    std::shared_ptr<GObject> get_child_by_name(std::string_view name) noexcept {
         if (name.empty()) return nullptr;
         for (auto &child : children) {
             if (child->name == name) {
@@ -231,6 +231,7 @@ public:
      * @param path 节点路径，支持以下格式：
      *             - 空字符串""：返回当前节点自身
      *             - 相对路径"xxx/yyy"：从当前节点开始查找
+     *             - 父路径"../"：反向寻找父节点
      * @note 以'/'开头的路径是不正确的
      * @return 找到的目标节点，找不到时返回nullptr
      */

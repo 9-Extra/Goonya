@@ -6,7 +6,6 @@
 
 #include <glad/glad.h>
 #include <type_traits>
-#include <vector>
 
 #include "core/RefCount.h"
 #include "core/metatype/metatype.h"
@@ -75,13 +74,12 @@ public:
         glCopyNamedBufferSubData(src->id, id, src_offset, dst_offset, size);
     }
 
-    std::vector<std::byte> read(size_t size, size_t offset = 0) const noexcept {
-        size = std::min(size, this->size - offset);
-        std::vector<std::byte> data(size);
-        if (size != 0) {
-            glGetNamedBufferSubData(id, offset, size, data.data()); // 无论初始是否设置为可读，总是可以读取
+    size_t read(std::byte *ptr, size_t size, size_t offset = 0) const noexcept {
+        size_t read_size = std::min(size, this->size - offset);
+        if (read_size != 0) {
+            glGetNamedBufferSubData(id, offset, size, ptr); // 无论初始是否设置为可读，总是可以读取
         }
-        return data;
+        return read_size;
     }
     void unmap() const noexcept {
         if (size != 0) {

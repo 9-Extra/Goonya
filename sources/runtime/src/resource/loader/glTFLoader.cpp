@@ -3,9 +3,13 @@
 #include "core/RefCount.h"
 #include "core/as_u8string.h"
 #include "core/cgmath/cgmath.h"
+#include "core/cgmath/matrix.h"
+#include "core/cgmath/vector.h"
+#include "core/log/Log.h"
 #include "core/path_formatter.h"
 #include "function/animation/Animation.h"
 #include "function/components/CpntMeshRender.h"
+#include "function/components/CpntSkinMeshRender.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/Mesh.h"
 #include "function/renderer/UberShader.h"
@@ -15,8 +19,9 @@
 #include "platform/graphics/opengl/GLTexture.h"
 #include "resource/ResMng.h"
 #include "resource/Resource.h"
-#include <resource/loader/SceneLoader.h>
+#include "resource/loader/SceneLoader.h"
 
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 #include "json/value.h"
 #include <algorithm>
@@ -177,6 +182,9 @@ struct GlTFLoadingContext {
                 Vector3f *normal;
                 Vector2f *uv;
                 Vector4f *tangent;
+
+                Vector4i *joint;
+                Vector4f *weight;
                 uint32_t vertex_count;
 
                 uint16_t *indices_ptr;
@@ -191,6 +199,8 @@ struct GlTFLoadingContext {
             primitive_info.reserve(mesh["primitives"].size());
             uint32_t total_vertex_count = 0; // 同时计算总顶点数和总索引数
             uint32_t total_indices_count = 0;
+            std::vector<std::vector<Vector4i>> temp_joints; // 处理类型不一致问题，存放类型转化后的索引
+            bool has_skin_data = false;
 
             for (const Json::Value &primitive : mesh["primitives"]) {
                 // 解析各个顶点属性
@@ -230,6 +240,63 @@ struct GlTFLoadingContext {
                                                             uv_buffer["byteOffset"].asInt64());
                 Vector4f *tangent = reinterpret_cast<Vector4f *>(buffers[tangent_buffer["buffer"].asUInt()].ptr +
                                                                  tangent_buffer["byteOffset"].asUInt());
+
+                // 处理可选的蒙皮数据
+                Vector4i *joint = nullptr;
+                Vector4f *weight = nullptr;
+                if (primitive["attributes"].isMember("JOINTS_0")) {
+                    has_skin_data = true;
+                    const Json::Value &joint_accessor = json["accessors"][primitive["attributes"]["JOINTS_0"].asUInt()];
+                    uint32_t component_type = joint_accessor["componentType"].asUInt();
+                    uint32_t count = joint_accessor["count"].asUInt();
+                    if (count != vertex_count) {
+                        throw RuntimeError(
+                            std::format("关节索引类型错误：期望大小{}, 实际大小{}", vertex_count, count));
+                    }
+                    const Json::Value &joint_buffer = json["bufferViews"][joint_accessor["bufferView"].asUInt()];
+                    void *origin_ptr = reinterpret_cast<Vector4i *>(buffers[joint_buffer["buffer"].asUInt()].ptr +
+                                                                    joint_buffer["byteOffset"].asUInt());
+                    switch (component_type) {
+                    case 5126: {
+                        // f32
+                        joint = static_cast<Vector4i *>(origin_ptr);
+                        break;
+                    }
+                    case 5123: {
+                        // u16
+                        uint16_t *ptr = static_cast<uint16_t *>(origin_ptr);
+                        auto &t = temp_joints.emplace_back(count);
+                        for (size_t i = 0; i < count; i++) {
+                            t[i] = {ptr[i * 4], ptr[i * 4 + 1], ptr[i * 4 + 2], ptr[i * 4 + 3]};
+                        }
+                        joint = t.data();
+                        break;
+                    }
+                    case 5121: {
+                        // u8
+                        uint8_t *ptr = static_cast<uint8_t *>(origin_ptr);
+                        auto &t = temp_joints.emplace_back(count);
+                        for (size_t i = 0; i < count; i++) {
+                            t[i] = {ptr[i * 4], ptr[i * 4 + 1], ptr[i * 4 + 2], ptr[i * 4 + 3]};
+                        }
+                        joint = t.data();
+                        break;
+                    }
+                    default: {
+                        throw RuntimeError(std::format("不支持权重索引glTF类型\"{}\"", component_type));
+                    }
+                    }
+                }
+                if (primitive["attributes"].isMember("WEIGHTS_0")) {
+                    const Json::Value &weight_buffer = get_buffer(primitive["attributes"]["WEIGHTS_0"].asUInt());
+                    uint32_t s = weight_buffer["byteLength"].asUInt() / sizeof(Vector4f);
+                    if (s != vertex_count) {
+                        throw RuntimeError(std::format("关节权重类型错误：期望大小{}, 实际大小{}", vertex_count, s));
+                    }
+                    weight = reinterpret_cast<Vector4f *>(buffers[weight_buffer["buffer"].asUInt()].ptr +
+                                                          weight_buffer["byteOffset"].asUInt());
+                }
+
                 // 计算顶点位置的最大最小值，用于包围盒
                 // todo: 尝试从glsl读取
                 Vector3f position_min = pos[0];
@@ -241,8 +308,9 @@ struct GlTFLoadingContext {
                                     std::max(pos[i].z, position_max.z)};
                 }
                 // 收集所有数据到primitive_info中
-                primitive_info.emplace_back(PrimitiveInfo{pos, normal, uv, tangent, vertex_count, indices_ptr,
-                                                          indices_count, material_id, position_min, position_max});
+                primitive_info.emplace_back(PrimitiveInfo{pos, normal, uv, tangent, joint, weight, vertex_count,
+                                                          indices_ptr, indices_count, material_id, position_min,
+                                                          position_max});
                 // 统计整个Mesh的顶点和索引总数，用于计算一次性分配Buffer的大小
                 total_vertex_count += vertex_count;
                 total_indices_count += indices_count;
@@ -257,6 +325,10 @@ struct GlTFLoadingContext {
             mesh_builder.indices.reserve(total_indices_count);
             mesh_builder.submeshes.emplace().reserve(primitive_info.size());
 
+            if (has_skin_data) {
+                mesh_builder.skin_data.reserve(total_indices_count);
+            }
+
             uint32_t vertex_offset = 0;
             uint32_t index_offset = 0;
             // 遍历之前收集到的PrimitiveInfo，将其中数据填入MeshBuilder
@@ -267,6 +339,11 @@ struct GlTFLoadingContext {
                     mesh_builder.normal.push_back(info.normal[i]);
                     mesh_builder.tangent.push_back(info.tangent[i]);
                     mesh_builder.uv.push_back(info.uv[i]);
+                    if (has_skin_data) {
+                        mesh_builder.skin_data.emplace_back(
+                            SkinVertex{.joints = info.joint ? info.joint[i] : Vector4i{0, 0, 0, 0},
+                                       .weights = info.weight ? info.weight[i] : Vector4f{1, 0, 0, 0}});
+                    }
                 }
 
                 for (uint32_t i = 0; i < info.indices_count; i += 3) {
@@ -286,7 +363,8 @@ struct GlTFLoadingContext {
 
             GN_ASSERT(vertex_offset == total_vertex_count && index_offset == total_indices_count);
             // 用收集完成的数据构建GLMesh并添加资源
-            Ref<Mesh> device_mesh = create_ref<Mesh>(mesh_builder);
+            Ref<Mesh> device_mesh = create_ref<Mesh>();
+            device_mesh->init(mesh_builder);
             pack->contents.emplace(key, device_mesh);
         }
     }
@@ -434,6 +512,7 @@ struct GlTFLoadingContext {
     }
 
     std::shared_ptr<GObject> load_gltf_node(uint32_t index) {
+        GN_ASSERT(index < node_index_to_path.size());
         const Json::Value &node_json = json["nodes"][index];
         // 先加载名称和变换
         std::string name = node_json.get("name", "").asString();
@@ -455,33 +534,79 @@ struct GlTFLoadingContext {
 
         // 加载额外属性
         if (node_json.isMember("mesh")) {
-
-            std::unique_ptr<CpntMeshRender> mesh_render = std::make_unique<CpntMeshRender>();
-
             // 加载Mesh
             uint32_t mesh_id = node_json["mesh"].asUInt();
             const Json::Value &mesh_json = json["meshes"][mesh_id];
             AssetKey mesh_key = mesh_json["name"].asString();
             Ref<Mesh> mesh = Ref<Mesh>::cast_from(pack->contents.at(mesh_key));
-            mesh_render->set_mesh(mesh);
 
-            /*
-            在GTLF中mesh属性中包含了其绑定的每一个材质，在加载时写入了material_list，因此从这里获取材质
-            */
+            std::vector<Ref<Material>> mats;
             for (const auto &[id, primetive_json] : std::ranges::enumerate_view(mesh_json["primitives"])) {
                 if (primetive_json.isMember("material")) {
                     uint32_t material_id = primetive_json["material"].asUInt();
-                    mesh_render->set_material(id, material_list.at(material_id));
+                    mats.emplace_back(material_list.at(material_id));
                 } else {
                     // 应该使用默认的glTF材质
                     // todo
+                    mats.emplace_back();
                 }
             }
 
-            node->add_component(std::move(mesh_render));
-        }
-        if (node_json.isMember("skin")) {
-            // todo
+            if (!node_json.isMember("skin")) {
+                // static mesh
+                std::unique_ptr<CpntMeshRender> mesh_render = std::make_unique<CpntMeshRender>();
+                mesh_render->set_mesh(mesh);
+                mesh_render->set_materials(mats);
+                node->add_component(std::move(mesh_render));
+            } else {
+                // skin mesh
+                std::unique_ptr<CpntSkinMeshRender> mesh_render = std::make_unique<CpntSkinMeshRender>();
+                mesh_render->set_base_mesh(mesh);
+                mesh_render->set_materials(mats);
+
+                uint32_t skin_id = node_json["skin"].asUInt();
+                const Json::Value skin_data_json = json["skins"][skin_id];
+                if (skin_data_json) {
+                    if (skin_data_json["name"].isString()) {
+                        LOG_INFO("正在加载蒙皮映射数据\"{}\"", skin_data_json["name"].asString());
+                    } else {
+                        LOG_INFO("正在加载蒙皮映射数据\"id={}\"", skin_id);
+                    }
+                    // 逆绑定矩阵，指静置位置下节点的世界变换的逆
+                    // 目标位置 = 蒙皮顶点相对节点的变换 * 当前的节点世界变换 = (原始网格体中的顶点位置 * 逆绑定矩阵) *
+                    // 当前的节点世界变换
+                    uint32_t ibm_id = skin_data_json["inverseBindMatrices"].asUInt();
+                    const auto [p_mats, length] = get_accessor_data<Matrix4f>(ibm_id);
+                    const uint32_t joints_count = skin_data_json["joints"].size();
+                    if (length != joints_count) {
+                        throw RuntimeError(std::format("逆绑定矩阵和关节数量不一致：{} vs {}", length, joints_count));
+                    }
+                    // 每个逆绑定矩阵对应的关节节点路径
+                    std::vector<std::string> joint_paths;
+                    joint_paths.reserve(joints_count);
+                    for (const Json::Value &v : skin_data_json["joints"]) {
+                        uint32_t node_index = v.asUInt();
+                        // 获取节点路径
+                        if (node_index >= node_index_to_path.size()) {
+                            throw RuntimeError("节点索引越界");
+                        }
+                        joint_paths.push_back(node_index_to_path[node_index]);
+                    }
+                    mesh_render->set_joints(std::move(joint_paths),
+                                            std::vector(std::from_range, std::span(p_mats, length)));
+                    std::string path_to_root{"../"}; // 由于节点路径包含了场景根，所以需要从场景根节点的父节点开始
+                    std::string_view node_path = node_index_to_path[index];
+                    for (size_t i = node_path.find('/'); i != std::string_view::npos; i = node_path.find('/', i + 1)) {
+                        path_to_root.append("../");
+                    }
+                    mesh_render->set_bone_root(path_to_root);
+
+                } else {
+                    throw RuntimeError(std::format("未找到下标为{}的蒙皮数据", skin_id));
+                }
+
+                node->add_component(std::move(mesh_render));
+            }
         }
 
         // 加载子节点
@@ -553,9 +678,6 @@ struct GlTFLoadingContext {
                     continue; // 节点索引越界
                 }
                 std::string node_path = node_index_to_path[node_index];
-                if (node_path.empty()) {
-                    continue; // 无法找到有效路径
-                }
 
                 // 获取 interpolation 类型（CUBICSPLINE 转为 LINEAR）
                 std::string interpolation_str = sampler_json.get("interpolation", "LINEAR").asString();

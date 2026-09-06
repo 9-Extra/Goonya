@@ -195,6 +195,16 @@ struct Matrix4f {
         return r;
     }
 
+    constexpr Vector4f operator*(Vector4f rhs) const noexcept {
+        Vector4f r;
+        for (unsigned int i = 0; i < 4; i++) {
+            for (unsigned int j = 0; j < 4; j++) {
+                r[i] += m[i][j] * rhs[j];
+            }
+        }
+        return r;
+    }
+
     constexpr Matrix4f operator/(float rhs) const noexcept {
         GN_ASSERT(!is_nearly_equal(rhs, 0.0f));
         rhs = 1 / rhs;

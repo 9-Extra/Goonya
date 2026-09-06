@@ -58,7 +58,8 @@ void RenderSection::compile_async(RenderRegionCache &region_cache, const Ref<Mat
             return;
         }
 
-        section->mesh = create_ref<Goonya::Mesh>(result.mesh_builder);
+        section->mesh = create_ref<Goonya::Mesh>();
+        section->mesh->init(result.mesh_builder);
         section->renderable.set_mesh(section->mesh);
 
         std::span<const std::byte> per_surface_data{std::as_bytes(std::span{result.per_surface})};

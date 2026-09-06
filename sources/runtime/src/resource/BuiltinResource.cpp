@@ -49,7 +49,9 @@ void init_buildin_resource() {
                                                         .topology = Topology::TRIANGLE,
                                                         .aabb = {{-1.0f, -1.0f, -0.0001f}, {1.0f, 1.0f, 0.0001f}}}}}};
 
-        buildin->contents.emplace("plane", create_ref<Mesh>(mesh_data));
+        auto m = create_ref<Mesh>();
+        m->init(mesh_data);
+        buildin->contents.emplace("plane", std::move(m));
     }
 
     { // 添加天空盒的mesh，因为只有位置所以格式不一样
@@ -63,7 +65,9 @@ void init_buildin_resource() {
                                        .base_vertex_offset = 0,
                                        .topology = Topology::TRIANGLE,
                                        .aabb = {{-1.0f, -1.0f, -1.0f}, {1.0f, 1.0f, 1.0f}}}};
-        buildin->contents.emplace("skybox_cube", create_ref<Mesh>(mesh_data));
+        auto m = create_ref<Mesh>();
+        m->init(mesh_data);
+        buildin->contents.emplace("skybox_cube", std::move(m));
     }
 
     const uint32_t default_texture_size = 16;

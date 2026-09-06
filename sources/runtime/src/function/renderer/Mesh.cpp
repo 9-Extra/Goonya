@@ -2,10 +2,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace Goonya {
 
-void Mesh::reconstruct(const MeshDataArrays &data) {
+void Mesh::init(const MeshDataArrays &data) {
     layout = {};
     if (!data.position.empty()) add_attribute(layout, VertexAttribute::POSITION);
     if (!data.normal.empty()) add_attribute(layout, VertexAttribute::NORMAL);
@@ -74,11 +76,16 @@ void Mesh::reconstruct(const MeshDataArrays &data) {
         set_indices_data(data.indices);
     }
 
+    if (!data.skin_data.empty()) {
+        skin_data = std::make_shared<std::vector<SkinVertex>>(data.skin_data);
+        skin_buffer = create_ref<GLBuffer>(BufferType::DEVICE_ONLY, std::as_bytes(std::span(data.skin_data)));
+    }
+
     if (data.submeshes) {
         submeshes = data.submeshes.value();
     }
 
-    on_reconstruct();
+    on_init(data);
 }
 
 } // namespace Goonya

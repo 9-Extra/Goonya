@@ -85,6 +85,8 @@ public:
     T *get() noexcept { return ptr; }
     const T *operator->() const noexcept { return ptr; }
     T *operator->() noexcept { return ptr; }
+    T &operator*() noexcept { return *ptr; }
+    const T &operator*() const noexcept { return *ptr; }
 
     explicit operator bool() const noexcept { return ptr != nullptr; }
     void swap(Ref<T> &other) noexcept { std::swap(ptr, other.ptr); }

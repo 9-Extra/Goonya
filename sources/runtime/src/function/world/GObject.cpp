@@ -51,19 +51,21 @@ std::shared_ptr<GObject> GObject::get_child_by_path(std::string_view path) noexc
 
         std::string_view name = path.substr(start, end - start);
         // 查找当前名称的子节点
-        std::shared_ptr<GObject> next = nullptr;
-        for (auto &child : current->children) {
-            if (child->name == name) {
-                next = child;
-                break;
+        if (name.empty() || name == ".") {
+            // 如蜜传如蜜
+        } else if (name == "..") {
+            current = current->parent.lock();
+            if (!current) {
+                return nullptr;
+            }
+        } else {
+            // 按名称查找
+            current = current->get_child_by_name(name);
+            if (!current) {
+                return nullptr;
             }
         }
 
-        if (!next) {
-            return nullptr;
-        }
-
-        current = next;
         start = end + 1;
     }
 
