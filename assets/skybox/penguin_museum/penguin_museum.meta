@@ -1,6 +1,6 @@
 {
     "type": "CubeMap",
-    "name": "skybox_valley_color",
+    "name": "skybox_penguin_museum_color",
     "content": {
         "px": "px.png",
         "nx": "nx.png",

@@ -2,6 +2,8 @@
 
 #include "core/RefCount.h"
 #include "core/cgmath/cgmath.h"
+#include "core/format_exception.h"
+#include "core/log/Log.h"
 #include "core/path_formatter.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
@@ -148,9 +150,13 @@ Ref<Scene> load_scene_from_json(const std::filesystem::path &path) {
     }
 
     scene->name = json.get("name", "未命名").asString();
-    // 加载物体
+    // 加载物体：单个节点加载失败（如资产缺失）时打印警告并跳过，不中断整个场景的加载
     for (const Json::Value &node : json["nodes"]) {
-        scene->nodes.emplace_back(load_node_from_json(node));
+        try {
+            scene->nodes.emplace_back(load_node_from_json(node));
+        } catch (const std::exception &e) {
+            LOG_ERROR("节点\"{}\"加载失败，已跳过：{}", node.get("name", "未命名").asString(), format_exception(e));
+        }
     }
 
     return scene;

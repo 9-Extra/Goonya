@@ -6,7 +6,7 @@
             "components": {
                 "sky_box": {
                     "ignore_range": true,
-                    "skybox": "skybox/valley/valley"
+                    "skybox": "skybox/penguin_museum/penguin_museum"
                 }
             }
         },
@@ -29,145 +29,15 @@
                     3
                 ]
             },
+            "components": {
+                "mesh_render": {
+                    "mesh": "models/teapot/teapot:teapot",
+                    "material": [
+                        "models/wood_floor_deck/wood_floor_deck_1k:wood_floor_deck"
+                    ]
+                }
+            },
             "children": [
-                {
-                    "name": "front",
-                    "transform": {
-                        "position": [
-                            0,
-                            0,
-                            1
-                        ],
-                        "rotation": [
-                            0,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "buildin:plane",
-                            "material": [
-                                "models/crafting_table/crafting_table:front"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "side",
-                    "transform": {
-                        "position": [
-                            0,
-                            0,
-                            -1
-                        ],
-                        "rotation": [
-                            0,
-                            -3.1415926535,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "buildin:plane",
-                            "material": [
-                                "models/crafting_table/crafting_table:side"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "top",
-                    "transform": {
-                        "position": [
-                            0,
-                            1,
-                            0
-                        ],
-                        "rotation": [
-                            -1.57079632675,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "buildin:plane",
-                            "material": [
-                                "models/crafting_table/crafting_table:top"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "down",
-                    "transform": {
-                        "position": [
-                            0,
-                            -1,
-                            0
-                        ],
-                        "rotation": [
-                            1.57079632675,
-                            0,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "buildin:plane",
-                            "material": [
-                                "models/gold/gold:gold"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "side",
-                    "transform": {
-                        "position": [
-                            1,
-                            0,
-                            0
-                        ],
-                        "rotation": [
-                            0,
-                            1.57079632675,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "buildin:plane",
-                            "material": [
-                                "models/crafting_table/crafting_table:side"
-                            ]
-                        }
-                    }
-                },
-                {
-                    "name": "side",
-                    "transform": {
-                        "position": [
-                            -1,
-                            0,
-                            0
-                        ],
-                        "rotation": [
-                            0,
-                            -1.57079632675,
-                            0
-                        ]
-                    },
-                    "components": {
-                        "mesh_render": {
-                            "mesh": "buildin:plane",
-                            "material": [
-                                "models/crafting_table/crafting_table:side"
-                            ]
-                        }
-                    }
-                },
                 {
                     "name": "子球",
                     "transform": {
@@ -208,13 +78,13 @@
             "name": "科拉莉",
             "transform": {
                 "position": [
-                    0,
+                    -20,
                     5,
-                    10
+                    -10
                 ],
                 "rotation": [
                     0,
-                    3.14,
+                    0,
                     0
                 ],
                 "scale": [
@@ -256,7 +126,7 @@
             "transform": {
                 "position": [
                     10,
-                    -5,
+                    15,
                     -5
                 ],
                 "scale": [
