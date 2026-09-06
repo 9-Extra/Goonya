@@ -10,12 +10,9 @@
 #include "core/format_exception.h"
 #include "core/log/Log.h"
 #include "craft/craft.h"
-#include "function/animation/Animation.h"
-#include "function/components/CpntAnimation.h"
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "logic.h"
-#include "resource/ResMng.h"
 #include "runtime/GAssert.h"
 
 void init_world(Goonya::World *world) {
@@ -31,17 +28,6 @@ void init_world(Goonya::World *world) {
     std::shared_ptr<Goonya::GObject> controller = std::make_shared<Goonya::GObject>("controller");
     controller->add_component(std::make_unique<MoveSystem>());
     world->get_root()->attach_child(controller);
-
-    // 动画演示节点：科拉莉模型因配布条款不包含在仓库中，缺失时跳过（见 README 资产说明）
-    if (std::shared_ptr<Goonya::GObject> k = world->get_root()->get_child_by_path("科拉莉")) {
-        try {
-            Ref<Goonya::Animation> animation =
-                Goonya::resources.load_resource<Goonya::Animation>("禁止二次配布/龙娘科拉莉2.0/科拉莉:动作 Sour_bone");
-            k->create_component<Goonya::CpntAnimator>()->set_animation(animation);
-        } catch (const std::exception &e) {
-            LOG_ERROR("动画演示资源缺失，跳过：{}", Goonya::format_exception(e));
-        }
-    }
 }
 
 int main() {

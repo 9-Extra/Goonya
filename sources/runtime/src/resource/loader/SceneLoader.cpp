@@ -5,6 +5,7 @@
 #include "core/format_exception.h"
 #include "core/log/Log.h"
 #include "core/path_formatter.h"
+#include "function/components/CpntAnimation.h"
 #include "function/components/CpntCamera.h"
 #include "function/components/CpntMeshRender.h"
 #include "function/components/CpntPointLight.h"
@@ -103,6 +104,17 @@ void load_conponents_from_json(GObject *obj, const Json::Value &json) {
                 throw RuntimeError("带范围的天空盒必须指定包围盒");
             }
             obj->add_component(std::make_unique<CpntSkybox>(skybox, env_map, ignore_range, bbox));
+        } else if (cpnt_name == "animator") {
+            if (!cpnt_desc.isMember("animation")) {
+                throw RuntimeError("动画组件必须指定动画资源");
+            }
+            // 动画资源缺失时降级为跳过动画，不影响节点本身的加载
+            try {
+                Ref<Animation> animation = resources.load_resource<Animation>(cpnt_desc["animation"].asString());
+                obj->create_component<CpntAnimator>()->set_animation(animation);
+            } catch (const std::exception &e) {
+                LOG_ERROR("动画资源\"{}\"加载失败，已跳过：{}", cpnt_desc["animation"].asString(), format_exception(e));
+            }
         } else {
             throw RuntimeError(std::format("未知组件：{}", cpnt_name));
         }

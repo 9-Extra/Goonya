@@ -93,7 +93,12 @@
                     5
                 ]
             },
-            "scene": "禁止二次配布/龙娘科拉莉2.0/科拉莉:Scene"
+            "scene": "禁止二次配布/龙娘科拉莉2.0/科拉莉:Scene",
+            "components": {
+                "animator": {
+                    "animation": "禁止二次配布/龙娘科拉莉2.0/科拉莉:动作 Sour_bone"
+                }
+            }
         },
         {
             "transform": {

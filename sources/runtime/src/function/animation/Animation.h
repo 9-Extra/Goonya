@@ -89,35 +89,34 @@ public:
 
         virtual ~Channel() = default;
 
-        virtual void apply(GObject *root, float time_offset) = 0;
+        void apply(GObject *root, float time_offset) {
+            GObject *t = get_target_object(root);
+            if (!t) return;
+            apply_to(t, time_offset);
+        }
+        virtual void apply_to(GObject *target, float time_offset) = 0;
         virtual bool is_vaild_on(GObject *root) noexcept { return get_target_object(root) != nullptr; }
     };
 
     struct PositionChannel : public Channel {
         TimeSeries<Vector3f> position_series;
 
-        void apply(GObject *root, float time_offset) override {
-            GObject *t = get_target_object(root);
-            if (!t) return;
-            t->set_local_position(position_series.interpolate(time_offset, interpolation_type));
+        void apply_to(GObject *target, float time_offset) override {
+            target->set_local_position(position_series.interpolate(time_offset, interpolation_type));
         }
     };
 
     struct RotationChannel : public Channel {
         TimeSeries<Quaternion> rotation_series;
-        void apply(GObject *root, float time_offset) override {
-            GObject *t = get_target_object(root);
-            if (!t) return;
-            t->set_local_rotation(rotation_series.interpolate(time_offset, interpolation_type));
+        void apply_to(GObject *target, float time_offset) override {
+            target->set_local_rotation(rotation_series.interpolate(time_offset, interpolation_type));
         }
     };
 
     struct ScaleChannel : public Channel {
         TimeSeries<Vector3f> scale_series;
-        void apply(GObject *root, float time_offset) override {
-            GObject *t = get_target_object(root);
-            if (!t) return;
-            t->set_local_scale(scale_series.interpolate(time_offset, interpolation_type));
+        void apply_to(GObject *target, float time_offset) override {
+            target->set_local_scale(scale_series.interpolate(time_offset, interpolation_type));
         }
     };
 
