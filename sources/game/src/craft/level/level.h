@@ -35,6 +35,7 @@ private:
     WireFrame wire_frame;
 
     int32_t chunk_load_distance = 6;
+    bool first_chunk_load = true;
 
 public:
     Level(Goonya::World *world, const std::shared_ptr<Goonya::GObject> &player);

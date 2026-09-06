@@ -104,7 +104,11 @@ void Level::load_chunks() {
     // 玩家位置，假定玩家类一定在根节点上
     ChunkPos player_chunk_pos = ChunkPos{BlockPos{player.get_position()}};
     if (player_chunk_pos == player.last_chunk_pos && chunk_load_distance == player.chunk_load_distance) {
-        return; // 玩家在同一个区块里且加载范围不变，则不需要加载新的区块
+        if (first_chunk_load) {
+            first_chunk_load = true; // 第一次进入游戏立即加载区块
+        } else {
+            return; // 玩家在同一个区块里且加载范围不变，则不需要加载新的区块
+        }
     }
 
     auto load_new_chunk = [&](ChunkPos pos) -> void {
