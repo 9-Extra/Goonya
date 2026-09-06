@@ -21,7 +21,7 @@ namespace Goonya {
 
 void Material::bind() const {
     GL.set_pipeline_state(pipeline_setting);
-    get_shader()->bind(); // 绑定此材质关联的着色器
+    get_shader()->bind_draw(); // 绑定此材质关联的着色器
     // 绑定材质的uniform buffer
     if (per_material->get_size() != 0) {
         get_per_material_uniform()->bind_uniform(PER_MATERIAL_UNIFORM_BINDING);

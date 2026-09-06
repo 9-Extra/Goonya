@@ -4,6 +4,7 @@
 #include "core/log/Log.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/GLTexture.h"
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
 #include <cstdint>
@@ -103,6 +104,7 @@ static std::string shader_source_inject(const std::string &src, const std::vecto
     size_t injection_point = src.find(PATTERN);
     if (injection_point == std::string::npos) {
         LOG_WARN("着色器中未找到\"{}\"，无法正确进行变体生成", PATTERN);
+        return src;
     }
     ss << src.substr(0, injection_point);
 
@@ -120,7 +122,9 @@ static std::string shader_source_inject(const std::string &src, const std::vecto
 }
 
 UberShader::UberShader(UberShaderDesc &&desc) {
+    GN_ASSERT(desc.category != ShaderCategory::NONE);
     this->display_name = std::move(desc.name);
+    this->category = desc.category;
     this->vs_src = std::move(desc.vs_src);
     this->ps_src = std::move(desc.ps_src);
     this->pipeline_setting = desc.pipeline_setting;
@@ -140,6 +144,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     Ref<GLShader> shader = query_variant(VariantCodeSet{0});
 
     GLShaderIntrospector introspector{shader.get()};
+
     // 反射获取着色器信息
     this->material_parameters = introspector.get_per_material_uniform_info();
     this->uniform_binding_info = introspector.get_uniform_binding_info();
@@ -170,10 +175,16 @@ Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
 
     std::vector<std::string> variant_keys;
     get_variant_key_names(variant_code, variant_keys);
-    std::string mixed_vs = shader_source_inject(vs_src, variant_keys);
-    std::string mixed_ps = shader_source_inject(ps_src, variant_keys);
 
-    Ref<GLShader> shader = create_ref<GLShader>(mixed_vs, mixed_ps);
+    Ref<GLShader> shader;
+    if (category == ShaderCategory::GRAPHICS) {
+        std::string mixed_vs = shader_source_inject(vs_src, variant_keys);
+        std::string mixed_ps = shader_source_inject(ps_src, variant_keys);
+        shader = GLShader::compile_graphics(mixed_vs, mixed_ps);
+    } else {
+        std::string mixed_cs = shader_source_inject(vs_src, variant_keys);
+        shader = GLShader::compile_compute(mixed_cs);
+    }
 
     // 手动覆盖纹理单元绑定。这是因为不同变体的纹理单元绑定可能不同，需要手动保证每个变体的纹理单元绑定是一致的
     GLShaderIntrospector introspector{shader.get()};

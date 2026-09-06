@@ -54,7 +54,7 @@ struct Vector2f {
 
     float length() const { return sqrtf(squared()); }
 
-    Vector2f normalized() const {
+    Vector2f normalize() const {
         float s = 1.0f / std::sqrt(squared());
         return {x * s, y * s};
     }
@@ -218,6 +218,13 @@ struct Vector4f {
 
     constexpr bool operator==(Vector4f rhs) const noexcept {
         return is_nearly_equal(x, rhs.x) && is_nearly_equal(y, rhs.y) && is_nearly_equal(z, rhs.z);
+    }
+
+    constexpr float squared() const { return x * x + y * y + z * z + w * w; }
+    float length() const { return sqrtf(squared()); }
+    Vector4f normalize() const {
+        float s = 1.0f / std::sqrt(squared());
+        return *this * s;
     }
 };
 

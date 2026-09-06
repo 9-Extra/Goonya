@@ -76,6 +76,7 @@ struct SkinMeshVertex {
     Vector3f normal;
     Vector4f tangent;
 };
+static_assert(sizeof(SkinMeshVertex) == 40);
 
 struct MeshDataArrays {
     std::vector<Vector3f> position;
@@ -119,6 +120,8 @@ public:
         return indices_buffer ? indices_buffer->get_size() / sizeof(uint32_t) : 0;
     }
     const std::shared_ptr<std::vector<SkinVertex>> &get_skin_data() const noexcept { return skin_data; }
+    const Ref<GLBuffer> &get_mesh_buffer() const noexcept { return mesh_buffer; }
+    const Ref<GLBuffer> &get_skin_buffer() const noexcept { return skin_buffer; }
 
     const std::vector<SubMesh> &get_submeshes() const noexcept { return submeshes; }
     bool has_attribute(VertexAttribute attribute) const noexcept {

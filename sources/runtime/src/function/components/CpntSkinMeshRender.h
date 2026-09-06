@@ -10,6 +10,7 @@
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
+#include "platform/graphics/opengl/GLShader.h"
 #include "runtime/GAssert.h"
 
 #include <concepts>
@@ -32,9 +33,11 @@ private:
     std::string root_path; // 定义的骨骼根路径，在gltf中就是场景的根，空字符串视为未定义，指向自己需使用"./"
     std::vector<std::string> joint_paths; // 绑定的关节路径
     std::vector<Matrix4f> joint_ibms;     // 绑定的关节的逆绑定矩阵
+    Ref<GLShader> skinning_shader;
 
     std::vector<SkinMeshVertex> caculated_mesh_data;
     std::vector<std::weak_ptr<GObject>> binding_joints; // 绑定的关节引用
+    Ref<GLBuffer> pose_matrix_buffer;
 
 public:
     std::unique_ptr<Component> clone() const override;
@@ -59,12 +62,16 @@ public:
 
     void on_unregister() override;
     void on_update(ComponentUpdateFlag flag) override;
-    void tick() override { cpu_mesh_update(); }
+    void tick() override {
+        // cpu_mesh_update();
+        gpu_mesh_update();
+    }
 
 private:
     // 更新绑定的关节节点引用
     void update_joint_cache();
     void cpu_mesh_update();
+    void gpu_mesh_update();
 };
 
 } // namespace Goonya

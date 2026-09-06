@@ -34,7 +34,7 @@ struct PerSurface{
     vec3 normal;
 };
 
-layout(binding = 4, std430) buffer per_surface{
+layout(binding = 4, std430) readonly buffer per_surface{
     PerSurface surfaces[]; // 使用SSBO实现动态大小
 };
 

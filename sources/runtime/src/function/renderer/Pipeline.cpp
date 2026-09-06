@@ -345,7 +345,7 @@ void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> 
 
     for (auto &instance : draw_instances) {
         if (last_shader != instance.shader) {
-            instance.shader->bind();
+            instance.shader->bind_draw();
             last_shader = instance.shader;
         }
 

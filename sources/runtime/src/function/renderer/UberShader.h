@@ -28,7 +28,8 @@ namespace Goonya {
 struct UberShaderDesc final {
     std::string name;
 
-    std::string vs_src;
+    ShaderCategory category = ShaderCategory::NONE;
+    std::string vs_src; // or cs_src 计算着色器
     std::string ps_src;
 
     PipelineSetting pipeline_setting; // 着色器默认的渲染管线设置
@@ -202,7 +203,8 @@ class UberShader final : public Resource {
 protected:
     // 不会变的
     std::string display_name;
-    std::string vs_src;
+    ShaderCategory category = ShaderCategory::NONE;
+    std::string vs_src; // cs_src
     std::string ps_src;
 
     // 默认材质参数

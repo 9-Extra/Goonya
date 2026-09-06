@@ -7,10 +7,12 @@
 #include "function/renderer/RPriority.h"
 #include "function/renderer/UberShader.h"
 #include "platform/graphics/PipelineSetting.h"
+#include "platform/graphics/opengl/GLShader.h"
 #include "platform/read_file.h"
 #include "resource/ResMng.h"
 #include "resource/loader/MaterialParameterParser.h"
 #include "runtime/GAssert.h"
+#include "runtime/GoonyaException.h"
 
 #include <array>
 #include <charconv>
@@ -31,6 +33,7 @@ enum class Section {
     Common = 1,
     Vertex = 2,
     Frag = 3,
+    Compute = 4,
 
     MAX
 };
@@ -47,9 +50,11 @@ private:
     Section current_section = Section::None;
     const char *current_section_begin = nullptr;
 
+    std::string &get_section(Section section) noexcept { return sections_code[std::to_underlying(section)]; }
+
     void append_source(Section section, std::string_view source) {
         GN_ASSERT(section != Section::None);
-        sections_code[std::to_underlying(section)].append(source);
+        get_section(section).append(source);
     }
 
     void switch_section(Section new_section, const char *end_pos) {
@@ -81,9 +86,19 @@ private:
             if (instruction == "name") {
                 skip(full_match);
                 desc.name = content;
+            } else if (instruction == "category") {
+                skip(full_match);
+                // #category compute
+                if (content == "compute") {
+                    desc.category = ShaderCategory::COMPUTE;
+                } else if (content == "graphics") {
+                    desc.category = ShaderCategory::GRAPHICS;
+                } else {
+                    LOG_ERROR("未知的着色器类型: {}", content);
+                }
             } else if (instruction == "texture") {
                 skip(full_match);
-                // skybox_specular_texture="buildin:missing_texture"
+                // #texture skybox_specular_texture="buildin:missing_texture"
                 const std::regex pat = std::regex(R"----(^(\w+)\s*=\s*"(.+)")----");
                 Match match;
                 if (std::regex_match(content.begin(), content.end(), match, pat)) {
@@ -222,6 +237,8 @@ private:
                     switch_section(Section::Vertex, full_match.data());
                 } else if (content == "fragment") {
                     switch_section(Section::Frag, full_match.data());
+                } else if (content == "compute") {
+                    switch_section(Section::Compute, full_match.data());
                 } else if (content == "end") {
                     if (current_section == Section::None) {
                         LOG_ERROR("段落结束指令#end不能在段落外部使用");
@@ -302,19 +319,36 @@ public:
         : include_paths{source_path, root_path}, g_shader_source(g_shader_source) {}
 
     UberShaderDesc get_desc() {
+        desc.category = ShaderCategory::GRAPHICS; // 默认为光栅化管线
         parse();
 
         // 材质参数块加入到Common段落前方
-        sections_code[std::to_underlying(Section::Common)] =
+        get_section(Section::Common) =
             generate_material_uniform_block() + sections_code[std::to_underlying(Section::Common)];
 
-        desc.vs_src = std::format("{}\n{}\n{}\n{}", "#version 440 core\n#define VERTEX_SHADER\n#pragma GYA_INJECT\n",
-                                  sections_code[std::to_underlying(Section::Common)],
-                                  sections_code[std::to_underlying(Section::Vertex)], R"(void main() {vert();})");
+        if (desc.category == ShaderCategory::GRAPHICS) {
+            if (!get_section(Section::Compute).empty()) {
+                LOG_WARN("光栅化着色器内包含计算着色器块，内容被丢弃");
+            }
+            desc.vs_src =
+                std::format("{}\n{}\n{}\n{}", "#version 440 core\n#define VERTEX_SHADER\n#pragma GYA_INJECT\n",
+                            get_section(Section::Common), get_section(Section::Vertex), R"(void main() {vert();})");
 
-        desc.ps_src = std::format("{}\n{}\n{}\n{}", "#version 440 core\n#define FRAGMENT_SHADER\n#pragma GYA_INJECT\n",
-                                  sections_code[std::to_underlying(Section::Common)],
-                                  sections_code[std::to_underlying(Section::Frag)], R"(void main() {frag();})");
+            desc.ps_src =
+                std::format("{}\n{}\n{}\n{}", "#version 440 core\n#define FRAGMENT_SHADER\n#pragma GYA_INJECT\n",
+                            get_section(Section::Common), get_section(Section::Frag), R"(void main() {frag();})");
+        } else if (desc.category == ShaderCategory::COMPUTE) {
+            if (!get_section(Section::Vertex).empty()) {
+                LOG_WARN("计算着色器内包含顶点着色器块，内容被丢弃");
+            }
+            if (!get_section(Section::Frag).empty()) {
+                LOG_WARN("计算着色器内包含像素着色器块，内容被丢弃");
+            }
+            desc.vs_src = std::format("{}\n{}\n{}\n", "#version 440 core\n#define COMPUTE_SHADER\n#pragma GYA_INJECT\n",
+                                      get_section(Section::Common), get_section(Section::Compute));
+        } else {
+            throw RuntimeError("未知的着色器种类");
+        }
 
         return std::move(desc);
     }

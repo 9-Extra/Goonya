@@ -184,9 +184,9 @@ public:
     ArrayBufferWriter &operator=(const ArrayBufferWriter &) = delete;
 
     // 通过索引访问元素
-    T *operator[](size_t index) noexcept {
+    T &operator[](size_t index) noexcept {
         GN_ASSERT(index < element_count);
-        return ptr + index;
+        return ptr[index];
     }
 
     // 获取元素数量

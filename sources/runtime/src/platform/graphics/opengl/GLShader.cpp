@@ -1,7 +1,9 @@
 #include "GLShader.h"
+#include "core/RefCount.h"
 #include "core/log/Log.h"
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/opengl/GLTexture.h"
+#include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
 #include <cstdint>
@@ -34,12 +36,13 @@ unsigned int compile_shader(const std::string &source, unsigned int shader_type)
     return id;
 }
 
-GLShader::GLShader(const std::string &vs_src, const std::string &ps_src) {
+Ref<GLShader> GLShader::compile_graphics(const std::string &vs_src, const std::string &ps_src) {
+    Ref<GLShader> shader = Ref<GLShader>(new GLShader{});
+    GN_ASSERT(shader->category == ShaderCategory::NONE);
+    shader->category = ShaderCategory::GRAPHICS;
+    GLuint id = shader->id;
     unsigned int vs = compile_shader(vs_src, GL_VERTEX_SHADER);
     unsigned int ps = compile_shader(ps_src, GL_FRAGMENT_SHADER);
-
-    this->id = glCreateProgram();
-
     glAttachShader(id, vs);
     glAttachShader(id, ps);
     glLinkProgram(id);
@@ -55,13 +58,36 @@ GLShader::GLShader(const std::string &vs_src, const std::string &ps_src) {
 
     glDeleteShader(vs);
     glDeleteShader(ps);
+    return shader;
+};
+
+Ref<GLShader> GLShader::compile_compute(const std::string &src) {
+    Ref<GLShader> shader = Ref<GLShader>(new GLShader{});
+    GN_ASSERT(shader->category == ShaderCategory::NONE);
+    shader->category = ShaderCategory::COMPUTE;
+    GLuint id = shader->id;
+    unsigned int cs = compile_shader(src, GL_COMPUTE_SHADER);
+    glAttachShader(id, cs);
+    glLinkProgram(id);
+
+    int success;
+    char infoLog[512];
+
+    glGetProgramiv(id, GL_LINK_STATUS, &success);
+    if (!success) {
+        glGetProgramInfoLog(id, 512, nullptr, infoLog);
+        throw RuntimeError(std::format("着色器链接错误： {}", infoLog));
+    }
+
+    glDeleteShader(cs);
+    return shader;
 };
 
 // ------------------------反射-------------------------------
 
 static MaterialParameter GLType2FieldType(GLint gl_type) {
     switch (gl_type) {
-    case GL_UNSIGNED_INT:
+    case GL_INT:
         return 0;
     case GL_FLOAT:
         return 0.0f;
@@ -115,7 +141,7 @@ GLShaderIntrospector::get_uniform_binding_info() const noexcept {
     return result;
 }
 
-MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info() const noexcept {
+MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info() const {
 
     MaterialParameterBlockInfo block_info{
         .fields = {},

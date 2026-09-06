@@ -1,6 +1,11 @@
 #include "CpntSkinMeshRender.h"
+#include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/log/Log.h"
+#include "function/renderer/UberShader.h"
+#include "platform/graphics/opengl/GLBuffer.h"
+#include "resource/ResMng.h"
+#include <cstddef>
 
 namespace Goonya {
 
@@ -119,19 +124,62 @@ void CpntSkinMeshRender::cpu_mesh_update() {
         auto [joint, weight] = joint_weight[k];
         Vector3f tangent;
         for (size_t i : std::views::iota(0, 4)) {
-            const std::array<Matrix4f, 2> &p = pose_matrix[joint[i]];
             if (weight[i] == 0) {
                 continue;
             }
+            const std::array<Matrix4f, 2> &p = pose_matrix[joint[i]];
             v.position += (Vector4f{mesh_data[k].position, 1.0f} * p[0]).get_xyz() * weight[i];
             v.normal += (Vector4f{mesh_data[k].normal, 0.0f} * p[1]).get_xyz() * weight[i];
             tangent += (Vector4f{mesh_data[k].tangent.get_xyz(), 0.0f} * p[0]).get_xyz() * weight[i];
         }
-        v.tangent = Vector4f{tangent, mesh_data[k].tangent.w};
+        v.normal = v.normal.normalize();
+        v.tangent = Vector4f{tangent.normalize(), mesh_data[k].tangent.w};
         caculated_mesh_data[k] = v;
     }
 
     mesh->write_skinned_vertices(caculated_mesh_data);
+}
+
+void CpntSkinMeshRender::gpu_mesh_update() {
+    if (!scene || !mesh || binding_joints.empty()) {
+        return;
+    }
+    GN_ASSERT(mesh->get_skin_data() && !mesh->get_mesh_buffer_data().empty());
+
+    if (!skinning_shader) {
+        auto uber = resources.load_resource<UberShader>("shaders/compute/skinning");
+        if (!uber) {
+            LOG_ERROR("加载蒙皮计算着色器失败");
+            binding_joints.clear();
+            return;
+        }
+        skinning_shader = uber->query_variant(VariantCodeSet{0});
+    }
+
+    size_t pose_matrix_buffer_size = binding_joints.size() * sizeof(std::array<Matrix4f, 2>);
+    if (!pose_matrix_buffer || pose_matrix_buffer->get_size() != pose_matrix_buffer_size) {
+        pose_matrix_buffer = create_ref<GLBuffer>(BufferType::MODIFIABLE, pose_matrix_buffer_size);
+    }
+    {
+        ArrayBufferWriter<std::array<Matrix4f, 2>> buffer(pose_matrix_buffer, BufferMapOption::WRITE_DISCARD);
+        for (auto &&[i, joint] : std::views::enumerate(binding_joints)) {
+            auto j = joint.lock();
+            Matrix4f world_matrix = j ? j->get_world_model_matrix() : Matrix4f::identity();
+            // 骨骼空间下蒙皮位置 * 绑定矩阵 == 原始网格体中的顶点位置
+            // 骨骼空间下蒙皮位置 * 当前的节点世界变换 == 目标位置
+            // 目标位置 = 原始网格体中的顶点位置 * 绑定矩阵^{-1} * 当前的节点世界变换
+            Matrix4f pose_matrix = joint_ibms[i] * world_matrix;
+            Matrix4f normal_matrix = pose_matrix.inverse().value_or(Matrix4f::identity()).transpose();
+            buffer[i] = {pose_matrix.transpose(), normal_matrix.transpose()};
+        }
+    }
+    mesh->get_mesh_buffer()->bind_storage(5);
+    mesh->get_skin_buffer()->bind_storage(6);
+    pose_matrix_buffer->bind_storage(7);
+    mesh->get_caculated_mesh_buffer()->bind_storage(9);
+
+    skinning_shader->dispatch_compute((mesh->get_vertex_count() + 127) / 128, 1, 1);
+    glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT); // todo：封装
 }
 
 } // namespace Goonya
