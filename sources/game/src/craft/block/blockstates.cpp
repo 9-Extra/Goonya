@@ -20,7 +20,7 @@ void BlockStateMap::initalize() {
     for (const Block *const_block : std::views::keys(REGISTRY_BLOCK)) {
         for (const std::unique_ptr<BlockState> &state : const_block->get_possible_states()) {
             BlockState *s = state.get();
-            uint32_t id = blockstates.size();
+            uint32_t id = (uint32_t)blockstates.size();
 
             blockstates.push_back(s);
             blockstate_to_id.emplace(s, id);

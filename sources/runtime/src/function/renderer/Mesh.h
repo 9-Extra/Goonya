@@ -168,7 +168,7 @@ private:
     static void add_attribute(VertexLayout &layout, VertexAttribute attribute) noexcept {
         uint32_t location = (uint32_t)attribute;
         Meta::FieldType type = VertexAttributeTypeMap[location];
-        uint32_t stream_idx = VertexAttributeStream[location];
+        uint32_t stream_idx = (uint32_t)VertexAttributeStream[location];
         uint32_t offset = layout.vertex_stride[stream_idx];
         layout.vertex_stride[stream_idx] += (uint32_t)Meta::sizeof_field_type(type);
         layout.attributes[location] = {type, stream_idx, offset};

@@ -30,7 +30,7 @@ void GameClock::update() noexcept {
 
     // ------------------处理fixed_tick-------------------
     GN_ASSERT(fixed_current_tick == expected_tick);
-    uint32_t tick = (virtual_total - last_fixed_tick_time) / FIXED_TICK_INTERVAL;
+    uint32_t tick = (uint32_t)((virtual_total - last_fixed_tick_time) / FIXED_TICK_INTERVAL);
     last_fixed_tick_time = last_fixed_tick_time + tick * FIXED_TICK_INTERVAL;
 
     expected_tick = fixed_current_tick + tick;

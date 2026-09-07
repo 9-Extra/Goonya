@@ -107,7 +107,7 @@ struct Quaternion {
      */
     static Quaternion lerp(Quaternion q1, Quaternion q2, float t) {
         // 计算两个四元数之间的夹角余弦
-        double cosine = q1.dot(q2);
+        float cosine = q1.dot(q2);
 
         // 处理负点积的情况，确保插值沿最短路径
         if (cosine < 0.0f) {
@@ -129,7 +129,7 @@ struct Quaternion {
      */
     static Quaternion slerp(Quaternion q1, Quaternion q2, float t) {
         // 计算两个四元数之间的夹角余弦
-        double cosine = q1.dot(q2);
+        float cosine = q1.dot(q2);
 
         // 处理负点积的情况，确保插值沿最短路径
         if (cosine < 0.0f) {
@@ -138,7 +138,7 @@ struct Quaternion {
         }
 
         // 检查是否非常接近
-        const float EPSILON = 1e-6;
+        const float EPSILON = 1e-6f;
 
         if (cosine > 1.0f - EPSILON) {
             // 非常接近，使用线性插值避免除零

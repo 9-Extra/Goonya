@@ -30,7 +30,9 @@ private:
 
 template <typename T> // requires std::derived_from<RefCount, T> 防止在未定义完成时检查出错
 class Ref final {
-    static_assert(std::derived_from<T, RefCount>, "T must be derived from RefCount");
+    // MSVC会在类模板实例化时就检查类作用域的static_assert，而此时T可能是未完成类型（如Future<void>的自引用返回类型）
+    // 因此将检查推迟到需要完整类型的成员函数内
+    static void check_derived() { static_assert(std::derived_from<T, RefCount>, "T must be derived from RefCount"); }
 
 private:
     T *ptr;
@@ -39,6 +41,7 @@ public:
     Ref() noexcept : ptr(nullptr) {}
     Ref(T *ptr) noexcept // NOLINT
         : ptr(ptr) {
+        check_derived();
         if (ptr) {
             ptr->add_ref();
         }

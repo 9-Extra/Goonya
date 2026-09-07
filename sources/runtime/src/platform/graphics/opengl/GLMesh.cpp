@@ -66,14 +66,15 @@ GLVertexLayout::GLVertexLayout(const VertexLayout &layout) {
         }
 
         const auto [num_components, gl_type] = FieldType2OpenGLComponentsAndType(type);
+        const GLuint gl_location = (GLuint)location;
 
-        glEnableVertexArrayAttrib(id, location);
+        glEnableVertexArrayAttrib(id, gl_location);
         if (IsIntegerFieldType(type)) {
-            glVertexArrayAttribIFormat(id, location, num_components, gl_type, offset);
+            glVertexArrayAttribIFormat(id, gl_location, num_components, gl_type, offset);
         } else {
-            glVertexArrayAttribFormat(id, location, num_components, gl_type, GL_FALSE, offset);
+            glVertexArrayAttribFormat(id, gl_location, num_components, gl_type, GL_FALSE, offset);
         }
-        glVertexArrayAttribBinding(id, location, stream_id);
+        glVertexArrayAttribBinding(id, gl_location, stream_id);
     }
 };
 

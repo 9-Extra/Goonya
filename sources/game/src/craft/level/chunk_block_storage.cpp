@@ -143,7 +143,7 @@ void ChunkBlockStorage::set_block_state(uint32_t pos, BlockState *state) noexcep
                 raw_data = new_raw_data;
 
                 for (auto [i, state_index] : std::views::enumerate(block_states)) {
-                    block_state_index_map.emplace(state_index, i);
+                    block_state_index_map.emplace(state_index, (uint32_t)i);
                 }
             }
             break;

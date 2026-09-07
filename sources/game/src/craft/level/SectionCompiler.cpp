@@ -59,7 +59,7 @@ void SectionCompiler::compiler_push_quad(CompileResult &result, BlockState *stat
         result.mesh_builder.uv.emplace_back(v.uv);
     }
 
-    uint32_t base_index = result.mesh_builder.position.size() - 4;
+    uint32_t base_index = (uint32_t)(result.mesh_builder.position.size() - 4);
     auto &indices = result.mesh_builder.indices;
     indices.push_back(base_index + 0);
     indices.push_back(base_index + 1);

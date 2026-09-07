@@ -179,7 +179,7 @@ void CpntSkinMeshRender::gpu_mesh_update() {
     pose_matrix_buffer->bind_storage(7);
     mesh->get_caculated_mesh_buffer()->bind_storage(9);
 
-    skinning_shader->dispatch_compute((mesh->get_vertex_count() + 127) / 128, 1, 1);
+    skinning_shader->dispatch_compute((uint32_t)((mesh->get_vertex_count() + 127) / 128), 1, 1);
     glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT); // todo：封装
 }
 
