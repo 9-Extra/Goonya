@@ -1,29 +1,30 @@
 #include "MaterialParameter.h"
 
+#include <type_traits>
+#include <variant>
+
 namespace Goonya {
 
 std::string_view get_type_name_glsl(const MaterialParameter &p) noexcept {
-    switch (p.index()) {
-    case 0:
-        return "";
-    case 1:
-        return "bool";
-    case 2:
-        return "int";
-    case 3:
-        return "float";
-    case 4:
-        return "vec2";
-    case 5:
-        return "vec3";
-    case 6:
-        return "vec4";
-    case 7:
-        return "mat3";
-    case 8:
-        return "mat4";
-    default:
-        return "";
-    }
+    return std::visit(
+        [](const auto &v) -> std::string_view {
+            using T = std::decay_t<decltype(v)>;
+            if constexpr (std::is_same_v<T, int>) {
+                return "int";
+            } else if constexpr (std::is_same_v<T, float>) {
+                return "float";
+            } else if constexpr (std::is_same_v<T, Vector2f>) {
+                return "vec2";
+            } else if constexpr (std::is_same_v<T, Vector3f>) {
+                return "vec3";
+            } else if constexpr (std::is_same_v<T, Vector4f>) {
+                return "vec4";
+            } else if constexpr (std::is_same_v<T, Matrix4f>) {
+                return "mat4";
+            } else {
+                return "";
+            }
+        },
+        p);
 }
 } // namespace Goonya

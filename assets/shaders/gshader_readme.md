@@ -80,14 +80,12 @@ void frag()
 ```gshader
 #param metallic_factor=f32(1)
 #param color_tint=vec3(1.0, 0.5, 0.2)
-#param use_fog=bool(true)
 ```
 
 **支持的类型与 GLSL 映射：**
 
 | gshader 类型 | GLSL 类型 | 示例 |
 |---|---|---|
-| `bool` | `bool` | `bool(true)` |
 | `int` | `int` | `int(42)` |
 | `f32` | `float` | `f32(0.5)` |
 | `vec2` | `vec2` | `vec2(1.0, 0.0)` |

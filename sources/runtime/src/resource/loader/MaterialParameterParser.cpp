@@ -20,15 +20,7 @@ MaterialParameter parse_material_parameters(std::string_view parameter_string) {
         std::string_view numbers_str = std::string_view(matches[2].first, matches[2].second);
         RegexIter it(numbers_str.begin(), numbers_str.end(), number_pattern);
         RegexIter end;
-        if (type_name == "bool") {
-            if (it == end || it->str() == "false") {
-                return false;
-            } else if (it->str() == "true") {
-                return true;
-            } else {
-                throw RuntimeError(std::format("bool参数格式\"{}\"不正确", it->str()));
-            }
-        } else if (type_name == "int") {
+        if (type_name == "int") {
             if (it == end) {
                 return 0;
             }

@@ -13,7 +13,9 @@
 #include "runtime/GoonyaException.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <ranges>
 #include <utility>
 #include <variant>
 
@@ -47,14 +49,14 @@ void Material::bind_external_resources() const {
         }
     }
     // 绑定其他buffer
-    for (const auto &[binding, buffer_with_type] : external_buffer) {
-        const auto &[buffer, type] = buffer_with_type;
-        if (type == BufferBindingType::UNIFORM) {
+    for (const auto &[binding, buffer] : std::views::enumerate(uniform_buffers)) {
+        if (buffer) {
             buffer->bind_uniform(binding);
-        } else if (type == BufferBindingType::SHADER_STORAGE) {
+        }
+    }
+    for (const auto &[binding, buffer] : std::views::enumerate(shader_storage_buffers)) {
+        if (buffer) {
             buffer->bind_storage(binding);
-        } else {
-            std::unreachable();
         }
     }
 }
@@ -107,7 +109,8 @@ Ref<Material> Material::clone() const noexcept {
 
     c->parameters = parameters;
     c->textures = textures;
-    c->external_buffer = external_buffer;
+    c->uniform_buffers = uniform_buffers;
+    c->shader_storage_buffers = shader_storage_buffers;
 
     return c;
 }

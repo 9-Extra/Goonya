@@ -153,7 +153,11 @@ std::shared_ptr<GObject> load_node_from_json(const Json::Value &json) {
     }
 
     for (const Json::Value &child_desc : json["children"]) {
-        node->attach_child(load_node_from_json(child_desc));
+        try {
+            node->attach_child(load_node_from_json(child_desc));
+        } catch (const std::exception &e) {
+            LOG_ERROR("节点\"{}\"加载失败：{}", child_desc.get("name", "未命名").asString(), format_exception(e));
+        }
     }
 
     if (json.isMember("scene")) {

@@ -4,11 +4,13 @@
 #define POINTLIGNT_MAX 8
 #define PI 3.1415926535897932384626433832795
 
+#ifndef COMPUTE_SHADER
 #ifndef VS_OUT_PS_IN
 #if defined(VERTEX_SHADER)
 # define VS_OUT_PS_IN out
 #elif defined(FRAGMENT_SHADER)
 # define VS_OUT_PS_IN in
+#endif
 #endif
 #endif
 
@@ -19,12 +21,15 @@ struct PointLight{
 
 // --------------------顶点属性-------------------------
 
+#ifndef COMPUTE_SHADER
+
 layout (location = 0) in vec3 position;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec4 tangent;
 layout (location = 3) in vec3 color;
 layout (location = 4) in vec2 uv;
 
+#endif
 // --------------------Uniform块-----------------------
 
 layout(binding = 0, std140) uniform per_frame

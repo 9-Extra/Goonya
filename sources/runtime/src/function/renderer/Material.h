@@ -16,6 +16,7 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 
 namespace Goonya {
 
@@ -30,9 +31,9 @@ protected:
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, PipelineSettingParamType> override_pipeline_setting;
     std::unordered_map<std::string, MaterialParameter> parameters;
-    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // slot -> texture
-    std::unordered_map<uint32_t, std::tuple<Ref<GLBuffer>, BufferBindingType>>
-        external_buffer; // slot -> (buffer, bindingtype)
+    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // slot -> textures
+    std::vector<Ref<GLBuffer>> uniform_buffers;            // slot -> buffer
+    std::vector<Ref<GLBuffer>> shader_storage_buffers;     // slot -> buffer
 
     // 脏标记
     mutable bool is_parameters_dirty;
@@ -93,10 +94,20 @@ public:
         auto info = uber_shader->get_uniform_info(name);
         if (info.has_value()) {
             auto [binding, type] = info.value();
-            if (buffer) {
-                external_buffer[binding] = {buffer, type};
-            } else {
-                external_buffer.erase(binding);
+            switch (type) {
+            case BufferBindingType::UNIFORM: {
+                if (uniform_buffers.size() <= binding) {
+                    uniform_buffers.resize(binding + 1);
+                }
+                uniform_buffers[binding] = buffer;
+                break;
+            }
+            case BufferBindingType::SHADER_STORAGE:
+                if (shader_storage_buffers.size() <= binding) {
+                    shader_storage_buffers.resize(binding + 1);
+                }
+                shader_storage_buffers[binding] = buffer;
+                break;
             }
         } else {
             // Maybe optimized out?

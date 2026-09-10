@@ -24,7 +24,6 @@ struct MaterialParameterInfo {
 struct MaterialParameterBlockInfo {
     std::unordered_map<std::string, MaterialParameterInfo> fields; // name -> (type, default value, offset)
     uint32_t total_size = 0;
-    uint32_t binding = 0;
 };
 
 struct TextureParameterInfo {
@@ -91,7 +90,7 @@ public:
 
     MaterialParameterBlockInfo get_per_material_uniform_info() const;
     std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
-    get_uniform_binding_info() const noexcept;
+    get_uniform_binding_info() const;
     std::unordered_map<std::string, TextureType> get_texture_info() const noexcept;
 };
 

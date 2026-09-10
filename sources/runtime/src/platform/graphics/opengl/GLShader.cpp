@@ -1,6 +1,7 @@
 #include "GLShader.h"
 #include "core/RefCount.h"
 #include "core/log/Log.h"
+#include "function/renderer/PipelineLayout.h"
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "runtime/GAssert.h"
@@ -105,7 +106,7 @@ static MaterialParameter GLType2FieldType(GLint gl_type) {
 }
 
 std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
-GLShaderIntrospector::get_uniform_binding_info() const noexcept {
+GLShaderIntrospector::get_uniform_binding_info() const {
     // 获取所有uniform_block内部所有字段和偏移量
     GLint uniform_block_num, shader_storage_num;
     glGetProgramInterfaceiv(id, GL_UNIFORM_BLOCK, GL_ACTIVE_RESOURCES, &uniform_block_num);
@@ -135,6 +136,13 @@ GLShaderIntrospector::get_uniform_binding_info() const noexcept {
         name.resize(name_len - 1);
         glGetProgramResourceName(id, interface, i, name_len, nullptr, name.data());
 
+        if (binding_type == BufferBindingType::UNIFORM && (uint32_t)binding < BUILDIN_UNIFORM_BINDING_MAX) {
+            if (name != "per_frame" && name != "per_material" && name != "per_pass" && name != "per_object") {
+                throw RuntimeError(std::format("\"{}\"块被绑定到了 {}：非引擎内建的Uniform Block必须绑定在 {} 或之后",
+                                               name, binding, PER_MATERIAL_UNIFORM_BINDING));
+            }
+        }
+
         result.emplace(name, std::make_tuple(static_cast<uint32_t>(binding), binding_type));
     }
 
@@ -143,11 +151,7 @@ GLShaderIntrospector::get_uniform_binding_info() const noexcept {
 
 MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info() const {
 
-    MaterialParameterBlockInfo block_info{
-        .fields = {},
-        .total_size = 0,
-        .binding = 0,
-    }; // 如果没有per_material块，返回空的block_info
+    MaterialParameterBlockInfo block_info{.fields = {}, .total_size = 0}; // 如果没有per_material块，返回空的block_info
 
     // 获取所有uniform_block内部所有字段和偏移量
     GLint uniform_block_num, shader_storage_num;
@@ -159,7 +163,7 @@ MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info()
 
     for (int index = 0; index < uniform_block_num + shader_storage_num; ++index) {
         GLenum interface = index < uniform_block_num ? GL_UNIFORM_BLOCK : GL_SHADER_STORAGE_BLOCK;
-        [[maybe_unused]] BufferBindingType binding_type =
+        BufferBindingType binding_type =
             index < uniform_block_num ? BufferBindingType::UNIFORM : BufferBindingType::SHADER_STORAGE;
         int i = index < uniform_block_num ? index : index - uniform_block_num;
 
@@ -178,10 +182,13 @@ MaterialParameterBlockInfo GLShaderIntrospector::get_per_material_uniform_info()
         }
 
         // 开始获取per_material块的内部信息
-
-        block_info.binding = static_cast<uint32_t>(binding);
+        if (static_cast<uint32_t>(binding) != PER_MATERIAL_UNIFORM_BINDING) {
+            throw RuntimeError(std::format("材质参数块的binding必须为 {}", PER_MATERIAL_UNIFORM_BINDING));
+        }
+        if (binding_type != BufferBindingType::UNIFORM) {
+            throw RuntimeError("材质参数块的binding必须是Uniform Block");
+        }
         block_info.total_size = static_cast<uint32_t>(size);
-        GN_ASSERT(binding_type == BufferBindingType::UNIFORM);
         // 获取块名称
 
         // 获取内部所有字段id

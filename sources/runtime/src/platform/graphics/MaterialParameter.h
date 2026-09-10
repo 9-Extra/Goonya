@@ -8,8 +8,7 @@
 
 namespace Goonya {
 
-using MaterialParameter =
-    std::variant<std::monostate, bool, int, float, Vector2f, Vector3f, Vector4f, Matrix3f, Matrix4f>;
+using MaterialParameter = std::variant<std::monostate, int, float, Vector2f, Vector3f, Vector4f, Matrix4f>;
 static_assert(std::equality_comparable<MaterialParameter>);
 
 std::string_view get_type_name_glsl(const MaterialParameter &p) noexcept;
