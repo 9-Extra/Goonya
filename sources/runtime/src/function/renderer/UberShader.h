@@ -228,6 +228,10 @@ public:
     UberShader(const UberShader &) = delete;
     UberShader(UberShader &&) = delete;
 
+    std::string_view get_name() const noexcept { return display_name; }
+    bool is_graphics_shader() const noexcept { return category == ShaderCategory::GRAPHICS; }
+    bool is_compute_shader() const noexcept { return category == ShaderCategory::COMPUTE; }
+
     const PipelineSetting &get_pipeline_setting() const noexcept { return pipeline_setting; }
     RenderPriority get_render_priority() const noexcept { return render_priority; }
     const MaterialParameterBlockInfo &per_material_block() const noexcept { return material_parameters; }

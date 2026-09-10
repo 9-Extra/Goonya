@@ -3,6 +3,7 @@
 #include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/vector.h"
+#include "function/renderer/ComputeMaterial.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/Mesh.h"
 #include "function/renderer/RScene.h"
@@ -10,7 +11,6 @@
 #include "function/world/Component.h"
 #include "function/world/GObject.h"
 #include "function/world/World.h"
-#include "platform/graphics/opengl/GLShader.h"
 #include "runtime/GAssert.h"
 
 #include <concepts>
@@ -33,7 +33,7 @@ private:
     std::string root_path; // 定义的骨骼根路径，在gltf中就是场景的根，空字符串视为未定义，指向自己需使用"./"
     std::vector<std::string> joint_paths; // 绑定的关节路径
     std::vector<Matrix4f> joint_ibms;     // 绑定的关节的逆绑定矩阵
-    Ref<GLShader> skinning_shader;
+    Ref<ComputeMaterial> skinning_material;
 
     std::vector<SkinMeshVertex> caculated_mesh_data;
     std::vector<std::weak_ptr<GObject>> binding_joints; // 绑定的关节引用

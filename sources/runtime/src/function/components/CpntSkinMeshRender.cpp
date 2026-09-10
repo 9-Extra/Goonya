@@ -2,6 +2,7 @@
 #include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/log/Log.h"
+#include "function/renderer/ComputeMaterial.h"
 #include "function/renderer/UberShader.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "resource/ResMng.h"
@@ -37,7 +38,7 @@ void CpntSkinMeshRender::on_register() {
 void CpntSkinMeshRender::set_base_mesh(const Ref<Mesh> &mesh) {
     this->mesh = Ref(new SkinningMesh{*mesh});
     if (renderable.is_valid()) {
-        renderable.set_mesh(mesh);
+        renderable.set_mesh(this->mesh);
     }
 }
 void CpntSkinMeshRender::set_bone_root(std::string_view path) {
@@ -146,14 +147,14 @@ void CpntSkinMeshRender::gpu_mesh_update() {
     }
     GN_ASSERT(mesh->get_skin_data());
 
-    if (!skinning_shader) {
+    if (!skinning_material) {
         auto uber = resources.load_resource<UberShader>("shaders/compute/skinning");
         if (!uber) {
             LOG_ERROR("加载蒙皮计算着色器失败");
             binding_joints.clear();
             return;
         }
-        skinning_shader = uber->query_variant(VariantCodeSet{0});
+        skinning_material = create_ref<ComputeMaterial>(uber);
     }
 
     size_t pose_matrix_buffer_size = binding_joints.size() * sizeof(std::array<Matrix4f, 2>);
@@ -174,12 +175,13 @@ void CpntSkinMeshRender::gpu_mesh_update() {
             buffer[i] = {pose_matrix.transpose(), normal_matrix.transpose()};
         }
     }
-    mesh->get_mesh_buffer()->bind_storage(5);
-    mesh->get_skin_buffer()->bind_storage(6);
-    pose_matrix_buffer->bind_storage(7);
-    mesh->get_caculated_mesh_buffer()->bind_storage(9);
 
-    skinning_shader->dispatch_compute((uint32_t)((mesh->get_vertex_count() + 127) / 128), 1, 1);
+    skinning_material->set_external_buffer("vertex_mesh_buffer", mesh->get_mesh_buffer());
+    skinning_material->set_external_buffer("joint_weight", mesh->get_skin_buffer());
+    skinning_material->set_external_buffer("pose_matrix_buffer", pose_matrix_buffer);
+    skinning_material->set_external_buffer("out_vertex_mesh_buffer", mesh->get_caculated_mesh_buffer());
+
+    skinning_material->dispatch_compute((uint32_t)(mesh->get_vertex_count() + 127) / 128, 1, 1);
     glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT); // todo：封装
 }
 
