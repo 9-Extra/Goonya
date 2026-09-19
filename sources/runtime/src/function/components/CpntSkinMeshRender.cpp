@@ -2,11 +2,8 @@
 #include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/log/Log.h"
-#include "function/renderer/ComputeMaterial.h"
-#include "function/renderer/UberShader.h"
-#include "platform/graphics/opengl/GLBuffer.h"
-#include "resource/ResMng.h"
-#include <cstddef>
+#include "function/renderer/Renderer.h"
+#include "runtime/GAssert.h"
 
 namespace Goonya {
 
@@ -27,7 +24,7 @@ void CpntSkinMeshRender::on_register() {
     // 蒙皮网格不响应对应物体的变换：对骨骼根节点进行的变换已经反应到网格上，防止二次变换
     // renderable.set_transform(owner.get_world_model_matrix());
     if (mesh) {
-        renderable.set_mesh(mesh);
+        renderable.set_skinning_mesh(mesh);
     }
     if (!materials.empty()) {
         renderable.set_materials(materials);
@@ -100,89 +97,28 @@ void CpntSkinMeshRender::update_joint_cache() {
         binding_joints.emplace_back(std::move(joint));
     }
 }
-void CpntSkinMeshRender::cpu_mesh_update() {
+void CpntSkinMeshRender::update_pose_matrix() {
     if (!scene || !mesh || binding_joints.empty()) {
         return;
     }
-    GN_ASSERT(mesh->get_skin_data() && !mesh->get_mesh_buffer_data().empty());
-    std::vector<std::array<Matrix4f, 2>> pose_matrix(binding_joints.size()); // 姿态矩阵和它的逆的转置
+    auto pose_matrix = mesh->map_pose_matrix(binding_joints.size());
+    // 姿态矩阵和它的逆的转置
     for (auto &&[i, joint] : std::views::enumerate(binding_joints)) {
         auto j = joint.lock();
         Matrix4f world_matrix = j ? j->get_world_model_matrix() : Matrix4f::identity();
         // 骨骼空间下蒙皮位置 * 绑定矩阵 == 原始网格体中的顶点位置
         // 骨骼空间下蒙皮位置 * 当前的节点世界变换 == 目标位置
         // 目标位置 = 原始网格体中的顶点位置 * 绑定矩阵^{-1} * 当前的节点世界变换
-        pose_matrix[i][0] = joint_ibms[i] * world_matrix;
-        pose_matrix[i][1] = pose_matrix[i][0].inverse().value_or(Matrix4f::identity()).transpose();
-    }
+        Matrix4f p = joint_ibms[i] * world_matrix;
+        Matrix4f n = p.inverse().value_or(Matrix4f::identity()).transpose();
 
-    const std::vector<SkinVertex> &joint_weight = *mesh->get_skin_data();
-    std::span<const SkinMeshVertex> mesh_data = mesh->get_mesh_buffer_data();
-    caculated_mesh_data.resize(mesh->get_vertex_count(), {}); // 初始化为0
-
-    for (size_t k : std::views::iota(size_t(0), mesh->get_vertex_count())) {
-        SkinMeshVertex v;
-        auto [joint, weight] = joint_weight[k];
-        Vector3f tangent;
-        for (size_t i : std::views::iota(0, 4)) {
-            if (weight[i] == 0) {
-                continue;
-            }
-            const std::array<Matrix4f, 2> &p = pose_matrix[joint[i]];
-            v.position += (Vector4f{mesh_data[k].position, 1.0f} * p[0]).get_xyz() * weight[i];
-            v.normal += (Vector4f{mesh_data[k].normal, 0.0f} * p[1]).get_xyz() * weight[i];
-            tangent += (Vector4f{mesh_data[k].tangent.get_xyz(), 0.0f} * p[0]).get_xyz() * weight[i];
+        if (renderer.skinning_on_gpu) {
+            // 上传gpu需要转置
+            pose_matrix[i] = {p.transpose(), n.transpose()};
+        } else {
+            pose_matrix[i] = {p, n};
         }
-        v.normal = v.normal.normalize();
-        v.tangent = Vector4f{tangent.normalize(), mesh_data[k].tangent.w};
-        caculated_mesh_data[k] = v;
     }
-
-    mesh->write_skinned_vertices(caculated_mesh_data);
+    mesh->unmap_pose_matrix();
 }
-
-void CpntSkinMeshRender::gpu_mesh_update() {
-    if (!scene || !mesh || binding_joints.empty()) {
-        return;
-    }
-    GN_ASSERT(mesh->get_skin_data());
-
-    if (!skinning_material) {
-        auto uber = resources.load_resource<UberShader>("shaders/compute/skinning");
-        if (!uber) {
-            LOG_ERROR("加载蒙皮计算着色器失败");
-            binding_joints.clear();
-            return;
-        }
-        skinning_material = create_ref<ComputeMaterial>(uber);
-    }
-
-    size_t pose_matrix_buffer_size = binding_joints.size() * sizeof(std::array<Matrix4f, 2>);
-    if (!pose_matrix_buffer || pose_matrix_buffer->get_size() != pose_matrix_buffer_size) {
-        pose_matrix_buffer = create_ref<GLBuffer>(BufferType::MODIFIABLE, pose_matrix_buffer_size);
-        pose_matrix_buffer->set_debug_label("姿态矩阵缓存");
-    }
-    {
-        ArrayBufferWriter<std::array<Matrix4f, 2>> buffer(pose_matrix_buffer, BufferMapOption::WRITE_DISCARD);
-        for (auto &&[i, joint] : std::views::enumerate(binding_joints)) {
-            auto j = joint.lock();
-            Matrix4f world_matrix = j ? j->get_world_model_matrix() : Matrix4f::identity();
-            // 骨骼空间下蒙皮位置 * 绑定矩阵 == 原始网格体中的顶点位置
-            // 骨骼空间下蒙皮位置 * 当前的节点世界变换 == 目标位置
-            // 目标位置 = 原始网格体中的顶点位置 * 绑定矩阵^{-1} * 当前的节点世界变换
-            Matrix4f pose_matrix = joint_ibms[i] * world_matrix;
-            Matrix4f normal_matrix = pose_matrix.inverse().value_or(Matrix4f::identity()).transpose();
-            buffer[i] = {pose_matrix.transpose(), normal_matrix.transpose()};
-        }
-    }
-
-    skinning_material->set_external_buffer("vertex_mesh_buffer", mesh->get_mesh_buffer());
-    skinning_material->set_external_buffer("joint_weight", mesh->get_skin_buffer());
-    skinning_material->set_external_buffer("pose_matrix_buffer", pose_matrix_buffer);
-    skinning_material->set_external_buffer("out_vertex_mesh_buffer", mesh->get_caculated_mesh_buffer());
-
-    skinning_material->dispatch_compute((uint32_t)(mesh->get_vertex_count() + 127) / 128, 1, 1);
-    glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT); // todo：封装
-}
-
 } // namespace Goonya

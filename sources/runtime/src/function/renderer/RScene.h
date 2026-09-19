@@ -8,6 +8,7 @@
 #include "function/renderer/Camera.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/Mesh.h"
+#include "function/renderer/SkinningMesh.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLTexture.h"
@@ -49,6 +50,7 @@ struct Instance {
     Ref<GLBuffer> per_object_uniform;
     Vector3f position;
     BoundingBox transformed_bbox;
+    bool is_skin;
 };
 
 class RCamera;
@@ -76,6 +78,7 @@ struct RRenderable {
     BoundingBox bounds_override;
     bool has_bounds_override : 1 = false;
     bool hidden : 1 = false;
+    bool is_skin : 1 = false;
     RenderableDirty dirty = RenderableDirty::Structure; // 新建时需要进行一次完整构建
 };
 
@@ -104,7 +107,8 @@ public:
     Handle<RRenderable> create_renderable() noexcept;
     void destroy_renderable(Handle<RRenderable> handle) noexcept;
 
-    void set_mesh(Handle<RRenderable> handle, Ref<Mesh> mesh) noexcept;
+    void set_mesh(Handle<RRenderable> handle, const Ref<Mesh> &mesh) noexcept;
+    void set_skinning_mesh(Handle<RRenderable> handle, const Ref<SkinningMesh> &mesh) noexcept;
     void set_materials(Handle<RRenderable> handle, std::span<const Ref<Material>> materials) noexcept;
     void set_hidden(Handle<RRenderable> handle, bool hidden = true) noexcept;
     void set_transform(Handle<RRenderable> handle, const Matrix4f &model_matrix) noexcept;
@@ -204,8 +208,11 @@ public:
     bool is_valid() const noexcept { return scene != nullptr; }
     explicit operator bool() const noexcept { return is_valid(); }
 
-    void set_mesh(Ref<Mesh> mesh) noexcept {
-        if (scene) scene->set_mesh(handle, std::move(mesh));
+    void set_mesh(const Ref<Mesh> &mesh) noexcept {
+        if (scene) scene->set_mesh(handle, mesh);
+    }
+    void set_skinning_mesh(const Ref<SkinningMesh> &mesh) noexcept {
+        if (scene) scene->set_skinning_mesh(handle, mesh);
     }
     void set_materials(std::span<const Ref<Material>> materials) noexcept {
         if (scene) scene->set_materials(handle, materials);

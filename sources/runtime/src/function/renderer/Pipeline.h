@@ -3,6 +3,7 @@
 #include "Material.h"
 #include "core/cgmath/matrix.h"
 #include "function/renderer/Camera.h"
+#include "function/renderer/ComputeMaterial.h"
 #include "function/renderer/RScene.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
@@ -19,6 +20,7 @@ struct CullInstance {
     SubMesh submesh;
     GLBuffer *per_object_uniform;
     float distance_to_camera;
+    bool is_skin;
 };
 
 class Pipeline {
@@ -45,6 +47,8 @@ private:
     Ref<GLFrameBuffer> depth_fbo;
     Ref<GLTexture> depth_texture;
 
+    Ref<ComputeMaterial> skinning_material;
+
     Ref<Mesh> postprocess_quad_mesh;
     Ref<Material> postprocess_material;
 
@@ -64,8 +68,10 @@ private:
 
     std::vector<CullInstance> cull(CameraInfo &camera_info);
 
-    void draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &instances);
-    void draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> &instances);
+    void compute_skinning(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances);
+
+    void draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances);
+    void draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances);
     void draw_skybox(CameraInfo &camera_info);
     void draw_postprocess(CameraInfo &camera_info);
 

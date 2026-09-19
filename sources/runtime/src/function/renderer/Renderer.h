@@ -13,6 +13,7 @@ class Pipeline;
 class Renderer final {
 public:
     bool draw_bloom = true;
+    bool skinning_on_gpu = true;
 
 private:
     friend class Pipeline;

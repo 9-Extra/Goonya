@@ -5,10 +5,12 @@
 #include "core/clock/GameClock.h"
 #include "core/log/Log.h"
 #include "function/renderer/Material.h"
+#include "function/renderer/Mesh.h"
 #include "function/renderer/PipelineLayout.h"
 #include "function/renderer/RPriority.h"
 #include "function/renderer/RScene.h"
 #include "function/renderer/Renderer.h"
+#include "function/renderer/SkinningMesh.h"
 #include "function/renderer/UberShader.h"
 #include "imgui.h"
 #include "platform/graphics/Graphics.h"
@@ -103,11 +105,22 @@ Pipeline::Pipeline() {
         throw RuntimeError("无法加载天空盒模型");
     }
     {
-        depth_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/depth/depth"));
-        if (!depth_material) {
-            throw RuntimeError("无法加载深度着色器");
+        auto uber = resources.load_resource<UberShader>("shaders/depth/depth");
+        if (!uber) {
+            throw RuntimeError("无法深度着色器失败");
         }
+        depth_material = create_ref<Material>(uber);
     }
+
+    // -----------------蒙皮----------------
+    {
+        auto uber = resources.load_resource<UberShader>("shaders/compute/skinning");
+        if (!uber) {
+            throw RuntimeError("加载蒙皮计算着色器失败");
+        }
+        skinning_material = create_ref<ComputeMaterial>(uber);
+    }
+    // ---------------后处理-------------------
     Ref<UberShader> postprocess_shader = resources.load_resource<UberShader>("shaders/post_process/basic");
     if (!postprocess_shader) {
         throw RuntimeError("无法加载后处理着色器");
@@ -259,6 +272,8 @@ void Pipeline::render_camera(RCamera *camera, RScene *scene) {
 
     std::vector<CullInstance> visible_instances = cull(camera_info);
 
+    compute_skinning(camera_info, visible_instances);
+
     draw_depth(camera_info, visible_instances);
 
     draw_geometry(camera_info, visible_instances);
@@ -282,16 +297,73 @@ std::vector<CullInstance> Pipeline::cull(CameraInfo &camera_info) {
             continue; // 不在视椎体内部
         }
 
-        visible_instances.emplace_back(CullInstance{
-            .mesh = instance.mesh.get(),
-            .material = instance.material ? instance.material.get() : default_material.get(),
-            .submesh = instance.submesh,
-            .per_object_uniform = instance.per_object_uniform.get(),
-            .distance_to_camera = (instance.position - camera_info.camera->transform.position).length(),
-        });
+        visible_instances.emplace_back(
+            CullInstance{.mesh = instance.mesh.get(),
+                         .material = instance.material ? instance.material.get() : default_material.get(),
+                         .submesh = instance.submesh,
+                         .per_object_uniform = instance.per_object_uniform.get(),
+                         .distance_to_camera = (instance.position - camera_info.camera->transform.position).length(),
+                         .is_skin = instance.is_skin});
     }
     return visible_instances;
 }
+
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void Pipeline::compute_skinning(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances) {
+    GL.push_debug_group_label("Compute Skin");
+    for (auto &instance : visible_instances) {
+        if (!instance.is_skin) {
+            continue;
+        }
+        GN_ASSERT(dynamic_cast<SkinningMesh *>(instance.mesh)); // 必然是SkinningMesh*
+        SkinningMesh *mesh = (SkinningMesh *)instance.mesh;
+        if (mesh->last_mesh_update_frame >= mesh->last_pose_matrix_update_frame) {
+            continue;
+        }
+        mesh->last_mesh_update_frame = mesh->last_pose_matrix_update_frame;
+
+        if (renderer.skinning_on_gpu) {
+            GN_ASSERT_MSG(mesh->pose_matrix_buffer, "蒙皮的姿态矩阵未初始化");
+            skinning_material->set_external_buffer("vertex_mesh_buffer", mesh->get_mesh_buffer());
+            skinning_material->set_external_buffer("joint_weight", mesh->get_skin_buffer());
+            skinning_material->set_external_buffer("pose_matrix_buffer", mesh->pose_matrix_buffer);
+            skinning_material->set_external_buffer("out_vertex_mesh_buffer", mesh->get_blended_mesh_buffer());
+            skinning_material->dispatch_compute((uint32_t)(mesh->get_vertex_count() + 127) / 128, 1, 1);
+        } else {
+            const std::vector<std::array<Matrix4f, 2>> &pose_matrix = mesh->pose_matrix_buffer_cpu;
+            GN_ASSERT_MSG(!pose_matrix.empty(), "蒙皮的姿态矩阵未初始化");
+            const std::vector<SkinVertex> &joint_weight = *mesh->get_skin_data();
+            std::span<const SkinMeshVertex> mesh_data = mesh->get_mesh_buffer_data();
+
+            std::vector<SkinMeshVertex> blended_mesh_data(mesh->get_vertex_count(), SkinMeshVertex{});
+            for (size_t k : std::views::iota(size_t(0), mesh->get_vertex_count())) {
+                SkinMeshVertex v;
+                auto [joint, weight] = joint_weight[k];
+                Vector3f tangent;
+                for (size_t i : std::views::iota(0, 4)) {
+                    if (weight[i] == 0) {
+                        continue;
+                    }
+                    const std::array<Matrix4f, 2> &p = pose_matrix[joint[i]];
+                    v.position += (Vector4f{mesh_data[k].position, 1.0f} * p[0]).get_xyz() * weight[i];
+                    v.normal += (Vector4f{mesh_data[k].normal, 0.0f} * p[1]).get_xyz() * weight[i];
+                    tangent += (Vector4f{mesh_data[k].tangent.get_xyz(), 0.0f} * p[0]).get_xyz() * weight[i];
+                }
+                v.normal = v.normal.normalize();
+                v.tangent = Vector4f{tangent.normalize(), mesh_data[k].tangent.w};
+                blended_mesh_data[k] = v;
+            }
+
+            mesh->write_skinned_vertices(blended_mesh_data);
+        }
+    }
+
+    if (renderer.skinning_on_gpu) {
+        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT); // todo：封装
+    }
+    GL.pop_debug_group_label();
+}
+
 // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 void Pipeline::draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &visible_instances) {
     GL.push_debug_group_label("Draw Depth");

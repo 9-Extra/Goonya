@@ -6,6 +6,7 @@
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "runtime/GAssert.h"
+#include "runtime/GoonyaException.h"
 
 #include <cstddef>
 #include <cstring>
@@ -86,7 +87,9 @@ void ShaderParameters::set_external_buffer(const std::string &name, const Ref<GL
 ShaderParameters::ShaderParameters(UberShader *uber_shader)
     : uber_shader(uber_shader), local_variant_code(0),
       current_variant_code(uber_shader->get_effective_global_key_code(), local_variant_code) {
-
+    if (!uber_shader) {
+        throw RuntimeError("无效元着色器，可能元着色器加载时失败了");
+    }
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
 
     // 创建此材质的ConstantBuffer

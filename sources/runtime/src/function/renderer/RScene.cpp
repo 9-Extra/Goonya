@@ -31,15 +31,26 @@ void RScene::commit() noexcept {
             continue;
         }
 
-        // 两条路径都重写uniform, 128字节的成本换来更新逻辑的折叠
-        PerObjectData per_object_data{
-            .model_matrix = renderable.model_matrix.transpose(),
-            .normal_matrix = compute_normal_matrix(renderable.model_matrix),
-        };
-        renderable.per_object_uniform->write(&per_object_data, BufferMapOption::WRITE_DISCARD);
+        // 重写uniform
+        if (!renderable.is_skin) {
+            PerObjectData per_object_data{
+                .model_matrix = renderable.model_matrix.transpose(),
+                .normal_matrix = compute_normal_matrix(renderable.model_matrix),
+            };
+            renderable.per_object_uniform->write(&per_object_data, BufferMapOption::WRITE_DISCARD);
+        }
 
         if (renderable.dirty == RenderableDirty::Structure) {
             remove_mesh_instances(renderable);
+            if (renderable.is_skin) {
+                // 蒙皮固定不受组件变换影响，只用写入一次
+                PerObjectData per_object_data{
+                    .model_matrix = Matrix4f::identity(),
+                    .normal_matrix = Matrix4f::identity(),
+                };
+                renderable.per_object_uniform->write(&per_object_data, BufferMapOption::WRITE_DISCARD);
+            }
+
             if (!renderable.hidden && renderable.mesh) {
                 Vector3f position = renderable.model_matrix.resolve_position();
                 for (size_t i = 0; i < renderable.mesh->get_submeshes().size(); ++i) {
@@ -51,9 +62,10 @@ void RScene::commit() noexcept {
                     Ref<Material> material = i < renderable.materials.size() ? renderable.materials[i] : nullptr;
                     const BoundingBox &local_bounds =
                         renderable.has_bounds_override ? renderable.bounds_override : submesh.aabb;
-                    renderable.instances.push_back(
-                        instances.emplace(renderable.mesh, std::move(material), submesh, renderable.per_object_uniform,
-                                          position, local_bounds.transformed(renderable.model_matrix)));
+                    Handle<Instance> h_instance = instances.emplace(
+                        renderable.mesh, std::move(material), submesh, renderable.per_object_uniform, position,
+                        local_bounds.transformed(renderable.model_matrix), (bool)renderable.is_skin);
+                    renderable.instances.push_back(h_instance);
                 }
             }
         } else { // RenderableDirty::Dynamic
@@ -86,9 +98,16 @@ void RScene::destroy_renderable(Handle<RRenderable> handle) noexcept {
     renderables.remove(handle);
 }
 
-void RScene::set_mesh(Handle<RRenderable> handle, Ref<Mesh> mesh) noexcept {
+void RScene::set_mesh(Handle<RRenderable> handle, const Ref<Mesh> &mesh) noexcept {
     RRenderable &renderable = renderables[handle];
-    renderable.mesh = std::move(mesh);
+    renderable.mesh = mesh;
+    mark_dirty(renderable, RenderableDirty::Structure);
+}
+
+void RScene::set_skinning_mesh(Handle<RRenderable> handle, const Ref<SkinningMesh> &mesh) noexcept {
+    RRenderable &renderable = renderables[handle];
+    renderable.mesh = mesh;
+    renderable.is_skin = true;
     mark_dirty(renderable, RenderableDirty::Structure);
 }
 

@@ -17,6 +17,7 @@ public:
     using ClockType = std::chrono::steady_clock;
     using TimePoint = ClockType::time_point;
     using Duration = ClockType::duration;
+    using FrameCounter = uint64_t;
 
     static const uint32_t TPS = 20;
     static const uint32_t MIN_FPS = 20;
@@ -26,6 +27,7 @@ public:
         std::chrono::duration_cast<ClockType::duration>(std::chrono::seconds(1)) / MIN_FPS; // 50 ms
 private:
     uint64_t fixed_current_tick = 0;
+    FrameCounter frame_count = 0;
     uint64_t expected_tick = 0;
     Duration last_fixed_tick_time = ClockType::duration::zero();
 
@@ -36,6 +38,7 @@ private:
 public:
     GameClock() = default;
 
+    FrameCounter current_frame() const noexcept { return frame_count; }
     uint64_t current_tick() const noexcept { return fixed_current_tick; }
 
     TimePoint fixed_now() const noexcept { return ClockType::time_point{} + fixed_total(); }

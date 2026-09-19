@@ -17,6 +17,8 @@ void GameClock::update() noexcept {
     ClockType::duration frame_delta = now - last_frame_time;
     last_frame_time = now;
 
+    frame_count++;
+
     if (frame_delta > MAX_FRAME_INTERVAL) {
 #if 0
             LOG_WARN("Lagged: Last frame takes {}ms",

@@ -3,7 +3,6 @@
 #include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/vector.h"
-#include "function/renderer/ComputeMaterial.h"
 #include "function/renderer/Material.h"
 #include "function/renderer/Mesh.h"
 #include "function/renderer/RScene.h"
@@ -33,9 +32,7 @@ private:
     std::string root_path; // 定义的骨骼根路径，在gltf中就是场景的根，空字符串视为未定义，指向自己需使用"./"
     std::vector<std::string> joint_paths; // 绑定的关节路径
     std::vector<Matrix4f> joint_ibms;     // 绑定的关节的逆绑定矩阵
-    Ref<ComputeMaterial> skinning_material;
 
-    std::vector<SkinMeshVertex> caculated_mesh_data;
     std::vector<std::weak_ptr<GObject>> binding_joints; // 绑定的关节引用
     Ref<GLBuffer> pose_matrix_buffer;
 
@@ -63,15 +60,25 @@ public:
     void on_unregister() override;
     void on_update(ComponentUpdateFlag flag) override;
     void tick() override {
-        // cpu_mesh_update();
-        gpu_mesh_update();
+        if (root_path.empty()) {
+            renderable.set_hidden();
+            return;
+        }
+        std::shared_ptr<GObject> bone_root = get_owner()->get_child_by_path(root_path);
+        if (!bone_root) {
+            renderable.set_hidden();
+            return;
+        }
+        renderable.set_hidden(false);
+        // 蒙皮网格不受组件变换影响，并且使用根骨骼变换创建包围盒
+        renderable.set_transform(bone_root->get_world_model_matrix());
+        update_pose_matrix();
     }
 
 private:
     // 更新绑定的关节节点引用
     void update_joint_cache();
-    void cpu_mesh_update();
-    void gpu_mesh_update();
+    void update_pose_matrix();
 };
 
 } // namespace Goonya
