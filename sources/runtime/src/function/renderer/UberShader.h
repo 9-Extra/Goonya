@@ -21,6 +21,7 @@
 #include <string_view>
 #include <tuple>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace Goonya {
@@ -47,6 +48,9 @@ struct UberShaderDesc final {
     std::vector<std::vector<std::string>> local_variant_keys; // 仅此UberShader使用的所有变体定义
     std::unordered_map<std::string, MaterialParameter> parameters;
     std::unordered_map<std::string, Ref<GLTexture>> textures;
+    // 着色器中的直接图像访问声明（名称 -> 访问模式/格式），image unit按声明顺序从0开始分配
+    // 这两项信息无法通过OpenGL反射获取，必须由#image指令声明
+    std::vector<std::pair<std::string, ImageDecl>> images;
 };
 
 using VariantCode = uint32_t;
@@ -217,6 +221,8 @@ protected:
         uniform_binding_info; // 全部uniform buffer的绑定点和类型
     std::unordered_map<std::string, TextureParameterInfo>
         texture_units; // 纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)
+    std::unordered_map<std::string, ImageParameterInfo>
+        image_units; // 图像名称及对应的单元 (名称 -> 单元)
 
     // 变体相关
     LocalVariantKeyCollect local_variant_key_collect;
@@ -237,6 +243,9 @@ public:
     const MaterialParameterBlockInfo &per_material_block() const noexcept { return material_parameters; }
     const std::unordered_map<std::string, TextureParameterInfo> &get_texture_units() const noexcept {
         return texture_units;
+    }
+    const std::unordered_map<std::string, ImageParameterInfo> &get_image_units() const noexcept {
+        return image_units;
     }
     Ref<GLTexture> get_default_texture(uint32_t unit) const {
         if (auto iter = textures.find(unit); iter != textures.end()) {

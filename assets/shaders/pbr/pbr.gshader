@@ -66,13 +66,27 @@ float D_GGX(float dotNH, float roughness)
 // Geometric Shadowing function --------------------------------------
 // https://learnopengl-cn.github.io/07%20PBR/01%20Theory/
 // 计算了微表面上的遮蔽和阴影
-float G_SchlicksmithGGX(float dotNL, float dotNV, float roughness)
+// 这里的k是用于拟合准确几何项的经验参数，在不同的情况下取不同的值
+// 在计算环境光时 k = alpha / 2，这是Karis 2013在做环境光照时重新拟合的，也可以用老版本 k = (alpha + 1) ** 2 / 8
+// 实际上G_1有精确解，见GGX 原始论文，Schlick在这里也做了一个近似，才有Schlick-GGX函数
+float G_SchlicksmithGGX_IBL(float dotNL, float dotNV, float roughness)
 {
     float alpha  = roughness * roughness;
     float k  = alpha / 2;
-    float GL = dotNL / (    dotNL * (1.0 - k) + k); // Schlick-GGX 计算遮蔽或者阴影，RTR4上没找到？
+    float GL = dotNL / (dotNL * (1.0 - k) + k); // Schlick-GGX 计算遮蔽或者阴影，RTR4上没找到？
     float GV = dotNV / (dotNV * (1.0 - k) + k); 
     return GL * GV; // 使用Smith的方法乘起来计算两个效应的叠加，RTR4上有这个
+}
+
+// UE4的GGX-Smith Correlated Joint 近似方案
+// [Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"]
+// from https://zhuanlan.zhihu.com/p/81708753
+float G_SmithJointApprox(float NoV, float NoL, float roughness)
+{
+    float a = roughness * roughness;
+    float Vis_SmithV = NoL * ( NoV * ( 1 - a ) + a );
+    float Vis_SmithL = NoV * ( NoL * ( 1 - a ) + a );
+    return 0.5 / (Vis_SmithV + Vis_SmithL);
 }
 
 // Fresnel function ----------------------------------------------------
@@ -105,7 +119,7 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float roughness, float m
     // D 微表面法线分布
     float D = D_GGX(dotNH, max(0.05, roughness));
     // G = Geometric shadowing term (Microfacets shadowing)
-    float G = G_SchlicksmithGGX(dotNL, dotNV, roughness);
+    float G = G_SchlicksmithGGX_IBL(dotNL, dotNV, roughness);
     // F = Fresnel factor (Reflectance depending on angle of incidence)
     vec3 F = F_Schlick(dotNV, F0);
 
@@ -160,7 +174,7 @@ vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
         if (NoL > 0)
         {
             vec3 light = textureLod(skybox_specular_texture, L, 0).xyz;
-            float G = G_SchlicksmithGGX(NoL, NoV, Roughness);
+            float G = G_SchlicksmithGGX_IBL(NoL, NoV, Roughness);
             vec3 F = F_Schlick(VoH, SpecularColor); // VoH == LoH
             
             /* 

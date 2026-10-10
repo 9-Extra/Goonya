@@ -1,12 +1,15 @@
 #include "resource/BuiltinResource.h"
 
 #include "core/RefCount.h"
+#include "function/renderer/ComputeMaterial.h"
 #include "function/renderer/Mesh.h"
+#include "function/renderer/UberShader.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
 #include "resource/ResMng.h"
 #include "resource/Resource.h"
+#include <cstdint>
 
 namespace Goonya {
 
@@ -107,9 +110,9 @@ void init_buildin_resource() {
         normal->import_image(image);
         buildin->contents.emplace("normal", normal);
     }
+    Ref<GLTexture> missing = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
+                                                   std::make_tuple(default_texture_size, default_texture_size, 0));
     {
-        Ref<GLTexture> missing = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
-                                                       std::make_tuple(default_texture_size, default_texture_size, 0));
         for (size_t i = 0; i < default_texture_size; i++) {
             for (size_t j = 0; j < default_texture_size; j++) {
                 Color &color_ref = ((Color *)image.get_data())[i * default_texture_size + j];
@@ -123,6 +126,18 @@ void init_buildin_resource() {
         missing->import_image(image);
         buildin->contents.emplace("missing_texture", missing);
     }
+
+    {
+        const uint32_t LUT_SIZE = 1024;
+        Ref<GLTexture> brdf_lut = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RG_f16,
+                                                        std::make_tuple(LUT_SIZE, LUT_SIZE, 0), 1);
+        Ref<UberShader> brdf_lut_shader = resources.load_resource<UberShader>("shaders/compute/split_sum_brdf_lut");
+        Ref<ComputeMaterial> mat = create_ref<ComputeMaterial>(brdf_lut_shader);
+        mat->set_image("output_image", brdf_lut, 0, 0);
+        mat->dispatch_compute((LUT_SIZE - 1) / 16 + 1, (LUT_SIZE - 1) / 16 + 1, 1);
+        buildin->contents.emplace("brdf_lut", brdf_lut);
+    }
+    glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); // todo：封装
 }
 
 } // namespace Goonya

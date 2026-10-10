@@ -8,10 +8,6 @@
 
 namespace stb {
 
-enum class ResizeMethod {
-
-};
-
 class Image final { // NOLINT 不需要初始化
 private:
     void *data = nullptr;
@@ -61,8 +57,8 @@ public:
     unsigned int get_size_byte() const noexcept { return width * height * channel * (_is_float ? 4 : 1); }
 
     Image flip_vertical() const noexcept;
-    Image resize(int target_width, int target_height, ResizeMethod method) const noexcept;
-
+    Image convert(bool is_float) const noexcept;
+   
     int save(const std::filesystem::path &path) const;
     static Image load(const std::filesystem::path &path, bool to_srgb_linear);
     static Image loadf(const std::filesystem::path &path, bool to_srgb_linear);

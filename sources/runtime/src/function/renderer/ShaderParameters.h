@@ -8,6 +8,7 @@
 #include "platform/graphics/opengl/GLTexture.h"
 
 #include "resource/Resource.h"
+#include "runtime/GAssert.h"
 
 #include <cstdint>
 #include <string>
@@ -15,6 +16,14 @@
 #include <vector>
 
 namespace Goonya {
+
+struct ImageBindingInfo {
+    Ref<GLTexture> image;
+    uint32_t mipmap_level;
+    uint32_t layer;
+    uint32_t gl_access;
+    uint32_t gl_type;
+};
 
 class ShaderParameters : public Resource {
 protected:
@@ -25,6 +34,7 @@ protected:
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, MaterialParameter> parameters;
     std::unordered_map<uint32_t, Ref<GLTexture>> textures; // slot -> textures
+    std::unordered_map<uint32_t, ImageBindingInfo> images; // slot -> textures
     std::vector<Ref<GLBuffer>> uniform_buffers;            // slot -> buffer
     std::vector<Ref<GLBuffer>> shader_storage_buffers;     // slot -> buffer
 
@@ -95,6 +105,35 @@ public:
             }
         } else {
             // 允许设置不存在的纹理，会被忽略
+        }
+    }
+
+    /**
+     * @brief 设置材质的直接图像访问
+     *
+     * @param name 纹理名称
+     * @param texture 纹理对象
+     * @note 必须在bind()之前调用
+     */
+    void set_image(const std::string &name, const Ref<GLTexture> &texture, uint32_t mipmap_level, uint32_t layer) {
+        // texture slot可能被优化掉了
+        // 允许传入texture为空，表示使用默认纹理。但this->textures不应包含空指针
+        if (auto iter = uber_shader->get_image_units().find(name); iter != uber_shader->get_image_units().end()) {
+            uint32_t unit = iter->second.unit; // 在bind时再进行texture类型检查
+            GN_ASSERT(iter->second.gl_access != 0 && iter->second.gl_type != 0);
+            if (texture) {
+                this->images[unit] = {
+                    .image = texture,
+                    .mipmap_level = mipmap_level,
+                    .layer = layer,
+                    .gl_access = iter->second.gl_access,
+                    .gl_type = iter->second.gl_type,
+                };
+            } else {
+                this->images.erase(unit);
+            }
+        } else {
+            throw RuntimeError(std::format("图形\"{}\"不存在", name));
         }
     }
 

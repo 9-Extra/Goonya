@@ -9,6 +9,7 @@
 #include "runtime/GoonyaException.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
 #include <ranges>
 #include <utility>
@@ -27,21 +28,31 @@ void ShaderParameters::bind_external_resources() const {
                 iter->second = uber_shader->get_default_texture(info.unit); // 重置为默认纹理
             }
             */
-            iter->second->bind(info.unit); // 绑定材质设定的纹理
+            iter->second->bind_texture(info.unit); // 绑定材质设定的纹理
         } else {
             // 绑定默认纹理
-            uber_shader->get_default_texture(info.unit)->bind(info.unit);
+            uber_shader->get_default_texture(info.unit)->bind_texture(info.unit);
+        }
+    }
+    for (const auto &[name, info] : uber_shader->get_image_units()) {
+        if (auto iter = images.find(info.unit); iter != images.end()) {
+            const auto& image = iter->second;
+            GN_ASSERT(image.image);
+            image.image->bind_image_layered(info.unit, image.mipmap_level, image.layer, image.gl_access, image.gl_type);
+        } else {
+            // 图像未绑定是不允许的，它没有默认
+            throw RuntimeError(std::format("着色器\"{}\"中图像\"{}\"未绑定", uber_shader->get_name(), name));
         }
     }
     // 绑定其他buffer
     for (const auto &[binding, buffer] : std::views::enumerate(uniform_buffers)) {
         if (buffer) {
-            buffer->bind_uniform(binding);
+            buffer->bind_uniform((uint32_t)binding);
         }
     }
     for (const auto &[binding, buffer] : std::views::enumerate(shader_storage_buffers)) {
         if (buffer) {
-            buffer->bind_storage(binding);
+            buffer->bind_storage((uint32_t)binding);
         }
     }
 }

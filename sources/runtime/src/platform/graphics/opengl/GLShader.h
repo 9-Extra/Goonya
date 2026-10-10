@@ -18,7 +18,7 @@ enum class BufferBindingType { UNIFORM, SHADER_STORAGE };
 
 struct MaterialParameterInfo {
     MaterialParameter type_and_default_value;
-    size_t offset;
+    size_t offset = 0;
 };
 
 struct MaterialParameterBlockInfo {
@@ -29,6 +29,19 @@ struct MaterialParameterBlockInfo {
 struct TextureParameterInfo {
     TextureType type = TextureType::UNKNOWN;
     uint32_t unit = 0;
+};
+
+struct ImageParameterInfo {
+    TextureType type = TextureType::UNKNOWN;
+    uint32_t unit = 0;
+    uint32_t gl_access = 0; // 着色器访问图像的模式
+    uint32_t gl_type = 0; // 着色器中要求的图像类型
+};
+
+// 着色器中图像变量的声明信息，来自着色器文件的#image指令（这两项无法通过OpenGL反射获取）
+struct ImageDecl {
+    uint32_t gl_access = 0; // GL_READ_ONLY / GL_WRITE_ONLY / GL_READ_WRITE
+    uint32_t gl_type = 0;   // 着色器要求的图像格式，如GL_RGBA32F
 };
 
 // OpenGL允许一个着色器既包含光栅化管线的着色器又包含计算着色器，但是Goonya要求两者分开到不同着色器对象中
@@ -92,6 +105,9 @@ public:
     std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
     get_uniform_binding_info() const;
     std::unordered_map<std::string, TextureType> get_texture_info() const noexcept;
+    // 图像变量的gl_access/gl_type无法通过OpenGL反射获取，只能在着色器加载时通过#image指令声明，
+    // 因此这里只返回名称和纹理类型，unit由UberShader手动分配
+    std::unordered_map<std::string, TextureType> get_image_info() const noexcept;
 };
 
 } // namespace Goonya

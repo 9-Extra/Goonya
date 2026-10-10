@@ -15,6 +15,7 @@
 #include <cstring>
 
 #include <filesystem>
+#include <utility>
 
 namespace stb {
 
@@ -38,35 +39,78 @@ Image Image::flip_vertical() const noexcept {
     return image;
 }
 
-Image Image::resize(int target_width, int target_height, ResizeMethod method) const noexcept {
+Image Image::convert(bool is_float) const noexcept{
     if (!*this) {
         // 空的图像不能操作
         return Image{};
     }
 
-    assert(false); // todo
-    return Image{};
-};
+    Image image;
+    image.width = width;
+    image.height = height;
+    image.channel = channel;
+    image._is_float = is_float;
+    image.data = malloc(get_size_byte());
+
+    if (is_float == _is_float) {
+        memcpy(image.data, data, get_size_byte());
+        return image;
+    }
+
+    if (is_float && !_is_float) {
+        for (int i = 0; i < width * height * channel; i++) {
+            float* dst = (float*)image.data + i;
+            uint8_t* src = (uint8_t*)data + i;
+            *dst = float(*src) / 255;
+        }
+        return image;
+    }
+    
+    if (!is_float && _is_float) {
+        for (int i = 0; i < width * height * channel; i++) {
+            uint8_t* dst = (uint8_t*)image.data + i;
+            float* src = (float*)data + i;
+            *dst = uint8_t(std::clamp<float>(*src, 0, 1) * 255);
+        }
+        return image;
+    } 
+    std::unreachable();
+}
 
 int Image::save(const std::filesystem::path &path) const {
     int result = -1;
     std::string path_str = path.string();
     std::string ext = path.extension().string();
     if (ext == ".bmp") {
-        assert(!is_float());
-        result = stbi_write_bmp(path_str.c_str(), width, height, channel, data);
+        if (!is_float()){
+            result = stbi_write_bmp(path_str.c_str(), width, height, channel, data);
+        } else {
+            result = stbi_write_bmp(path_str.c_str(), width, height, channel, convert(false).get_data());
+        }
     } else if (ext == ".png") {
-        assert(!is_float());
-        result = stbi_write_png(path_str.c_str(), width, height, channel, data, width * channel);
+        if (!is_float()){
+            result = stbi_write_png(path_str.c_str(), width, height, channel, data, width * channel);
+        } else {
+            result = stbi_write_png(path_str.c_str(), width, height, channel, convert(false).get_data(), width * channel);
+        }
     } else if (ext == ".tga") {
-        assert(!is_float());
-        result = stbi_write_tga(path_str.c_str(), width, height, channel, data);
+        if (!is_float()){
+            result = stbi_write_tga(path_str.c_str(), width, height, channel, data);
+        } else {
+            result = stbi_write_tga(path_str.c_str(), width, height, channel, convert(false).get_data());
+        }
     } else if (ext == ".jpg") {
-        assert(!is_float());
-        result = stbi_write_jpg(path_str.c_str(), width, height, channel, data, 90);
+        if (!is_float()){
+            result = stbi_write_jpg(path_str.c_str(), width, height, channel, data, 90);
+        } else {
+            result = stbi_write_jpg(path_str.c_str(), width, height, channel, convert(false).get_data(), 90);
+        }
     } else if (ext == ".hdr") {
-        assert(is_float());
-        result = stbi_write_hdr(path_str.c_str(), width, height, channel, (float *)data);
+        if (is_float()){
+            result = stbi_write_hdr(path_str.c_str(), width, height, channel, (float *)data);
+        } else {
+            result = stbi_write_hdr(path_str.c_str(), width, height, channel, (float *)convert(true).get_data());
+        }
     }
     return result;
 }

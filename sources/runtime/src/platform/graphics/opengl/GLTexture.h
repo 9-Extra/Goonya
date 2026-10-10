@@ -44,6 +44,15 @@ enum class TextureStorageFormat {
     RGB_f8,
     RGB_i8,
     RGB_u8,
+    RG_f32,
+    RG_i32,
+    RG_u32,
+    RG_f16,
+    RG_i16,
+    RG_u16,
+    RG_f8,
+    RG_i8,
+    RG_u8,
     R_f32,
     R_i32,
     R_u32,
@@ -85,7 +94,11 @@ public:
     explicit GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape,
                        uint8_t mipmap_level = 255);
     ~GLTexture() { glDeleteTextures(1, &id); }
-    void bind(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
+    void bind_texture(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
+    // gl_access和gl_type从着色器的#image指令获取
+    void bind_image_layered(uint32_t binding, uint32_t mipmap_level, uint32_t layer, uint32_t gl_access, uint32_t gl_type) const noexcept{
+        glBindImageTexture(binding, id, mipmap_level, GL_FALSE, layer, gl_access, gl_type);
+    }
 
     GLuint get_id() const noexcept { return id; }
 

@@ -140,6 +140,12 @@ UberShader::UberShader(UberShaderDesc &&desc) {
         textures.emplace((uint32_t)i, std::move(texture_res));
     }
 
+    // 图像单元同样手动分配，image unit按#image指令的声明顺序从0开始编号
+    for (auto &&[i, image_decl] : std::views::enumerate(std::move(desc.images))) {
+        auto &&[name, decl] = std::move(image_decl);
+        image_units.emplace(name, ImageParameterInfo{TextureType::UNKNOWN, (uint32_t)i, decl.gl_access, decl.gl_type});
+    }
+
     // 立即编译变体码为0的版本用于反射
     Ref<GLShader> shader = query_variant(VariantCodeSet{0});
 
@@ -202,6 +208,24 @@ Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
         } else {
             // 纹理没有在.meta中定义，却在着色器中使用
             throw RuntimeError(std::format("纹理\"{}\"在.meta中未定义，却在着色器中使用", name));
+        }
+    }
+
+    // 图像单元同理：图像uniform的值就是image unit，可以像采样器一样通过glProgramUniform1i设置
+    std::unordered_map<std::string, TextureType> image_info = introspector.get_image_info();
+    for (auto &&[name, type] : image_info) {
+        if (auto iter = image_units.find(name); iter != image_units.end()) {
+            shader->set_texture_binding(name, iter->second.unit);
+            if (iter->second.type == TextureType::UNKNOWN) {
+                iter->second.type = type;
+            } else {
+                if (iter->second.type != type) {
+                    throw RuntimeError(std::format("图像\"{}\"在不同的变体中定义为了不同的类型", name));
+                }
+            }
+        } else {
+            // 图像没有通过#image指令声明，却在着色器中使用
+            throw RuntimeError(std::format("图像\"{}\"未通过#image指令声明，却在着色器中使用", name));
         }
     }
 

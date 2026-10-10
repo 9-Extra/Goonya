@@ -214,7 +214,13 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
         case TextureStorageFormat::RGB_u32:
         case TextureStorageFormat::RGB_f16:
         case TextureStorageFormat::RGB_i16:
-        case TextureStorageFormat::RGB_u16: {
+        case TextureStorageFormat::RGB_u16:
+        case TextureStorageFormat::RG_f32:
+        case TextureStorageFormat::RG_i32:
+        case TextureStorageFormat::RG_u32:
+        case TextureStorageFormat::RG_f16:
+        case TextureStorageFormat::RG_i16:
+        case TextureStorageFormat::RG_u16: {
             target_format = GL_RGB;
             channel = 3;
             is_float = true;
@@ -222,12 +228,17 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
         }
         case TextureStorageFormat::RGB_f8:
         case TextureStorageFormat::RGB_i8:
-        case TextureStorageFormat::RGB_u8: {
+        case TextureStorageFormat::RGB_u8:
+        case TextureStorageFormat::RG_f8:
+        case TextureStorageFormat::RG_i8:
+        case TextureStorageFormat::RG_u8:
+        {
             target_format = GL_RGB;
             channel = 3;
             is_float = false;
             break;
         }
+
         case TextureStorageFormat::R_f32:
         case TextureStorageFormat::R_i32:
         case TextureStorageFormat::R_u32:
@@ -280,7 +291,7 @@ GLenum texture_format_to_gl_format(TextureStorageFormat format) {
     case TextureStorageFormat::RGBA_u32:
         return GL_RGBA32UI;
     case TextureStorageFormat::RGBA_f16:
-        return GL_RGBA16;
+        return GL_RGBA16F;
     case TextureStorageFormat::RGBA_i16:
         return GL_RGBA16I;
     case TextureStorageFormat::RGBA_u16:
@@ -298,7 +309,7 @@ GLenum texture_format_to_gl_format(TextureStorageFormat format) {
     case TextureStorageFormat::RGB_u32:
         return GL_RGB32UI;
     case TextureStorageFormat::RGB_f16:
-        return GL_RGB16;
+        return GL_RGB16F;
     case TextureStorageFormat::RGB_i16:
         return GL_RGB16I;
     case TextureStorageFormat::RGB_u16:
@@ -309,6 +320,24 @@ GLenum texture_format_to_gl_format(TextureStorageFormat format) {
         return GL_RGB8I;
     case TextureStorageFormat::RGB_u8:
         return GL_RGB8UI;
+    case TextureStorageFormat::RG_f32:
+        return GL_RG32F;
+    case TextureStorageFormat::RG_i32:
+        return GL_RG32I;
+    case TextureStorageFormat::RG_u32:
+        return GL_RG32UI;
+    case TextureStorageFormat::RG_f16:
+        return GL_RG16F;
+    case TextureStorageFormat::RG_i16:
+        return GL_RG16I;
+    case TextureStorageFormat::RG_u16:
+        return GL_RG16UI;
+    case TextureStorageFormat::RG_f8:
+        return GL_RG8;
+    case TextureStorageFormat::RG_i8:
+        return GL_RG8I;
+    case TextureStorageFormat::RG_u8:
+        return GL_RG8UI;
     case TextureStorageFormat::R_f32:
         return GL_R32F;
     case TextureStorageFormat::R_i32:
@@ -316,7 +345,7 @@ GLenum texture_format_to_gl_format(TextureStorageFormat format) {
     case TextureStorageFormat::R_u32:
         return GL_R32UI;
     case TextureStorageFormat::R_f16:
-        return GL_R16;
+        return GL_R16F;
     case TextureStorageFormat::R_i16:
         return GL_R16I;
     case TextureStorageFormat::R_u16:

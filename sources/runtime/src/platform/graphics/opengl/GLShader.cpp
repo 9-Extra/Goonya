@@ -318,4 +318,103 @@ std::unordered_map<std::string, TextureType> GLShaderIntrospector::get_texture_i
     return result;
 }
 
+std::unordered_map<std::string, TextureType> GLShaderIntrospector::get_image_info() const noexcept {
+    std::unordered_map<std::string, TextureType> result;
+
+    // 图像变量和采样器一样暴露在GL_UNIFORM接口下
+    GLint num_uniforms;
+    glGetProgramInterfaceiv(id, GL_UNIFORM, GL_ACTIVE_RESOURCES, &num_uniforms);
+
+    const GLenum UNIFORM_PROPERTIES[] = {GL_BLOCK_INDEX, GL_TYPE, GL_NAME_LENGTH};
+    const size_t property_count = std::extent_v<decltype(UNIFORM_PROPERTIES)>;
+
+    for (int i = 0; i < num_uniforms; ++i) {
+        GLint properties[property_count];
+        glGetProgramResourceiv(id, GL_UNIFORM, i, property_count, UNIFORM_PROPERTIES, property_count, nullptr,
+                               properties);
+        auto [block_index, uniform_type, name_len] = properties;
+        if (block_index != -1) continue;
+
+        // 判断是否是图像类型
+        TextureType texture_type = TextureType::UNKNOWN;
+        bool is_image = false;
+        switch (uniform_type) {
+        case GL_IMAGE_1D:
+        case GL_INT_IMAGE_1D:
+        case GL_UNSIGNED_INT_IMAGE_1D:
+            texture_type = TextureType::TEXTURE_1D;
+            is_image = true;
+            break;
+        case GL_IMAGE_2D:
+        case GL_INT_IMAGE_2D:
+        case GL_UNSIGNED_INT_IMAGE_2D:
+            texture_type = TextureType::TEXTURE_2D;
+            is_image = true;
+            break;
+        case GL_IMAGE_3D:
+        case GL_INT_IMAGE_3D:
+        case GL_UNSIGNED_INT_IMAGE_3D:
+            texture_type = TextureType::TEXTURE_3D;
+            is_image = true;
+            break;
+        case GL_IMAGE_CUBE:
+        case GL_INT_IMAGE_CUBE:
+        case GL_UNSIGNED_INT_IMAGE_CUBE:
+            texture_type = TextureType::TEXTURE_CUBEMAP;
+            is_image = true;
+            break;
+        case GL_IMAGE_1D_ARRAY:
+        case GL_INT_IMAGE_1D_ARRAY:
+        case GL_UNSIGNED_INT_IMAGE_1D_ARRAY:
+            texture_type = TextureType::TEXTURE_1D_ARRAY;
+            is_image = true;
+            break;
+        case GL_IMAGE_2D_ARRAY:
+        case GL_INT_IMAGE_2D_ARRAY:
+        case GL_UNSIGNED_INT_IMAGE_2D_ARRAY:
+            texture_type = TextureType::TEXTURE_2D_ARRAY;
+            is_image = true;
+            break;
+        case GL_IMAGE_CUBE_MAP_ARRAY:
+        case GL_INT_IMAGE_CUBE_MAP_ARRAY:
+        case GL_UNSIGNED_INT_IMAGE_CUBE_MAP_ARRAY:
+            texture_type = TextureType::TEXTURE_CUBEMAP_ARRAY;
+            is_image = true;
+            break;
+        case GL_IMAGE_2D_RECT:
+        case GL_INT_IMAGE_2D_RECT:
+        case GL_UNSIGNED_INT_IMAGE_2D_RECT:
+        case GL_IMAGE_BUFFER:
+        case GL_INT_IMAGE_BUFFER:
+        case GL_UNSIGNED_INT_IMAGE_BUFFER:
+        case GL_IMAGE_2D_MULTISAMPLE:
+        case GL_IMAGE_2D_MULTISAMPLE_ARRAY:
+        case GL_INT_IMAGE_2D_MULTISAMPLE:
+        case GL_INT_IMAGE_2D_MULTISAMPLE_ARRAY:
+        case GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE:
+        case GL_UNSIGNED_INT_IMAGE_2D_MULTISAMPLE_ARRAY:
+            // 其他暂不支持的图像类型（Rect/Buffer/Multisample Texture）
+            texture_type = TextureType::UNKNOWN;
+            is_image = true;
+        default:
+            break;
+        }
+
+        if (!is_image) continue;
+
+        if (texture_type == TextureType::UNKNOWN) {
+            LOG_ERROR("使用了暂不支持的图像类型");
+            continue;
+        }
+
+        // 获取名称
+        std::string name_buffer;
+        name_buffer.resize(name_len - 1);
+        glGetProgramResourceName(id, GL_UNIFORM, i, name_len, nullptr, name_buffer.data());
+        result.emplace(std::move(name_buffer), texture_type);
+    }
+
+    return result;
+}
+
 } // namespace Goonya

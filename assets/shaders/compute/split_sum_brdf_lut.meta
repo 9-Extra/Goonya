@@ -1,0 +1,7 @@
+{
+    "type": "UberShader",
+    "name": "split_sum_brdf_lut",
+    "content": {
+        "source": "split_sum_brdf_lut.gshader"
+    }
+}

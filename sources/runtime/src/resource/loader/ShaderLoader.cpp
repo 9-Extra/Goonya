@@ -23,6 +23,7 @@
 #include <regex>
 #include <string_view>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -37,6 +38,51 @@ enum class Section {
 
     MAX
 };
+
+// #image指令的access参数：ro / wo / rw
+static uint32_t parse_image_access(std::string_view access) noexcept {
+    if (access == "ro") {
+        return GL_READ_ONLY;
+    }
+    if (access == "wo") {
+        return GL_WRITE_ONLY;
+    }
+    if (access == "rw") {
+        return GL_READ_WRITE;
+    }
+    return 0;
+}
+
+// #image指令的format参数，使用GLSL图像格式限定符的名称
+// deepseek神力
+static uint32_t parse_image_format(std::string_view format) noexcept {
+    static const std::unordered_map<std::string_view, uint32_t> FORMAT_MAP = {
+        {"rgba32f", GL_RGBA32F},           {"rgba16f", GL_RGBA16F},
+        {"rg32f", GL_RG32F},               {"rg16f", GL_RG16F},
+        {"r11f_g11f_b10f", GL_R11F_G11F_B10F}, {"r32f", GL_R32F},
+        {"r16f", GL_R16F},                 {"rgba16", GL_RGBA16},
+        {"rgb10_a2", GL_RGB10_A2},         {"rgba8", GL_RGBA8},
+        {"rg16", GL_RG16},                 {"rg8", GL_RG8},
+        {"r16", GL_R16},                   {"r8", GL_R8},
+        {"rgba16_snorm", GL_RGBA16_SNORM}, {"rgba8_snorm", GL_RGBA8_SNORM},
+        {"rg16_snorm", GL_RG16_SNORM},     {"rg8_snorm", GL_RG8_SNORM},
+        {"r16_snorm", GL_R16_SNORM},       {"r8_snorm", GL_R8_SNORM},
+        {"rgba32i", GL_RGBA32I},           {"rgba16i", GL_RGBA16I},
+        {"rgba8i", GL_RGBA8I},             {"rg32i", GL_RG32I},
+        {"rg16i", GL_RG16I},               {"rg8i", GL_RG8I},
+        {"r32i", GL_R32I},                 {"r16i", GL_R16I},
+        {"r8i", GL_R8I},                   {"rgba32ui", GL_RGBA32UI},
+        {"rgba16ui", GL_RGBA16UI},         {"rgb10_a2ui", GL_RGB10_A2UI},
+        {"rgba8ui", GL_RGBA8UI},           {"rg32ui", GL_RG32UI},
+        {"rg16ui", GL_RG16UI},             {"rg8ui", GL_RG8UI},
+        {"r32ui", GL_R32UI},               {"r16ui", GL_R16UI},
+        {"r8ui", GL_R8UI},
+    };
+    if (auto iter = FORMAT_MAP.find(format); iter != FORMAT_MAP.end()) {
+        return iter->second;
+    }
+    return 0;
+}
 
 class ShaderParser {
 private:
@@ -107,6 +153,29 @@ private:
                     desc.textures.emplace(texture_key, resources.load_resource<GLTexture>(resource_key));
                 } else {
                     LOG_ERROR("纹理指令#texture格式错误: {}", content);
+                }
+            } else if (instruction == "image") {
+                skip(full_match);
+                // #image output_image access="rw" format="rgba32f"
+                // access: ro只读 / wo只写 / rw读写；format使用GLSL图像格式限定符的名称
+                // 图像的访问模式和格式无法通过OpenGL反射获取，必须在这里声明
+                const std::regex pat = std::regex(R"----(^(\w+)\s+access\s*=\s*"(\w+)"\s+format\s*=\s*"(\w+)")----");
+                Match match;
+                if (std::regex_match(content.begin(), content.end(), match, pat)) {
+                    const std::string_view image_name = std::string_view(match[1].first, match[1].second);
+                    const std::string_view access = std::string_view(match[2].first, match[2].second);
+                    const std::string_view format = std::string_view(match[3].first, match[3].second);
+                    uint32_t gl_access = parse_image_access(access);
+                    uint32_t gl_type = parse_image_format(format);
+                    if (gl_access == 0) {
+                        LOG_ERROR("图像指令#image的access值无效: {}（仅支持ro/wo/rw）", access);
+                    } else if (gl_type == 0) {
+                        LOG_ERROR("图像指令#image的format值无效: {}", format);
+                    } else {
+                        desc.images.emplace_back(image_name, ImageDecl{gl_access, gl_type});
+                    }
+                } else {
+                    LOG_ERROR("图像指令#image格式错误: {}", content);
                 }
             } else if (instruction == "setting") {
                 skip(full_match);
