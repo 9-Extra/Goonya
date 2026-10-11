@@ -81,7 +81,7 @@ float G_SchlicksmithGGX_IBL(float dotNL, float dotNV, float roughness)
 // UE4的GGX-Smith Correlated Joint 近似方案
 // [Heitz 2014, "Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs"]
 // from https://zhuanlan.zhihu.com/p/81708753
-float G_SmithJointApprox(float NoV, float NoL, float roughness)
+float V_SmithJointApprox(float NoV, float NoL, float roughness)
 {
     float a = roughness * roughness;
     float Vis_SmithV = NoL * ( NoV * ( 1 - a ) + a );

@@ -42,10 +42,15 @@ vec2 hammersley2d(uint i, uint N) {
 
 vec3 importance_sample_ggx_h(vec2 u, float r) {
     float alpha = r * r;
-    float cos_theta = sqrt((1 - u.x) / (1 + (alpha * alpha - 1) * u.x));
+    // 这里存在一个数值精度问题，r 接近 0 且 u.x = 1 时会出现 0 / 0 导致精度误差甚至NaN
+    // 另外GPU计算中默认使用近似的精度，不保证 x / x == 1，结果可能大于1
+    // 原始形式为 float cos_theta_sqr = (1 - u.x) / (1 + (alpha * alpha - 1) * u.x);
+    float cos_theta_sqr = (1 - u.x) / max(0.0000001, (1 - u.x + alpha * alpha * u.x)); // 调整顺序降低误差，保证不被0除
+    cos_theta_sqr = min(cos_theta_sqr, 1); // 防止精度误差cos_theta_sqr会超过1导致的NaN
     float phi = 2 * PI * u.y;
     
-    float sin_theta = sqrt(1 - cos_theta * cos_theta);
+    float cos_theta = sqrt(cos_theta_sqr);
+    float sin_theta = sqrt(1 - cos_theta_sqr);
     float sin_phi = sin(phi);
     float cos_phi = cos(phi);
 
