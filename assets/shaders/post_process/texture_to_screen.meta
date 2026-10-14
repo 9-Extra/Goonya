@@ -1,0 +1,7 @@
+{
+    "type": "UberShader",
+    "name": "texture_to_screen",
+    "content": {
+        "source": "texture_to_screen.gshader"
+    }
+}

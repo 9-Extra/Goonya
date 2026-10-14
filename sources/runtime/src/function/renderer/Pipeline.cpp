@@ -2,6 +2,7 @@
 #include "core/RefCount.h"
 #include "core/cgmath/matrix.h"
 #include "core/cgmath/transform.h"
+#include "core/cgmath/vector.h"
 #include "core/clock/GameClock.h"
 #include "core/log/Log.h"
 #include "function/renderer/Material.h"
@@ -25,10 +26,12 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <exception>
 #include <ranges>
 #include <span>
 #include <tuple>
 #include <vector>
+#include <misc/cpp/imgui_stdlib.h>
 
 namespace Goonya {
 
@@ -144,6 +147,8 @@ Pipeline::Pipeline() {
     if (!bright_extract_material) {
         throw RuntimeError("无法加载亮度提取着色器");
     }
+
+    texture_display_material = create_ref<Material>(resources.load_resource<UberShader>("shaders/post_process/texture_to_screen"));
 }
 
 void Pipeline::render() {
@@ -178,6 +183,8 @@ void Pipeline::render() {
             render_camera(camera, scene);
         }
     }
+
+    draw_texture_preview();
 
     if (is_screen_painted) {
         // 将临时渲染目标的内容绘制到屏幕，因为在绘制时Y轴是倒的，所以这里需要翻转Y轴
@@ -500,6 +507,64 @@ void Pipeline::draw_postprocess(CameraInfo &camera_info) {
         std::ranges::swap(replace_render_target[0], replace_render_target[1]);
     }
     GL.pop_debug_group_label();
+}
+
+void Pipeline::draw_texture_preview(){
+    Ref<GLTexture> t;
+    if (ImGui::Begin("Display Texture", &texture_preview_windows_open)){
+        ImGui::Checkbox("显示纹理", &show_texture);
+        ImGui::InputText("资源键", &show_texture_key);
+        if (show_texture && !show_texture_key.empty()){
+            try {
+                t = resources.load_resource<GLTexture>(show_texture_key);
+                ImGui::NewLine();
+            } catch (const std::exception&) {
+                ImGui::TextUnformatted("资源未找到");
+            }
+        } else {
+            ImGui::TextUnformatted("OK");
+        }
+        float max_mipmap = 0;
+        if (t) {
+            max_mipmap = (float)t->get_mipmap_levels();
+        }
+        ImGui::SliderFloat("Mipmap层级 ", &show_texture_mipmap_level, 0, max_mipmap);
+        ImGui::SliderFloat2("位置", show_texture_position.v, 0, 1);
+        ImGui::SliderFloat2("大小", show_texture_size.v, 0, 1);
+        
+        // 开始显示图像
+        if (t) {
+            auto [rw, rh] = replace_render_target[0]->get_size();
+            float ratio = float(rw) / rh;
+            auto [w, h, d] = t->get_shape();
+            // 保证图像在定义的空间内部尽可能大且不形变，居中对齐
+            if (t->get_type() == TextureType::TEXTURE_2D) {
+                ratio = float(w) / h / ratio;
+                Vector2f pos;
+                Vector2f size;
+                if (ratio > float(show_texture_size.x) / show_texture_size.y) {
+                    // 太胖
+                    size = {show_texture_size.x, show_texture_size.x / ratio};
+                    pos = {show_texture_position.x, show_texture_position.y};
+                } else {
+                    // 太高
+                    size = {show_texture_size.y * ratio, show_texture_size.y};
+                    pos = {show_texture_position.x, show_texture_position.y};
+                }
+                Vector4f xywh{pos.x, pos.y, size.x, size.y};
+                texture_display_material->set_param("xywh", xywh);
+                texture_display_material->set_param("mipmap_level", show_texture_mipmap_level);
+                texture_display_material->set_texture("source", t);
+                texture_display_material->bind();
+                postprocess_quad_mesh->bind();
+                GL.set_viewport(Viewport{0, 0, rw, rh});
+                GL.draw_vertices(Topology::TRIANGLE, 0, 6);
+            } else {
+                ImGui::TextUnformatted("不支持此类型");
+            }
+        }
+    }
+    ImGui::End();
 }
 
 void Pipeline::screen_paint(Ref<GLFrameBuffer> dst, Ref<GLFrameBuffer> src, Ref<Material> material) {
