@@ -15,7 +15,7 @@ inline GLsizei max_mipmap_level(uint8_t indicate, Args... args) {
     return std::min<GLsizei>(indicate, std::bit_width(max_size));
 }
 GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape,
-                     uint8_t mipmap_level)
+                     uint8_t mipmap_levels)
     : type(type), format(format), shape(shape) {
     const auto &[width, height, depth] = this->shape;
     const GLenum gl_format = texture_format_to_gl_format(this->format);
@@ -23,7 +23,7 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     if (gl_format == 0) {
         throw RuntimeError("不能创建格式为UNKNOWN纹理");
     }
-    if (mipmap_level == 0) {
+    if (mipmap_levels == 0) {
         throw RuntimeError("不能创建mipmap_level为0的纹理，如果不需要mipmap，请将mipmap_"
                            "level设置为1。如果需要最大的mipmap_level，请将mipmap_level设置为255");
     }
@@ -34,8 +34,9 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
         throw RuntimeError("不能创建类型为UNKNOWN纹理");
     case TextureType::TEXTURE_1D: {
         GN_ASSERT(width != 0 && height == 0 && depth == 0);
+        this->mipmap_levels = max_mipmap_level(mipmap_levels, width);
         glCreateTextures(GL_TEXTURE_1D, 1, &id);
-        glTextureStorage1D(id, max_mipmap_level(mipmap_level, width), gl_format, width);
+        glTextureStorage1D(id, this->mipmap_levels, gl_format, width);
         break;
     }
     case TextureType::TEXTURE_1D_ARRAY: {
@@ -44,20 +45,23 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     }
     case TextureType::TEXTURE_2D: {
         GN_ASSERT(width != 0 && height != 0 && depth == 0);
+        this->mipmap_levels = max_mipmap_level(mipmap_levels, width, height);
         glCreateTextures(GL_TEXTURE_2D, 1, &id);
-        glTextureStorage2D(id, max_mipmap_level(mipmap_level, width, height), gl_format, width, height);
+        glTextureStorage2D(id, this->mipmap_levels, gl_format, width, height);
         break;
     }
     case TextureType::TEXTURE_2D_ARRAY: {
         GN_ASSERT(width != 0 && height != 0 && depth != 0);
+        this->mipmap_levels = max_mipmap_level(mipmap_levels, width, height);
         glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &id);
-        glTextureStorage3D(id, max_mipmap_level(mipmap_level, width, height), gl_format, width, height, depth);
+        glTextureStorage3D(id, this->mipmap_levels, gl_format, width, height, depth);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP: {
         GN_ASSERT(width != 0 && height != 0 && depth == 0);
+        this->mipmap_levels = max_mipmap_level(mipmap_levels, width, height);
         glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &id);
-        glTextureStorage2D(id, max_mipmap_level(mipmap_level, width, height), gl_format, width, height);
+        glTextureStorage2D(id, this->mipmap_levels, gl_format, width, height);
         break;
     }
     case TextureType::TEXTURE_CUBEMAP_ARRAY: {
@@ -66,10 +70,26 @@ GLTexture::GLTexture(TextureType type, TextureStorageFormat format, std::tuple<u
     }
     case TextureType::TEXTURE_3D: {
         GN_ASSERT(width != 0 && height != 0 && depth != 0);
+        this->mipmap_levels = max_mipmap_level(mipmap_levels, width, height, depth);
         glCreateTextures(GL_TEXTURE_3D, 1, &id);
-        glTextureStorage3D(id, max_mipmap_level(mipmap_level, width, height, depth), gl_format, width, height, depth);
+        glTextureStorage3D(id, this->mipmap_levels, gl_format, width, height, depth);
         break;
     }
+    }
+}
+
+std::optional<uint32_t> GLTexture::get_layer_count() const noexcept {
+    switch (this->type) {
+    case TextureType::TEXTURE_CUBEMAP:
+        return 6;
+    case TextureType::TEXTURE_1D_ARRAY:
+    case TextureType::TEXTURE_2D_ARRAY:
+        return std::get<2>(shape);
+    case TextureType::TEXTURE_3D:
+        // 3D纹理的layer语义待确认，暂不检查
+        return std::nullopt;
+    default:
+        return 1;
     }
 }
 
@@ -168,16 +188,14 @@ void GLTexture::import_image(const stb::Image &image, uint32_t mipmap_level, uin
     }
 }
 
-stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) const {
-    GLuint level;
-    glGetTextureParameterIuiv(id, GL_TEXTURE_MAX_LEVEL, &level);
-    if (mipmap_level > level) {
+stb::Image GLTexture::export_image(uint32_t mipmap, uint32_t zoffset) const {
+    if (mipmap >= mipmap_levels) {
         throw RuntimeError("指定的Level超过上限");
     }
 
     GLint width, height;
-    glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_WIDTH, &width);
-    glGetTextureLevelParameteriv(id, mipmap_level, GL_TEXTURE_HEIGHT, &height);
+    glGetTextureLevelParameteriv(id, mipmap, GL_TEXTURE_WIDTH, &width);
+    glGetTextureLevelParameteriv(id, mipmap, GL_TEXTURE_HEIGHT, &height);
 
     GLenum target_format = 0;
     int channel = 0;
@@ -277,7 +295,7 @@ stb::Image GLTexture::export_image(uint32_t mipmap_level, uint32_t zoffset) cons
     stb::Image image = stb::Image::create_empty(width, height, channel, is_float);
     unsigned int buf_size = image.get_size_byte();
     GLenum target_type = is_float ? GL_FLOAT : GL_UNSIGNED_BYTE;
-    glGetTextureSubImage(id, mipmap_level, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
+    glGetTextureSubImage(id, mipmap, 0, 0, zoffset, width, height, 1, target_format, target_type, buf_size,
                          image.get_data());
     return image;
 };

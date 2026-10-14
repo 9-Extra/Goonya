@@ -10,6 +10,7 @@ Ref<Material> Material::clone() const noexcept {
     c->local_variant_code = local_variant_code;
     c->parameters = parameters;
     c->textures = textures;
+    c->images = images;
     c->uniform_buffers = uniform_buffers;
     c->shader_storage_buffers = shader_storage_buffers;
 

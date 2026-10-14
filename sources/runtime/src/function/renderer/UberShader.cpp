@@ -137,7 +137,7 @@ UberShader::UberShader(UberShaderDesc &&desc) {
         auto &&[name, texture_res] = std::move(default_texture);
         // 纹理单元从0开始编号，纹理类型信息在反射具体的变体时再获取
         texture_units.emplace(name, TextureParameterInfo{TextureType::UNKNOWN, (uint32_t)i});
-        textures.emplace((uint32_t)i, std::move(texture_res));
+        textures.emplace_back(std::move(texture_res));
     }
 
     // 图像单元同样手动分配，image unit按#image指令的声明顺序从0开始编号

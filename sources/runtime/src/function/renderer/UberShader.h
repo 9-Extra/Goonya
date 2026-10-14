@@ -215,7 +215,7 @@ protected:
     RenderPriority render_priority;                        // 渲染优先级
     PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
     MaterialParameterBlockInfo material_parameters;        // 默认材质参数
-    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
+    std::vector<Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
 
     std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
         uniform_binding_info; // 全部uniform buffer的绑定点和类型
@@ -248,8 +248,8 @@ public:
         return image_units;
     }
     Ref<GLTexture> get_default_texture(uint32_t unit) const {
-        if (auto iter = textures.find(unit); iter != textures.end()) {
-            return iter->second;
+        if (unit < textures.size()) {
+            return textures[unit];
         } else {
             throw RuntimeError(std::format("UberShader没有定义纹理单元 {}", unit));
         }

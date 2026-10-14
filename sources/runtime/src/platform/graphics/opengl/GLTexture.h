@@ -6,6 +6,7 @@
 #include <glad/glad.h>
 
 #include <cstdint>
+#include <optional>
 #include <tuple>
 
 namespace Goonya {
@@ -90,14 +91,18 @@ private:
     TextureType type;
     TextureStorageFormat format;
     std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
+    uint8_t mipmap_levels = 255;
+
 public:
     explicit GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape,
-                       uint8_t mipmap_level = 255);
+                       uint8_t mipmap_levels = 255);
     ~GLTexture() { glDeleteTextures(1, &id); }
     void bind_texture(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
     // gl_access和gl_type从着色器的#image指令获取
-    void bind_image_layered(uint32_t binding, uint32_t mipmap_level, uint32_t layer, uint32_t gl_access, uint32_t gl_type) const noexcept{
-        glBindImageTexture(binding, id, mipmap_level, GL_FALSE, layer, gl_access, gl_type);
+    // layered为true时绑定整张纹理（cube map的全部6面、整个数组），此时layer被忽略；为false时绑定layer指定的那一层
+    void bind_image(uint32_t binding, uint32_t mipmap_level, bool layered, uint32_t layer, uint32_t gl_access,
+                    uint32_t gl_type) const noexcept {
+        glBindImageTexture(binding, id, mipmap_level, layered ? GL_TRUE : GL_FALSE, layer, gl_access, gl_type);
     }
 
     GLuint get_id() const noexcept { return id; }
@@ -116,6 +121,10 @@ public:
     TextureType get_type() const noexcept { return type; }
 
     std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
+    uint8_t get_mipmap_levels() const noexcept { return mipmap_levels; }
+    // 可被layer指定的层数：cube map为6，1D/2D数组为数组长度，其余类型没有layer的概念为1
+    // 返回nullopt表示此类型的layer语义尚未确认，不做检查
+    std::optional<uint32_t> get_layer_count() const noexcept;
 
     static TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept {
         TextureStorageFormat storage_type = TextureStorageFormat::UNKNOWN;

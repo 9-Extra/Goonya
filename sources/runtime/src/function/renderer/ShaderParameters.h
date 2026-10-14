@@ -8,7 +8,6 @@
 #include "platform/graphics/opengl/GLTexture.h"
 
 #include "resource/Resource.h"
-#include "runtime/GAssert.h"
 
 #include <cstdint>
 #include <string>
@@ -18,11 +17,12 @@
 namespace Goonya {
 
 struct ImageBindingInfo {
-    Ref<GLTexture> image;
-    uint32_t mipmap_level;
-    uint32_t layer;
-    uint32_t gl_access;
-    uint32_t gl_type;
+    Ref<GLTexture> image; // 为空表示未绑定
+    uint32_t mipmap_level = 0;
+    bool layered = false;
+    uint32_t layer = 0;
+    uint32_t gl_access = 0;
+    uint32_t gl_type = 0;
 };
 
 class ShaderParameters : public Resource {
@@ -33,10 +33,11 @@ protected:
 
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, MaterialParameter> parameters;
-    std::unordered_map<uint32_t, Ref<GLTexture>> textures; // slot -> textures
-    std::unordered_map<uint32_t, ImageBindingInfo> images; // slot -> textures
-    std::vector<Ref<GLBuffer>> uniform_buffers;            // slot -> buffer
-    std::vector<Ref<GLBuffer>> shader_storage_buffers;     // slot -> buffer
+    // 纹理单元和图像单元由UberShader按声明顺序连续分配，两个容器在构造时就按单元数定容，单元可以直接作为下标
+    std::vector<Ref<GLTexture>> textures;              // 单元 -> 纹理，为空表示使用着色器的默认纹理
+    std::vector<ImageBindingInfo> images;              // 单元 -> 绑定，image为空表示未绑定
+    std::vector<Ref<GLBuffer>> uniform_buffers;        // slot -> buffer
+    std::vector<Ref<GLBuffer>> shader_storage_buffers; // slot -> buffer
 
     // 脏标记
     mutable bool is_parameters_dirty;
@@ -95,14 +96,9 @@ public:
      */
     void set_texture(const std::string &name, const Ref<GLTexture> &texture) {
         // texture slot可能被优化掉了
-        // 允许传入texture为空，表示使用默认纹理。但this->textures不应包含空指针
+        // 传空表示使用着色器的默认纹理，this->textures中允许出现空元素
         if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
-            uint32_t unit = iter->second.unit; // 在bind时再进行texture类型检查
-            if (texture) {
-                this->textures[unit] = texture;
-            } else {
-                this->textures.erase(unit);
-            }
+            this->textures[iter->second.unit] = texture;
         } else {
             // 允许设置不存在的纹理，会被忽略
         }
@@ -115,27 +111,8 @@ public:
      * @param texture 纹理对象
      * @note 必须在bind()之前调用
      */
-    void set_image(const std::string &name, const Ref<GLTexture> &texture, uint32_t mipmap_level, uint32_t layer) {
-        // texture slot可能被优化掉了
-        // 允许传入texture为空，表示使用默认纹理。但this->textures不应包含空指针
-        if (auto iter = uber_shader->get_image_units().find(name); iter != uber_shader->get_image_units().end()) {
-            uint32_t unit = iter->second.unit; // 在bind时再进行texture类型检查
-            GN_ASSERT(iter->second.gl_access != 0 && iter->second.gl_type != 0);
-            if (texture) {
-                this->images[unit] = {
-                    .image = texture,
-                    .mipmap_level = mipmap_level,
-                    .layer = layer,
-                    .gl_access = iter->second.gl_access,
-                    .gl_type = iter->second.gl_type,
-                };
-            } else {
-                this->images.erase(unit);
-            }
-        } else {
-            throw RuntimeError(std::format("图形\"{}\"不存在", name));
-        }
-    }
+    void set_image(const std::string &name, const Ref<GLTexture> &texture, uint32_t mipmap_level = 0,
+                   bool layered = false, uint32_t layer = 0);
 
     bool set_local_variant_key(const std::string &key) {
         return uber_shader->set_local_variant_key(local_variant_code, key);

@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <cstring>
 #include <ranges>
+#include <rfl/enums.hpp>
 #include <utility>
 #include <variant>
 
@@ -20,29 +21,26 @@ namespace Goonya {
 void ShaderParameters::bind_external_resources() const {
     // 绑定所有纹理
     for (const auto &[name, info] : uber_shader->get_texture_units()) {
-        if (auto iter = textures.find(info.unit); iter != textures.end()) {
-            GN_ASSERT(iter->second);
-            /*
-            if (iter->second->get_type() != info.type) {
-                LOG_ERROR("材质绑定的纹理{}类型与着色器要求的类型不一致", name);
-                iter->second = uber_shader->get_default_texture(info.unit); // 重置为默认纹理
-            }
-            */
-            iter->second->bind_texture(info.unit); // 绑定材质设定的纹理
+        const Ref<GLTexture> &texture = textures[info.unit];
+        if (texture) {
+            texture->bind_texture(info.unit); // 绑定材质设定的纹理
         } else {
             // 绑定默认纹理
             uber_shader->get_default_texture(info.unit)->bind_texture(info.unit);
         }
     }
     for (const auto &[name, info] : uber_shader->get_image_units()) {
-        if (auto iter = images.find(info.unit); iter != images.end()) {
-            const auto& image = iter->second;
-            GN_ASSERT(image.image);
-            image.image->bind_image_layered(info.unit, image.mipmap_level, image.layer, image.gl_access, image.gl_type);
-        } else {
+        const ImageBindingInfo &image = images[info.unit];
+        if (!image.image) {
             // 图像未绑定是不允许的，它没有默认
             throw RuntimeError(std::format("着色器\"{}\"中图像\"{}\"未绑定", uber_shader->get_name(), name));
         }
+        // 图像类型在set_image时已经检查过，这里兜底
+        GN_ASSERT_MSG(info.type == TextureType::UNKNOWN || image.image->get_type() == info.type,
+                      "图像\"{}\"在着色器中为{}类型，实际绑定了{}类型", name, rfl::enum_to_string(info.type),
+                      rfl::enum_to_string(image.image->get_type()));
+        image.image->bind_image(info.unit, image.mipmap_level, image.layered, image.layer, image.gl_access,
+                                image.gl_type);
     }
     // 绑定其他buffer
     for (const auto &[binding, buffer] : std::views::enumerate(uniform_buffers)) {
@@ -95,6 +93,46 @@ void ShaderParameters::set_external_buffer(const std::string &name, const Ref<GL
     }
 }
 
+void ShaderParameters::set_image(const std::string &name, const Ref<GLTexture> &texture, uint32_t mipmap_level,
+                                 bool layered, uint32_t layer) {
+    // texture slot可能被优化掉了
+    // 传空表示不绑定图像，bind时会因为图像未绑定而报错
+    auto iter = uber_shader->get_image_units().find(name);
+    if (iter == uber_shader->get_image_units().end()) {
+        throw RuntimeError(std::format("图形\"{}\"不存在", name));
+    }
+    const uint32_t unit = iter->second.unit;
+    if (!texture) {
+        this->images[unit] = {};
+        return;
+    }
+
+    GN_ASSERT(iter->second.gl_access != 0 && iter->second.gl_type != 0);
+    // 着色器中图像的类型只能靠反射得到，未被任何已编译变体使用的图像会停留在UNKNOWN，此时无法检查
+    if (iter->second.type != TextureType::UNKNOWN && texture->get_type() != iter->second.type) {
+        throw RuntimeError(std::format("图像\"{}\"在着色器中为{}类型，实际绑定了{}类型", name,
+                                       rfl::enum_to_string(iter->second.type),
+                                       rfl::enum_to_string(texture->get_type())));
+    }
+    if (mipmap_level >= texture->get_mipmap_levels()) {
+        throw RuntimeError(std::format("图像\"{}\"的mipmap_level {}超过上限{}", name, mipmap_level,
+                                       texture->get_mipmap_levels() - 1));
+    }
+    const auto layer_count = texture->get_layer_count();
+    if (!layered && layer_count.has_value() && layer >= *layer_count) {
+        throw RuntimeError(std::format("图像\"{}\"的layer {}超过上限{}", name, layer, *layer_count - 1));
+    }
+
+    this->images[unit] = {
+        .image = texture,
+        .mipmap_level = mipmap_level,
+        .layered = layered,
+        .layer = layer,
+        .gl_access = iter->second.gl_access,
+        .gl_type = iter->second.gl_type,
+    };
+}
+
 ShaderParameters::ShaderParameters(UberShader *uber_shader)
     : uber_shader(uber_shader), local_variant_code(0),
       current_variant_code(uber_shader->get_effective_global_key_code(), local_variant_code) {
@@ -102,6 +140,10 @@ ShaderParameters::ShaderParameters(UberShader *uber_shader)
         throw RuntimeError("无效元着色器，可能元着色器加载时失败了");
     }
     shader = uber_shader->query_variant(current_variant_code); // 保证shader总不是空的
+
+    // 纹理单元和图像单元由UberShader按声明顺序连续分配，构造时就能确定单元数，之后直接以单元为下标访问
+    textures.resize(uber_shader->get_texture_units().size());
+    images.resize(uber_shader->get_image_units().size());
 
     // 创建此材质的ConstantBuffer
     per_material = create_ref<GLBuffer>(BufferType::MODIFIABLE, uber_shader->per_material_block().total_size);
@@ -114,6 +156,7 @@ Ref<ShaderParameters> ShaderParameters::clone() const noexcept {
 
     c->parameters = parameters;
     c->textures = textures;
+    c->images = images;
     c->uniform_buffers = uniform_buffers;
     c->shader_storage_buffers = shader_storage_buffers;
 

@@ -9,6 +9,7 @@ Ref<ComputeMaterial> ComputeMaterial::clone() const noexcept {
 
     c->parameters = parameters;
     c->textures = textures;
+    c->images = images;
     c->uniform_buffers = uniform_buffers;
     c->shader_storage_buffers = shader_storage_buffers;
     return c;
