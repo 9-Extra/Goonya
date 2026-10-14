@@ -1,5 +1,9 @@
 #include "GLTexture.h"
 
+#include "core/RefCount.h"
+#include "function/renderer/ComputeMaterial.h"
+#include "function/renderer/UberShader.h"
+#include "resource/ResMng.h"
 #include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
 
@@ -128,6 +132,23 @@ void GLTexture::set_filter_mode(TextureFilterMode filter_mode) noexcept {
     }
     glTextureParameteri(id, GL_TEXTURE_MIN_FILTER, min_filter);
     glTextureParameteri(id, GL_TEXTURE_MAG_FILTER, mag_filter);
+}
+
+// NOLINTNEXTLINE(readability-make-member-function-const)
+void GLTexture::generate_prefiltered_envmap() {
+    if (mipmap_levels == 1) return;
+
+    auto [w, h, d] = get_shape();
+    Ref<ComputeMaterial> shader = create_ref<ComputeMaterial>(resources.load_resource<UberShader>("shaders/compute/split_sum_prefilter_env"));
+    shader->set_texture("skybox_specular_texture", this);
+    for(uint32_t level = 1;level < mipmap_levels;level++){
+        shader->set_image("output_image", this, level, true);
+        shader->set_param("level", float(level));
+        shader->dispatch_compute((w - 1) / 8 + 1, (h - 1) / 8 + 1, 6);
+        w /= 2;
+        h /= 2;
+    }    
+    glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); // todo：封装 
 }
 
 void GLTexture::import_image(const stb::Image &image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,

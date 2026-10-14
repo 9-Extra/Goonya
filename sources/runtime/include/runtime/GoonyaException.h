@@ -18,9 +18,9 @@ public:
     std::stacktrace {}
 #endif
 
-    explicit RuntimeError(const std::string &msg, size_t skip = 1) noexcept
+    explicit RuntimeError(const std::string &msg, size_t skip = 1)
         : std::runtime_error{msg}, trace{CURRENT_BACKTRACE(skip)} {};
-    explicit RuntimeError(const char *msg, size_t skip = 1) noexcept
+    explicit RuntimeError(const char *msg, size_t skip = 1)
         : std::runtime_error{msg}, trace{CURRENT_BACKTRACE(skip)} {};
 
     const std::stacktrace &get_trace() const noexcept { return trace; }
@@ -32,5 +32,8 @@ public:
 class RuntimeErrorNest : public std::runtime_error {
     using std::runtime_error::runtime_error;
 };
+
+// 让std::terminate被调用时打印异常信息
+void install_terminate_handler();
 
 } // namespace Goonya

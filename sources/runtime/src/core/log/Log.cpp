@@ -32,8 +32,20 @@ Logger::Logger() {
 };
 
 Logger::~Logger() {
+    shutdown();
     core_logger.reset();
-    spdlog::shutdown();
+}
+
+void Logger::shutdown() noexcept {
+    try {
+        if (core_logger) {
+            core_logger->flush();
+        }
+        // 销毁线程池：队列里剩下的日志也会写完
+        spdlog::shutdown();
+    } catch (...) {
+        // 退出路径上不能再抛异常
+    }
 }
 
 } // namespace Goonya

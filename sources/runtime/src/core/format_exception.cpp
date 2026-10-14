@@ -36,8 +36,8 @@ static void format_exception(const std::exception &e, int level, std::string &in
         format_exception(nestedException, level + 1, information);
     } catch (...) {
         try {
-            std::format_to(std::back_inserter(information), "{:{}} Unknown exception type: \"{}\"", "", level,
-                           typeid(std::current_exception()).name());
+            std::format_to(std::back_inserter(information), "{:{}} Unknown exception (not a std::exception)\n",
+                           "", level);
         } catch (...) {
             information += "Unknown exception: [format failed]";
         }

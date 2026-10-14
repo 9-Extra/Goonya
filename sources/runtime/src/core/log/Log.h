@@ -15,6 +15,9 @@ public:
     ~Logger();
 
     static const std::vector<std::shared_ptr<spdlog::sinks::sink>> &get_sinks() noexcept { return sinks; }
+
+    // 写完日志后退出，用于崩溃等结束进程的地方
+    static void shutdown() noexcept;
 };
 
 extern std::shared_ptr<spdlog::logger> core_logger; // 其实应该放在Logger里面，但这样看起来不错

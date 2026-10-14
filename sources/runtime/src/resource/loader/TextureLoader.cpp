@@ -92,10 +92,7 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
         int height = image.get_height();
         uint8_t mip_levels = cubemap_desc.get("mip_levels", 255).asUInt();
 
-        TextureStorageFormat storage_type = GLTexture::get_proper_storage_type(image);
-        if (storage_type == TextureStorageFormat::UNKNOWN) {
-            throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_dirs[0]));
-        }
+        TextureStorageFormat storage_type = TextureStorageFormat::RGBA_f16;
         Ref<GLTexture> texture =
             create_ref<GLTexture>(TextureType::TEXTURE_CUBEMAP, storage_type,
                                   std::make_tuple((uint32_t)width, (uint32_t)height, 0), mip_levels);
@@ -114,7 +111,7 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
             }
             texture->import_image(image, 0, 0, 0, i);
         }
-        texture->generate_mipmaps();
+        texture->generate_prefiltered_envmap(); // todo:使用额外设置指定
 
         return texture;
     } else {

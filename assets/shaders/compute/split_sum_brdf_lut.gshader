@@ -1,7 +1,7 @@
 #name brdf_lut
 #category compute
 
-#image output_image access="wo" format="rg16f"
+#image output_image access="w" format="rg16f"
 
 #section compute
 

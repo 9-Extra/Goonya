@@ -1,0 +1,7 @@
+{
+    "type": "UberShader",
+    "name": "split_sum_prefilter_env",
+    "content": {
+        "source": "split_sum_prefilter_env.gshader"
+    }
+}

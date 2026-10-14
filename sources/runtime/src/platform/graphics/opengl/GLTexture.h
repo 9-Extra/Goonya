@@ -113,6 +113,7 @@ public:
     {
         glGenerateTextureMipmap(id);
     }
+    void generate_prefiltered_envmap(); // 会加载预滤波着色器，加载或编译失败时抛出异常
 
     void import_image(const stb::Image &image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
                       uint32_t zoffset = 0);
@@ -130,16 +131,16 @@ public:
         TextureStorageFormat storage_type = TextureStorageFormat::UNKNOWN;
         switch (image.get_channel()) {
         case 1: {
-            storage_type = image.is_float() ? TextureStorageFormat::R_f32 : TextureStorageFormat::R_f8;
+            storage_type = image.is_float() ? TextureStorageFormat::R_f16 : TextureStorageFormat::R_f8;
             break;
         }
-        case 2:
-        case 3: {
-            storage_type = image.is_float() ? TextureStorageFormat::RGB_f32 : TextureStorageFormat::RGB_f8;
+        case 2: {
+            storage_type = image.is_float() ? TextureStorageFormat::RG_f16 : TextureStorageFormat::RG_f8;
             break;
         }
+        case 3:
         case 4: {
-            storage_type = image.is_float() ? TextureStorageFormat::RGBA_f32 : TextureStorageFormat::RGBA_f8;
+            storage_type = image.is_float() ? TextureStorageFormat::RGBA_f16 : TextureStorageFormat::RGBA_f8;
             break;
         }
         }

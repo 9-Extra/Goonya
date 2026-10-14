@@ -23,6 +23,7 @@
 #include "platform/imgui/imgui_module.h"
 #include "resource/BuiltinResource.h"
 #include "resource/ResMng.h"
+#include "runtime/GoonyaException.h"
 
 namespace Goonya {
 
@@ -39,6 +40,7 @@ static uint32_t calculate_fps(GameClock::ClockType::duration delta) {
 }
 
 void init_engine() {
+    install_terminate_handler(); // 放在最前面，之后无论在哪一层崩掉都能看到异常信息
     std::locale::global(std::locale("")); // 使用系统指定的本地化
     set_current_thread_name("game");
 

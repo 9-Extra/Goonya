@@ -39,12 +39,12 @@ enum class Section {
     MAX
 };
 
-// #image指令的access参数：ro / wo / rw
+// #image指令的access参数：r / w / rw
 static uint32_t parse_image_access(std::string_view access) noexcept {
-    if (access == "ro") {
+    if (access == "r") {
         return GL_READ_ONLY;
     }
-    if (access == "wo") {
+    if (access == "w") {
         return GL_WRITE_ONLY;
     }
     if (access == "rw") {
@@ -53,7 +53,7 @@ static uint32_t parse_image_access(std::string_view access) noexcept {
     return 0;
 }
 
-// #image指令的format参数，使用GLSL图像格式限定符的名称
+// #image指令的format参数，使用GLSL图像格式限定符的名称，为了保证硬件寻址效率所以不支持3通道rgb格式，气笑了
 // deepseek神力
 static uint32_t parse_image_format(std::string_view format) noexcept {
     static const std::unordered_map<std::string_view, uint32_t> FORMAT_MAP = {
@@ -157,7 +157,7 @@ private:
             } else if (instruction == "image") {
                 skip(full_match);
                 // #image output_image access="rw" format="rgba32f"
-                // access: ro只读 / wo只写 / rw读写；format使用GLSL图像格式限定符的名称
+                // access: r只读 / w只写 / rw读写；format使用GLSL图像格式限定符的名称
                 // 图像的访问模式和格式无法通过OpenGL反射获取，必须在这里声明
                 const std::regex pat = std::regex(R"----(^(\w+)\s+access\s*=\s*"(\w+)"\s+format\s*=\s*"(\w+)")----");
                 Match match;
@@ -168,7 +168,7 @@ private:
                     uint32_t gl_access = parse_image_access(access);
                     uint32_t gl_type = parse_image_format(format);
                     if (gl_access == 0) {
-                        LOG_ERROR("图像指令#image的access值无效: {}（仅支持ro/wo/rw）", access);
+                        LOG_ERROR("图像指令#image的access值无效: {}（仅支持r/w/rw）", access);
                     } else if (gl_type == 0) {
                         LOG_ERROR("图像指令#image的format值无效: {}", format);
                     } else {
