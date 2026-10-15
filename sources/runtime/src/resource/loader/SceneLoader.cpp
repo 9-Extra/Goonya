@@ -2,6 +2,7 @@
 
 #include "core/RefCount.h"
 #include "core/cgmath/cgmath.h"
+#include "core/cgmath/vector.h"
 #include "core/format_exception.h"
 #include "core/log/Log.h"
 #include "core/path_formatter.h"
@@ -101,7 +102,11 @@ void load_component(GObject *obj, std::string_view cpnt_name, const Json::Value 
         if (cpnt_desc.isMember("env_map")) {
             env_map = resources.load_resource<GLTexture>(cpnt_desc["env_map"].asString());
         } else {
-            env_map = skybox;
+            env_map = create_ref<GLTexture>(skybox->get_type(), skybox->get_interal_format(), skybox->get_shape());
+            auto [w, h, _] = skybox->get_shape();
+            env_map->copy_image_from(skybox, 0, 0, Vector3i(w, h, 6));
+            glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
+            env_map->generate_prefiltered_envmap();
         }
 
         bool ignore_range = !(cpnt_desc.isMember("ignore_range") && !cpnt_desc["ignore_range"].asBool());

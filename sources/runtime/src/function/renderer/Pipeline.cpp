@@ -437,7 +437,7 @@ void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> 
             instance.material->get_per_material_uniform()->bind_uniform(PER_MATERIAL_UNIFORM_BINDING);
             instance.material->bind_external_resources();
             instance.material->set_texture("camera_depth", depth_texture);
-            instance.material->set_texture("skybox_specular_texture", camera_info.env->environment_map);
+            instance.material->set_texture("prefilitered_envmap", camera_info.env->environment_map);
             last_material = instance.material;
         }
 

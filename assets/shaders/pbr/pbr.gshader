@@ -2,12 +2,12 @@
 #texture basecolor_texture="buildin:missing_texture"
 #texture normal_texture="buildin:normal"
 #texture orm_texture="buildin:white"
-#texture skybox_specular_texture="buildin:black"
+#texture prefilitered_envmap="buildin:missing_texture"
+#texture brdf_lut="buildin:brdf_lut"
 
 #param metallic_factor=f32(1)
 #param roughness_factor=f32(1)
 
-#global_variant GYA_IBL_ENVIRONMENT_LIGHT
 #global_variant GYA_FOG_EXP
 
 #local_variant _ USE_NORMAL_MAP
@@ -19,7 +19,8 @@
 layout(binding = 0) uniform sampler2D basecolor_texture;
 layout(binding = 1) uniform sampler2D normal_texture;
 layout(binding = 2) uniform sampler2D orm_texture;
-layout(binding = 5) uniform samplerCube skybox_specular_texture;
+layout(binding = 3) uniform samplerCube prefilitered_envmap;
+layout(binding = 4) uniform sampler2D brdf_lut;
 
 VS_OUT_PS_IN VS_OUT
 {
@@ -132,63 +133,16 @@ vec3 BRDF(vec3 L, vec3 V, vec3 N, vec3 F0, vec3 albedo, float roughness, float m
     return kD * diff + spec;
 }
 
-// 爱来自虚幻4，https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
-// 输入二维(0, 1)随机数Xi（可用低差异序列），粗糙度Roughness和法线方向N
-// 使用D(H)H*N作为提议分布，采样服从此分布一个球极坐标，最后转换为世界空间方向向量
-vec3 ImportanceSampleGGX(vec2 Xi, float Roughness, vec3 N)
+// Split Sum
+vec3 SpecularIBL(vec3 F0, float Roughness, vec3 N, vec3 V)
 {
-    float a = Roughness * Roughness;
-    float Phi = 2 * PI * Xi.x;
-    float CosTheta = sqrt((1 - Xi.y) / (1 + (a * a - 1) * Xi.y));
-    float SinTheta = sqrt(1 - CosTheta * CosTheta);
-    vec3 H; // 位于切线空间的方向，法线方向为+z
-    H.x = SinTheta * cos(Phi);
-    H.y = SinTheta * sin(Phi);
-    H.z = CosTheta;
+    // 这里忽略了dot(N, V) < 0的情况
+    vec3 L = 2 * dot(V, N) * N - V; // 反向计算入射光方向
+    vec3 env_light = textureLod(prefilitered_envmap, L, Roughness * (textureQueryLevels(prefilitered_envmap) - 1)).rgb;
+    vec2 lut = textureLod(brdf_lut, vec2(dot(N, V), Roughness), 0).rg;
 
-    // 使用法线方向N随便构造一组基以转换到世界坐标系，即随便找两个和N垂直的方向向量（法线分布各向同性，与切线方向无关）
-    // 理论上随便找个向量和N叉乘就能找到与N垂直的向量，为了数值精度这个向量不能和N太相近
-    vec3 UpVector = abs(N.z) < 0.999 ? vec3(0,0,1) : vec3(1,0,0);
-    vec3 TangentX = normalize(cross(UpVector, N)); // 找一个和N垂直的方向
-    vec3 TangentY = cross(N, TangentX);
-    // Tangent to world space
-    //return normalize(vec3(1, 1, 1));
-    return TangentX * H.x + TangentY * H.y + N * H.z;
-}
-
-// 爱来自虚幻4，https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
-vec3 SpecularIBL(vec3 SpecularColor, float Roughness, vec3 N, vec3 V)
-{
-    vec3 SpecularLighting = vec3(0);
-    const uint NumSamples = 32;
-    float NoV = max(dot(N, V), 0);
-    for(uint i = 0; i < NumSamples; i++)
-    {
-        vec2 Xi = hammersley2d(i, NumSamples);
-        vec3 H = ImportanceSampleGGX(Xi, Roughness, N); // 采样得到世界空间半角向量
-        vec3 L = 2 * dot(V, H) * H - V; // 反向计算入射光方向
-        float NoL = max(dot(N, L), 0);
-        float NoH = max(dot(N, H), 0);
-        float VoH = max(dot(V, H), 0);
-        
-        if (NoL > 0)
-        {
-            vec3 light = textureLod(skybox_specular_texture, L, 0).xyz;
-            float G = G_SchlicksmithGGX_IBL(NoL, NoV, Roughness);
-            vec3 F = F_Schlick(VoH, SpecularColor); // VoH == LoH
-            
-            /* 
-            本来应该是 输出亮度 = 入射光light * 高光brdf / 概率密度pdf
-            其中 pdf = D * NoH / (4 * VoH) 有D = D_GGX(NoH, Roughness)
-            入射光 light = SampleColor * NoL
-            高光brdf = D * G * F / (4 * NoL * NoV)
-            
-            化简后得到下面实际计算用的式子，GGX在重要性采样中被约去不用计算
-            */
-            SpecularLighting += light * F * G * VoH / (NoH + 0.000001);
-        }
-    }
-    return SpecularLighting / (NoV + 0.000001) / NumSamples;
+    vec3 brdf = env_light * (F0 * lut.r + lut.g);
+    return brdf; 
 }
 
 vec3 caculate_normal(){
@@ -231,16 +185,9 @@ void frag()
     const vec3 F0 = mix(dielectric_specular, albedo, metallic);
 
     vec3 result_color = vec3(0);
-
-    // 环境光
-#ifdef GYA_IBL_ENVIRONMENT_LIGHT
-    // 使用环境光贴图
-    result_color += SpecularIBL(F0, roughness, N, V) * occlusion;
+    
+    result_color += SpecularIBL(F0, roughness, N, V) * occlusion; // 高光部分
     result_color += ambient_light * albedo * occlusion; // 低频漫反射部分，暂时用ambient_light替代
-#else
-    // 使用常数环境光强度
-    result_color += ambient_light * albedo * occlusion;
-#endif
 
     // 点光源
     for(uint i = 0;i < pointlight_num;i++){

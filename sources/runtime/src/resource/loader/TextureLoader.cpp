@@ -111,7 +111,7 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
             }
             texture->import_image(image, 0, 0, 0, i);
         }
-        texture->generate_prefiltered_envmap(); // todo:使用额外设置指定
+        texture->generate_mipmaps(); // todo:使用额外设置指定
 
         return texture;
     } else {

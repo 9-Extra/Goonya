@@ -7,7 +7,6 @@
 #include "core/input/input.h"
 #include "craft/level/level.h"
 #include "function/renderer/Renderer.h"
-#include "function/renderer/UberShader.h"
 #include "function/world/Component.h"
 #include "function/world/World.h"
 #include "platform/display/display.h"
@@ -43,16 +42,6 @@ void MoveSystem::handle_mouse() const {
 void MoveSystem::handle_keyboard(float delta) const {
     using namespace Goonya;
     const float move_speed = delta * (Input::is_key_pressing(Input::KeyCode::LCTRL) ? 0.06f : 0.02f);
-
-    // F键开关IBL环境光
-    if (Input::is_key_click('F')) {
-        const std::string_view key_name = "GYA_IBL_ENVIRONMENT_LIGHT";
-        if (!Goonya::GLOBAL_VARIANT_KEY.is_key_set(key_name)) {
-            Goonya::GLOBAL_VARIANT_KEY.set_key(key_name);
-        } else {
-            Goonya::GLOBAL_VARIANT_KEY.reset_key(key_name);
-        }
-    }
 
     // R键开关灯
     if (Goonya::Input::is_key_click('R')) {

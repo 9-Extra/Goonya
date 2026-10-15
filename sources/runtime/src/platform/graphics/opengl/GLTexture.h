@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/cgmath/vector.h"
 #include "platform/image/image.h"
 #include "resource/Resource.h"
 
@@ -83,6 +84,7 @@ enum class TextureWarpMode { REPEAT, ClAMP, MIRROR };
 enum class TextureFilterMode { NEAREST, BILINEAR, TRILINEAR };
 
 GLenum texture_format_to_gl_format(TextureStorageFormat format);
+GLenum texture_type_to_gl_type(TextureType type);
 
 class GLTexture final : public Resource {
 private:
@@ -118,34 +120,19 @@ public:
     void import_image(const stb::Image &image, uint32_t mipmap_level = 0, uint32_t xoffset = 0, uint32_t yoffset = 0,
                       uint32_t zoffset = 0);
     stb::Image export_image(uint32_t mipmap_level = 0, uint32_t zoffset = 0) const;
+    // 复制纹理，没有的维度尺寸需要为1而不是0
+    void copy_image_from(const Ref<GLTexture>& src, uint32_t src_mipmap_level, uint32_t dst_mipmap_level, Vector3i size, Vector3i src_offset = {}, Vector3i dst_offset = {}) noexcept;
 
     TextureType get_type() const noexcept { return type; }
+    TextureStorageFormat get_interal_format() const noexcept { return format; }
 
     std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
     uint8_t get_mipmap_levels() const noexcept { return mipmap_levels; }
     // 可被layer指定的层数：cube map为6，1D/2D数组为数组长度，其余类型没有layer的概念为1
-    // 返回nullopt表示此类型的layer语义尚未确认，不做检查
+    // 返回nullopt表示此类型的layer语义尚未确认（Texture3D）
     std::optional<uint32_t> get_layer_count() const noexcept;
 
-    static TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept {
-        TextureStorageFormat storage_type = TextureStorageFormat::UNKNOWN;
-        switch (image.get_channel()) {
-        case 1: {
-            storage_type = image.is_float() ? TextureStorageFormat::R_f16 : TextureStorageFormat::R_f8;
-            break;
-        }
-        case 2: {
-            storage_type = image.is_float() ? TextureStorageFormat::RG_f16 : TextureStorageFormat::RG_f8;
-            break;
-        }
-        case 3:
-        case 4: {
-            storage_type = image.is_float() ? TextureStorageFormat::RGBA_f16 : TextureStorageFormat::RGBA_f8;
-            break;
-        }
-        }
-        return storage_type;
-    }
+    static TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept;
 };
 
 } // namespace Goonya

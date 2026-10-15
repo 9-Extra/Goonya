@@ -96,6 +96,25 @@ std::optional<uint32_t> GLTexture::get_layer_count() const noexcept {
         return 1;
     }
 }
+TextureStorageFormat GLTexture::get_proper_storage_type(const stb::Image &image) noexcept {
+    TextureStorageFormat storage_type = TextureStorageFormat::UNKNOWN;
+    switch (image.get_channel()) {
+    case 1: {
+        storage_type = image.is_float() ? TextureStorageFormat::R_f16 : TextureStorageFormat::R_f8;
+        break;
+    }
+    case 2: {
+        storage_type = image.is_float() ? TextureStorageFormat::RG_f16 : TextureStorageFormat::RG_f8;
+        break;
+    }
+    case 3:
+    case 4: {
+        storage_type = image.is_float() ? TextureStorageFormat::RGBA_f16 : TextureStorageFormat::RGBA_f8;
+        break;
+    }
+    }
+    return storage_type;
+}
 
 // NOLINTNEXTLINE(readability-make-member-function-const)
 void GLTexture::set_warp_mode(TextureWarpMode warp_mode) noexcept {
@@ -139,16 +158,17 @@ void GLTexture::generate_prefiltered_envmap() {
     if (mipmap_levels == 1) return;
 
     auto [w, h, d] = get_shape();
-    Ref<ComputeMaterial> shader = create_ref<ComputeMaterial>(resources.load_resource<UberShader>("shaders/compute/split_sum_prefilter_env"));
+    Ref<ComputeMaterial> shader =
+        create_ref<ComputeMaterial>(resources.load_resource<UberShader>("shaders/compute/split_sum_prefilter_env"));
     shader->set_texture("skybox_specular_texture", this);
-    for(uint32_t level = 1;level < mipmap_levels;level++){
+    for (uint32_t level = 1; level < mipmap_levels; level++) {
         shader->set_image("output_image", this, level, true);
         shader->set_param("level", float(level));
         shader->dispatch_compute((w - 1) / 8 + 1, (h - 1) / 8 + 1, 6);
         w /= 2;
         h /= 2;
-    }    
-    glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); // todo：封装 
+    }
+    glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); // todo：封装
 }
 
 void GLTexture::import_image(const stb::Image &image, uint32_t mipmap_level, uint32_t xoffset, uint32_t yoffset,
@@ -270,8 +290,7 @@ stb::Image GLTexture::export_image(uint32_t mipmap, uint32_t zoffset) const {
         case TextureStorageFormat::RGB_u8:
         case TextureStorageFormat::RG_f8:
         case TextureStorageFormat::RG_i8:
-        case TextureStorageFormat::RG_u8:
-        {
+        case TextureStorageFormat::RG_u8: {
             target_format = GL_RGB;
             channel = 3;
             is_float = false;
@@ -320,6 +339,36 @@ stb::Image GLTexture::export_image(uint32_t mipmap, uint32_t zoffset) const {
                          image.get_data());
     return image;
 };
+
+// NOLINTNEXTLINE(readability-make-member-function-const)
+void GLTexture::copy_image_from(const Ref<GLTexture> &src, uint32_t src_mipmap_level, uint32_t dst_mipmap_level,
+                                Vector3i size, Vector3i src_offset, Vector3i dst_offset) noexcept {
+    glCopyImageSubData(src->get_id(), texture_type_to_gl_type(src->type), src_mipmap_level, src_offset.x, src_offset.y,
+                       src_offset.z, id, texture_type_to_gl_type(type), dst_mipmap_level, dst_offset.x, dst_offset.y,
+                       dst_offset.z, size.x, size.y, size.z);
+}
+
+GLenum texture_type_to_gl_type(TextureType type) {
+    switch (type) {
+    case TextureType::UNKNOWN:
+        return 0;
+    case TextureType::TEXTURE_1D:
+        return GL_TEXTURE_1D;
+    case TextureType::TEXTURE_1D_ARRAY:
+        return GL_TEXTURE_1D_ARRAY;
+    case TextureType::TEXTURE_2D:
+        return GL_TEXTURE_2D;
+    case TextureType::TEXTURE_2D_ARRAY:
+        return GL_TEXTURE_2D_ARRAY;
+    case TextureType::TEXTURE_CUBEMAP:
+        return GL_TEXTURE_CUBE_MAP;
+    case TextureType::TEXTURE_CUBEMAP_ARRAY:
+        return GL_TEXTURE_CUBE_MAP_ARRAY;
+    case TextureType::TEXTURE_3D:
+        return GL_TEXTURE_3D;
+    }
+    return 0;
+}
 
 GLenum texture_format_to_gl_format(TextureStorageFormat format) {
     switch (format) {
