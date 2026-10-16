@@ -29,7 +29,7 @@ static std::tuple<TextureFilterMode, TextureWarpMode> parse_texture_profile(cons
     if (!warp_mode_name || warp_mode_name == "repeat") {
         warp_mode = TextureWarpMode::REPEAT;
     } else if (warp_mode_name == "clamp") {
-        warp_mode = TextureWarpMode::ClAMP;
+        warp_mode = TextureWarpMode::CLAMP;
     } else if (warp_mode_name == "mirror") {
         warp_mode = TextureWarpMode::MIRROR;
     } else {

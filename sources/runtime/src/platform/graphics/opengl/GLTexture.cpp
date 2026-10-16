@@ -13,11 +13,14 @@
 
 namespace Goonya {
 
+GLenum texture_type_to_gl_type(TextureType type);
+
 template <typename... Args>
 inline GLsizei max_mipmap_level(uint8_t indicate, Args... args) {
     size_t max_size = std::max<int32_t>({args...});
     return std::min<GLsizei>(indicate, std::bit_width(max_size));
 }
+
 GLTexture::GLTexture(TextureType type, TextureStorageFormat format, Vector3i shape, uint8_t mipmap_levels)
     : type(type), format(format), shape(shape) {
     const auto &[width, height, depth] = this->shape;
@@ -122,7 +125,7 @@ void GLTexture::set_warp_mode(TextureWarpMode warp_mode) noexcept {
     GLenum gl_warp_mode;
     if (warp_mode == TextureWarpMode::REPEAT) {
         gl_warp_mode = GL_REPEAT;
-    } else if (warp_mode == TextureWarpMode::ClAMP) {
+    } else if (warp_mode == TextureWarpMode::CLAMP) {
         gl_warp_mode = GL_CLAMP_TO_EDGE;
     } else if (warp_mode == TextureWarpMode::MIRROR) {
         gl_warp_mode = GL_MIRRORED_REPEAT;

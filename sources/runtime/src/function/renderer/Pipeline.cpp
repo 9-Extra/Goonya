@@ -483,7 +483,7 @@ void Pipeline::draw_postprocess(CameraInfo &camera_info) {
                 target = create_ref<GLFrameBuffer>(std::make_tuple(width, height));
                 Ref<GLTexture> color_texture = create_ref<GLTexture>(
                     TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16, Vector3i(width, height, 1), 1);
-                color_texture->set_warp_mode(TextureWarpMode::ClAMP);
+                color_texture->set_warp_mode(TextureWarpMode::CLAMP);
                 color_texture->set_filter_mode(TextureFilterMode::BILINEAR);
                 target->attach_color_texture(0, color_texture);
             }

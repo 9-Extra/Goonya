@@ -77,12 +77,11 @@ enum class TextureStorageFormat {
     DEPTH_f32_STENCIL_8,
 };
 
-enum class TextureWarpMode { REPEAT, ClAMP, MIRROR };
+GLenum texture_format_to_gl_format(TextureStorageFormat format);
+
+enum class TextureWarpMode { REPEAT, CLAMP, MIRROR };
 
 enum class TextureFilterMode { NEAREST, BILINEAR, TRILINEAR };
-
-GLenum texture_format_to_gl_format(TextureStorageFormat format);
-GLenum texture_type_to_gl_type(TextureType type);
 
 class GLTexture final : public Resource {
 private:
@@ -105,7 +104,7 @@ public:
         glBindImageTexture(binding, id, mipmap_level, layered ? GL_TRUE : GL_FALSE, layer, gl_access, gl_type);
     }
 
-    GLuint get_id() const noexcept { return id; }
+    uint32_t get_id() const noexcept { return id; }
 
     void set_filter_mode(TextureFilterMode filter_mode) noexcept;
     void set_warp_mode(TextureWarpMode warp_mode) noexcept;

@@ -132,6 +132,7 @@ void init_buildin_resource() {
         const uint32_t LUT_SIZE = 1024;
         Ref<GLTexture> brdf_lut = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RG_f16,
                                                         Vector3i(LUT_SIZE, LUT_SIZE, 1), 1);
+        brdf_lut->set_warp_mode(TextureWarpMode::CLAMP);
         Ref<UberShader> brdf_lut_shader = resources.load_resource<UberShader>("shaders/compute/split_sum_brdf_lut");
         Ref<ComputeMaterial> mat = create_ref<ComputeMaterial>(brdf_lut_shader);
         mat->set_image("output_image", brdf_lut);

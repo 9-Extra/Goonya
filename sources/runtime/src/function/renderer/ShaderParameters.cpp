@@ -35,10 +35,6 @@ void ShaderParameters::bind_external_resources() const {
             // 图像未绑定是不允许的，它没有默认
             throw RuntimeError(std::format("着色器\"{}\"中图像\"{}\"未绑定", uber_shader->get_name(), name));
         }
-        // 图像类型在set_image时已经检查过，这里兜底
-        GN_ASSERT_MSG(info.type == TextureType::UNKNOWN || image.image->get_type() == info.type,
-                      "图像\"{}\"在着色器中为{}类型，实际绑定了{}类型", name, rfl::enum_to_string(info.type),
-                      rfl::enum_to_string(image.image->get_type()));
         image.image->bind_image(info.unit, image.mipmap_level, image.layered, image.layer, image.gl_access,
                                 image.gl_type);
     }

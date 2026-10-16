@@ -29,11 +29,9 @@ void ComputeMaterial::dispatch_compute(uint32_t num_groups_x, uint32_t num_group
 
 void ComputeMaterial::dispatch_extent(uint32_t work_x, uint32_t work_y, uint32_t work_z) const {
     // 计算着色器需要保证work_group_size不为0
-    const std::array<uint32_t, 3> work_group_size = get_shader()->get_work_group_size();
+    const auto [x, y, z] = get_shader()->get_work_group_size();
     // 向上取整，work为0时组数也为0
-    dispatch_compute((work_x + work_group_size[0] - 1) / work_group_size[0],
-                     (work_y + work_group_size[1] - 1) / work_group_size[1],
-                     (work_z + work_group_size[2] - 1) / work_group_size[2]);
+    dispatch_compute((work_x + x - 1) / x, (work_y + y - 1) / y, (work_z + z - 1) / z);
 }
 
 } // namespace Goonya
