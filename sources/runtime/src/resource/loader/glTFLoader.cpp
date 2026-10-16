@@ -35,7 +35,6 @@
 #include <memory>
 #include <ranges>
 #include <string>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -400,7 +399,7 @@ struct GlTFLoadingContext {
             }
 
             Ref<GLTexture> texture =
-                create_ref<GLTexture>(TextureType::TEXTURE_2D, storage_type, std::make_tuple(width, height, 0));
+                create_ref<GLTexture>(TextureType::TEXTURE_2D, storage_type, Vector3i(width, height, 1));
 
             TextureFilterMode filter_mode = TextureFilterMode::BILINEAR;
             // 不严格支持glTF标准

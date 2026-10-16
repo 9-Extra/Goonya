@@ -162,7 +162,7 @@ void Pipeline::render() {
             rt = create_ref<GLFrameBuffer>(std::make_tuple(w, h));
             rt->set_depth_stencil_renderbuffer(TextureStorageFormat::DEPTH_24_STENCIL_8);
             Ref<GLTexture> color_texture = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16,
-                                                                 std::make_tuple(w, h, 0), 1);
+                                                                 Vector3i(w, h, 1), 1);
             rt->attach_color_texture(0, color_texture);
             GN_ASSERT(rt->check_status());
         }
@@ -378,7 +378,7 @@ void Pipeline::draw_depth(CameraInfo &camera_info, std::vector<CullInstance> &vi
     if (!depth_fbo || depth_fbo->get_size() != std::make_tuple(w, h)) {
         depth_fbo = create_ref<GLFrameBuffer>(std::make_tuple(w, h));
         depth_texture = create_ref<GLTexture>(TextureType::TEXTURE_2D, TextureStorageFormat::DEPTH_24_STENCIL_8,
-                                              std::make_tuple(w, h, 0), 1);
+                                              Vector3i(w, h, 1), 1);
         depth_fbo->set_depth_texture(depth_texture);
         GN_ASSERT(depth_fbo->check_status());
     }
@@ -482,7 +482,7 @@ void Pipeline::draw_postprocess(CameraInfo &camera_info) {
             for (auto &target : bloom_render_target) {
                 target = create_ref<GLFrameBuffer>(std::make_tuple(width, height));
                 Ref<GLTexture> color_texture = create_ref<GLTexture>(
-                    TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16, std::make_tuple(width, height, 0), 1);
+                    TextureType::TEXTURE_2D, TextureStorageFormat::RGB_f16, Vector3i(width, height, 1), 1);
                 color_texture->set_warp_mode(TextureWarpMode::ClAMP);
                 color_texture->set_filter_mode(TextureFilterMode::BILINEAR);
                 target->attach_color_texture(0, color_texture);

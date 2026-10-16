@@ -7,8 +7,6 @@
 #include <glad/glad.h>
 
 #include <cstdint>
-#include <optional>
-#include <tuple>
 
 namespace Goonya {
 
@@ -92,11 +90,11 @@ private:
 
     TextureType type;
     TextureStorageFormat format;
-    std::tuple<uint32_t, uint32_t, uint32_t> shape; // width, height, depth, 如果对于维度不存在则为0
+    Vector3i shape; // width, height, depth, 如果对于维度不存在则为1
     uint8_t mipmap_levels = 255;
 
 public:
-    explicit GLTexture(TextureType type, TextureStorageFormat format, std::tuple<uint32_t, uint32_t, uint32_t> shape,
+    explicit GLTexture(TextureType type, TextureStorageFormat format, Vector3i shape,
                        uint8_t mipmap_levels = 255);
     ~GLTexture() { glDeleteTextures(1, &id); }
     void bind_texture(uint32_t binding) const noexcept { glBindTextureUnit(binding, id); }
@@ -126,11 +124,11 @@ public:
     TextureType get_type() const noexcept { return type; }
     TextureStorageFormat get_interal_format() const noexcept { return format; }
 
-    std::tuple<uint32_t, uint32_t, uint32_t> get_shape() const noexcept { return shape; }
+    Vector3i get_shape() const noexcept { return shape; }
     uint8_t get_mipmap_levels() const noexcept { return mipmap_levels; }
     // 可被layer指定的层数：cube map为6，1D/2D数组为数组长度，其余类型没有layer的概念为1
     // 返回nullopt表示此类型的layer语义尚未确认（Texture3D）
-    std::optional<uint32_t> get_layer_count() const noexcept;
+    int32_t get_layer_count() const noexcept;
 
     static TextureStorageFormat get_proper_storage_type(const stb::Image &image) noexcept;
 };

@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <format>
@@ -117,6 +118,15 @@ struct Vector3i {
     constexpr Vector3i operator*(const int32_t s) const { return {x * s, y * s, z * s}; }
     constexpr Vector3i operator/(const int32_t s) const { return {x / s, y / s, z / s}; }
     constexpr bool operator==(const Vector3i rhs) const noexcept { return x == rhs.x && y == rhs.y && z == rhs.z; }
+
+    template<size_t I>
+    constexpr int32_t& get() noexcept {
+        return v[I];
+    }
+    template<size_t I>
+    constexpr const int32_t& get() const noexcept {
+        return v[I];
+    } 
 };
 
 struct Vector4i {
@@ -188,9 +198,9 @@ struct Vector3f {
     }
 };
 
-constexpr static Vector3f FORWARD = {0, 0, -1};
-constexpr static Vector3f UP = {0, 1, 0};
-constexpr static Vector3f RIGHT = {1, 0, 0};
+constexpr Vector3f FORWARD = {0, 0, -1};
+constexpr Vector3f UP = {0, 1, 0};
+constexpr Vector3f RIGHT = {1, 0, 0};
 
 struct Vector4f {
     union {
@@ -229,6 +239,16 @@ struct Vector4f {
 };
 
 } // namespace Goonya
+
+template<>
+struct std::tuple_size<Goonya::Vector3i>{
+    static constexpr size_t value = 3;
+};
+
+template<size_t I>
+struct std::tuple_element<I, Goonya::Vector3i>{
+    using type = int32_t;
+};
 
 template <>
 struct std::formatter<Goonya::Vector2i> {

@@ -1,6 +1,7 @@
 #include "TextureLoader.h"
 
 #include "core/RefCount.h"
+#include "core/cgmath/vector.h"
 #include "core/path_formatter.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "platform/image/image.h"
@@ -61,7 +62,7 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
             throw RuntimeError(std::format("不支持此图像像素格式\"{}\"", image_path));
         }
         Ref<GLTexture> texture =
-            create_ref<GLTexture>(TextureType::TEXTURE_2D, storage_type, std::make_tuple(width, height, 0), mip_levels);
+            create_ref<GLTexture>(TextureType::TEXTURE_2D, storage_type, Vector3i(width, height, 1), mip_levels);
 
         auto [filter_mode, warp_mode] = parse_texture_profile(texture_desc);
         texture->set_filter_mode(filter_mode);
@@ -95,7 +96,7 @@ Ref<Resource> TextureLoader::load(std::string_view type, const std::filesystem::
         TextureStorageFormat storage_type = TextureStorageFormat::RGBA_f16;
         Ref<GLTexture> texture =
             create_ref<GLTexture>(TextureType::TEXTURE_CUBEMAP, storage_type,
-                                  std::make_tuple((uint32_t)width, (uint32_t)height, 0), mip_levels);
+                                  Vector3i((uint32_t)width, (uint32_t)height, 6), mip_levels);
         texture->set_filter_mode(filter_mode);
 
         texture->import_image(image, 0, 0, 0, 0);

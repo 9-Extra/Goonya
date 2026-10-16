@@ -73,7 +73,6 @@ void init_engine() {
 }
 
 static void logic_tick() {
-    ImGui::ShowDemoWindow();
     // auto [x, y] = Input::get_mouse_pos();
     // LOG_DEBUG("鼠标位置: {}, {}", x, y);
     for (auto &&w : World::world_list) {

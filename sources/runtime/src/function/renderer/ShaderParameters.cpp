@@ -119,8 +119,8 @@ void ShaderParameters::set_image(const std::string &name, const Ref<GLTexture> &
                                        texture->get_mipmap_levels() - 1));
     }
     const auto layer_count = texture->get_layer_count();
-    if (!layered && layer_count.has_value() && layer >= *layer_count) {
-        throw RuntimeError(std::format("图像\"{}\"的layer {}超过上限{}", name, layer, *layer_count - 1));
+    if (!layered && layer >= (uint32_t)layer_count) {
+        throw RuntimeError(std::format("图像\"{}\"的layer {}超过上限{}", name, layer, layer_count - 1));
     }
 
     this->images[unit] = {
