@@ -135,7 +135,7 @@ void init_buildin_resource() {
         Ref<UberShader> brdf_lut_shader = resources.load_resource<UberShader>("shaders/compute/split_sum_brdf_lut");
         Ref<ComputeMaterial> mat = create_ref<ComputeMaterial>(brdf_lut_shader);
         mat->set_image("output_image", brdf_lut);
-        mat->dispatch_compute((LUT_SIZE - 1) / 16 + 1, (LUT_SIZE - 1) / 16 + 1, 1);
+        mat->dispatch_extent(LUT_SIZE, LUT_SIZE, 1);
         buildin->contents.emplace("brdf_lut", brdf_lut);
         glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT); // todo：封装
         

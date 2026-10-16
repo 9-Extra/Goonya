@@ -165,7 +165,8 @@ void GLTexture::generate_prefiltered_envmap() {
     for (uint32_t level = 1; level < mipmap_levels; level++) {
         shader->set_image("output_image", this, level, true);
         shader->set_param("level", float(level));
-        shader->dispatch_compute((w - 1) / 8 + 1, (h - 1) / 8 + 1, 6);
+        // 一个工作组处理6个面
+        shader->dispatch_extent(w, h, 6);
         w /= 2;
         h /= 2;
     }

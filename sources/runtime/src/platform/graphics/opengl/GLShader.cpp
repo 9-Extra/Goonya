@@ -81,10 +81,20 @@ Ref<GLShader> GLShader::compile_compute(const std::string &src) {
     }
 
     glDeleteShader(cs);
+    // 工作组大小可能被预处理宏影响，所以按变体分别反射
+    shader->work_group_size = GLShaderIntrospector{shader.get()}.get_compute_work_group_size();
+    GN_ASSERT_MSG(shader->work_group_size[0] != 0 && shader->work_group_size[1] != 0 && shader->work_group_size[2] != 0, "工作组大小为0，编译居然过了？");
     return shader;
 };
 
 // ------------------------反射-------------------------------
+
+std::array<uint32_t, 3> GLShaderIntrospector::get_compute_work_group_size() const noexcept {
+    // 一个工作组的大小，即计算着色器中的layout(local_size_x/y/z)
+    GLint size[3] = {0, 0, 0};
+    glGetProgramiv(id, GL_COMPUTE_WORK_GROUP_SIZE, size);
+    return {(uint32_t)size[0], (uint32_t)size[1], (uint32_t)size[2]};
+}
 
 static MaterialParameter GLType2FieldType(GLint gl_type) {
     switch (gl_type) {

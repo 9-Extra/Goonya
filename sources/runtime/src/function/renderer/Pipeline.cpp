@@ -335,7 +335,7 @@ void Pipeline::compute_skinning(CameraInfo &camera_info, std::vector<CullInstanc
             skinning_material->set_external_buffer("joint_weight", mesh->get_skin_buffer());
             skinning_material->set_external_buffer("pose_matrix_buffer", mesh->pose_matrix_buffer);
             skinning_material->set_external_buffer("out_vertex_mesh_buffer", mesh->get_blended_mesh_buffer());
-            skinning_material->dispatch_compute((uint32_t)(mesh->get_vertex_count() + 127) / 128, 1, 1);
+            skinning_material->dispatch_extent((uint32_t)mesh->get_vertex_count(), 1, 1);
         } else {
             const std::vector<std::array<Matrix4f, 2>> &pose_matrix = mesh->pose_matrix_buffer_cpu;
             GN_ASSERT_MSG(!pose_matrix.empty(), "蒙皮的姿态矩阵未初始化");
