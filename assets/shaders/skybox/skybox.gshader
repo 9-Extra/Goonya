@@ -1,5 +1,4 @@
 #name skybox
-#texture skybox_specular_texture="buildin:missing_texture"
 #setting depth_test="less_equal"
 #setting cull_mode="off"
 
@@ -27,8 +26,6 @@ void vert() {
 }
 
 #section fragment
-
-uniform samplerCube skybox_specular_texture;
 
 layout(location = 0) out vec4 out_color;
 

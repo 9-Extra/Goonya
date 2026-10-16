@@ -2,7 +2,6 @@
 
 #include "core/RefCount.h"
 #include "core/hash_helper.h"
-#include "core/log/Log.h"
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "runtime/GAssert.h"
@@ -10,6 +9,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <unordered_map>
 
@@ -29,12 +29,16 @@ struct MaterialParameterBlockInfo {
 
 struct TextureParameterInfo {
     TextureType type = TextureType::UNKNOWN;
-    uint32_t unit = 0;
+    // 纹理在着色器中声明的单元，即layout(binding = N)中的N
+    // 该纹理没有出现在任何已编译的变体中时为空
+    std::optional<uint32_t> unit;
 };
 
 struct ImageParameterInfo {
     TextureType type = TextureType::UNKNOWN;
-    uint32_t unit = 0;
+    // 图像在着色器中声明的单元，即layout(binding = N)中的N
+    // 该图像没有出现在任何已编译的变体中时为空
+    std::optional<uint32_t> unit;
     uint32_t gl_access = 0; // 着色器访问图像的模式
     uint32_t gl_type = 0; // 着色器中要求的图像类型
 };
@@ -77,16 +81,22 @@ public:
         glDispatchCompute(num_groups_x, num_groups_y, num_groups_z);
     }
 
-    void set_texture_binding(const std::string &name, uint32_t unit) const noexcept {
+    /**
+     * @brief 查询采样器/图像uniform当前的单元
+     * 不透明uniform的值就是它绑定的纹理/图像单元，若着色器写了layout(binding = N)，其初值即为N
+     * @return 单元，uniform不存在时为空
+     */
+    std::optional<uint32_t> query_texture_unit(const std::string &name) const noexcept {
         GLint location = glGetUniformLocation(id, name.c_str());
-        if (location != -1) {
-            glProgramUniform1i(id, location, unit);
-        } else {
-            LOG_WARN("着色器中未找到纹理{}", name);
+        if (location == -1) {
+            return std::nullopt;
         }
-    }
-    void set_texture_binding(uint32_t location, uint32_t unit) const noexcept {
-        glProgramUniform1i(id, location, unit);
+        GLint unit = 0;
+        glGetUniformiv(id, location, &unit);
+        if (unit < 0) {
+            return std::nullopt;
+        }
+        return (uint32_t)unit;
     }
     GLuint get_id() const { return id; }
 

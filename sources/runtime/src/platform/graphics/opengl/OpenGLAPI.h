@@ -3,6 +3,7 @@
 #include "platform/graphics/PipelineSetting.h"
 #include "platform/graphics/opengl/GLMesh.h"
 #include "platform/graphics/opengl/GLRenderTarget.h"
+#include "platform/graphics/opengl/GLTexture.h"
 #include "spdlog/logger.h"
 
 #include <cstddef>
@@ -11,6 +12,8 @@
 namespace Goonya {
 
 using Goonya::Color;
+
+enum class EngineTexture : uint32_t;
 
 class OpenGLGraphicsAPI final {
 public:
@@ -30,6 +33,11 @@ public:
 
     // ---------------------------------材质和着色器相关------------------------------------------
     void set_pipeline_state(const PipelineSetting &state) const noexcept;
+    /**
+     * @brief 绑定引擎纹理
+     * 纹理单元0..7为引擎保留，由渲染管线直接管理，不修改则一直保留
+     */
+    void bind_engine_texture(EngineTexture slot, const Ref<GLTexture> &texture) const noexcept;
 
     // ---------------------------------绘制调用-------------------------------------------------------------
     Ref<RenderTarget> get_rendertarget_screen() noexcept { return rendertarget_screen; };

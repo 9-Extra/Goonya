@@ -2,7 +2,9 @@
 
 #include "core/RefCount.h"
 #include "function/renderer/ComputeMaterial.h"
+#include "function/renderer/PipelineLayout.h"
 #include "function/renderer/UberShader.h"
+#include "platform/graphics/Graphics.h"
 #include "resource/ResMng.h"
 #include "runtime/GAssert.h"
 #include "runtime/GoonyaException.h"
@@ -164,7 +166,8 @@ void GLTexture::generate_prefiltered_envmap() {
     auto [w, h, d] = get_shape();
     Ref<ComputeMaterial> shader =
         create_ref<ComputeMaterial>(resources.load_resource<UberShader>("shaders/compute/split_sum_prefilter_env"));
-    shader->set_texture("skybox_specular_texture", this);
+    // 引擎纹理：预滤波计算以自己作为输入，单元0..7由引擎负责绑定
+    shader->set_texture("envmap", this);
     for (uint32_t level = 1; level < mipmap_levels; level++) {
         shader->set_image("output_image", this, level, true);
         shader->set_param("level", float(level));

@@ -14,6 +14,7 @@
 
 #include "GLRenderTarget.h"
 #include "core/RefCount.h"
+#include "function/renderer/PipelineLayout.h"
 #include "function/renderer/RendererBasic.h"
 #include "platform/display/display.h"
 #include "platform/graphics/opengl/GLBasic.h"
@@ -250,6 +251,16 @@ void OpenGLGraphicsAPI::set_pipeline_state(const PipelineSetting &state) const n
     } else {
         glDisable(GL_BLEND);
     }
+}
+
+//  NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+void OpenGLGraphicsAPI::bind_engine_texture(EngineTexture slot, const Ref<GLTexture> &texture) const noexcept {
+    ASSERT_RENDER_THREAD();
+    if (!texture) {
+        // 引擎纹理没有默认纹理可以回退，什么都不做，单元保留上一次绑定的内容
+        return;
+    }
+    texture->bind_texture(engine_texture_unit(slot));
 }
 
 // ---------------------------------绘制调用-------------------------------------------------------------

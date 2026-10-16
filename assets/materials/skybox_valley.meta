@@ -7,9 +7,6 @@
             "depth_func": "less_equal"
         },
         "variant_keys": [],
-        "parameters": {},
-        "samplers": {
-            "skybox_specular_texture": "skybox/valley/valley"
-        }
+        "parameters": {}
     }
 }

@@ -28,8 +28,8 @@ void vert()
 
 layout(location = 0) out vec4 out_color;
 
-uniform sampler2D source;
-uniform sampler2D bloom;
+layout(binding = 8) uniform sampler2D source;
+layout(binding = 9) uniform sampler2D bloom;
 
 vec3 color_encode(vec3 color_in){
     return pow(color_in, vec3(1 / 2.2));

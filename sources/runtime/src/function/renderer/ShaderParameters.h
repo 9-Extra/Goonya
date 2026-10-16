@@ -2,6 +2,7 @@
 
 #include "UberShader.h"
 #include "core/RefCount.h"
+#include "function/renderer/PipelineLayout.h"
 #include "platform/graphics/MaterialParameter.h"
 #include "platform/graphics/opengl/GLBuffer.h"
 #include "platform/graphics/opengl/GLShader.h"
@@ -33,9 +34,11 @@ protected:
 
     // 所有参数在内存中保存一份
     std::unordered_map<std::string, MaterialParameter> parameters;
-    // 纹理单元和图像单元由UberShader按声明顺序连续分配，两个容器在构造时就按单元数定容，单元可以直接作为下标
-    std::vector<Ref<GLTexture>> textures;              // 单元 -> 纹理，为空表示使用着色器的默认纹理
-    std::vector<ImageBindingInfo> images;              // 单元 -> 绑定，image为空表示未绑定
+    // 材质纹理和图像的单元由UberShader在编译变体时按着色器中的layout(binding = N)确定，这里按名称保存材质设定的资源
+    std::unordered_map<std::string, Ref<GLTexture>, StringHash, StringEqual>
+        textures; // 名称 -> 纹理，为空表示使用着色器的默认纹理
+    std::unordered_map<std::string, ImageBindingInfo, StringHash, StringEqual>
+        images; // 名称 -> 绑定，image为空表示未绑定
     std::vector<Ref<GLBuffer>> uniform_buffers;        // slot -> buffer
     std::vector<Ref<GLBuffer>> shader_storage_buffers; // slot -> buffer
 
@@ -62,7 +65,8 @@ public:
      * 只包括外部缓冲区和纹理
      */
     void bind_external_resources() const;
-    Ref<GLShader> get_shader() const noexcept {
+    // 注意：切换到新的变体时会触发着色器编译，编译和校验失败会抛异常，所以这里不能是noexcept
+    Ref<GLShader> get_shader() const {
         update_shader_variant();
         return shader;
     }
@@ -94,14 +98,17 @@ public:
      * @param texture 纹理对象
      * @note 必须在bind()之前调用
      */
-    void set_texture(const std::string &name, const Ref<GLTexture> &texture) {
-        // texture slot可能被优化掉了
-        // 传空表示使用着色器的默认纹理，this->textures中允许出现空元素
-        if (auto iter = uber_shader->get_texture_units().find(name); iter != uber_shader->get_texture_units().end()) {
-            this->textures[iter->second.unit] = texture;
-        } else {
-            // 允许设置不存在的纹理，会被忽略
+    void set_texture(std::string_view name, const Ref<GLTexture> &texture) {
+        if (find_engine_texture(name) != nullptr) {
+            throw RuntimeError(std::format("纹理\"{}\"是引擎纹理，引擎纹理由引擎绑定，不能用材质设置", name));
         }
+        // texture slot可能被优化掉了
+        // 传空表示使用着色器的默认纹理，textures中允许出现空的元素
+        if (!uber_shader->get_texture_units().contains(name)) {
+            // 允许设置不存在的纹理，会被忽略
+            return;
+        }
+        textures[std::string(name)] = texture;
     }
 
     /**
@@ -111,7 +118,7 @@ public:
      * @param texture 纹理对象
      * @note 必须在bind()之前调用
      */
-    void set_image(const std::string &name, const Ref<GLTexture> &texture, uint32_t mipmap_level = 0,
+    void set_image(std::string_view name, const Ref<GLTexture> &texture, uint32_t mipmap_level = 0,
                    bool layered = false, uint32_t layer = 0);
 
     bool set_local_variant_key(const std::string &key) {

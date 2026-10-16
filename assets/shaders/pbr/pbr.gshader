@@ -2,8 +2,6 @@
 #texture basecolor_texture="buildin:missing_texture"
 #texture normal_texture="buildin:normal"
 #texture orm_texture="buildin:white"
-#texture prefilitered_envmap="buildin:missing_texture"
-#texture brdf_lut="buildin:brdf_lut"
 
 #param metallic_factor=f32(1)
 #param roughness_factor=f32(1)
@@ -16,11 +14,10 @@
 #section common
 #include "shaders/common.glsl"
 
-layout(binding = 0) uniform sampler2D basecolor_texture;
-layout(binding = 1) uniform sampler2D normal_texture;
-layout(binding = 2) uniform sampler2D orm_texture;
-layout(binding = 3) uniform samplerCube prefilitered_envmap;
-layout(binding = 4) uniform sampler2D brdf_lut;
+// 材质纹理分配在引擎保留单元(0..7)之后
+layout(binding = 8) uniform sampler2D basecolor_texture;
+layout(binding = 9) uniform sampler2D normal_texture;
+layout(binding = 10) uniform sampler2D orm_texture;
 
 VS_OUT_PS_IN VS_OUT
 {
@@ -138,7 +135,7 @@ vec3 SpecularIBL(vec3 F0, float Roughness, vec3 N, vec3 V)
 {
     // 这里忽略了dot(N, V) < 0的情况
     vec3 L = 2 * dot(V, N) * N - V; // 反向计算入射光方向
-    vec3 env_light = textureLod(prefilitered_envmap, L, Roughness * (textureQueryLevels(prefilitered_envmap) - 1)).rgb;
+    vec3 env_light = textureLod(prefiltered_envmap, L, Roughness * (textureQueryLevels(prefiltered_envmap) - 1)).rgb;
     vec2 lut = textureLod(brdf_lut, vec2(dot(N, V), Roughness), 0).rg;
 
     vec3 brdf = env_light * (F0 * lut.r + lut.g);

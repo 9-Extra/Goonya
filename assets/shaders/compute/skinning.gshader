@@ -3,6 +3,8 @@
 
 #section compute
 
+#include "shaders/common.glsl"
+
 layout(local_size_x = 128) in;
 
 struct SkinVertex {

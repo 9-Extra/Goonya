@@ -215,14 +215,15 @@ protected:
     RenderPriority render_priority;                        // 渲染优先级
     PipelineSetting pipeline_setting;                      // 着色器默认的渲染管线设置
     MaterialParameterBlockInfo material_parameters;        // 默认材质参数
-    std::vector<Ref<GLTexture>> textures; // 默认纹理绑定 (纹理单元 -> 纹理)
+    // 纹理名称 -> 默认纹理 (来自#texture指令)，纹理的单元由着色器中的layout(binding = N)决定
+    std::unordered_map<std::string, Ref<GLTexture>, StringHash, StringEqual> default_textures;
 
     std::unordered_map<std::string, std::tuple<uint32_t, BufferBindingType>, StringHash, StringEqual>
         uniform_binding_info; // 全部uniform buffer的绑定点和类型
-    std::unordered_map<std::string, TextureParameterInfo>
-        texture_units; // 纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)
-    std::unordered_map<std::string, ImageParameterInfo>
-        image_units; // 图像名称及对应的单元 (名称 -> 单元)
+    std::unordered_map<std::string, TextureParameterInfo, StringHash, StringEqual>
+        texture_units; // 材质纹理名称及对应的纹理单元 (纹理名称 -> 纹理单元)，编译变体时填入单元
+    std::unordered_map<std::string, ImageParameterInfo, StringHash, StringEqual>
+        image_units; // 图像名称及对应的单元 (名称 -> 单元)，编译变体时填入单元
 
     // 变体相关
     LocalVariantKeyCollect local_variant_key_collect;
@@ -241,17 +242,19 @@ public:
     const PipelineSetting &get_pipeline_setting() const noexcept { return pipeline_setting; }
     RenderPriority get_render_priority() const noexcept { return render_priority; }
     const MaterialParameterBlockInfo &per_material_block() const noexcept { return material_parameters; }
-    const std::unordered_map<std::string, TextureParameterInfo> &get_texture_units() const noexcept {
+    const std::unordered_map<std::string, TextureParameterInfo, StringHash, StringEqual> &
+    get_texture_units() const noexcept {
         return texture_units;
     }
-    const std::unordered_map<std::string, ImageParameterInfo> &get_image_units() const noexcept {
+    const std::unordered_map<std::string, ImageParameterInfo, StringHash, StringEqual> &
+    get_image_units() const noexcept {
         return image_units;
     }
-    Ref<GLTexture> get_default_texture(uint32_t unit) const {
-        if (unit < textures.size()) {
-            return textures[unit];
+    Ref<GLTexture> get_default_texture(std::string_view name) const {
+        if (auto iter = default_textures.find(name); iter != default_textures.end()) {
+            return iter->second;
         } else {
-            throw RuntimeError(std::format("UberShader没有定义纹理单元 {}", unit));
+            throw RuntimeError(std::format("纹理\"{}\"没有默认纹理", name));
         }
     }
     std::optional<std::tuple<uint32_t, BufferBindingType>>

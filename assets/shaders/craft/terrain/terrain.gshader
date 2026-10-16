@@ -38,7 +38,7 @@ layout(binding = 4, std430) readonly buffer per_surface{
     PerSurface surfaces[]; // 使用SSBO实现动态大小
 };
 
-layout(binding = 0) uniform sampler2DArray basecolor_texture;
+layout(binding = 8) uniform sampler2DArray basecolor_texture;
 
 layout(location = 0) out vec4 out_color;
 

@@ -12,7 +12,7 @@
 
 #include "post_process.glsl"
 
-uniform sampler2D source;
+layout(binding = 8) uniform sampler2D source;
 
 VS_OUT_PS_IN VS_OUT
 {

@@ -5,11 +5,11 @@
 
 #section compute
 
+#include "shaders/common.glsl"
+
 #define SAMPLE_COUNT 512
 
-#define PI 3.1415926535897932384626433832795
-
-layout(rg16f) restrict writeonly uniform image2D output_image; // LUT
+layout(rg16f, binding = 2) restrict writeonly uniform image2D output_image; // LUT
 
 layout(local_size_x = 16, local_size_y = 16) in;
 

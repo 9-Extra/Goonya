@@ -33,7 +33,7 @@ void vert()
 
 layout(location = 0) out vec4 out_color;
 
-uniform sampler2D source;
+layout(binding = 8) uniform sampler2D source;
 
 vec3 color_encode(vec3 color_in){
     return pow(color_in, vec3(1 / gamma));

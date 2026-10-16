@@ -22,7 +22,7 @@ void vert()
 }
 #section fragment
 
-uniform sampler2D base_color;
+layout(binding = 8) uniform sampler2D base_color;
 
 layout(location = 0) out vec4 out_color;
 

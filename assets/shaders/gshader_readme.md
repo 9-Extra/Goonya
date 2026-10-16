@@ -62,16 +62,46 @@ void frag()
 
 ### 2.2 `#texture <name>="<resource>"`
 
-声明本着色器使用的纹理，并指定默认资源。
+声明**材质纹理**及其默认资源。纹理的单元由 GLSL 中的 `layout(binding = N)` 决定，与本指令的书写顺序无关。
 
 ```gshader
 #texture basecolor_texture="buildin:missing_texture"
 #texture normal_texture="buildin:normal"
 ```
 
-- 纹理会按照**声明顺序**依次分配到纹理单元 `0, 1, 2, ...`。
-- 在 GLSL 中需要手动声明对应的 `sampler2D` / `samplerCube` / `sampler2DArray` 等，**名称必须与这里声明的一致**。
-- 若 `#texture` 声明了某纹理却在 GLSL 中没有使用，或 GLSL 中使用了未在 `#texture` 中声明的纹理，均会报错。
+- 在 GLSL 中需要手动声明对应的 `sampler2D` / `samplerCube` / `sampler2DArray` 等，**名称必须与这里声明的一致**，并用 `layout(binding = N)` 指定纹理单元。
+- 材质纹理的单元**必须不小于 8**：`0..7` 是引擎纹理的保留单元（见 2.2.1），不可占用。
+- 默认资源是**必须**的：材质没有设置这张纹理时就会绑定它，加载失败会在加载时报错。
+- GLSL 中使用了没有在 `#texture` 中声明的材质纹理会报错；声明了却在 GLSL 中没有使用则无所谓。
+- 同一个纹理在**所有变体中的单元必须一致**，因此 `layout` 不能写在变体宏（`#ifdef`）里面。切换变体时引擎不会重新指定单元，单元不一致就绑错了。
+- 不支持数组（`sampler2D tex[4]` / `image2D img[2]`）：OpenGL 反射会把元素报成 `tex[0]`，引擎无法和 `#texture` 中的名字对应，遇到数组会直接报错。
+
+#### 2.2.1 引擎纹理
+
+引擎纹理由引擎在渲染每一趟时绑定，与材质无关，**不能也不需要用 `#texture` 声明**（用 `Material::set_texture` 设置引擎纹理会直接报错）。
+它们已经声明在 `common.glsl` 里，着色器**直接用名字**即可，不要再声明一遍（重复声明是编译错误）。单元 `0..7` 为引擎保留，所以每个着色器至少还能用 8 张材质纹理。
+
+| 单元 | 名称 | 类型 |
+|---|---|---|
+| 0 | `brdf_lut` | `sampler2D` |
+| 1 | `prefiltered_envmap` | `samplerCube` |
+| 2 | `skybox_specular_texture` | `samplerCube` |
+| 3 | `camera_depth` | `sampler2D` |
+
+引擎纹理已经声明在 `common.glsl` 里——`include` 了它的着色器（图形着色器和计算着色器都是）直接用名字即可，不要再声明一遍（重复声明是编译错误）。后处理着色器 `include` 的是 `post_process.glsl`（它自带全屏三角形的 `position`/`uv`，与 `common.glsl` 里的顶点属性重名，不能同时包含），它们用不到引擎纹理。
+
+#### 2.2.2 `#image <name> access="<r\|w\|rw>" format="<format>"`
+
+声明直接图像访问（`image2D` / `imageCube` 等）。图像的访问模式和格式无法通过 OpenGL 反射获取，所以必须在这里声明。
+
+```gshader
+#image output_image access="w" format="rgba16f"
+```
+
+- 着色器中声明的名称必须与这里一致，并使用和 `format` 相同的格式限定符，例如
+  `layout(rgba16f, binding = 2) restrict writeonly uniform imageCube output_image;`
+- 图像单元**必须不小于 2**：`0..1` 为引擎图像保留（目前没有固定的引擎图像）。
+- 图像没有默认值，必须在 `bind()` 之前用 `set_image` 绑定，否则绑定时报错。
 
 ### 2.3 `#param <name>=<type>(<value>)`
 
@@ -308,7 +338,6 @@ layout(binding = 1) uniform per_object
 #texture basecolor_texture="buildin:missing_texture"
 #texture normal_texture="buildin:normal"
 #texture orm_texture="buildin:white"
-#texture skybox_specular_texture="buildin:black"
 
 #param metallic_factor=f32(1)
 #param roughness_factor=f32(1)
@@ -345,10 +374,9 @@ void vert()
 
 #section fragment
 
-layout(binding = 0) uniform sampler2D basecolor_texture;
-layout(binding = 1) uniform sampler2D normal_texture;
-layout(binding = 2) uniform sampler2D orm_texture;
-layout(binding = 5) uniform samplerCube skybox_specular_texture;
+layout(binding = 8) uniform sampler2D basecolor_texture;
+layout(binding = 9) uniform sampler2D normal_texture;
+layout(binding = 10) uniform sampler2D orm_texture;
 
 layout(location = 0) out vec4 out_color;
 
@@ -402,8 +430,8 @@ void vert()
 
 #section fragment
 
-uniform sampler2D source;
-uniform sampler2D bloom;
+layout(binding = 8) uniform sampler2D source;
+layout(binding = 9) uniform sampler2D bloom;
 
 layout(location = 0) out vec4 out_color;
 

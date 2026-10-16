@@ -107,6 +107,11 @@ Pipeline::Pipeline() {
     if (!skybox_mesh) {
         throw RuntimeError("无法加载天空盒模型");
     }
+
+    brdf_lut = resources.load_resource<GLTexture>("buildin:brdf_lut");
+    if (!brdf_lut) {
+        throw RuntimeError("无法加载BRDF LUT");
+    }
     {
         auto uber = resources.load_resource<UberShader>("shaders/depth/depth");
         if (!uber) {
@@ -277,6 +282,10 @@ void Pipeline::render_camera(RCamera *camera, RScene *scene) {
     // 绑定per_frame uniform buffer
     per_frame_uniform->bind_uniform(PER_FRAME_UNIFORM_BINDING);
 
+    // 引擎纹理：保留单元只由引擎写，所以每个相机/环境只需要绑定一次，材质绑定不会覆盖它们
+    GL.bind_engine_texture(EngineTexture::BRDF_LUT, brdf_lut);
+    GL.bind_engine_texture(EngineTexture::PREFILTERED_ENVMAP, env->environment_map);
+
     std::vector<CullInstance> visible_instances = cull(camera_info);
 
     compute_skinning(camera_info, visible_instances);
@@ -401,6 +410,9 @@ void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> 
     ImGui::BulletText("Visible Instances: %zu", visible_instances.size());
     replace_render_target[0]->bind_draw();
 
+    // 引擎纹理：深度纹理在draw_depth中惰性创建，此时已经可以读取
+    GL.bind_engine_texture(EngineTexture::CAMERA_DEPTH, depth_texture);
+
     std::vector<DrawInstance> draw_instances;
     draw_instances.reserve(visible_instances.size());
     for (auto &instance : visible_instances) {
@@ -436,8 +448,6 @@ void Pipeline::draw_geometry(CameraInfo &camera_info, std::vector<CullInstance> 
             GL.set_pipeline_state(instance.material->get_pipeline_setting());
             instance.material->get_per_material_uniform()->bind_uniform(PER_MATERIAL_UNIFORM_BINDING);
             instance.material->bind_external_resources();
-            instance.material->set_texture("camera_depth", depth_texture);
-            instance.material->set_texture("prefilitered_envmap", camera_info.env->environment_map);
             last_material = instance.material;
         }
 
@@ -462,7 +472,7 @@ void Pipeline::draw_skybox(CameraInfo &camera_info) {
     skybox_per_pass->bind_uniform(PER_PASS_UNIFORM_BINDING);
     // 绑定天空盒材质
     skybox_material->bind();
-    skybox_material->set_texture("skybox_specular_texture", camera_info.env->skybox);
+    GL.bind_engine_texture(EngineTexture::SKYBOX_SPECULAR_TEXTURE, camera_info.env->skybox);
     skybox_material->set_param("color_permutation", camera_info.env->skybox_permutation);
     skybox_mesh->bind();
     GL.draw_submesh(skybox_mesh->get_submeshes().at(0));

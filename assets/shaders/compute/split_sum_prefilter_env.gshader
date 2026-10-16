@@ -1,19 +1,19 @@
 #name brdf_lut
 #category compute
 
+#texture envmap="buildin:missing_texture" // todo:准备默认天空盒
 #image output_image access="w" format="rgba16f"
-#texture skybox_specular_texture="buildin:black"
 
 #param level=f32(0) // current mipmap level
 
 #section compute
 
+#include "shaders/common.glsl"
+
 #define SAMPLE_COUNT 1024
 
-#define PI 3.1415926535897932384626433832795
-
-uniform samplerCube skybox_specular_texture;
-layout(rgba16f) restrict writeonly uniform imageCube output_image; // only 1 mipmap level
+layout(binding = 8) uniform samplerCube envmap; // LUT
+layout(rgba16f, binding = 2) restrict writeonly uniform imageCube output_image; // only 1 mipmap level
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 6) in;
 
@@ -22,14 +22,14 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 6) in;
 忽略实际采样中视角方向带来的差异，假定v = n，法线分布lobe以从原点到天空盒上的点的方向为轴
 也就是直接对天空盒按照D(n * h, r)进行重要性采样，其中不同r使用mipmap表示
 
-skybox_specular_texture和output_image中的图像实际上是倒置存储的
-但用方向采样时skybox_specular_texture是“正”的，写入时需要进行翻转
+envmap和output_image中的图像实际上是倒置存储的
+但用方向采样时envmap是“正”的，写入时需要进行翻转
 */
 
 // 基于mipmap层数线性分配粗糙度，要求至少有不只一层mipmap
-// 在采样时逆向映射textureLod(skybox_specular_texture, R, r * (textureQueryLevels(skybox_specular_texture) - 1))
+// 在采样时逆向映射textureLod(envmap, R, r * (textureQueryLevels(envmap) - 1))
 float roughness_inv_mapping(float level) {
-    int total_level = textureQueryLevels(skybox_specular_texture);
+    int total_level = textureQueryLevels(envmap);
     if (total_level <= 1) {
         // should never happen!! 
     }
@@ -68,7 +68,7 @@ vec3 compute_lut(int index, float roughness, vec3 direction) {
 
     vec3 world_space_h = h.x * tangent + h.y * bitangent + h.z * direction;
     
-    vec3 light = textureLod(skybox_specular_texture, world_space_h, 0).rgb;
+    vec3 light = textureLod(envmap, world_space_h, 0).rgb;
     return light;
 }
 

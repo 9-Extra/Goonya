@@ -2,6 +2,7 @@
 
 #include "core/RefCount.h"
 #include "core/log/Log.h"
+#include "function/renderer/PipelineLayout.h"
 #include "platform/graphics/opengl/GLShader.h"
 #include "platform/graphics/opengl/GLTexture.h"
 #include "runtime/GAssert.h"
@@ -9,7 +10,6 @@
 
 #include <cstdint>
 #include <limits>
-#include <ranges>
 
 namespace Goonya {
 
@@ -132,18 +132,21 @@ UberShader::UberShader(UberShaderDesc &&desc) {
     this->effective_global_key_mask = GLOBAL_VARIANT_KEY.get_shader_global_key_mask(desc.global_variant_keys);
     this->render_priority = desc.render_priority;
 
-    // 不使用Opengl默认的纹理单元绑定，而是手动分配纹理单元
-    for (auto &&[i, default_texture] : std::views::enumerate(std::move(desc.textures))) {
-        auto &&[name, texture_res] = std::move(default_texture);
-        // 纹理单元从0开始编号，纹理类型信息在反射具体的变体时再获取
-        texture_units.emplace(name, TextureParameterInfo{TextureType::UNKNOWN, (uint32_t)i});
-        textures.emplace_back(std::move(texture_res));
+    // 纹理的单元由着色器中的layout(binding = N)决定，这里只记录#texture声明的默认纹理
+    for (auto &&[name, default_texture] : desc.textures) {
+        if (find_engine_texture(name) != nullptr) {
+            throw RuntimeError(std::format("纹理\"{}\"是引擎纹理，不能通过#texture声明默认纹理", name));
+        }
+        if (!default_texture) {
+            throw RuntimeError(std::format("纹理\"{}\"的默认纹理加载失败", name));
+        }
+        default_textures.emplace(name, std::move(default_texture));
+        texture_units.emplace(name, TextureParameterInfo{}); // 单元和类型在编译变体时获取
     }
 
-    // 图像单元同样手动分配，image unit按#image指令的声明顺序从0开始编号
-    for (auto &&[i, image_decl] : std::views::enumerate(std::move(desc.images))) {
-        auto &&[name, decl] = std::move(image_decl);
-        image_units.emplace(name, ImageParameterInfo{TextureType::UNKNOWN, (uint32_t)i, decl.gl_access, decl.gl_type});
+    // 图像单元同样由layout(binding = N)决定，#image指令只声明访问模式和格式
+    for (auto &&[name, decl] : desc.images) {
+        image_units.emplace(name, ImageParameterInfo{TextureType::UNKNOWN, std::nullopt, decl.gl_access, decl.gl_type});
     }
 
     // 立即编译变体码为0的版本用于反射
@@ -192,40 +195,102 @@ Ref<GLShader> UberShader::query_variant(VariantCodeSet variant_code) {
         shader = GLShader::compile_compute(mixed_cs);
     }
 
-    // 手动覆盖纹理单元绑定。这是因为不同变体的纹理单元绑定可能不同，需要手动保证每个变体的纹理单元绑定是一致的
     GLShaderIntrospector introspector{shader.get()};
-    std::unordered_map<std::string, TextureType> texture_info = introspector.get_texture_info();
-    for (auto &&[name, type] : texture_info) {
-        if (auto iter = texture_units.find(name); iter != texture_units.end()) {
-            shader->set_texture_binding(name, iter->second.unit);
-            if (iter->second.type == TextureType::UNKNOWN) {
-                iter->second.type = type;
-            } else {
-                if (iter->second.type != type) {
-                    throw RuntimeError(std::format("纹理\"{}\"在不同的变体中定义为了不同的类型", name));
-                }
+
+    /*
+    纹理单元由着色器中的layout(binding = N)决定（N就是采样器uniform的初值），这里校验它符合引擎约定：
+    - 引擎纹理必须使用引擎表中的单元和类型
+    - 材质纹理必须分配在引擎保留区之后，且同一个纹理在所有变体中的单元必须一致，否则切换变体时纹理就绑错了
+    一个纹理在某个变体中没有被使用时会残留旧的绑定，不影响渲染，只有出现在变体中的纹理才需要检查
+    */
+    std::unordered_map<uint32_t, std::string> texture_unit_owner; // 单元 -> 纹理名，用于检测单元冲突
+    for (auto &&[name, type] : introspector.get_texture_info()) {
+        // 采样器数组当前不支持，报错
+        if (name.size() > 3 && name.ends_with("[0]")) {
+            throw RuntimeError(std::format("纹理\"{}\"是采样器数组，暂不支持",
+                                           std::string_view(name).substr(0, name.size() - 3)));
+        }
+        const std::optional<uint32_t> unit = shader->query_texture_unit(name);
+        if (!unit.has_value()) {
+            throw RuntimeError(std::format("无法查询纹理\"{}\"的单元", name));
+        }
+
+        if (const EngineTextureDecl *engine_texture = find_engine_texture(name); engine_texture != nullptr) {
+            const uint32_t expected_unit = engine_texture_unit(engine_texture->slot);
+            if (*unit != expected_unit) {
+                throw RuntimeError(std::format("引擎纹理\"{}\"必须使用单元{}，即layout(binding = {})，当前为{}", name,
+                                               expected_unit, expected_unit, *unit));
+            }
+            if (type != engine_texture->type) {
+                throw RuntimeError(std::format("引擎纹理\"{}\"在着色器中的类型与引擎不符", name));
             }
         } else {
-            // 纹理没有在.meta中定义，却在着色器中使用
-            throw RuntimeError(std::format("纹理\"{}\"在.meta中未定义，却在着色器中使用", name));
+            if (*unit < MATERIAL_TEXTURE_UNIT_BEGIN) {
+                throw RuntimeError(std::format("材质纹理\"{}\"被分配到了单元{}，单元0..{}为引擎纹理保留，"
+                                               "材质纹理请用layout指定一个不小于{}的单元",
+                                               name, *unit, MATERIAL_TEXTURE_UNIT_BEGIN - 1,
+                                               MATERIAL_TEXTURE_UNIT_BEGIN));
+            }
+
+            auto iter = texture_units.find(name);
+            if (iter == texture_units.end()) {
+                throw RuntimeError(std::format("材质纹理\"{}\"在着色器中使用，却没有通过#texture声明默认纹理", name));
+            }
+            TextureParameterInfo &info = iter->second;
+            if (info.unit.has_value() && *info.unit != *unit) {
+                throw RuntimeError(std::format("纹理\"{}\"在单元{}和{}上都出现过，同一个纹理在不同变体中的单元必须一致，"
+                                               "layout不能受变体宏的控制",
+                                               name, *info.unit, *unit));
+            }
+            if (info.type != TextureType::UNKNOWN && info.type != type) {
+                throw RuntimeError(std::format("纹理\"{}\"在不同的变体中定义为了不同的类型", name));
+            }
+            info.unit = unit;
+            info.type = type;
+        }
+
+        if (auto [owner, inserted] = texture_unit_owner.emplace(*unit, name); !inserted) {
+            throw RuntimeError(std::format("纹理\"{}\"和\"{}\"使用了同一个单元{}", owner->second, name, *unit));
         }
     }
 
-    // 图像单元同理：图像uniform的值就是image unit，可以像采样器一样通过glProgramUniform1i设置
-    std::unordered_map<std::string, TextureType> image_info = introspector.get_image_info();
-    for (auto &&[name, type] : image_info) {
-        if (auto iter = image_units.find(name); iter != image_units.end()) {
-            shader->set_texture_binding(name, iter->second.unit);
-            if (iter->second.type == TextureType::UNKNOWN) {
-                iter->second.type = type;
-            } else {
-                if (iter->second.type != type) {
-                    throw RuntimeError(std::format("图像\"{}\"在不同的变体中定义为了不同的类型", name));
-                }
-            }
-        } else {
+    // 图像单元同理
+    std::unordered_map<uint32_t, std::string> image_unit_owner; // 单元 -> 图像名，用于检测单元冲突
+    for (auto &&[name, type] : introspector.get_image_info()) {
+        // 图像数组当前不支持，报错
+        if (name.size() > 3 && name.ends_with("[0]")) {
+            throw RuntimeError(std::format("图像\"{}\"是数组，暂不支持",
+                                           std::string_view(name).substr(0, name.size() - 3)));
+        }
+        auto iter = image_units.find(name);
+        if (iter == image_units.end()) {
             // 图像没有通过#image指令声明，却在着色器中使用
             throw RuntimeError(std::format("图像\"{}\"未通过#image指令声明，却在着色器中使用", name));
+        }
+        const std::optional<uint32_t> unit = shader->query_texture_unit(name);
+        if (!unit.has_value()) {
+            throw RuntimeError(std::format("无法查询图像\"{}\"的单元", name));
+        }
+        if (*unit < MATERIAL_IMAGE_UNIT_BEGIN) {
+            throw RuntimeError(std::format("图像\"{}\"被分配到了单元{}，单元0..{}为引擎图像保留，"
+                                           "其他图像请用layout指定一个不小于{}的单元",
+                                           name, *unit, MATERIAL_IMAGE_UNIT_BEGIN - 1, MATERIAL_IMAGE_UNIT_BEGIN));
+        }
+
+        ImageParameterInfo &info = iter->second;
+        if (info.unit.has_value() && *info.unit != *unit) {
+            throw RuntimeError(std::format("图像\"{}\"在单元{}和{}上都出现过，同一个图像在不同变体中的单元必须一致，"
+                                           "layout不能受变体宏的控制",
+                                           name, *info.unit, *unit));
+        }
+        if (info.type != TextureType::UNKNOWN && info.type != type) {
+            throw RuntimeError(std::format("图像\"{}\"在不同的变体中定义为了不同的类型", name));
+        }
+        info.unit = unit;
+        info.type = type;
+
+        if (auto [owner, inserted] = image_unit_owner.emplace(*unit, name); !inserted) {
+            throw RuntimeError(std::format("图像\"{}\"和\"{}\"使用了同一个单元{}", owner->second, name, *unit));
         }
     }
 

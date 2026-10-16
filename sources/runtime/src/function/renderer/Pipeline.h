@@ -49,6 +49,9 @@ private:
     Ref<GLFrameBuffer> depth_fbo;
     Ref<GLTexture> depth_texture;
 
+    // 整个引擎共用的BRDF LUT
+    Ref<GLTexture> brdf_lut;
+
     Ref<ComputeMaterial> skinning_material;
 
     Ref<Mesh> postprocess_quad_mesh;
